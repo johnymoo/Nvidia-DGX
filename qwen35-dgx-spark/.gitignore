@@ -4,9 +4,45 @@
 *.bin
 models/
 
+# Environment & Secrets
+.env
+.env.local
+.env.*
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
 # Logs
 *.log
+logs/
 
 # Temp files
 tmp/
 temp/
+*.tmp
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
