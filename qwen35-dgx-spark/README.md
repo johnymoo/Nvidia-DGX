@@ -237,3 +237,47 @@ snapshot_download('unsloth/Qwen3.5-9B-GGUF',
 ## 测试结果脚本
 
 见 `benchmark.sh` 文件，用于批量测试推理速度。
+
+---
+
+## 仓库贡献规则
+
+### Rule 1: 阅读 README
+在修改前阅读整个 README 和子目录的 README。
+
+### Rule 2: 不要在根目录提交文件
+所有项目文件必须放在子目录中。
+
+### Rule 3: 不要提交凭证
+- 密码、API Token、密钥
+- 硬编码的 IP 地址或主机名
+- 使用环境变量或 `.env` 文件
+
+### Rule 4: 每个项目必须有 README
+包含：目的、上下文、架构、文件清单、安装步骤、配置、使用说明、依赖、已知限制。
+
+### Rule 5: 分支和 PR Workflow
+- 从 main 创建分支：`feature/<描述>`、`fix/<描述>`、`docs/<描述>`、`chore/<描述>`
+- 提交清晰的原子提交
+- 通过 Pull Request 合并到 main
+
+### Rule 6: Python 项目使用 uv
+使用 `uv` 进行依赖管理，不使用 pip。
+
+### Rule 7: 保持 .gitignore 更新
+忽略：`.env`、`.venv/`、`__pycache__/`、日志、构建产物。
+
+### Rule 8: 提交规范
+- 原子提交
+- 不提交大文件（模型权重、视频等）
+- 不提交可生成的文件
+
+### Rule 9: 提交前测试
+- 运行测试
+- 验证脚本在目标平台可运行
+
+### Rule 10: Issue 驱动的开发
+新功能先创建 Issue，包含：动机、设计、范围、文件变更、验收标准。
+
+### Rule 11: 文档变更
+修改时同步更新项目 README 和根 README。
