@@ -1,0 +1,12 @@
+# Model files
+*.gguf
+*.safetensors
+*.bin
+models/
+
+# Logs
+*.log
+
+# Temp files
+tmp/
+temp/
