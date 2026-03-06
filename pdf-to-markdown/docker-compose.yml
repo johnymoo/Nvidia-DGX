@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  pdf2md-api:
+    build: .
+    image: pdf2md-api:latest
+    container_name: pdf2md-api
+    ports:
+      - "9999:9999"
+    volumes:
+      # 持久化模型缓存
+      - model-cache:/root/.cache/datalab
+      # 可选：挂载临时文件目录
+      - /tmp/pdf2md:/tmp/pdf2md
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9999/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  model-cache:
+    driver: local
