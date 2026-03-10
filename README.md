@@ -9,6 +9,7 @@ NVIDIA DGX 相关项目集合，包括 DGX Spark (GB10) 部署指南、模型推
 | 目录 | 描述 |
 |------|------|
 | [`qwen35-dgx-spark/`](./qwen35-dgx-spark/) | Qwen3.5 在 DGX Spark 上的部署指南与性能测试 |
+| [`memory-vector-db/`](./memory-vector-db/) | 多用户记忆向量数据库服务，支持语义搜索和用户数据隔离 |
 
 ---
 
