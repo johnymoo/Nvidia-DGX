@@ -113,7 +113,7 @@ ollama pull bge-m3
 ### 2. 安装 Python 依赖
 
 ```bash
-pip install fastapi uvicorn numpy sqlite-vec ollama
+pip install fastapi uvicorn numpy sqlite-vec
 ```
 
 ### 3. 编译 sqlite-vec (ARM64)
@@ -136,10 +136,14 @@ python3 memory_api_server.py --host 0.0.0.0 --port 8000
 
 ## 配置
 
+支持以下环境变量：
+
 | 环境变量 | 默认值 | 描述 |
 |----------|--------|------|
 | `OLLAMA_HOST` | `http://localhost:11434` | Ollama 服务地址 |
-| `OLLAMA_MODEL` | `bge-m3` | 嵌入模型 |
+| `OLLAMA_MODEL` | `bge-m3` | 嵌入模型（注意：需与 EMBEDDING_DIM 兼容） |
+
+**注意：** 修改 `OLLAMA_MODEL` 需确保新模型的 embedding 维度与数据库 schema 兼容（默认 1024）。
 
 ## 使用说明
 
@@ -209,7 +213,7 @@ curl -X DELETE -H "X-API-Key: your_user_id" \
 
 ## 已知限制
 
-- API Key 即 user_id，无密码验证
+- **⚠️ API Key 安全性**：当前设计中 `X-API-Key` 即 `user_id`，任何能访问服务的客户端都可以冒充其他用户。此设计仅适用于受信任的内部网络。生产环境需添加真正的认证层。
 - 暂不支持记忆更新操作
 - 向量维度固定为 1024 (bge-m3)
 

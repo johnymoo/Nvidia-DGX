@@ -3,11 +3,17 @@
 Memory Vector DB API Server - Multi-User Edition
 Exposes memory retrieval and embedding APIs with user isolation.
 Authentication: X-API-Key header (user_id)
+
+⚠️ Security Note: This is a simple identity-based auth system designed for trusted
+internal networks. The X-API-Key IS the user_id - anyone with access to the API
+can impersonate any user. For production use, add proper authentication.
 """
+import os
 import sys
 import json
 import argparse
 import uuid as uuid_module
+import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
@@ -22,14 +28,18 @@ import sqlite_vec
 import uvicorn
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-# Configuration
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Configuration (supports environment variables)
 MEMORY_DIR = Path.home() / ".my-memory"
 DB_PATH = MEMORY_DIR / "my-memories.db"
-OLLAMA_HOST = "http://localhost:11434"
-OLLAMA_MODEL = "bge-m3"
-EMBEDDING_DIM = 1024
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "bge-m3")
+EMBEDDING_DIM = 1024  # Fixed for bge-m3
 
 # FastAPI app
 app = FastAPI(
@@ -38,11 +48,11 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS middleware
+# CORS middleware (allow_credentials=False when using allow_origins=["*"])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,  # Must be False when allow_origins is ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -78,7 +88,7 @@ class AddMemoryRequest(BaseModel):
     type: str = "note"
     summary: str
     importance: float = 0.5
-    tags: List[str] = []
+    tags: List[str] = Field(default_factory=list)  # Avoid mutable default
 
 
 class AddMemoryResponse(BaseModel):
@@ -174,28 +184,28 @@ def init_db():
         cursor.execute("SELECT user_id FROM memories LIMIT 1")
     except sqlite3.OperationalError:
         # Column doesn't exist, need to migrate
-        print("Migrating database to multi-user schema...")
+        logger.info("Migrating database to multi-user schema...")
         try:
             cursor.execute("ALTER TABLE memories ADD COLUMN user_id TEXT DEFAULT 'default'")
             cursor.execute("UPDATE memories SET user_id = 'default' WHERE user_id IS NULL")
-        except:
-            pass  # Column might already exist
+        except sqlite3.OperationalError as e:
+            logger.warning(f"Migration warning: {e}")
     
     # Create index on user_id for fast filtering
     try:
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id)
         """)
-    except:
-        pass
+    except sqlite3.OperationalError as e:
+        logger.debug(f"Index creation skipped: {e}")
     
     # Create composite index for user_id + date
     try:
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_memories_user_date ON memories(user_id, date)
         """)
-    except:
-        pass
+    except sqlite3.OperationalError as e:
+        logger.debug(f"Index creation skipped: {e}")
     
     # Create vector table
     cursor.execute(f"""
@@ -220,16 +230,16 @@ def init_db():
         try:
             cursor.execute("ALTER TABLE vec_memory_mapping ADD COLUMN user_id TEXT DEFAULT 'default'")
             cursor.execute("UPDATE vec_memory_mapping SET user_id = 'default' WHERE user_id IS NULL")
-        except:
-            pass
+        except sqlite3.OperationalError as e:
+            logger.warning(f"Migration warning: {e}")
     
     # Create index on mapping user_id
     try:
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_mapping_user_id ON vec_memory_mapping(user_id)
         """)
-    except:
-        pass
+    except sqlite3.OperationalError as e:
+        logger.debug(f"Index creation skipped: {e}")
     
     conn.commit()
     conn.close()
@@ -276,7 +286,7 @@ def semantic_search(user_id: str, query_embedding: List[float], limit: int = 10)
             try:
                 metadata = json.loads(metadata_json) if metadata_json else {}
                 tags = metadata.get("tags", [])
-            except:
+            except (json.JSONDecodeError, TypeError):
                 tags = []
             
             results.append({
@@ -367,7 +377,7 @@ def get_recent_memories_db(user_id: str, days: int = 7, limit: int = 20) -> List
         try:
             metadata = json.loads(metadata_json) if metadata_json else {}
             tags = metadata.get("tags", [])
-        except:
+        except (json.JSONDecodeError, TypeError):
             tags = []
         
         memories.append({
@@ -429,7 +439,7 @@ async def health_check():
         req = urllib.request.Request(f"{OLLAMA_HOST}/api/tags", method='GET')
         with urllib.request.urlopen(req, timeout=5) as response:
             ollama_ok = response.status == 200
-    except:
+    except (urllib.error.URLError, TimeoutError):
         pass
     
     db_ok = DB_PATH.exists()
