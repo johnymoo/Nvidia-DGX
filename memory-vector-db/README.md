@@ -6,6 +6,61 @@
 
 为 OpenClaw 实例提供集中式的记忆存储和检索服务，支持多用户数据隔离。
 
+---
+
+## 🔑 API Key 与用户管理
+
+### 如何创建新用户？
+
+**无需注册！**API Key 就是用户标识符，首次使用自动创建。
+
+### 使用步骤：
+
+1. **选择一个唯一的用户标识符**（如`alice`、`claw_laptop`、`office_instance`）
+2. **在请求中带上 `X-API-Key` header**
+3. **系统自动为你创建独立的数据空间**
+
+### API Key 规则：
+
+| 规则 | 说明 |
+|------|------|
+| 格式 | 字母、数字、下划线、短横线 |
+| 长度 | 最长 64 字符 |
+| 认证 | 无密码，身份即认证 |
+
+### 示例：创建新用户并添加第一条记忆
+
+```bash
+# 用户 "alice" 的第一次请求 - 自动创建用户
+curl -X POST http://YOUR_GB10_IP:8000/memories/add \
+  -H "X-API-Key: alice"\
+  -H "Content-Type: application/json" \
+  -d '{"summary": "Alice 的第一条记忆", "type": "note"}'
+
+# 用户 "bob" 使用不同的 key - 数据完全隔离
+curl -X POST http://YOUR_GB10_IP:8000/memories/add \
+  -H "X-API-Key: bob" \
+  -H "Content-Type: application/json" \
+  -d '{"summary": "Bob 的第一条记忆", "type": "note"}'
+```
+
+### 多个 Claw 实例如何使用？
+
+```bash
+# Claw 实例 1
+-H "X-API-Key: claw_laptop"
+
+# Claw 实例 2
+-H "X-API-Key: claw_office"
+
+# Claw 实例 3
+-H "X-API-Key: claw_mobile"
+```
+
+每个实例使用不同的 API Key，数据自动隔离。
+
+---
+
 ## 上下文
 
 - 部署在 GB10 服务器上
