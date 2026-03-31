@@ -2,18 +2,21 @@ version: '3.8'
 
 services:
   pdf2md-api:
-    build: .
-    image: pdf2md-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pdf2md:latest
     container_name: pdf2md-api
     ports:
-      - "9999:9999"
+      - "21212:9999"
     volumes:
-      # 持久化模型缓存
-      - model-cache:/root/.cache/datalab
-      # 可选：挂载临时文件目录
-      - /tmp/pdf2md:/tmp/pdf2md
+      # Mount HuggingFace cache to persist models
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      # Mount working directory for file access
+      - ~/workspace:/workspace
     environment:
       - PYTHONUNBUFFERED=1
+      - HF_HOME=/root/.cache/huggingface
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9999/health"]
@@ -21,7 +24,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-volumes:
-  model-cache:
-    driver: local
