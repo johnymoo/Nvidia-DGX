@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including CUDA libraries
 RUN apt-get update && apt-get install -y \
     git \
     libgl1 \
@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install marker with CUDA support
+RUN pip install --no-cache-dir marker-pdf[cuda]
 
 # Copy application code
 COPY api_server.py .

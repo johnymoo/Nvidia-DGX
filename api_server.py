@@ -8,6 +8,8 @@ import json
 import uuid
 import asyncio
 import threading
+import os
+import hashlib
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -22,11 +24,51 @@ from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
 
+# Configuration
+CACHE_DIR = Path(os.environ.get("PDF2MD_CACHE_DIR", "/workspace/pdf2md_cache"))
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Content-based cache index (file_hash -> task_id)
+CONTENT_CACHE_FILE = CACHE_DIR / ".content_cache.json"
+
 app = FastAPI(
     title="PDF to Markdown API",
     description="Convert PDF documents to Markdown using AI-powered layout detection. Supports async processing for large files.",
-    version="2.0.0"
+    version="2.0.2"
 )
+
+
+# ============ Content-based Cache ============
+
+def load_content_cache() -> Dict[str, str]:
+    """Load content-based cache index (file_hash -> task_id)."""
+    if CONTENT_CACHE_FILE.exists():
+        try:
+            with open(CONTENT_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_content_cache(cache: Dict[str, str]):
+    """Save content-based cache index."""
+    with open(CONTENT_CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+
+def compute_file_hash(data: bytes, algorithm: str = "md5") -> str:
+    """Compute file hash for content-based deduplication."""
+    if algorithm == "md5":
+        return hashlib.md5(data).hexdigest()
+    elif algorithm == "sha256":
+        return hashlib.sha256(data).hexdigest()
+    else:
+        raise ValueError(f"Unsupported hash algorithm: {algorithm}")
+
+
+# Global content cache (loaded on startup)
+content_cache: Dict[str, str] = load_content_cache()
 
 
 # ============ Task Status ============
@@ -39,9 +81,10 @@ class TaskStatus(str, Enum):
 
 
 class Task:
-    def __init__(self, task_id: str, filename: str):
+    def __init__(self, task_id: str, filename: str, file_hash: Optional[str] = None):
         self.task_id = task_id
         self.filename = filename
+        self.file_hash = file_hash  # Content-based hash for deduplication
         self.status = TaskStatus.PENDING
         self.created_at = datetime.utcnow()
         self.started_at: Optional[datetime] = None
@@ -59,6 +102,7 @@ class Task:
         return {
             "task_id": self.task_id,
             "filename": self.filename,
+            "file_hash": self.file_hash,
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
@@ -68,10 +112,54 @@ class Task:
             "result": self.result,
             "error": self.error
         }
+    
+    def save_to_cache(self):
+        """Save task to cache file."""
+        cache_file = CACHE_DIR / f"{self.task_id}.json"
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+    
+    @classmethod
+    def load_from_cache(cls, task_id: str) -> Optional["Task"]:
+        """Load task from cache file."""
+        cache_file = CACHE_DIR / f"{task_id}.json"
+        if not cache_file.exists():
+            return None
+        
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            task = cls(task_id, data["filename"], data.get("file_hash"))
+            task.status = TaskStatus(data["status"])
+            task.created_at = datetime.fromisoformat(data["created_at"])
+            task.started_at = datetime.fromisoformat(data["started_at"]) if data["started_at"] else None
+            task.completed_at = datetime.fromisoformat(data["completed_at"]) if data["completed_at"] else None
+            task.progress = data["progress"]
+            task.result = data.get("result")
+            task.error = data.get("error")
+            return task
+        except Exception:
+            return None
 
 
-# In-memory task storage
+# In-memory task storage with cache backing
 tasks: Dict[str, Task] = {}
+
+
+def load_tasks_from_cache():
+    """Load all cached tasks on startup."""
+    for cache_file in CACHE_DIR.glob("*.json"):
+        if cache_file.name == ".content_cache.json":
+            continue
+        task_id = cache_file.stem
+        task = Task.load_from_cache(task_id)
+        if task:
+            tasks[task_id] = task
+
+
+# Load cached tasks on startup
+load_tasks_from_cache()
 
 
 # ============ OpenAI-compatible models ============
@@ -151,6 +239,7 @@ def process_task(task_id: str, pdf_bytes: bytes, filename: str):
         task.status = TaskStatus.PROCESSING
         task.started_at = datetime.utcnow()
         task.progress = "Starting conversion..."
+        task.save_to_cache()
         
         result = convert_pdf_bytes(pdf_bytes, filename, task)
         
@@ -158,12 +247,14 @@ def process_task(task_id: str, pdf_bytes: bytes, filename: str):
         task.status = TaskStatus.COMPLETED
         task.completed_at = datetime.utcnow()
         task.progress = "Completed"
+        task.save_to_cache()
         
     except Exception as e:
         task.status = TaskStatus.FAILED
         task.error = str(e)
         task.progress = f"Failed: {e}"
         task.completed_at = datetime.utcnow()
+        task.save_to_cache()
 
 
 def extract_pdf_from_messages(messages: List[ChatMessage]) -> tuple[bytes, str] | None:
@@ -208,7 +299,8 @@ async def convert_pdf_upload(
     extract_images: bool = Query(False, description="Extract images from PDF"),
     return_json: bool = Query(False, description="Return JSON response instead of plain text"),
     async_mode: bool = Query(False, description="Enable async processing - returns task_id immediately"),
-    wait: bool = Query(True, description="Wait for completion (ignored if async_mode=true)")
+    wait: bool = Query(True, description="Wait for completion (ignored if async_mode=true)"),
+    use_cache: bool = Query(True, description="Use content-based cache to skip duplicate files")
 ):
     """
     Convert a PDF file to Markdown via direct upload.
@@ -218,16 +310,50 @@ async def convert_pdf_upload(
     - async_mode=false + wait=true: Waits for conversion (may timeout for large files)
     - async_mode=false + wait=false: Same as async_mode
     - return_json=true: Returns JSON instead of plain text
+    - use_cache=true: Returns cached result if file was previously processed
     """
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="File must be a PDF")
     
     pdf_bytes = await file.read()
     
-    # Create task
+    # Compute file hash for content-based deduplication
+    file_hash = compute_file_hash(pdf_bytes)
+    
+    # Check content-based cache
+    global content_cache
+    if use_cache and file_hash in content_cache:
+        cached_task_id = content_cache[file_hash]
+        cached_task = tasks.get(cached_task_id) or Task.load_from_cache(cached_task_id)
+        
+        if cached_task and cached_task.status == TaskStatus.COMPLETED and cached_task.result:
+            # Return cached result immediately
+            if return_json:
+                return {
+                    "success": True,
+                    "filename": file.filename,
+                    "task_id": cached_task_id,
+                    "markdown": cached_task.result,
+                    "cached": True,
+                    "file_hash": file_hash,
+                    "message": "File previously processed, returning cached result"
+                }
+            else:
+                return PlainTextResponse(
+                    content=cached_task.result, 
+                    media_type="text/markdown",
+                    headers={"X-Cached": "true", "X-Task-ID": cached_task_id, "X-File-Hash": file_hash}
+                )
+    
+    # Create new task
     task_id = str(uuid.uuid4())[:8]
-    task = Task(task_id, file.filename)
+    task = Task(task_id, file.filename, file_hash)
     tasks[task_id] = task
+    task.save_to_cache()
+    
+    # Update content cache
+    content_cache[file_hash] = task_id
+    save_content_cache(content_cache)
     
     if async_mode or not wait:
         # Async mode - start background thread
@@ -240,6 +366,7 @@ async def convert_pdf_upload(
         return {
             "task_id": task_id,
             "status": "pending",
+            "file_hash": file_hash,
             "message": "Task created. Poll GET /tasks/{task_id} for result.",
             "poll_url": f"/tasks/{task_id}"
         }
@@ -256,21 +383,29 @@ async def convert_pdf_upload(
         task.status = TaskStatus.COMPLETED
         task.completed_at = datetime.utcnow()
         task.progress = "Completed"
+        task.save_to_cache()
         
         if return_json:
             return {
                 "success": True,
                 "filename": file.filename,
                 "task_id": task_id,
-                "markdown": markdown_text
+                "markdown": markdown_text,
+                "file_hash": file_hash,
+                "cached": False
             }
         else:
-            return PlainTextResponse(content=markdown_text, media_type="text/markdown")
+            return PlainTextResponse(
+                content=markdown_text, 
+                media_type="text/markdown",
+                headers={"X-File-Hash": file_hash, "X-Task-ID": task_id}
+            )
             
     except Exception as e:
         task.status = TaskStatus.FAILED
         task.error = str(e)
         task.completed_at = datetime.utcnow()
+        task.save_to_cache()
         raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
 
 
@@ -284,7 +419,15 @@ async def get_task_status(task_id: str):
     - result: Markdown content (only when completed)
     - error: Error message (only when failed)
     """
+    # First check memory
     task = tasks.get(task_id)
+    
+    # If not in memory, try loading from cache
+    if not task:
+        task = Task.load_from_cache(task_id)
+        if task:
+            tasks[task_id] = task
+    
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -295,13 +438,33 @@ async def get_task_status(task_id: str):
 async def delete_task(task_id: str):
     """Delete a completed or failed task."""
     task = tasks.get(task_id)
+    
+    # Also check cache
+    if not task:
+        task = Task.load_from_cache(task_id)
+    
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
     if task.status == TaskStatus.PROCESSING:
         raise HTTPException(status_code=400, detail="Cannot delete a running task")
     
-    del tasks[task_id]
+    # Remove from content cache if present
+    global content_cache
+    if task.file_hash and task.file_hash in content_cache:
+        if content_cache[task.file_hash] == task_id:
+            del content_cache[task.file_hash]
+            save_content_cache(content_cache)
+    
+    # Remove from memory
+    if task_id in tasks:
+        del tasks[task_id]
+    
+    # Remove from cache
+    cache_file = CACHE_DIR / f"{task_id}.json"
+    if cache_file.exists():
+        cache_file.unlink()
+    
     return {"deleted": True, "task_id": task_id}
 
 
@@ -311,6 +474,9 @@ async def list_tasks(
     limit: int = Query(20, ge=1, le=100)
 ):
     """List all tasks, optionally filtered by status."""
+    # Load all cached tasks to ensure we have the latest
+    load_tasks_from_cache()
+    
     result = []
     for task in sorted(tasks.values(), key=lambda t: t.created_at, reverse=True):
         if status and task.status != status:
@@ -319,6 +485,38 @@ async def list_tasks(
         if len(result) >= limit:
             break
     return {"count": len(result), "tasks": result}
+
+
+@app.get("/cache/check")
+async def check_content_cache(file_hash: str = Query(..., description="MD5 or SHA256 hash of file content")):
+    """
+    Check if a file with given hash has been processed before.
+    
+    Returns cached task info if found, otherwise 404.
+    """
+    global content_cache
+    
+    if file_hash not in content_cache:
+        raise HTTPException(status_code=404, detail="File not found in cache")
+    
+    cached_task_id = content_cache[file_hash]
+    cached_task = tasks.get(cached_task_id) or Task.load_from_cache(cached_task_id)
+    
+    if not cached_task:
+        # Stale cache entry, remove it
+        del content_cache[file_hash]
+        save_content_cache(content_cache)
+        raise HTTPException(status_code=404, detail="Cached task not found (stale entry removed)")
+    
+    return {
+        "found": True,
+        "file_hash": file_hash,
+        "task_id": cached_task_id,
+        "status": cached_task.status.value,
+        "filename": cached_task.filename,
+        "completed": cached_task.status == TaskStatus.COMPLETED,
+        "result_available": cached_task.result is not None
+    }
 
 
 # ============ OpenAI-compatible endpoint ============
@@ -357,10 +555,44 @@ async def chat_completions(request: ChatCompletionRequest = Body(...)):
     
     pdf_bytes, filename = pdf_data
     
+    # Compute file hash for content-based deduplication
+    file_hash = compute_file_hash(pdf_bytes)
+    
+    # Check content-based cache
+    global content_cache
+    if file_hash in content_cache:
+        cached_task_id = content_cache[file_hash]
+        cached_task = tasks.get(cached_task_id) or Task.load_from_cache(cached_task_id)
+        
+        if cached_task and cached_task.status == TaskStatus.COMPLETED and cached_task.result:
+            return ChatCompletionResponse(
+                id=f"chatcmpl-{int(time.time())}",
+                created=int(time.time()),
+                model=request.model,
+                choices=[ChatCompletionChoice(
+                    index=0,
+                    message=ChatMessage(
+                        role="assistant",
+                        content=cached_task.result
+                    ),
+                    finish_reason="stop"
+                )],
+                usage=Usage(
+                    prompt_tokens=len(pdf_bytes) // 4,
+                    completion_tokens=len(cached_task.result) // 4,
+                    total_tokens=(len(pdf_bytes) + len(cached_task.result)) // 4
+                )
+            )
+    
     # Create task
     task_id = str(uuid.uuid4())[:8]
-    task = Task(task_id, filename)
+    task = Task(task_id, filename, file_hash)
     tasks[task_id] = task
+    task.save_to_cache()
+    
+    # Update content cache
+    content_cache[file_hash] = task_id
+    save_content_cache(content_cache)
     
     if request.async_mode:
         # Async mode - start background thread
@@ -381,6 +613,7 @@ async def chat_completions(request: ChatCompletionRequest = Body(...)):
                     content=json.dumps({
                         "async": True,
                         "task_id": task_id,
+                        "file_hash": file_hash,
                         "status": "pending",
                         "message": "Task created. Poll GET /tasks/{task_id} for result.",
                         "poll_url": f"/tasks/{task_id}"
@@ -403,6 +636,7 @@ async def chat_completions(request: ChatCompletionRequest = Body(...)):
         task.status = TaskStatus.COMPLETED
         task.completed_at = datetime.utcnow()
         task.progress = "Completed"
+        task.save_to_cache()
         
         return ChatCompletionResponse(
             id=f"chatcmpl-{int(time.time())}",
@@ -426,6 +660,7 @@ async def chat_completions(request: ChatCompletionRequest = Body(...)):
         task.status = TaskStatus.FAILED
         task.error = str(e)
         task.completed_at = datetime.utcnow()
+        task.save_to_cache()
         raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
 
 
@@ -451,27 +686,37 @@ async def list_models():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
+    global content_cache
     return {
         "status": "ok", 
         "service": "pdf-to-markdown",
-        "version": "2.0.0",
+        "version": "2.0.2",
         "active_tasks": len([t for t in tasks.values() if t.status == TaskStatus.PROCESSING]),
-        "total_tasks": len(tasks)
+        "total_tasks": len(tasks),
+        "content_cached_files": len(content_cache),
+        "cache_dir": str(CACHE_DIR)
     }
 
 
 @app.get("/")
 async def root():
     """Root endpoint with API info."""
+    # Get actual host and port from environment or use defaults
+    host = os.environ.get("PDF2MD_HOST", "localhost")
+    port = os.environ.get("PDF2MD_PORT", "9999")
+    base_url = f"http://{host}:{port}"
+    
     return {
         "service": "PDF to Markdown API",
-        "version": "2.0.0",
-        "features": ["async_processing", "openai_compatible"],
+        "version": "2.0.2",
+        "features": ["async_processing", "openai_compatible", "persistent_cache", "content_based_deduplication"],
+        "cache_dir": str(CACHE_DIR),
         "endpoints": {
-            "POST /convert": "Convert PDF (use ?async_mode=true for large files)",
+            "POST /convert": "Convert PDF (use ?async_mode=true for large files, use_cache=false to skip cache)",
             "GET /tasks/{task_id}": "Get async task status and result",
             "GET /tasks": "List all tasks",
             "DELETE /tasks/{task_id}": "Delete completed task",
+            "GET /cache/check": "Check if file hash exists in cache",
             "POST /v1/chat/completions": "OpenAI-compatible endpoint",
             "GET /v1/models": "List available models",
             "GET /health": "Health check"
@@ -479,16 +724,20 @@ async def root():
         "usage": {
             "sync": {
                 "description": "Small files - waits for result",
-                "example": "curl -X POST http://host:9999/convert -F 'file=@doc.pdf'"
+                "example": f"curl -X POST {base_url}/convert -F 'file=@doc.pdf'"
             },
             "async": {
                 "description": "Large files - returns task_id immediately",
                 "steps": [
-                    "1. curl -X POST 'http://host:9999/convert?async_mode=true' -F 'file=@large.pdf'",
-                    "2. Returns: {\"task_id\": \"abc123\", \"status\": \"pending\"}",
-                    "3. curl http://host:9999/tasks/abc123",
+                    f"1. curl -X POST '{base_url}/convert?async_mode=true' -F 'file=@large.pdf'",
+                    "2. Returns: {\"task_id\": \"abc123\", \"file_hash\": \"md5_hash\", \"status\": \"pending\"}",
+                    f"3. curl {base_url}/tasks/abc123",
                     "4. Poll until status=\"completed\", then get result"
                 ]
+            },
+            "cache": {
+                "description": "Content-based deduplication - same file returns cached result",
+                "check": f"curl {base_url}/cache/check?file_hash=<md5_hash>"
             }
         }
     }
@@ -501,20 +750,27 @@ async def llm_usage_guide():
     
     Access this endpoint to learn how to use the PDF to Markdown API.
     """
+    # Get actual host and port from environment or use defaults
+    host = os.environ.get("PDF2MD_HOST", "localhost")
+    port = os.environ.get("PDF2MD_PORT", "9999")
+    base_url = f"http://{host}:{port}"
+    
     return {
         "service": "PDF to Markdown API",
-        "version": "2.0.0",
-        "description": "Convert PDF documents to Markdown format with AI-powered layout detection. Supports async processing for large files.",
-        "base_url": "http://localhost:9999",
+        "version": "2.0.2",
+        "description": "Convert PDF documents to Markdown format with AI-powered layout detection. Supports async processing for large files. Results are cached to disk for persistence. Content-based deduplication prevents re-processing identical files.",
+        "base_url": base_url,
+        "cache_dir": str(CACHE_DIR),
         
         "quick_start": {
-            "sync_small_files": "curl -X POST http://localhost:9999/convert -F 'file=@doc.pdf' -o output.md",
+            "sync_small_files": f"curl -X POST {base_url}/convert -F 'file=@doc.pdf' -o output.md",
             "async_large_files": [
-                "1. curl -X POST 'http://localhost:9999/convert?async_mode=true' -F 'file=@large.pdf'",
-                "2. Returns: {\"task_id\": \"xxx\", \"status\": \"pending\"}",
-                "3. curl http://localhost:9999/tasks/xxx",
+                f"1. curl -X POST '{base_url}/convert?async_mode=true' -F 'file=@large.pdf'",
+                "2. Returns: {\"task_id\": \"xxx\", \"file_hash\": \"md5_hash\", \"status\": \"pending\"}",
+                f"3. curl {base_url}/tasks/xxx",
                 "4. Poll until status=\"completed\", then use result field"
-            ]
+            ],
+            "check_cache": f"curl {base_url}/cache/check?file_hash=<md5_hash>"
         },
         
         "endpoints": {
@@ -523,10 +779,12 @@ async def llm_usage_guide():
                 "description": "Upload PDF for conversion",
                 "params": {
                     "async_mode": "true = return task_id immediately, false = wait for result (may timeout)",
-                    "return_json": "true = return JSON, false = return plain text"
+                    "return_json": "true = return JSON, false = return plain text",
+                    "use_cache": "true = check content hash for deduplication (default), false = always process"
                 },
-                "example_sync": "curl -X POST http://host:9999/convert -F 'file=@doc.pdf' -o output.md",
-                "example_async": "curl -X POST 'http://host:9999/convert?async_mode=true' -F 'file=@large.pdf'"
+                "example_sync": f"curl -X POST {base_url}/convert -F 'file=@doc.pdf' -o output.md",
+                "example_async": f"curl -X POST '{base_url}/convert?async_mode=true' -F 'file=@large.pdf'",
+                "example_no_cache": f"curl -X POST '{base_url}/convert?use_cache=false' -F 'file=@doc.pdf'"
             },
             "/tasks/{task_id}": {
                 "method": "GET",
@@ -536,13 +794,25 @@ async def llm_usage_guide():
                     "progress": "Current progress description",
                     "result": "Markdown content (only when completed)",
                     "error": "Error message (only when failed)",
-                    "elapsed_seconds": "Processing time in seconds"
+                    "elapsed_seconds": "Processing time in seconds",
+                    "file_hash": "MD5 hash of file content"
                 }
             },
             "/tasks": {
                 "method": "GET",
                 "description": "List all tasks",
                 "params": {"status": "Filter by status", "limit": "Max results"}
+            },
+            "/cache/check": {
+                "method": "GET",
+                "description": "Check if a file with given hash has been processed",
+                "params": {"file_hash": "MD5 or SHA256 hash of file content"},
+                "returns": {
+                    "found": "true if file was previously processed",
+                    "task_id": "ID of the cached task",
+                    "status": "Task status",
+                    "result_available": "true if result is ready"
+                }
             },
             "/v1/chat/completions": {
                 "method": "POST",
@@ -556,31 +826,54 @@ async def llm_usage_guide():
             },
             "/health": {
                 "method": "GET",
-                "description": "Health check with task statistics"
+                "description": "Health check with task statistics and cache info"
             }
+        },
+        
+        "content_based_cache": {
+            "description": "Files are identified by MD5 hash of content, not filename",
+            "benefits": [
+                "Same file with different names returns cached result instantly",
+                "Duplicate uploads are automatically deduplicated",
+                "No wasted processing on identical files"
+            ],
+            "compute_hash": "md5sum file.pdf  # or use any MD5 tool",
+            "check_before_upload": f"curl {base_url}/cache/check?file_hash=<hash>  # Returns 404 if not cached"
         },
         
         "integration_examples": {
             "python_async": {
                 "description": "Python async upload with polling",
-                "code": '''
+                "code": f'''
 import requests
 import time
+import hashlib
 
-# 1. Upload PDF
+# Compute file hash first
 with open("large.pdf", "rb") as f:
-    resp = requests.post(
-        "http://localhost:9999/convert",
-        params={"async_mode": True},
-        files={"file": f}
-    )
-task_id = resp.json()["task_id"]
-print(f"Task created: {task_id}")
+    file_bytes = f.read()
+    file_hash = hashlib.md5(file_bytes).hexdigest()
 
-# 2. Poll for result
+# Check if already cached
+cache_check = requests.get(f"{base_url}/cache/check?file_hash={{file_hash}}")
+if cache_check.status_code == 200:
+    print("File already processed, getting cached result...")
+    task_id = cache_check.json()["task_id"]
+else:
+    # Upload PDF
+    with open("large.pdf", "rb") as f:
+        resp = requests.post(
+            "{base_url}/convert",
+            params={{"async_mode": True}},
+            files={{"file": f}}
+        )
+    task_id = resp.json()["task_id"]
+    print(f"Task created: {{task_id}}")
+
+# Poll for result
 while True:
-    status = requests.get(f"http://localhost:9999/tasks/{task_id}").json()
-    print(f"Status: {status['status']}, Progress: {status['progress']}")
+    status = requests.get(f"{base_url}/tasks/{{task_id}}").json()
+    print(f"Status: {{status['status']}}, Progress: {{status['progress']}}")
     
     if status["status"] == "completed":
         with open("output.md", "w") as f:
@@ -588,24 +881,35 @@ while True:
         print("Saved to output.md")
         break
     elif status["status"] == "failed":
-        print(f"Error: {status['error']}")
+        print(f"Error: {{status['error']}}")
         break
     
     time.sleep(10)  # Poll every 10 seconds
 '''
             },
             "curl_async": {
-                "description": "Bash/curl async workflow",
-                "code": '''
-# 1. Upload and get task_id
-TASK_ID=$(curl -s -X POST 'http://localhost:9999/convert?async_mode=true' \\
-  -F 'file=@large.pdf' | jq -r '.task_id')
-echo "Task ID: $TASK_ID"
+                "description": "Bash/curl async workflow with cache check",
+                "code": f'''
+# Compute file hash
+FILE_HASH=$(md5sum large.pdf | cut -d' ' -f1)
+echo "File hash: $FILE_HASH"
 
-# 2. Poll until completed
+# Check cache first
+CACHE_RESULT=$(curl -s "{base_url}/cache/check?file_hash=$FILE_HASH")
+if echo "$CACHE_RESULT" | jq -e '.found' > /dev/null 2>&1; then
+    echo "File already processed!"
+    TASK_ID=$(echo "$CACHE_RESULT" | jq -r '.task_id')
+else
+    # Upload and get task_id
+    TASK_ID=$(curl -s -X POST '{base_url}/convert?async_mode=true' \\
+      -F 'file=@large.pdf' | jq -r '.task_id')
+    echo "Task ID: $TASK_ID"
+fi
+
+# Poll until completed
 while true; do
-  STATUS=$(curl -s "http://localhost:9999/tasks/$TASK_ID")
-  echo "$STATUS" | jq -c '{status, progress}'
+  STATUS=$(curl -s "{base_url}/tasks/$TASK_ID")
+  echo "$STATUS" | jq -c '{{status, progress}}'
   
   if [ "$(echo "$STATUS" | jq -r '.status')" = "completed" ]; then
     echo "$STATUS" | jq -r '.result' > output.md
@@ -626,7 +930,9 @@ done
             "Large files (>10 pages) MUST use async_mode=true to avoid timeout",
             "Typical processing time: ~8 seconds per page",
             "Poll interval: 5-10 seconds recommended",
-            "Task results are retained until manually deleted",
+            "Task results are cached to disk and survive service restarts",
+            "Content-based deduplication: same file content returns cached result regardless of filename",
+            "Use /cache/check endpoint to verify if file was processed before uploading",
             "Supports Chinese and other non-English PDFs",
             "Tables are converted to Markdown tables",
             "Images are referenced as ![](_page_X_Picture_Y.jpeg)"
@@ -634,8 +940,9 @@ done
         
         "error_handling": {
             "timeout": "Use async_mode=true - sync mode may timeout for large files",
-            "task_not_found": "Task expired or invalid task_id",
-            "conversion_failed": "Check if PDF is corrupted or password-protected"
+            "task_not_found": "Task expired or invalid task_id (check cache_dir)",
+            "conversion_failed": "Check if PDF is corrupted or password-protected",
+            "cache_miss": "File not previously processed, upload required"
         }
     }
 
@@ -648,9 +955,16 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=9999, help="Port to bind to")
     args = parser.parse_args()
     
-    print(f"🚀 Starting PDF to Markdown API v2.0 on {args.host}:{args.port}")
+    # Set environment variables for other endpoints to use
+    os.environ["PDF2MD_HOST"] = args.host
+    os.environ["PDF2MD_PORT"] = str(args.port)
+    
+    print(f"🚀 Starting PDF to Markdown API v2.0.2 on {args.host}:{args.port}")
     print(f"📖 OpenAI-compatible: POST http://{args.host}:{args.port}/v1/chat/completions")
     print(f"📄 Direct upload: POST http://{args.host}:{args.port}/convert")
     print(f"⚡ Async mode: POST http://{args.host}:{args.port}/convert?async_mode=true")
+    print(f"💾 Cache check: GET http://{args.host}:{args.port}/cache/check?file_hash=<hash>")
     print(f"🤖 LLM usage guide: GET http://{args.host}:{args.port}/llm")
+    print(f"💾 Cache directory: {CACHE_DIR}")
+    print(f"🔍 Content-based deduplication: ENABLED (MD5)")
     uvicorn.run(app, host=args.host, port=args.port)

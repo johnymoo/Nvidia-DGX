@@ -12,11 +12,22 @@ services:
     volumes:
       # Mount HuggingFace cache to persist models
       - ~/.cache/huggingface:/root/.cache/huggingface
+      # Mount datalab cache for marker models
+      - ~/.cache/datalab:/root/.cache/datalab
       # Mount working directory for file access
       - ~/workspace:/workspace
     environment:
       - PYTHONUNBUFFERED=1
       - HF_HOME=/root/.cache/huggingface
+      - CUDA_VISIBLE_DEVICES=0
+      - PDF2MD_CACHE_DIR=/workspace/pdf2md_cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9999/health"]
