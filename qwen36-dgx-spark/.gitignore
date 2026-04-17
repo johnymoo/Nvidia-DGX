@@ -1,0 +1,26 @@
+# 环境配置
+.env
+*.env
+
+# 日志
+*.log
+/tmp/
+
+# 模型权重（不应提交到仓库）
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
