@@ -1,17 +1,31 @@
 #!/bin/bash
 # Qwen3.6-35B-A3B 推理速度与质量测试脚本
 # 支持 vLLM 和 llama.cpp 两种后端
+# 2026-04-22 更新: 添加英文 prompt 对比测试
 
 set -e
 
 API_URL="${API_URL:-http://localhost:8002/v1/chat/completions}"
 MODEL="${MODEL:-Qwen3.6-35B-A3B-UD-Q4_K_S}"
 
+# 检测后端类型
+if echo "$API_URL" | grep -q "8004"; then
+    BACKEND="vLLM"
+    PORT="8004"
+elif echo "$API_URL" | grep -q "8002"; then
+    BACKEND="llama.cpp"
+    PORT="8002"
+else
+    BACKEND="unknown"
+    PORT="unknown"
+fi
+
 echo "========================================"
 echo "Qwen3.6-35B-A3B 推理测试"
 echo "========================================"
 echo "  API: $API_URL"
 echo "  Model: $MODEL"
+echo "  Backend: $BACKEND (port $PORT)"
 echo ""
 
 # 辅助函数：发送请求并测量时间
@@ -20,8 +34,9 @@ benchmark_chat() {
     local max_tokens="$2"
     local label="$3"
     local temp="${4:-0.7}"
+    local lang="${5:-zh}"
 
-    echo "测试: $label (max_tokens=$max_tokens)"
+    echo "测试: $label (max_tokens=$max_tokens, lang=$lang)"
     local start end duration tokens speed
     start=$(date +%s.%N)
 
@@ -38,7 +53,13 @@ benchmark_chat() {
     end=$(date +%s.%N)
     duration=$(echo "$end - $start" | bc)
     tokens=$(echo "$response" | jq -r '.usage.completion_tokens // 0')
-    speed=$(echo "scale=1; if ($duration > 0) then $tokens / $duration else 0 end" | bc)
+    
+    # 修复速度计算
+    if (( $(echo "$duration > 0" | bc -l) )); then
+        speed=$(echo "scale=1; $tokens / $duration" | bc)
+    else
+        speed="0"
+    fi
 
     echo "  输出: ${tokens} tokens"
     echo "  时间: $(printf "%.2f" "$duration")s"
@@ -46,11 +67,17 @@ benchmark_chat() {
     echo ""
 }
 
-# 1. Token 速度测试
-echo "--- 1. Token 速度测试 ---"
-benchmark_chat "用50字介绍北京" 100 "短文本 (100 tokens)"
-benchmark_chat "写一篇500字的关于人工智能发展历史的文章" 500 "中文本 (500 tokens)"
-benchmark_chat "写一篇2000字的关于人工智能从图灵测试到GPT的发展历史详细文章" 1000 "长文本 (1000 tokens)"
+# 1. Token 速度测试 - 中文
+echo "--- 1. Token 速度测试 (中文) ---"
+benchmark_chat "用50字介绍北京" 100 "短文本 (100 tokens)" 0.7 zh
+benchmark_chat "写一篇500字的关于人工智能发展历史的文章" 500 "中文本 (500 tokens)" 0.7 zh
+benchmark_chat "写一篇2000字的关于人工智能从图灵测试到GPT的发展历史详细文章" 1000 "长文本 (1000 tokens)" 0.7 zh
+
+# 1b. Token 速度测试 - 英文
+echo "--- 1b. Token 速度测试 (英文) ---"
+benchmark_chat "Introduce Beijing in 50 words" 100 "Short (100 tokens)" 0.7 en
+benchmark_chat "Write a 500-word article about the history of AI development" 500 "Medium (500 tokens)" 0.7 en
+benchmark_chat "Write a 2000-word detailed article about AI history from Turing Test to GPT" 1000 "Long (1000 tokens)" 0.7 en
 
 # 2. 推理准确性测试 (经典问题)
 echo "--- 2. 推理准确性测试 ---"
@@ -71,11 +98,19 @@ ask_question() {
             \"temperature\": 0.1
         }")
 
-    local content
+    local content reasoning_content
     content=$(echo "$response" | jq -r '.choices[0].message.content // empty')
-    echo "  回答: ${content:0:100}..."
+    reasoning_content=$(echo "$response" | jq -r '.choices[0].message.reasoning_content // empty')
+    
+    # 合并 content 和 reasoning_content 用于检查
+    local full_content="${content}${reasoning_content}"
+    
+    echo "  content: ${content:0:80}..."
+    if [ -n "$reasoning_content" ]; then
+        echo "  reasoning: ${reasoning_content:0:80}..."
+    fi
 
-    if echo "$content" | grep -qi "$expected"; then
+    if echo "$full_content" | grep -qi "$expected"; then
         echo "  ✓ 通过"
     else
         echo "  ✗ 未通过 (期望包含: $expected)"

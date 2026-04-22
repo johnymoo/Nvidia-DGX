@@ -108,12 +108,14 @@ curl http://localhost:8004/v1/chat/completions \
 
 ### vLLM 性能概览
 
-| 指标 | 数值 |
-|------|------|
-| 单用户生成速度 | ~49 tok/s |
-| 50 并发总吞吐 | **468 tok/s** |
-| 250K 上下文 TTFT | ~0.54s (命中 prefix cache) |
-| 内存占用 (250K) | ~70 GB |
+| 指标 | 数值 | 备注 |
+|------|------|------|
+| 单用户生成速度 | ~49 tok/s | v0.16.1rc1, cu130-nightly |
+| 50 并发总吞吐 | **468 tok/s** | 多用户场景优势 |
+| 250K 上下文 TTFT | ~0.54s | 命中 prefix cache |
+| 内存占用 (250K) | ~70 GB | FP8 量化 |
+
+> **注意**: 单用户 ~49 tok/s 是使用 `benchmark.sh`（中文 prompt, max_tokens=100/500/1000）的测试结果。不同 prompt 和参数可能导致速度差异。
 
 ---
 
