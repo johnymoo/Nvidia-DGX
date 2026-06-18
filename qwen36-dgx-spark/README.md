@@ -2,9 +2,11 @@
 
 ## 概述
 
-本指南介绍如何在 NVIDIA DGX Spark (GB10) 上部署 Qwen3.6-35B-A3B 模型，对比 vLLM (FP8) 和 llama.cpp (Q4_K_S) 两种推理方案的性能与适用场景。
+本指南介绍如何在 NVIDIA DGX Spark (GB10) 上部署 Qwen3.6-35B-A3B 模型，对比 vLLM (FP8 / NVFP4) 和 llama.cpp (Q4_K_S) 多种推理方案的性能与适用场景。
 
 Qwen3.6-35B-A3B 是 Qwen 系列最新 MoE 模型，总参数量 35B，激活参数量仅 3B，支持 256K 原生上下文，具备 Tool use、Reasoning 和 Code generation 能力。
+
+> 2026-06-18 更新：新增 NVIDIA 官方 DGX Spark / ARM64 recipe 的 `Qwen3.6-35B-A3B-NVFP4` vLLM 部署与 FP8 对比 benchmark。详见 [NVFP4-BENCHMARK-RESULTS.md](./NVFP4-BENCHMARK-RESULTS.md)。
 
 ## 硬件环境
 
@@ -22,6 +24,7 @@ Qwen3.6-35B-A3B 是 Qwen 系列最新 MoE 模型，总参数量 35B，激活参�
 | 模型 | 大小 | 路径 | 格式 |
 |------|------|------|------|
 | Qwen3.6-35B-A3B-FP8 | ~35 GB | `~/models/Qwen3.6-35B-A3B-FP8` | Safetensors |
+| Qwen3.6-35B-A3B-NVFP4 | ~22 GB | `~/models/Qwen3.6-35B-A3B-NVFP4` | ModelOpt NVFP4 Safetensors |
 | Qwen3.6-35B-A3B-Q4_K_S | ~19.4 GB | `~/models/qwen36-q4ks/Qwen3.6-35B-A3B-UD-Q4_K_S.gguf` | GGUF |
 
 ### 模型下载
@@ -39,7 +42,50 @@ huggingface-cli download unsloth/Qwen3.6-35B-A3B-GGUF --local-dir ~/models/qwen3
 
 ---
 
-## 方案一：vLLM 部署 (FP8)
+## 方案一：vLLM 部署 (NVFP4, 官方 DGX Spark recipe)
+
+适合在 DGX Spark / GB10 上部署 NVIDIA ModelOpt NVFP4 checkpoint。该方案使用 ARM64 镜像 `vllm/vllm-openai:nightly-aarch64`，保持外部端口 `8004` 和 served model name `qwen3.6-35b-fp8`，以兼容已有客户端。
+
+### 快速启动
+
+```bash
+cd ~/project/nvidia-dgx/qwen36-dgx-spark
+
+docker compose -f docker-compose-vllm-nvfp4-nightly-aarch64.yml up -d
+
+curl http://localhost:8004/health
+curl http://localhost:8004/v1/models
+```
+
+### 关键参数
+
+| 参数 | 值/说明 |
+|------|---------|
+| 镜像 | `vllm/vllm-openai:nightly-aarch64` |
+| 模型目录 | `~/models/Qwen3.6-35B-A3B-NVFP4` |
+| `--served-model-name` | `qwen3.6-35b-fp8`，仅为兼容旧客户端 |
+| `--max-model-len` | `262144` |
+| `--gpu-memory-utilization` | `0.40`，官方 DGX Spark recipe 建议值 |
+| `--kv-cache-dtype` | `fp8` |
+| `--attention-backend` | `flashinfer` |
+| `--moe-backend` | `marlin` |
+| `--speculative-config` | MTP speculative decoding, 3 draft tokens |
+
+### NVFP4 benchmark 摘要
+
+| 测试 | 结果 |
+|------|------|
+| 16 项常规生成 benchmark | **152.1 tok/s** 平均，0 error |
+| vs 旧 8004 FP8 baseline | **+116.7%** 平均 tok/s |
+| vs PR200 FP8 | **+109.8%** 平均 tok/s |
+| 64K/128K/256K 长上下文正确性 | FP8 / NVFP4 均通过 |
+| 轻量质量 sanity suite | FP8 15/16，NVFP4 15/16 |
+
+完整数据见 [NVFP4-BENCHMARK-RESULTS.md](./NVFP4-BENCHMARK-RESULTS.md)。
+
+---
+
+## 方案二：vLLM 部署 (FP8)
 
 适合 **多用户并发** 场景，vLLM 的 continuous batching 在高并发下吞吐优异。
 
@@ -119,7 +165,7 @@ curl http://localhost:8004/v1/chat/completions \
 
 ---
 
-## 方案二：llama.cpp 部署 (Q4_K_S)
+## 方案三：llama.cpp 部署 (Q4_K_S)
 
 适合 **单用户高性能** 场景，部署简单、内存占用低、无需容器。
 

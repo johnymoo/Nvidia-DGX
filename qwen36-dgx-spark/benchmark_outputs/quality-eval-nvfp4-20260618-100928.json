@@ -1,0 +1,368 @@
+{
+  "timestamp": "2026-06-18T10:09:31",
+  "tag": "nvfp4",
+  "model": "qwen3.6-35b-fp8",
+  "endpoint": "http://localhost:8004",
+  "total": 16,
+  "passed": 15,
+  "accuracy": 0.9375,
+  "by_category": {
+    "math": {
+      "total": 3,
+      "passed": 3
+    },
+    "reasoning": {
+      "total": 4,
+      "passed": 4
+    },
+    "logic": {
+      "total": 2,
+      "passed": 2
+    },
+    "coding": {
+      "total": 2,
+      "passed": 2
+    },
+    "format": {
+      "total": 1,
+      "passed": 1
+    },
+    "knowledge": {
+      "total": 2,
+      "passed": 2
+    },
+    "long_retrieval": {
+      "total": 2,
+      "passed": 1
+    }
+  },
+  "results": [
+    {
+      "id": "arith_1",
+      "category": "math",
+      "ok": true,
+      "judge": "contains:907",
+      "expected": [
+        "907"
+      ],
+      "content": "907",
+      "content_preview": "907",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 32,
+        "total_tokens": 36,
+        "completion_tokens": 4,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.12460613995790482,
+      "error": null
+    },
+    {
+      "id": "arith_2",
+      "category": "math",
+      "ok": true,
+      "judge": "contains:15",
+      "expected": [
+        "15"
+      ],
+      "content": "15",
+      "content_preview": "15",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 37,
+        "total_tokens": 40,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.4518534280359745,
+      "error": null
+    },
+    {
+      "id": "arith_3",
+      "category": "math",
+      "ok": true,
+      "judge": "contains:60",
+      "expected": [
+        "60"
+      ],
+      "content": "60",
+      "content_preview": "60",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 42,
+        "total_tokens": 45,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.13956784270703793,
+      "error": null
+    },
+    {
+      "id": "riddle_1",
+      "category": "reasoning",
+      "ok": true,
+      "judge": "contains:9",
+      "expected": [
+        "9"
+      ],
+      "content": "9",
+      "content_preview": "9",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 38,
+        "total_tokens": 40,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.13302269391715527,
+      "error": null
+    },
+    {
+      "id": "riddle_2",
+      "category": "reasoning",
+      "ok": true,
+      "judge": "contains:5",
+      "expected": [
+        "5"
+      ],
+      "content": "5",
+      "content_preview": "5",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 45,
+        "total_tokens": 47,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.13562151044607162,
+      "error": null
+    },
+    {
+      "id": "riddle_3",
+      "category": "reasoning",
+      "ok": true,
+      "judge": "contains:0",
+      "expected": [
+        "0"
+      ],
+      "content": "0",
+      "content_preview": "0",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 41,
+        "total_tokens": 43,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.13642182759940624,
+      "error": null
+    },
+    {
+      "id": "bat_ball",
+      "category": "reasoning",
+      "ok": true,
+      "judge": "contains:0.05",
+      "expected": [
+        "0.05",
+        "5 cents",
+        "$0.05"
+      ],
+      "content": "$0.05",
+      "content_preview": "$0.05",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 50,
+        "total_tokens": 56,
+        "completion_tokens": 6,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.16867252439260483,
+      "error": null
+    },
+    {
+      "id": "logic_1",
+      "category": "logic",
+      "ok": true,
+      "judge": "contains:yes",
+      "expected": [
+        "yes"
+      ],
+      "content": "yes",
+      "content_preview": "yes",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 51,
+        "total_tokens": 53,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.1354137286543846,
+      "error": null
+    },
+    {
+      "id": "logic_2",
+      "category": "logic",
+      "ok": true,
+      "judge": "contains:no",
+      "expected": [
+        "no"
+      ],
+      "content": "No",
+      "content_preview": "No",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 45,
+        "total_tokens": 47,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.12343581393361092,
+      "error": null
+    },
+    {
+      "id": "alg_1",
+      "category": "coding",
+      "ok": true,
+      "judge": "contains:O(n log n)",
+      "expected": [
+        "O(n log n)",
+        "O(N log N)",
+        "n log n"
+      ],
+      "content": "O(n log n)",
+      "content_preview": "O(n log n)",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 38,
+        "total_tokens": 44,
+        "completion_tokens": 6,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.1492894496768713,
+      "error": null
+    },
+    {
+      "id": "python_1",
+      "category": "coding",
+      "ok": true,
+      "judge": "contains:[3, 2, 1]",
+      "expected": [
+        "[3, 2, 1]",
+        "[3,2,1]"
+      ],
+      "content": "[3, 2, 1]",
+      "content_preview": "[3, 2, 1]",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 37,
+        "total_tokens": 47,
+        "completion_tokens": 10,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.17836515419185162,
+      "error": null
+    },
+    {
+      "id": "json_1",
+      "category": "format",
+      "ok": true,
+      "judge": "json_exact",
+      "expected": [
+        "json_answer_42_ok_true"
+      ],
+      "content": "{\"answer\": 42, \"ok\": true}",
+      "content_preview": "{\"answer\": 42, \"ok\": true}",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 52,
+        "completion_tokens": 13,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.21073011681437492,
+      "error": null
+    },
+    {
+      "id": "zh_knowledge",
+      "category": "knowledge",
+      "ok": true,
+      "judge": "contains:指南针",
+      "expected": [
+        "指南针"
+      ],
+      "content": "指南针",
+      "content_preview": "指南针",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 31,
+        "total_tokens": 34,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.11864007636904716,
+      "error": null
+    },
+    {
+      "id": "en_knowledge",
+      "category": "knowledge",
+      "ok": true,
+      "judge": "contains:carbon dioxide",
+      "expected": [
+        "carbon dioxide",
+        "CO2",
+        "carbon-dioxide"
+      ],
+      "content": "Carbon dioxide",
+      "content_preview": "Carbon dioxide",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 28,
+        "total_tokens": 31,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.1176790464669466,
+      "error": null
+    },
+    {
+      "id": "long_retrieve_small",
+      "category": "long_retrieval",
+      "ok": true,
+      "judge": "contains:7319",
+      "expected": [
+        "7319"
+      ],
+      "content": "7319",
+      "content_preview": "7319",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 2434,
+        "total_tokens": 2439,
+        "completion_tokens": 5,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.46303416043519974,
+      "error": null
+    },
+    {
+      "id": "long_two_fact",
+      "category": "long_retrieval",
+      "ok": false,
+      "judge": "no_expected_substring",
+      "expected": [
+        "4037"
+      ],
+      "content": "4577",
+      "content_preview": "4577",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 4041,
+        "total_tokens": 4046,
+        "completion_tokens": 5,
+        "prompt_tokens_details": null
+      },
+      "wall_s": 0.7311328426003456,
+      "error": null
+    }
+  ]
+}
