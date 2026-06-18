@@ -1,0 +1,272 @@
+#!/usr/bin/env python3
+"""End-to-end Xiaoyuzhou podcast ASR pipeline for GB10.
+
+Given a Xiaoyuzhou episode URL, this script creates a standard workspace,
+downloads audio, runs SenseVoice CPU/GPU benchmark and full CUDA transcription,
+summarizes the transcript with the local vLLM Qwen endpoint on port 8004, and
+publishes the result to the SenseVoice static website.
+"""
+from __future__ import annotations
+
+import argparse
+import html
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+PODCAST_ROOT = Path(os.environ.get("PODCAST_ROOT", "~/podcast")).expanduser()
+ASR_TEMPLATE = Path(os.environ.get("PODCAST_ASR_TEMPLATE", str(PODCAST_ROOT / "asr_pipeline_template.py"))).expanduser()
+SUMMARY_SCRIPT = Path(os.environ.get("PODCAST_SUMMARY_SCRIPT", str(PODCAST_ROOT / "generate_podcast_summary.py"))).expanduser()
+PUBLISH_SCRIPT = Path(os.environ.get("PODCAST_PUBLISH_SCRIPT", str(PODCAST_ROOT / "publish_podcast_asr_site.py"))).expanduser()
+DEFAULT_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_MODEL_DIR", "~/deployments/sensevoice/models/SenseVoiceSmall")).expanduser())
+DEFAULT_PUNC_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_PUNC_MODEL_DIR", "~/deployments/sensevoice/models/punc-ct-transformer")).expanduser())
+DEFAULT_VAD_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_VAD_MODEL_DIR", "~/deployments/sensevoice-docker/modelscope-cache/hub/models/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch")).expanduser())
+DEFAULT_LLM_API_BASE = "http://127.0.0.1:8004/v1"
+DEFAULT_LLM_MODEL = "qwen3.6-35b-fp8"
+DEFAULT_SITE_BASE_LAN = os.environ.get("PODCAST_ASR_SITE_BASE", "http://127.0.0.1:8020/static/podcast-asr")
+
+
+def now_stamp() -> str:
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def run(cmd: list[str], log_path: Path | None = None, cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
+    started = datetime.now().isoformat(timespec="seconds")
+    print("$", " ".join(cmd), flush=True)
+    proc = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=str(cwd) if cwd else None)
+    if log_path:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(f"\n## {started}\n$ {' '.join(cmd)}\n\n")
+            f.write(proc.stdout or "")
+            f.write(f"\n[exit_code={proc.returncode}]\n")
+    if proc.stdout:
+        print(proc.stdout[-4000:], flush=True)
+    if check and proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd, output=proc.stdout)
+    return proc
+
+
+def parse_episode_id(url_or_id: str) -> str:
+    m = re.search(r"/episode/([0-9a-fA-F]+)", url_or_id)
+    if m:
+        return m.group(1)
+    m = re.fullmatch(r"[0-9a-fA-F]{12,}", url_or_id.strip())
+    if m:
+        return m.group(0)
+    raise ValueError(f"Cannot parse Xiaoyuzhou episode id from: {url_or_id}")
+
+
+def sanitize_slug(text: str, fallback: str) -> str:
+    text = (text or "").lower()
+    text = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
+    if not text or re.fullmatch(r"[\u4e00-\u9fff-]+", text):
+        return fallback
+    return text[:88].strip("-") or fallback
+
+
+def decode_web_text(s: str) -> str:
+    s = html.unescape(s or "")
+    s = s.replace("\\/", "/")
+    try:
+        s = s.encode("utf-8").decode("unicode_escape") if "\\u" in s else s
+    except Exception:
+        pass
+    return s
+
+
+def fetch_public_metadata(url: str) -> dict[str, str]:
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        page = resp.read().decode("utf-8", errors="ignore")
+    decoded = decode_web_text(page)
+    audio_url = ""
+    for pat in [
+        r"https://media\.xyzcdn\.net/[^\"'<>\s]+?\.(?:m4a|mp3)(?:\?[^\"'<>\s]+)?",
+        r'"(?:url|audioUrl|mediaUrl)"\s*:\s*"(https://[^"<>]+?\.(?:m4a|mp3)(?:\?[^"<>]+)?)"',
+    ]:
+        m = re.search(pat, decoded)
+        if m:
+            audio_url = m.group(1) if m.lastindex else m.group(0)
+            audio_url = decode_web_text(audio_url)
+            break
+    title = ""
+    for pat in [r'"title"\s*:\s*"([^"]{5,200})"', r"<title>(.*?)</title>", r'<meta property="og:title" content="([^"]+)"']:
+        m = re.search(pat, decoded, re.S)
+        if m:
+            title = re.sub(r"\s+", " ", decode_web_text(m.group(1))).strip()
+            title = re.sub(r"\s*\|\s*小宇宙.*$", "", title).strip()
+            break
+    return {"title": title, "audio_url": audio_url}
+
+
+def try_opencli_metadata_and_download(episode_id: str, work_dir: Path) -> dict[str, str]:
+    """Optional authenticated fallback via local opencli; returns paths if successful."""
+    meta: dict[str, str] = {}
+    if not shutil.which("opencli"):
+        return meta
+    try:
+        out = subprocess.check_output(["opencli", "xiaoyuzhou", "episode", episode_id, "-f", "json"], text=True, timeout=60)
+        data = json.loads(out)
+        row = data[0] if isinstance(data, list) and data else data
+        if isinstance(row, dict):
+            meta["title"] = str(row.get("title") or "")
+            meta["podcast"] = str(row.get("podcast") or "")
+    except Exception:
+        pass
+    download_dir = work_dir / "opencli-download"
+    try:
+        subprocess.run(["opencli", "xiaoyuzhou", "download", episode_id, "--output", str(download_dir)], check=True, timeout=900)
+        files = sorted(download_dir.glob(f"{episode_id}/**/*"), key=lambda p: p.stat().st_mtime if p.is_file() else 0, reverse=True)
+        media = [p for p in files if p.is_file() and p.suffix.lower() in {".m4a", ".mp3", ".wav"}]
+        if media:
+            meta["downloaded_audio"] = str(media[0])
+    except Exception:
+        pass
+    return meta
+
+
+def download_audio(audio_url: str, dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists() and dest.stat().st_size > 1024 * 1024:
+        print(f"audio exists: {dest}", flush=True)
+        return
+    run(["curl", "-L", "--fail", "--retry", "3", "--connect-timeout", "20", "-C", "-", "-o", str(dest), audio_url])
+
+
+def write_asr_pipeline(work_dir: Path, episode_id: str, episode_url: str, title: str, args: argparse.Namespace) -> Path:
+    template = ASR_TEMPLATE.read_text(encoding="utf-8")
+    replacements = {
+        "__WORK_DIR__": str(work_dir),
+        "__MODEL_DIR__": args.model_dir,
+        "__PUNC_MODEL_DIR__": args.punc_model_dir,
+        "__VAD_MODEL_DIR__": args.vad_model_dir,
+        "__EPISODE_ID__": episode_id,
+        "__EPISODE_URL__": episode_url,
+        "__EPISODE_TITLE__": title,
+    }
+    for key, value in replacements.items():
+        template = template.replace(json.dumps(key)[1:-1], json.dumps(value, ensure_ascii=False)[1:-1])
+    path = work_dir / "asr_pipeline.py"
+    path.write_text(template, encoding="utf-8")
+    return path
+
+
+def zip_outputs(work_dir: Path, episode_id: str) -> Path:
+    out = work_dir / "output"
+    zip_path = out / f"xiaoyuzhou_{episode_id}_asr_results.zip"
+    candidates = []
+    for pattern in ["transcript_*.md", "transcript_*.txt", "transcript_*.srt", "transcription_*.json", "benchmark_cpu_gpu_*.json", "manifest.json", "podcast_summary.*", "site_meta.json"]:
+        candidates.extend(out.glob(pattern))
+    if not candidates:
+        return zip_path
+    rels = [str(p.relative_to(work_dir)) for p in sorted(set(candidates))]
+    run(["zip", "-9", "-j", str(zip_path)] + [str(work_dir / r) for r in rels], cwd=work_dir, check=True)
+    return zip_path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("url", help="Xiaoyuzhou episode URL or episode id")
+    parser.add_argument("--work-root", type=Path, default=PODCAST_ROOT)
+    parser.add_argument("--title", default="", help="Override title if public metadata extraction fails")
+    parser.add_argument("--audio-url", default="", help="Override direct m4a/mp3 URL")
+    parser.add_argument("--slug", default="", help="Static website slug override")
+    parser.add_argument("--language", default="zh")
+    parser.add_argument("--chunk-seconds", type=float, default=300.0)
+    parser.add_argument("--overlap-seconds", type=float, default=5.0)
+    parser.add_argument("--benchmark-start", type=float, default=600.0)
+    parser.add_argument("--benchmark-seconds", type=float, default=300.0)
+    parser.add_argument("--skip-benchmark", action="store_true")
+    parser.add_argument("--skip-asr-if-exists", action="store_true", default=True)
+    parser.add_argument("--force-asr", action="store_true")
+    parser.add_argument("--force-summary", action="store_true")
+    parser.add_argument("--model-dir", default=DEFAULT_MODEL_DIR)
+    parser.add_argument("--punc-model-dir", default=DEFAULT_PUNC_MODEL_DIR)
+    parser.add_argument("--vad-model-dir", default=DEFAULT_VAD_MODEL_DIR)
+    parser.add_argument("--llm-api-base", default=DEFAULT_LLM_API_BASE)
+    parser.add_argument("--llm-model", default=DEFAULT_LLM_MODEL)
+    args = parser.parse_args()
+
+    episode_id = parse_episode_id(args.url)
+    episode_url = args.url if args.url.startswith("http") else f"https://www.xiaoyuzhoufm.com/episode/{episode_id}"
+    work_dir = args.work_root / f"xiaoyuzhou_{episode_id}"
+    for d in ["input", "audio", "chunks", "transcripts", "output", "logs"]:
+        (work_dir / d).mkdir(parents=True, exist_ok=True)
+
+    metadata: dict[str, Any] = {"episode_id": episode_id, "url": episode_url, "created_at": datetime.now().isoformat(timespec="seconds")}
+    if args.audio_url or args.title:
+        metadata.update({"title": args.title, "audio_url": args.audio_url})
+    else:
+        try:
+            metadata.update(fetch_public_metadata(episode_url))
+        except Exception as e:
+            metadata["public_metadata_error"] = repr(e)
+    if not metadata.get("audio_url"):
+        opencli_meta = try_opencli_metadata_and_download(episode_id, work_dir)
+        metadata.update({k: v for k, v in opencli_meta.items() if v})
+    title = args.title or metadata.get("title") or f"Xiaoyuzhou episode {episode_id}"
+    metadata["title"] = title
+
+    input_audio = work_dir / "input" / "episode.m4a"
+    if metadata.get("downloaded_audio"):
+        src = Path(metadata["downloaded_audio"])
+        if src.exists() and not input_audio.exists():
+            shutil.copy2(src, input_audio)
+    elif metadata.get("audio_url"):
+        download_audio(str(metadata["audio_url"]), input_audio)
+    elif not input_audio.exists():
+        raise RuntimeError("No audio URL found. Pass --audio-url or configure opencli Xiaoyuzhou credentials.")
+
+    slug = args.slug or sanitize_slug(title, f"xiaoyuzhou-{episode_id}")
+    if episode_id == "6a2be5da43a22a695582ad20" and not args.slug:
+        slug = "xiaoyuzhou-spacex-asr"
+    site_meta = {"slug": slug, "series": "xiaoyuzhou", "tags": ["小宇宙", "ASR", "SenseVoice", "GPU"]}
+    (work_dir / "output" / "site_meta.json").write_text(json.dumps(site_meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    (work_dir / "output" / "episode_metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    pipeline = write_asr_pipeline(work_dir, episode_id, episode_url, title, args)
+    log_prefix = work_dir / "logs" / f"run_{now_stamp()}"
+    transcription = work_dir / "output" / "transcription_cuda.json"
+    if args.force_asr or not (args.skip_asr_if_exists and transcription.exists()):
+        run(["python3.12", str(pipeline), "prepare", "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)], log_prefix.with_name(log_prefix.name + "_prepare.log"))
+        if not args.skip_benchmark:
+            run(["python3.12", str(pipeline), "benchmark", "--devices", "cpu,cuda", "--start", str(args.benchmark_start), "--seconds", str(args.benchmark_seconds), "--language", args.language], log_prefix.with_name(log_prefix.name + "_benchmark.log"))
+        run(["python3.12", str(pipeline), "transcribe", "--device", "cuda", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)] + (["--force"] if args.force_asr else []), log_prefix.with_name(log_prefix.name + "_transcribe.log"))
+    else:
+        print(f"transcription exists, skipping ASR: {transcription}", flush=True)
+
+    summary_cmd = ["python3.12", str(SUMMARY_SCRIPT), str(transcription), "--api-base", args.llm_api_base, "--model", args.llm_model]
+    if args.force_summary:
+        summary_cmd.append("--force")
+    run(summary_cmd, log_prefix.with_name(log_prefix.name + "_summary.log"))
+    zip_outputs(work_dir, episode_id)
+    pub = run(["python3.12", str(PUBLISH_SCRIPT)], log_prefix.with_name(log_prefix.name + "_publish.log"))
+
+    result = {
+        "episode_id": episode_id,
+        "title": title,
+        "work_dir": str(work_dir),
+        "transcription": str(transcription),
+        "summary_json": str(work_dir / "output" / "podcast_summary.json"),
+        "summary_markdown": str(work_dir / "output" / "podcast_summary.md"),
+        "site_report": f"{DEFAULT_SITE_BASE_LAN}/{slug}/index.html",
+        "site_full_text": f"{DEFAULT_SITE_BASE_LAN}/{slug}/full.html",
+        "site_index": f"{DEFAULT_SITE_BASE_LAN}/index.html",
+        "publisher_output": pub.stdout,
+    }
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
