@@ -18,6 +18,7 @@
 | 模型 | 路径 | 大小 | 格式 | 说明 |
 |------|------|------|------|------|
 | Qwen3.6-35B-A3B-FP8 | `~/models/Qwen3.6-35B-A3B-FP8` | ~35 GB | Safetensors | 官方 FP8 量化 |
+| Qwen3.6-35B-A3B-NVFP4 | `~/models/Qwen3.6-35B-A3B-NVFP4` | ~22 GB | ModelOpt Safetensors | NVIDIA ModelOpt NVFP4 量化，DGX Spark recipe |
 | Qwen3.6-35B-A3B-Q4_K_S | `~/models/qwen36-q4ks/Qwen3.6-35B-A3B-UD-Q4_K_S.gguf` | ~19.4 GB | GGUF | Unsloth 量化 |
 
 ### 模型架构特点
@@ -35,7 +36,8 @@
 | 服务 | 端口 | 框架 | 格式 | 上下文 | 说明 |
 |------|------|------|------|--------|------|
 | llama.cpp (Qwen3.6) | 8002 | llama.cpp | Q4_K_S GGUF | 128K/256K | 单用户高性能 |
-| vLLM (Qwen3.6-FP8) | 8004 | vLLM | FP8 | 262K | 多用户并发 |
+| vLLM (Qwen3.6-FP8) | 8004 | vLLM | FP8 | 262K | 多用户并发基线 |
+| vLLM (Qwen3.6-NVFP4) | 8004 | vLLM | NVFP4 + FP8 KV | 262K | 官方 DGX Spark ARM64 recipe，served name 兼容 `qwen3.6-35b-fp8` |
 
 ## 性能基准
 
@@ -87,6 +89,29 @@
 | 250K | 0.54s | ~34 t/s |
 
 *注: TTFT 较低是因为重复句子命中了 prefix caching。首次 250K prefill 约 ~10s (24,978 t/s)。*
+
+### vLLM (NVFP4, official DGX Spark ARM64 recipe)
+
+| 指标 | NVFP4 | 对比 |
+|------|------:|------|
+| 常规 16 项平均生成速度 | **152.1 tok/s** | vs 旧 FP8 baseline +116.7% |
+| 常规 16 项中位生成速度 | **159.2 tok/s** | vs PR200 FP8 +109.8% avg |
+| 64K 长上下文 TTFT | 16.25s | FP8 16.56s |
+| 128K 长上下文 TTFT | 47.58s | FP8 45.37s |
+| 256K 长上下文 TTFT | 150.34s | FP8 141.33s |
+| 64K decode TPS | **104.2 tok/s** | FP8 46.7 tok/s |
+| 128K decode TPS | **89.7 tok/s** | FP8 41.0 tok/s |
+| 256K decode TPS | **70.4 tok/s** | FP8 34.3 tok/s |
+| 轻量质量 sanity suite | 15/16 | FP8 同为 15/16 |
+
+详见 [NVFP4-BENCHMARK-RESULTS.md](./NVFP4-BENCHMARK-RESULTS.md)。
+
+**当前已验证 compose**:
+
+```bash
+cd ~/project/nvidia-dgx/qwen36-dgx-spark
+docker compose -f docker-compose-vllm-nvfp4-nightly-aarch64.yml up -d
+```
 
 **并发测试** (RAG 风格短 prompt, 200 token 输出):
 

@@ -1,0 +1,119 @@
+{
+  "timestamp": "2026-06-18T09:37:46",
+  "model": "qwen3.6-35b-fp8",
+  "endpoint": "http://localhost:8004/v1/chat/completions",
+  "method": "OpenAI-compatible streaming; client TTFT = first non-empty SSE delta; server metrics = Prometheus histogram delta before/after each sequential request.",
+  "tests": [
+    {
+      "label": "64K",
+      "target_prompt_tokens": 65536,
+      "actual_prompt_tokens_tokenize": 65507,
+      "usage_prompt_tokens": 65509,
+      "max_tokens": 256,
+      "expected_answer": 4037,
+      "answer_contains_expected": true,
+      "start": "2026-06-18T09:34:00",
+      "end": "2026-06-18T09:34:17",
+      "finish_reason": "stop",
+      "client": {
+        "wall_s": 17.16860429942608,
+        "first_event_s": 16.247223751619458,
+        "ttft_first_nonempty_s": 16.247284803539515,
+        "decode_s_first_to_last_token": 0.9212292451411486,
+        "avg_tps_completion_over_client_decode": 104.20858923697229,
+        "raw_events": 33
+      },
+      "tokens": {
+        "usage_completion_tokens": 96,
+        "metrics_prompt_tokens_delta": 65509.0,
+        "metrics_generation_tokens_delta": 96.0
+      },
+      "server_metrics_delta": {
+        "ttft_s": 16.210716485977173,
+        "e2e_latency_s": 17.16376233100891,
+        "queue_s": 2.8302893042564392e-05,
+        "inference_s": 17.06276978366077,
+        "prefill_s": 16.10948838852346,
+        "decode_s": 0.95328139513731,
+        "avg_tps_generation_over_decode": 100.70478715906569,
+        "avg_tps_generation_over_e2e": 5.59317928951752
+      },
+      "content_preview": "首先，我从提示的开头部分提取了事实 A=137，并从长上下文结束后的末尾部分提取了事实 B=29。接着，我将这两个数值代入给定的数学公式 A * B + 64 中进行计算。具体步骤为 137 乘以 29 得到 3973，再加上 64，最终得出结果 4037。\n\n最终答案是 4037。",
+      "interesting_logs": "(APIServer pid=1) INFO:     172.31.0.1:55650 - \"GET /metrics HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:55658 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:54366 - \"GET /metrics HTTP/1.1\" 200 OK"
+    },
+    {
+      "label": "128K",
+      "target_prompt_tokens": 131072,
+      "actual_prompt_tokens_tokenize": 131064,
+      "usage_prompt_tokens": 131066,
+      "max_tokens": 256,
+      "expected_answer": 4101,
+      "answer_contains_expected": true,
+      "start": "2026-06-18T09:34:20",
+      "end": "2026-06-18T09:35:08",
+      "finish_reason": "stop",
+      "client": {
+        "wall_s": 48.62337320484221,
+        "first_event_s": 47.574991412460804,
+        "ttft_first_nonempty_s": 47.575087904930115,
+        "decode_s_first_to_last_token": 1.0482034794986248,
+        "avg_tps_completion_over_client_decode": 89.67724477022529,
+        "raw_events": 34
+      },
+      "tokens": {
+        "usage_completion_tokens": 94,
+        "metrics_prompt_tokens_delta": 131066.0,
+        "metrics_generation_tokens_delta": 94.0
+      },
+      "server_metrics_delta": {
+        "ttft_s": 47.509597063064575,
+        "e2e_latency_s": 48.61708688735962,
+        "queue_s": 1.556798815727234e-05,
+        "inference_s": 48.421779833734035,
+        "prefill_s": 47.3134505469352,
+        "decode_s": 1.1083292867988348,
+        "avg_tps_generation_over_decode": 84.81233972576716,
+        "avg_tps_generation_over_e2e": 1.9334766029438897
+      },
+      "content_preview": "首先，我从提示的开头部分提取了事实 A=137，并从长上下文结束后的末尾部分提取了事实 B=29。接着，我将这两个数值代入给定的数学公式 A * B + 128 中进行计算。具体步骤为 137 乘以 29 得到 3973，再加上 128，最终得出结果 4101。\n\n4101",
+      "interesting_logs": "(APIServer pid=1) INFO:     172.31.0.1:55982 - \"GET /metrics HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:55984 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO 06-18 01:34:20 [loggers.py:273] Engine 000: Avg prompt throughput: 6550.7 tokens/s, Avg generation throughput: 9.6 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 70.0%\n(APIServer pid=1) INFO 06-18 01:34:20 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 3.17, Accepted throughput: 0.03 tokens/s, Drafted throughput: 0.05 tokens/s, Accepted: 65 tokens, Drafted: 90 tokens, Per-position acceptance rate: 0.867, 0.767, 0.533, Avg Draft acceptance rate: 72.2%\n(APIServer pid=1) INFO:     127.0.0.1:40442 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO 06-18 01:34:30 [loggers.py:273] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 2.2%, Prefix cache hit rate: 59.1%\n(APIServer pid=1) INFO:     127.0.0.1:37978 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:57476 - \"GET /metrics HTTP/1.1\" 200 OK"
+    },
+    {
+      "label": "256K",
+      "target_prompt_tokens": 256000,
+      "actual_prompt_tokens_tokenize": 255979,
+      "usage_prompt_tokens": 255981,
+      "max_tokens": 256,
+      "expected_answer": 4229,
+      "answer_contains_expected": true,
+      "start": "2026-06-18T09:35:15",
+      "end": "2026-06-18T09:37:46",
+      "finish_reason": "stop",
+      "client": {
+        "wall_s": 151.5191193651408,
+        "first_event_s": 150.33981844596565,
+        "ttft_first_nonempty_s": 150.33988885581493,
+        "decode_s_first_to_last_token": 1.1791372653096914,
+        "avg_tps_completion_over_client_decode": 70.390447695842,
+        "raw_events": 31
+      },
+      "tokens": {
+        "usage_completion_tokens": 83,
+        "metrics_prompt_tokens_delta": 255981.0,
+        "metrics_generation_tokens_delta": 83.0
+      },
+      "server_metrics_delta": {
+        "ttft_s": 150.2010054588318,
+        "e2e_latency_s": 151.51124930381775,
+        "queue_s": 2.814270555973053e-05,
+        "inference_s": 151.10242177918553,
+        "prefill_s": 149.79077059216797,
+        "decode_s": 1.31165118701756,
+        "avg_tps_generation_over_decode": 63.27901870673855,
+        "avg_tps_generation_over_e2e": 0.5478141087303976
+      },
+      "content_preview": "首先，我从长上下文的最开头提取到事实 A=137。接着，我扫描至长上下文的末尾，提取到事实 B=29。最后，我将这两个数值代入公式 A * B + 256 进行计算，即 137 * 29 + 256，得出最终结果 4229。\n\n4229",
+      "interesting_logs": "(APIServer pid=1) INFO:     172.31.0.1:46486 - \"GET /metrics HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:46496 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO 06-18 01:35:20 [loggers.py:273] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 1.6%, Prefix cache hit rate: 45.3%\n(APIServer pid=1) INFO:     127.0.0.1:48528 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     127.0.0.1:56124 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     127.0.0.1:51948 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     127.0.0.1:43334 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     127.0.0.1:38748 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:47530 - \"GET /health HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:47540 - \"POST /tokenize HTTP/1.1\" 200 OK\n(APIServer pid=1) INFO:     172.31.0.1:39858 - \"GET /metrics HTTP/1.1\" 200 OK"
+    }
+  ]
+}
