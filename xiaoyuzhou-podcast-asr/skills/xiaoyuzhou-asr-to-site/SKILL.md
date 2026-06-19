@@ -142,6 +142,14 @@ Run or rely on the orchestrator:
 python3.12 $PODCAST_ROOT/publish_podcast_asr_site.py
 ```
 
+On the GB10 SenseVoice server, the user-facing root `/` should redirect to the new studio page `/static/podcast-asr/index.html`; the old single-file upload UI is kept at `/legacy`. Verify this route relationship after web-server changes:
+
+```bash
+curl -sI http://127.0.0.1:8020/
+curl -L http://127.0.0.1:8020/ | grep 'Podcast ASR Studio'
+curl -L http://127.0.0.1:8020/legacy | grep '播客转写'
+```
+
 Published URLs:
 
 ```text
@@ -205,6 +213,7 @@ See `references/repo-packaging.md` for the concrete sanitization checklist, stag
 
 See `references/asr-recovery-and-title-cleanup.md` for the concrete retry and metadata repair pattern.
 See `references/site-redesign-and-page-context-implementation.md` for the implemented site IA, page-context extraction, summary prompt integration, and verification pattern.
+See `references/wiki-export-and-ui-polish.md` for LLM Wiki export details and the compact hero-metrics UI correction.
 
 - If the orchestrator completes but `transcription_cuda.json` reports failed chunks, do **not** treat the website as final. Inspect `summary.ok_chunks` / `summary.failed_chunks` and rerun the per-episode pipeline with `--force`:
   ```bash
