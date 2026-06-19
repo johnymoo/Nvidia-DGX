@@ -20,7 +20,8 @@ Default expectation: do the full pipeline, not just a plan:
 5. Transcribe the complete episode on GPU/CUDA.
 6. Generate a structured Chinese summary with local vLLM on `localhost:8004`.
 7. Publish report, full transcript, summary, and downloads to the SenseVoice static site.
-8. Verify HTTP URLs and report the links.
+8. Export the final LLM summary into the LLM Wiki at `$WIKI_PATH`.
+9. Verify HTTP URLs and report the links.
 
 ## Primary command
 
@@ -45,6 +46,7 @@ The script is resumable. If `output/transcription_cuda.json` already exists, it 
 $PODCAST_ROOT/xiaoyuzhou_asr_to_site.py       # end-to-end orchestrator
 $PODCAST_ROOT/asr_pipeline_template.py        # per-episode SenseVoice pipeline template
 $PODCAST_ROOT/generate_podcast_summary.py     # Qwen/vLLM summary generator
+$PODCAST_ROOT/export_podcast_summary_to_wiki.py # LLM Wiki exporter
 $PODCAST_ROOT/publish_podcast_asr_site.py     # static website publisher
 $SENSEVOICE_STATIC_ROOT/podcast-asr/ # published site
 ```
@@ -113,6 +115,25 @@ The output JSON must include:
 - `caveats` — ASR/专名不确定处
 - `tldr` — 网站索引卡片摘要
 
+## LLM Wiki export
+
+After `podcast_summary.json` / `podcast_summary.md` are generated, export the final LLM summary into the local LLM Wiki:
+
+```bash
+python3.12 $PODCAST_ROOT/export_podcast_summary_to_wiki.py \
+  $PODCAST_ROOT/xiaoyuzhou_<episode-id>/output/podcast_summary.json \
+  --wiki-path $WIKI_PATH
+```
+
+The orchestrator does this automatically unless `--skip-wiki-export` is passed. The exporter writes:
+
+```text
+$WIKI_PATH/raw/podcast-summaries/podcast-<slug>-llm-summary.md
+$WIKI_PATH/queries/podcast-<slug>.md
+```
+
+It also updates `$WIKI_PATH/index.md` under `## Summaries` and appends to `$WIKI_PATH/log.md`. The wiki page uses existing taxonomy tags (`agent`, `inference`, `prediction`, `company`, `code-study`) and links out to at least two related pages such as `[[codex]]`, `[[how-openai-uses-codex]]`, `[[opencode]]`, and `[[cc-connect]]`.
+
 ## Website publication
 
 Run or rely on the orchestrator:
@@ -150,6 +171,7 @@ When improving or rebuilding the podcast ASR website, use a coherent product str
    - LLM summary grounded in page context + ASR;
    - run metrics and CPU/GPU benchmark;
    - full transcript preview/search and downloads.
+   - Keep hero metrics visually secondary: compact 2×2 or inline cards, smaller numerals, weaker background/border, and no tall “pillar” cards that compete with the episode title/summary.
 3. **Prototype before replacement** — for larger UX changes, publish a disposable prototype under a separate static path such as `/static/podcast-asr-prototype/` and show the user before replacing production pages.
 4. **0.0.0.0 verification** — when the user asks to expose it, verify the actual listener (`ss -ltnp`) and HTTP 200 via both localhost and the LAN URL. Do not equate a localhost-only check with LAN availability.
 
@@ -179,9 +201,10 @@ When asked to push this pipeline into a public/team repo, package the class-leve
 
 See `references/repo-packaging.md` for the concrete sanitization checklist, staged-scan commands, and PR validation sequence.
 
-## Recovery and post-run cleanup
+## Recovery, redesign, and post-run cleanup
 
 See `references/asr-recovery-and-title-cleanup.md` for the concrete retry and metadata repair pattern.
+See `references/site-redesign-and-page-context-implementation.md` for the implemented site IA, page-context extraction, summary prompt integration, and verification pattern.
 
 - If the orchestrator completes but `transcription_cuda.json` reports failed chunks, do **not** treat the website as final. Inspect `summary.ok_chunks` / `summary.failed_chunks` and rerun the per-episode pipeline with `--force`:
   ```bash

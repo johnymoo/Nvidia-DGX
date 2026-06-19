@@ -26,6 +26,8 @@ PODCAST_ROOT = Path(os.environ.get("PODCAST_ROOT", "~/podcast")).expanduser()
 ASR_TEMPLATE = Path(os.environ.get("PODCAST_ASR_TEMPLATE", str(PODCAST_ROOT / "asr_pipeline_template.py"))).expanduser()
 SUMMARY_SCRIPT = Path(os.environ.get("PODCAST_SUMMARY_SCRIPT", str(PODCAST_ROOT / "generate_podcast_summary.py"))).expanduser()
 PUBLISH_SCRIPT = Path(os.environ.get("PODCAST_PUBLISH_SCRIPT", str(PODCAST_ROOT / "publish_podcast_asr_site.py"))).expanduser()
+WIKI_EXPORT_SCRIPT = Path(os.environ.get("PODCAST_WIKI_EXPORT_SCRIPT", str(PODCAST_ROOT / "export_podcast_summary_to_wiki.py"))).expanduser()
+DEFAULT_WIKI_PATH = Path(os.environ.get("WIKI_PATH", "~/wiki")).expanduser()
 DEFAULT_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_MODEL_DIR", "~/deployments/sensevoice/models/SenseVoiceSmall")).expanduser())
 DEFAULT_PUNC_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_PUNC_MODEL_DIR", "~/deployments/sensevoice/models/punc-ct-transformer")).expanduser())
 DEFAULT_VAD_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_VAD_MODEL_DIR", "~/deployments/sensevoice-docker/modelscope-cache/hub/models/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch")).expanduser())
@@ -312,6 +314,8 @@ def main() -> int:
     parser.add_argument("--vad-model-dir", default=DEFAULT_VAD_MODEL_DIR)
     parser.add_argument("--llm-api-base", default=DEFAULT_LLM_API_BASE)
     parser.add_argument("--llm-model", default=DEFAULT_LLM_MODEL)
+    parser.add_argument("--wiki-path", type=Path, default=DEFAULT_WIKI_PATH, help="LLM Wiki path; set empty with --skip-wiki-export to disable")
+    parser.add_argument("--skip-wiki-export", action="store_true", help="Do not export final LLM summary into the LLM Wiki")
     args = parser.parse_args()
 
     episode_id = parse_episode_id(args.url)
@@ -380,6 +384,28 @@ def main() -> int:
     if args.force_summary:
         summary_cmd.append("--force")
     run(summary_cmd, log_prefix.with_name(log_prefix.name + "_summary.log"))
+    wiki_export_stdout = ""
+    if not args.skip_wiki_export:
+        wiki_cmd = [
+            "python3.12",
+            str(WIKI_EXPORT_SCRIPT),
+            str(work_dir / "output" / "podcast_summary.json"),
+            "--summary-md",
+            str(work_dir / "output" / "podcast_summary.md"),
+            "--page-context",
+            str(page_context_json),
+            "--transcription",
+            str(transcription),
+            "--wiki-path",
+            str(args.wiki_path),
+            "--slug",
+            slug,
+            "--source-url",
+            episode_url,
+            "--site-report-url",
+            f"{DEFAULT_SITE_BASE_LAN}/{slug}/index.html",
+        ]
+        wiki_export_stdout = run(wiki_cmd, log_prefix.with_name(log_prefix.name + "_wiki.log")).stdout
     zip_outputs(work_dir, episode_id)
     pub = run(["python3.12", str(PUBLISH_SCRIPT)], log_prefix.with_name(log_prefix.name + "_publish.log"))
 
@@ -393,6 +419,7 @@ def main() -> int:
         "site_report": f"{DEFAULT_SITE_BASE_LAN}/{slug}/index.html",
         "site_full_text": f"{DEFAULT_SITE_BASE_LAN}/{slug}/full.html",
         "site_index": f"{DEFAULT_SITE_BASE_LAN}/index.html",
+        "wiki_export": wiki_export_stdout,
         "publisher_output": pub.stdout,
     }
     print(json.dumps(result, ensure_ascii=False, indent=2))

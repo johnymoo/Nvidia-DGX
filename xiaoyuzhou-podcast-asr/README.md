@@ -11,6 +11,7 @@ End-to-end pipeline for turning a Xiaoyuzhou episode into GPU SenseVoice ASR art
 5. Transcribe the full episode on GPU/CUDA with resumable chunks.
 6. Generate `podcast_summary.json` and `podcast_summary.md` using a local OpenAI-compatible endpoint.
 7. Publish per-episode report pages and an index under a static web root.
+8. Export the final LLM summary into an LLM Wiki (`WIKI_PATH`) for long-term knowledge reuse.
 
 ## Files
 
@@ -19,6 +20,7 @@ End-to-end pipeline for turning a Xiaoyuzhou episode into GPU SenseVoice ASR art
 | `scripts/xiaoyuzhou_asr_to_site.py` | End-to-end orchestrator. |
 | `scripts/asr_pipeline_template.py` | Per-episode SenseVoice/FunASR pipeline template. |
 | `scripts/generate_podcast_summary.py` | Structured Chinese summary generator using local Qwen/vLLM. |
+| `scripts/export_podcast_summary_to_wiki.py` | Writes the final LLM summary into `WIKI_PATH` as raw source + curated wiki summary page. |
 | `scripts/publish_podcast_asr_site.py` | Static site publisher and index builder. |
 | `scripts/publish_podcast_asr_site_watchdog.sh` | Silent watchdog wrapper for cron/no-agent jobs. |
 | `skills/xiaoyuzhou-asr-to-site/SKILL.md` | Hermes skill procedure used by the local agent. |
@@ -46,6 +48,8 @@ The scripts default to local paths, but all environment-specific values are conf
 | `SENSEVOICE_STATIC_ROOT` | `~/deployments/sensevoice/static` |
 | `SENSEVOICE_WEB_PORT` | `8020` |
 | `PODCAST_ASR_SITE_BASE` | `http://127.0.0.1:8020/static/podcast-asr` |
+| `WIKI_PATH` | `~/wiki` |
+| `PODCAST_WIKI_EXPORT_SCRIPT` | `$PODCAST_ROOT/export_podcast_summary_to_wiki.py` |
 
 ## Usage
 
@@ -55,7 +59,7 @@ python3.12 scripts/xiaoyuzhou_asr_to_site.py \
   'https://www.xiaoyuzhoufm.com/episode/<episode-id>'
 ```
 
-The orchestrator is resumable. It skips completed ASR and summary outputs unless the corresponding `--force-*` flags are supplied.
+The orchestrator is resumable. It skips completed ASR and summary outputs unless the corresponding `--force-*` flags are supplied. It exports the final summary into `WIKI_PATH` by default; pass `--skip-wiki-export` to disable that side effect.
 
 ## Outputs
 
@@ -75,7 +79,16 @@ output/transcript_cuda.srt
 output/benchmark_cpu_gpu_*.json
 output/podcast_summary.json
 output/podcast_summary.md
+output/episode_page_context.json
+output/episode_page_context.md
 output/site_meta.json
+```
+
+Wiki export paths:
+
+```text
+$WIKI_PATH/raw/podcast-summaries/podcast-<episode-slug>-llm-summary.md
+$WIKI_PATH/queries/podcast-<episode-slug>.md
 ```
 
 Published site paths:
