@@ -65,7 +65,29 @@ $PODCAST_ROOT/xiaoyuzhou_<episode-id>/
   logs/*.log
 ```
 
-## Summary template
+## Episode page context and summary template
+
+Before calling the LLM, extract and persist Xiaoyuzhou public page context. Do not rely on transcript-only summarization when the episode page has show notes.
+
+For Xiaoyuzhou URLs, collect at least:
+
+- `official_title` / `podcast_title`
+- `episode_description` and show notes body
+- `published_time`, duration, playback/comment counts if visible
+- cover image URL if available
+- official `OUTLINE` timestamps and section titles
+- links / disclaimer / contact blocks
+- top comments only if useful, labeled as audience comments, not source facts
+- direct `audio_url`
+
+Save the context under:
+
+```text
+$PODCAST_ROOT/xiaoyuzhou_<episode-id>/output/episode_page_context.json
+$PODCAST_ROOT/xiaoyuzhou_<episode-id>/output/episode_page_context.md
+```
+
+Then pass this page context into `generate_podcast_summary.py` together with the ASR transcript. The LLM prompt should explicitly prefer official title/outline/show notes for structure and metadata, and use ASR for actual discussion details, quotes, and nuanced synthesis. This avoids mojibake titles, improves topic boundaries, and prevents the model from inventing host/guest info already present on the page.
 
 `generate_podcast_summary.py` calls:
 
@@ -77,11 +99,15 @@ chat_template_kwargs: {"enable_thinking": false}
 
 The output JSON must include:
 
+- `title` — official title when available
+- `podcast` — podcast/show name
+- `published_time` — publication time if available
+- `official_outline` — official timestamped outline/show notes sections
 - `theme` — 核心主题
 - `guests` — 嘉宾/主持、身份、依据
 - `background` — 讨论背景
-- `topic_summary` — 分话题总结、时间范围、要点
-- `golden_quotes` — 金句、上下文、价值
+- `topic_summary` — 分话题总结、时间范围、要点; align with official outline when possible
+- `golden_quotes` — 金句、上下文、价值; derive from transcript unless quoted in show notes
 - `key_takeaways` — 关键洞察
 - `entities_and_terms` — 专名术语解释
 - `caveats` — ASR/专名不确定处
@@ -106,10 +132,28 @@ http://127.0.0.1:8020/static/podcast-asr/<slug>/full.html
 LAN URL uses:
 
 ```text
-http://<LAN_IP>:8020/static/podcast-asr/...
+http://<LAN-IP>:8020/static/podcast-asr/...
 ```
 
 The publisher also mirrors existing legacy `/static/<slug>/` directories so old links remain valid.
+
+### Site information architecture / redesign expectations
+
+When improving or rebuilding the podcast ASR website, use a coherent product structure instead of a loose collection of generated episode pages:
+
+1. **Home / Studio page** — split into two clear zones:
+   - **Import area**: paste Xiaoyuzhou URL or upload audio; show the pipeline steps `抓取介绍 → GPU ASR → LLM 总结 → 发布` and, once implemented, task progress.
+   - **Library/index area**: searchable cards for already-transcribed episodes with title, duration, chars, chunk success, coverage, GPU speed, report/full/download actions.
+2. **Episode report page** — standardize each episode as:
+   - official page context / show notes;
+   - official OUTLINE;
+   - LLM summary grounded in page context + ASR;
+   - run metrics and CPU/GPU benchmark;
+   - full transcript preview/search and downloads.
+3. **Prototype before replacement** — for larger UX changes, publish a disposable prototype under a separate static path such as `/static/podcast-asr-prototype/` and show the user before replacing production pages.
+4. **0.0.0.0 verification** — when the user asks to expose it, verify the actual listener (`ss -ltnp`) and HTTP 200 via both localhost and the LAN URL. Do not equate a localhost-only check with LAN availability.
+
+See `references/site-redesign-ia.md` for the concrete prototype layout and verification checklist.
 
 ## Automatic watchdog
 
@@ -122,20 +166,32 @@ Script: ~/.hermes/profiles/capital-avatar/scripts/publish_podcast_asr_site_watch
 
 The watchdog is silent when no new transcript changed.
 
-## Repository packaging / public sharing
+## Repository packaging / PR workflow
 
-When asked to commit this pipeline into a public or team repository, package the reusable workflow rather than the live workspace:
+When asked to push this pipeline into a public/team repo, package the class-level workflow rather than a live episode workspace:
 
-- Put implementation under a project subdirectory such as `xiaoyuzhou-podcast-asr/`; do not add implementation files at the repo root.
-- Copy reusable scripts and the class-level skill, but do **not** commit raw audio, WAV chunks, transcripts from private episodes unless explicitly requested, temporary logs, `__pycache__`, or generated large PNG/HTML artifacts.
-- Sanitize host-specific defaults before staging:
-  - replace absolute personal home paths with env-driven defaults such as `PODCAST_ROOT`, `SENSEVOICE_STATIC_ROOT`, `SENSEVOICE_MODEL_DIR`, `SENSEVOICE_PUNC_MODEL_DIR`, `SENSEVOICE_VAD_MODEL_DIR`, `SENSEVOICE_SITE_PACKAGES`;
-  - replace private LAN URLs with `http://127.0.0.1...` defaults or documented `PODCAST_ASR_SITE_BASE` / `<LAN_IP>` placeholders;
-  - keep `localhost` model endpoints acceptable as local examples, but never stage credentials, cookies, API keys, Telegram bot credentials, or authenticated Xiaoyuzhou config.
-- Add a short README/config note explaining required env vars and the intended command sequence.
-- Before commit: run `python3 -m py_compile` on copied `.py` files, `bash -n` on shell scripts, `git diff --cached`, and a staged secret scan for tokens/private URLs/absolute personal paths.
+- Use a project subdirectory such as `xiaoyuzhou-podcast-asr/`; do not add implementation files at repo root.
+- Include reusable scripts, README, env example, and optionally this skill as operator docs.
+- Do not stage raw audio, WAV chunks, private transcripts, generated site screenshots/HTML, logs, `__pycache__`, model weights, `.env`, credentials, cookies, or tokens.
+- Sanitize personal home paths and private LAN URLs into env-driven defaults/placeholders.
+- In dirty repos, stage only explicit pathspecs and verify with `git diff --cached --name-only` before committing.
+- For staged scans use `git grep --cached ... -- <pathspec>`; putting `--cached` after `--` is invalid and can create misleading fatal output.
 
-See `references/repo-packaging.md` for the concrete sanitization checklist.
+See `references/repo-packaging.md` for the concrete sanitization checklist, staged-scan commands, and PR validation sequence.
+
+## Recovery and post-run cleanup
+
+See `references/asr-recovery-and-title-cleanup.md` for the concrete retry and metadata repair pattern.
+
+- If the orchestrator completes but `transcription_cuda.json` reports failed chunks, do **not** treat the website as final. Inspect `summary.ok_chunks` / `summary.failed_chunks` and rerun the per-episode pipeline with `--force`:
+  ```bash
+  cd $PODCAST_ROOT/xiaoyuzhou_<episode-id>
+  python3.12 asr_pipeline.py transcribe --device cuda --language zh --chunk-seconds 300 --overlap-seconds 5 --force
+  python3.12 $PODCAST_ROOT/xiaoyuzhou_asr_to_site.py '<episode-url>' --force-summary
+  ```
+  A transient CUDA OOM on one chunk may clear after rerunning the full ASR process because the model/GPU state is rebuilt.
+- If Xiaoyuzhou public-page metadata is mojibake but the LLM summary recovered a good Chinese title, update `output/episode_metadata.json`, `output/transcription_cuda.json`, and the first heading of `output/transcript_cuda.md`, rebuild the zip, then republish. This keeps the website title and download artifacts readable.
+- Verification should include machine checks: HTTP 200 for report/full/summary/transcript URLs plus content needles (`LLM 总结`, `主题`, `嘉宾`, `背景`, `讨论的话题总结`, `金句`, `完整转写稿`, `CPU / GPU 对比`). Browser screenshot is useful when practical, but large full-transcript pages can be accepted on HTTP/content checks if visual rendering is slow.
 
 ## Verification checklist
 

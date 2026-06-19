@@ -67,6 +67,10 @@ def parse_episode_id(url_or_id: str) -> str:
 
 def sanitize_slug(text: str, fallback: str) -> str:
     text = (text or "").lower()
+    ascii_text = re.sub(r"[^a-z0-9]+", "-", text)
+    ascii_text = re.sub(r"-+", "-", ascii_text).strip("-")
+    if ascii_text and (re.search(r"[a-z]", ascii_text) or len(ascii_text) >= 8):
+        return ascii_text[:88].strip("-") or fallback
     text = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", text)
     text = re.sub(r"-+", "-", text).strip("-")
     if not text or re.fullmatch(r"[\u4e00-\u9fff-]+", text):
@@ -75,38 +79,151 @@ def sanitize_slug(text: str, fallback: str) -> str:
 
 
 def decode_web_text(s: str) -> str:
-    s = html.unescape(s or "")
-    s = s.replace("\\/", "/")
-    try:
-        s = s.encode("utf-8").decode("unicode_escape") if "\\u" in s else s
-    except Exception:
-        pass
-    return s
+    """Decode HTML/JSON-ish text without corrupting already-decoded UTF-8."""
+    return html.unescape(s or "").replace("\\/", "/")
 
 
-def fetch_public_metadata(url: str) -> dict[str, str]:
+def iter_json_ld(page: str) -> list[dict[str, Any]]:
+    objs: list[dict[str, Any]] = []
+    for block in re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', page, re.S | re.I):
+        try:
+            data = json.loads(html.unescape(block).strip())
+        except Exception:
+            continue
+        if isinstance(data, dict):
+            objs.append(data)
+        elif isinstance(data, list):
+            objs.extend(x for x in data if isinstance(x, dict))
+    return objs
+
+
+def meta_content(page: str, key: str) -> str:
+    patterns = [
+        rf'<meta[^>]+property=["\']{re.escape(key)}["\'][^>]+content=["\']([^"\']+)["\']',
+        rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']{re.escape(key)}["\']',
+        rf'<meta[^>]+name=["\']{re.escape(key)}["\'][^>]+content=["\']([^"\']+)["\']',
+        rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']{re.escape(key)}["\']',
+    ]
+    for pat in patterns:
+        m = re.search(pat, page, re.S | re.I)
+        if m:
+            return re.sub(r"\s+", " ", decode_web_text(m.group(1))).strip()
+    return ""
+
+
+def parse_outline(description: str) -> list[dict[str, Any]]:
+    lines = [re.sub(r"\s+", " ", line).strip(" _") for line in (description or "").splitlines()]
+    start = -1
+    for i, line in enumerate(lines):
+        if re.match(r"OUTLINE[:：]?", line, re.I):
+            start = i + 1
+            break
+    if start < 0:
+        return []
+    outline: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for line in lines[start:]:
+        if not line:
+            continue
+        if re.match(r"(?:LINKS|DISCLAIMER|CONTACT)[:：]?", line, re.I):
+            break
+        m = re.match(r"(?P<timestamp>\d{1,2}:\d{2}:\d{2})\s*(?P<title>.*)", line)
+        if m:
+            current = {"timestamp": m.group("timestamp"), "title": m.group("title").strip(), "notes": []}
+            outline.append(current)
+        elif current is not None:
+            current.setdefault("notes", []).append(line)
+    return outline
+
+
+def render_page_context_markdown(context: dict[str, Any]) -> str:
+    lines: list[str] = []
+    title = context.get("official_title") or context.get("title") or "Xiaoyuzhou episode"
+    lines += [f"# {title}", ""]
+    for key, label in [
+        ("podcast_title", "播客"),
+        ("source_url", "链接"),
+        ("published_time", "发布时间"),
+        ("duration_text", "官方时长"),
+        ("audio_url", "音频"),
+        ("cover_image", "封面"),
+    ]:
+        value = context.get(key)
+        if value:
+            lines.append(f"- **{label}:** {value}")
+    if len(lines) > 2:
+        lines.append("")
+    if context.get("description"):
+        lines += ["## 官方简介 / Show Notes", "", str(context["description"]).strip(), ""]
+    outline = context.get("outline") or []
+    if outline:
+        lines += ["## 官方 OUTLINE", ""]
+        for item in outline:
+            if isinstance(item, dict):
+                lines.append(f"- **{item.get('timestamp', '')}** {item.get('title', '')}".rstrip())
+                for note in item.get("notes") or []:
+                    lines.append(f"  - {note}")
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def fetch_public_metadata(url: str) -> dict[str, Any]:
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=30) as resp:
         page = resp.read().decode("utf-8", errors="ignore")
-    decoded = decode_web_text(page)
-    audio_url = ""
-    for pat in [
-        r"https://media\.xyzcdn\.net/[^\"'<>\s]+?\.(?:m4a|mp3)(?:\?[^\"'<>\s]+)?",
-        r'"(?:url|audioUrl|mediaUrl)"\s*:\s*"(https://[^"<>]+?\.(?:m4a|mp3)(?:\?[^"<>]+)?)"',
-    ]:
-        m = re.search(pat, decoded)
-        if m:
-            audio_url = m.group(1) if m.lastindex else m.group(0)
-            audio_url = decode_web_text(audio_url)
-            break
-    title = ""
-    for pat in [r'"title"\s*:\s*"([^"]{5,200})"', r"<title>(.*?)</title>", r'<meta property="og:title" content="([^"]+)"']:
-        m = re.search(pat, decoded, re.S)
+
+    json_ld = iter_json_ld(page)
+    episode_ld = next((obj for obj in json_ld if obj.get("@type") == "PodcastEpisode"), {})
+    title = str(episode_ld.get("name") or meta_content(page, "og:title") or "")
+    if not title:
+        m = re.search(r"<title>(.*?)</title>", page, re.S | re.I)
         if m:
             title = re.sub(r"\s+", " ", decode_web_text(m.group(1))).strip()
-            title = re.sub(r"\s*\|\s*小宇宙.*$", "", title).strip()
-            break
-    return {"title": title, "audio_url": audio_url}
+            title = re.sub(r"\s*[-|]\s*.*?小宇宙.*$", "", title).strip()
+
+    description = str(episode_ld.get("description") or meta_content(page, "description") or "")
+    part = episode_ld.get("partOfSeries") if isinstance(episode_ld.get("partOfSeries"), dict) else {}
+    podcast_title = str(part.get("name") or "")
+    published_time = str(episode_ld.get("datePublished") or "")
+    duration_text = str(episode_ld.get("timeRequired") or "")
+    cover_image = meta_content(page, "og:image") or meta_content(page, "twitter:image")
+
+    audio_url = meta_content(page, "og:audio")
+    media = episode_ld.get("associatedMedia")
+    media_items = media if isinstance(media, list) else ([media] if isinstance(media, dict) else [])
+    for item in media_items:
+        if not isinstance(item, dict):
+            continue
+        audio_url = audio_url or str(item.get("contentUrl") or item.get("url") or "")
+    if not audio_url:
+        for pat in [
+            r"https://media\.xyzcdn\.net/[^\"'<>\s]+?\.(?:m4a|mp3)(?:\?[^\"'<>\s]+)?",
+            r'"(?:url|audioUrl|mediaUrl|contentUrl)"\s*:\s*"(https://[^"<>]+?\.(?:m4a|mp3)(?:\?[^"<>]+)?)"',
+        ]:
+            m = re.search(pat, page)
+            if m:
+                audio_url = m.group(1) if m.lastindex else m.group(0)
+                break
+    audio_url = decode_web_text(audio_url)
+
+    page_context: dict[str, Any] = {
+        "source_url": url,
+        "official_title": title,
+        "podcast_title": podcast_title,
+        "description": description,
+        "published_time": published_time,
+        "duration_text": duration_text,
+        "cover_image": cover_image,
+        "audio_url": audio_url,
+        "outline": parse_outline(description),
+    }
+    page_context = {k: v for k, v in page_context.items() if v not in ("", [], None)}
+    metadata: dict[str, Any] = {"title": title, "audio_url": audio_url, "page_context": page_context}
+    if podcast_title:
+        metadata["podcast"] = podcast_title
+    if published_time:
+        metadata["published_time"] = published_time
+    return metadata
 
 
 def try_opencli_metadata_and_download(episode_id: str, work_dir: Path) -> dict[str, str]:
@@ -165,7 +282,7 @@ def zip_outputs(work_dir: Path, episode_id: str) -> Path:
     out = work_dir / "output"
     zip_path = out / f"xiaoyuzhou_{episode_id}_asr_results.zip"
     candidates = []
-    for pattern in ["transcript_*.md", "transcript_*.txt", "transcript_*.srt", "transcription_*.json", "benchmark_cpu_gpu_*.json", "manifest.json", "podcast_summary.*", "site_meta.json"]:
+    for pattern in ["transcript_*.md", "transcript_*.txt", "transcript_*.srt", "transcription_*.json", "benchmark_cpu_gpu_*.json", "manifest.json", "podcast_summary.*", "episode_page_context.*", "site_meta.json"]:
         candidates.extend(out.glob(pattern))
     if not candidates:
         return zip_path
@@ -216,6 +333,17 @@ def main() -> int:
         metadata.update({k: v for k, v in opencli_meta.items() if v})
     title = args.title or metadata.get("title") or f"Xiaoyuzhou episode {episode_id}"
     metadata["title"] = title
+    page_context = metadata.get("page_context") if isinstance(metadata.get("page_context"), dict) else {}
+    if page_context:
+        page_context.setdefault("episode_id", episode_id)
+        page_context.setdefault("source_url", episode_url)
+        page_context.setdefault("official_title", title)
+        context_json = work_dir / "output" / "episode_page_context.json"
+        context_md = work_dir / "output" / "episode_page_context.md"
+        context_json.write_text(json.dumps(page_context, ensure_ascii=False, indent=2), encoding="utf-8")
+        context_md.write_text(render_page_context_markdown(page_context), encoding="utf-8")
+        metadata["page_context_path"] = str(context_json)
+        metadata["page_context_md_path"] = str(context_md)
 
     input_audio = work_dir / "input" / "episode.m4a"
     if metadata.get("downloaded_audio"):
@@ -246,6 +374,9 @@ def main() -> int:
         print(f"transcription exists, skipping ASR: {transcription}", flush=True)
 
     summary_cmd = ["python3.12", str(SUMMARY_SCRIPT), str(transcription), "--api-base", args.llm_api_base, "--model", args.llm_model]
+    page_context_json = work_dir / "output" / "episode_page_context.json"
+    if page_context_json.exists():
+        summary_cmd.extend(["--page-context", str(page_context_json)])
     if args.force_summary:
         summary_cmd.append("--force")
     run(summary_cmd, log_prefix.with_name(log_prefix.name + "_summary.log"))

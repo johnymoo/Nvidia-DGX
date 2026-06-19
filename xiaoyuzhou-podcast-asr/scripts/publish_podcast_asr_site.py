@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Publish completed podcast ASR workspaces to the SenseVoice static website.
+"""Publish completed podcast ASR workspaces to a redesigned static website.
 
-Scans podcast workspaces for */output/transcription_*.json, copies lightweight
-ASR artifacts, generates per-episode report/full-transcript pages, and updates a
-site index at /static/podcast-asr/.
+The site has two product-level zones:
+
+1. Import studio: paste a podcast URL or drop/upload audio (static UI for now).
+2. Transcribed library: searchable index of completed ASR episodes.
+
+Each episode page combines official Xiaoyuzhou page context, LLM summary,
+metrics, downloads, and searchable transcript pages.
 """
 from __future__ import annotations
 
@@ -16,7 +20,6 @@ import re
 import shutil
 import socket
 import subprocess
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -46,13 +49,14 @@ def esc(value: Any) -> str:
 
 def slugify(text: str, fallback: str) -> str:
     text = (text or "").lower()
+    ascii_text = re.sub(r"[^a-z0-9]+", "-", text)
+    ascii_text = re.sub(r"-+", "-", ascii_text).strip("-")
+    if ascii_text and (re.search(r"[a-z]", ascii_text) or len(ascii_text) >= 8):
+        return ascii_text[:88].strip("-") or fallback
     text = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", text)
     text = re.sub(r"-+", "-", text).strip("-")
-    # Keep URLs readable and bounded.
-    if not text:
-        text = fallback
-    if re.fullmatch(r"[\u4e00-\u9fff-]+", text):
-        text = fallback
+    if not text or re.fullmatch(r"[\u4e00-\u9fff-]+", text):
+        return fallback
     return text[:88].strip("-") or fallback
 
 
@@ -74,6 +78,14 @@ def fmt_bytes(n: int | float | None) -> str:
         n /= 1024
         i += 1
     return f"{n:.1f} {units[i]}" if i else f"{int(n)} B"
+
+
+def safe_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    if value is None:
+        return []
+    return [value]
 
 
 def get_lan_ip() -> str:
@@ -131,6 +143,7 @@ class Episode:
     benchmark: dict[str, Any]
     manifest_path: Path | None
     site_meta: dict[str, Any]
+    page_context: dict[str, Any]
     slug: str
     device: str
     artifacts: dict[str, Path] = field(default_factory=dict)
@@ -160,30 +173,26 @@ def discover_episodes(root: Path = PODCAST_ROOT) -> list[Episode]:
         benchmark = read_json(benchmark_path, {}) if benchmark_path else {}
         manifest_path = output_dir / "manifest.json" if (output_dir / "manifest.json").exists() else None
         site_meta = read_json(output_dir / "site_meta.json", {}) or {}
+        page_context = read_json(output_dir / "episode_page_context.json", {}) or {}
         episode_id = str(trans.get("episode_id") or output_dir.parent.name)
         fallback = f"xiaoyuzhou-{episode_id}" if "xiaoyuzhou" in output_dir.parent.name else episode_id
-        slug = str(site_meta.get("slug") or slugify(trans.get("title") or episode_id, fallback))
+        title = page_context.get("official_title") or trans.get("title") or episode_id
+        slug = str(site_meta.get("slug") or slugify(title, fallback))
         device = str(trans.get("device") or trans_path.stem.replace("transcription_", "") or "cuda")
-        artifacts: dict[str, Path] = {
-            f"transcription_{device}.json": trans_path,
-        }
+        artifacts: dict[str, Path] = {f"transcription_{device}.json": trans_path}
         for suffix in ["md", "txt", "srt"]:
             p = output_dir / f"transcript_{device}.{suffix}"
             if p.exists():
                 artifacts[p.name] = p
-        if manifest_path:
-            artifacts["manifest.json"] = manifest_path
+        for name in ["manifest.json", "site_meta.json", "podcast_summary.json", "podcast_summary.md", "episode_page_context.json", "episode_page_context.md"]:
+            p = output_dir / name
+            if p.exists():
+                artifacts[name] = p
         if benchmark_path:
             artifacts[benchmark_path.name] = benchmark_path
         zip_candidates = sorted(output_dir.glob("*_asr_results.zip"), key=lambda p: p.stat().st_mtime)
         if zip_candidates:
             artifacts["asr_results.zip"] = zip_candidates[-1]
-        for summary_name in ["podcast_summary.json", "podcast_summary.md"]:
-            p = output_dir / summary_name
-            if p.exists():
-                artifacts[summary_name] = p
-        if (output_dir / "site_meta.json").exists():
-            artifacts["site_meta.json"] = output_dir / "site_meta.json"
         ep = Episode(
             work_dir=output_dir.parent,
             output_dir=output_dir,
@@ -193,6 +202,7 @@ def discover_episodes(root: Path = PODCAST_ROOT) -> list[Episode]:
             benchmark=benchmark,
             manifest_path=manifest_path,
             site_meta=site_meta,
+            page_context=page_context,
             slug=slug,
             device=device,
             artifacts=artifacts,
@@ -203,16 +213,16 @@ def discover_episodes(root: Path = PODCAST_ROOT) -> list[Episode]:
 
 
 CSS = """
-:root{--bg:#081018;--panel:#101a25;--panel2:#142130;--ink:#e8f1fb;--muted:#9db0c6;--line:rgba(190,214,242,.16);--accent:#66d9ff;--accent2:#b9f56b;--warn:#ffd166;color-scheme:dark}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(circle at 16% 0%,rgba(102,217,255,.18),transparent 32%),radial-gradient(circle at 86% 8%,rgba(185,245,107,.12),transparent 30%),var(--bg);color:var(--ink);line-height:1.72}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.shell{max-width:1180px;margin:0 auto;padding:32px 20px 72px}.hero,.section,.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:28px;box-shadow:0 24px 70px rgba(0,0,0,.32);backdrop-filter:blur(10px)}.hero{padding:38px;margin-bottom:22px}.eyebrow{display:inline-flex;gap:8px;color:var(--accent2);text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:800}.dot{width:10px;height:10px;border-radius:999px;background:var(--accent2);box-shadow:0 0 20px var(--accent2);display:inline-block;margin-top:.35em}h1{font-size:clamp(34px,5vw,66px);line-height:1.04;margin:14px 0 16px;letter-spacing:-.05em;text-wrap:balance}h2{font-size:clamp(23px,3vw,36px);line-height:1.15;margin:0 0 16px;letter-spacing:-.035em}h3{margin:0}.lead{max-width:850px;color:#bfd0e2;font-size:18px;margin:0 0 24px}.actions,.downloads,.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.btn{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:10px 15px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);font-weight:800}.btn.primary{color:#06111a;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:22px}.metric{padding:18px;border-radius:20px;background:rgba(255,255,255,.045);border:1px solid var(--line);min-height:120px}.metric small,.muted{color:var(--muted)}.metric strong{display:block;font-size:clamp(24px,3vw,34px);letter-spacing:-.04em;margin:6px 0 2px}.section{padding:28px;margin-bottom:22px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:#bed1e8;font-size:12px;text-transform:uppercase;letter-spacing:.08em;background:rgba(255,255,255,.035)}tr:last-child td{border-bottom:none}.summary{margin:0;padding:0;list-style:none;display:grid;gap:12px}.summary li{padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.04)}.summary strong{display:block}.notice{border-left:3px solid var(--warn);padding-left:14px;color:#cad8e8}.pill{display:inline-flex;padding:4px 9px;border-radius:999px;background:rgba(102,217,255,.1);color:#cef3ff;border:1px solid rgba(102,217,255,.22);font-size:12px}.search{flex:1;min-width:240px;height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);padding:0 16px;outline:none}.chunk{padding:20px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.035);margin-bottom:14px}.chunk-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.chunk p{margin:0;color:#d9e6f5}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}.card{padding:22px}.card-title{font-size:18px;font-weight:850;margin:8px 0}.footer{text-align:center;color:var(--muted);font-size:13px;padding-top:20px}mark{background:rgba(255,209,102,.35);color:#fff;border-radius:4px;padding:0 2px}.topic-block{padding:16px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid var(--line);margin:12px 0}.quote{padding:14px 16px;border-left:3px solid var(--accent2);background:rgba(185,245,107,.06);border-radius:12px;margin:12px 0}.quote blockquote{margin:0 0 8px;font-size:18px;color:#f2ffe0}.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:980px){.grid2,.summary-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.shell{padding:18px 12px 48px}.hero,.section,.card{border-radius:20px;padding:20px}.metrics{grid-template-columns:1fr}table{min-width:640px}}
+:root{--bg:#070b12;--panel:#0d1523;--panel2:#111d31;--ink:#eef6ff;--muted:#91a4bf;--line:rgba(180,205,240,.18);--blue:#65d6ff;--green:#b8ff73;--orange:#ffd166;--pink:#ff7ac8;--shadow:0 28px 80px rgba(0,0,0,.38);color-scheme:dark}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;background:radial-gradient(circle at 12% -10%,rgba(101,214,255,.20),transparent 35%),radial-gradient(circle at 92% 4%,rgba(184,255,115,.14),transparent 30%),linear-gradient(180deg,#070b12,#09101b 45%,#07101a);color:var(--ink);line-height:1.65}.wrap,.shell{max-width:1240px;margin:0 auto;padding:28px 20px 72px}a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center;font-weight:900;letter-spacing:-.03em}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--green));box-shadow:0 0 30px rgba(101,214,255,.35)}.dim,.muted{color:var(--muted)}.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:#c4d5eb;background:rgba(255,255,255,.05);font-size:12px}.dot{width:8px;height:8px;border-radius:99px;background:var(--green);box-shadow:0 0 18px var(--green)}.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:stretch}.panel,.card,.section{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);backdrop-filter:blur(12px)}.intro,.section{padding:28px}.eyebrow{color:var(--green);font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:900}h1{font-size:clamp(40px,6vw,76px);line-height:.99;margin:14px 0 18px;letter-spacing:-.07em;text-wrap:balance}h2{font-size:clamp(24px,3vw,38px);letter-spacing:-.04em;line-height:1.12;margin:0 0 14px}h3{margin:0 0 8px}.lead{font-size:18px;color:#c4d5e9;max-width:820px}.actions,.downloads,.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:999px;padding:11px 16px;font-weight:850;display:inline-flex;align-items:center;gap:8px;cursor:pointer}.btn.primary{border:0;color:#04111a;background:linear-gradient(135deg,var(--blue),var(--green))}.import{padding:26px;display:grid;gap:14px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(255,255,255,.04);padding:6px;border-radius:18px}.tab{border:0;border-radius:14px;color:var(--muted);background:transparent;padding:10px;font-weight:850}.tab.active{color:#06111a;background:linear-gradient(135deg,var(--blue),var(--green))}.field{display:flex;gap:10px}.field input,.search{flex:1;min-width:0;height:48px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--ink);padding:0 16px;font-size:14px;outline:0}.drop{border:1px dashed rgba(101,214,255,.45);border-radius:22px;padding:22px;background:rgba(101,214,255,.06);color:#c6d8ed}.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.step{padding:12px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid var(--line);font-size:12px;color:#bfd1e8}.step strong{display:block;color:var(--ink);font-size:13px}.stats,.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat,.metric{padding:18px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.stat small,.metric small{color:var(--muted)}.stat strong,.metric strong{display:block;font-size:30px;line-height:1.1;letter-spacing:-.05em}.section{margin-top:22px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}.grid,.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}.episode,.card{padding:22px;display:grid;gap:14px}.episode h3,.card-title{font-size:22px;line-height:1.2;margin:0;letter-spacing:-.03em;font-weight:900}.meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:13px}.summary{color:#cbd9ec;margin:0}.mini-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mini{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:16px;padding:10px}.mini small{display:block;color:var(--muted);font-size:11px}.mini strong{font-size:18px}.episode-layout{display:grid;grid-template-columns:280px 1fr;gap:18px;margin-top:20px}.toc{position:sticky;top:18px;align-self:start;padding:18px}.toc a{display:block;padding:9px 10px;border-radius:12px;color:#c6d8ec}.toc a:hover{background:rgba(255,255,255,.06)}.content{display:grid;gap:18px}.outline{display:grid;gap:10px}.outline-row{display:grid;grid-template-columns:90px 1fr;gap:12px;padding:12px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.04)}.time{color:var(--blue);font-weight:900}.quote{border-left:3px solid var(--green);padding:12px 16px;background:rgba(182,255,112,.06);border-radius:12px;margin:10px 0}.topic-block{padding:16px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line);margin:10px 0}.summary-grid,.compare,.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:#bed1e8;font-size:12px;text-transform:uppercase;letter-spacing:.08em;background:rgba(255,255,255,.035)}tr:last-child td{border-bottom:none}.chunk{padding:20px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.035);margin-bottom:14px}.chunk-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.chunk p{margin:0;color:#d9e6f5}.transcript-preview{max-height:420px;overflow:auto;padding:16px;border-radius:18px;background:rgba(0,0,0,.22);border:1px solid var(--line);color:#dbe8f6}.footer{margin-top:26px;color:var(--muted);font-size:13px;text-align:center}mark{background:rgba(255,209,102,.35);color:#fff;border-radius:4px;padding:0 2px}.toast{position:fixed;right:20px;bottom:20px;max-width:360px;padding:16px 18px;border-radius:18px;background:#101c2c;border:1px solid var(--line);box-shadow:var(--shadow);display:none}.toast.show{display:block}@media(max-width:960px){.hero,.episode-layout,.compare,.grid2,.summary-grid{grid-template-columns:1fr}.toc{position:relative;top:0}.stats,.metrics,.pipeline,.mini-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.wrap,.shell{padding:18px 12px 44px}.intro,.import,.episode,.card,.section{padding:20px}.stats,.metrics,.pipeline,.mini-grid{grid-template-columns:1fr}.field{flex-direction:column}.field .btn{justify-content:center}}
 """.strip()
 
+SEARCH_JS = r"""
+const searchBox=document.getElementById('searchBox');const clearSearch=document.getElementById('clearSearch');const matchCount=document.getElementById('matchCount');const chunks=[...document.querySelectorAll('.chunk')];const original=new Map(chunks.map(c=>[c.id,c.querySelector('p').textContent]));function escReg(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}function applySearch(){const q=(searchBox?.value||'').trim();let shown=0;const re=q?new RegExp(escReg(q),'gi'):null;chunks.forEach(c=>{const text=original.get(c.id)||'';const hit=!q||text.toLowerCase().includes(q.toLowerCase());c.style.display=hit?'':'none';if(hit)shown++;const p=c.querySelector('p');p.innerHTML=re?text.replace(re,m=>`<mark>${m}</mark>`):text});if(matchCount)matchCount.textContent=q?`${shown} 段匹配`:`${chunks.length} 段`}if(searchBox){searchBox.addEventListener('input',applySearch)}if(clearSearch){clearSearch.addEventListener('click',()=>{searchBox.value='';applySearch();searchBox.focus()})}
+""".strip()
 
-def safe_list(value: Any) -> list[Any]:
-    if isinstance(value, list):
-        return value
-    if value is None:
-        return []
-    return [value]
+INDEX_JS = r"""
+const tabs=[...document.querySelectorAll('.tab')], urlPane=document.getElementById('urlPane'), filePane=document.getElementById('filePane');tabs.forEach(t=>t.onclick=()=>{tabs.forEach(x=>x.classList.remove('active'));t.classList.add('active');urlPane.style.display=t.dataset.tab==='url'?'block':'none';filePane.style.display=t.dataset.tab==='file'?'block':'none'});const run=document.getElementById('mockRun');if(run){run.onclick=()=>{const toast=document.getElementById('toast');toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3600)}}const filter=document.getElementById('filter');if(filter){filter.oninput=e=>{const q=e.target.value.toLowerCase().trim();document.querySelectorAll('.episode').forEach(card=>{card.style.display=card.dataset.text.toLowerCase().includes(q)||card.innerText.toLowerCase().includes(q)?'grid':'none'})}}
+""".strip()
 
 
 def render_summary_list(items: list[Any]) -> str:
@@ -221,36 +231,47 @@ def render_summary_list(items: list[Any]) -> str:
     return "<ul>" + "".join(f"<li>{esc(item)}</li>" for item in items) + "</ul>"
 
 
+def render_outline_html(outline: list[Any]) -> str:
+    if not outline:
+        return '<p class="dim">暂无官方 OUTLINE。后续导入小宇宙链接时会自动抓取 show notes。</p>'
+    rows: list[str] = []
+    for item in outline:
+        if isinstance(item, dict):
+            notes = "".join(f"<li>{esc(note)}</li>" for note in safe_list(item.get("notes"))[:8])
+            rows.append(f'<div class="outline-row"><div class="time">{esc(item.get("timestamp", ""))}</div><div><strong>{esc(item.get("title", ""))}</strong>{f"<ul>{notes}</ul>" if notes else ""}</div></div>')
+        else:
+            rows.append(f'<div class="outline-row"><div class="time">—</div><div>{esc(item)}</div></div>')
+    return '<div class="outline">' + ''.join(rows) + '</div>'
+
+
 def render_llm_summary_html(summary_data: dict[str, Any]) -> str:
     if not summary_data:
-        return '<section class="section"><h2>LLM 总结</h2><p class="muted">尚未生成总结。运行 <code>generate_podcast_summary.py</code> 后会自动显示在这里。</p></section>'
+        return '<p class="dim">尚未生成总结。运行 generate_podcast_summary.py 后会显示在这里。</p>'
     guests = []
     for g in safe_list(summary_data.get("guests")):
         if isinstance(g, dict):
-            guests.append(f"<li><strong>{esc(g.get('name', 'unknown'))}</strong>：{esc(g.get('role', 'unknown'))}<br><span class=\"muted\">依据：{esc(g.get('evidence', 'unknown'))}</span></li>")
+            guests.append(f"<li><strong>{esc(g.get('name', 'unknown'))}</strong>：{esc(g.get('role', 'unknown'))}<br><span class=\"dim\">依据：{esc(g.get('evidence', 'unknown'))}</span></li>")
         else:
             guests.append(f"<li>{esc(g)}</li>")
     topics = []
     for i, t in enumerate(safe_list(summary_data.get("topic_summary")), 1):
         if isinstance(t, dict):
-            topics.append(f"<div class=\"topic-block\"><h3>{i}. {esc(t.get('topic', '未命名话题'))}</h3><p class=\"muted\">时间：{esc(t.get('timestamp_range', 'unknown'))}</p><p>{esc(t.get('summary', ''))}</p>{render_summary_list(safe_list(t.get('key_points')))}</div>")
+            topics.append(f"<div class=\"topic-block\"><h3>{i}. {esc(t.get('topic', '未命名话题'))}</h3><p class=\"dim\">时间：{esc(t.get('timestamp_range', 'unknown'))}</p><p>{esc(t.get('summary', ''))}</p>{render_summary_list(safe_list(t.get('key_points')))}</div>")
         else:
             topics.append(f"<div class=\"topic-block\"><h3>{i}. {esc(t)}</h3></div>")
     quotes = []
     for q in safe_list(summary_data.get("golden_quotes")):
         if isinstance(q, dict):
-            quotes.append(f"<div class=\"quote\"><blockquote>{esc(q.get('quote', ''))}</blockquote><div class=\"muted\">{esc(q.get('speaker_or_context', 'unknown'))} · {esc(q.get('why_it_matters', ''))}</div></div>")
+            quotes.append(f"<div class=\"quote\"><strong>{esc(q.get('quote', ''))}</strong><br><span class=\"dim\">{esc(q.get('speaker_or_context', 'unknown'))} · {esc(q.get('why_it_matters', ''))}</span></div>")
         else:
-            quotes.append(f"<div class=\"quote\"><blockquote>{esc(q)}</blockquote></div>")
+            quotes.append(f"<div class=\"quote\"><strong>{esc(q)}</strong></div>")
     terms = []
     for term in safe_list(summary_data.get("entities_and_terms")):
         if isinstance(term, dict):
             terms.append(f"<li><strong>{esc(term.get('term', ''))}</strong>：{esc(term.get('explanation', ''))}</li>")
         else:
             terms.append(f"<li>{esc(term)}</li>")
-    generated = summary_data.get("generated_at") or ""
-    model = summary_data.get("summary_model") or ""
-    return f'''<section class="section" id="llm-summary"><h2>LLM 总结</h2><p class="muted">模型：{esc(model)} · 生成时间：{esc(generated)}</p><div class="downloads"><a class="btn primary" href="podcast_summary.md" download>下载总结 Markdown</a><a class="btn" href="podcast_summary.json" download>下载总结 JSON</a></div><h3>主题</h3><p>{esc(summary_data.get('theme', ''))}</p><div class="summary-grid"><div><h3>嘉宾</h3><ul>{''.join(guests)}</ul></div><div><h3>背景</h3><p>{esc(summary_data.get('background', ''))}</p></div></div><h3>讨论的话题总结</h3>{''.join(topics)}<h3>金句</h3>{''.join(quotes)}<div class="summary-grid"><div><h3>关键洞察</h3>{render_summary_list(safe_list(summary_data.get('key_takeaways')))}</div><div><h3>专名与术语</h3><ul>{''.join(terms)}</ul></div></div><h3>注意事项 / ASR 不确定处</h3>{render_summary_list(safe_list(summary_data.get('caveats')))}<h3>TL;DR</h3><p>{esc(summary_data.get('tldr', ''))}</p></section>'''
+    return f'''<div class="summary-grid"><div><h3>主题</h3><p>{esc(summary_data.get('theme', ''))}</p><h3>嘉宾</h3><ul>{''.join(guests)}</ul></div><div><h3>背景</h3><p>{esc(summary_data.get('background', ''))}</p><h3>TL;DR</h3><p>{esc(summary_data.get('tldr', ''))}</p></div></div><h3>讨论的话题总结</h3>{''.join(topics)}<h3>金句</h3>{''.join(quotes)}<div class="summary-grid"><div><h3>关键洞察</h3>{render_summary_list(safe_list(summary_data.get('key_takeaways')))}</div><div><h3>专名与术语</h3><ul>{''.join(terms)}</ul></div></div><h3>注意事项 / ASR 不确定处</h3>{render_summary_list(safe_list(summary_data.get('caveats')))}'''
 
 
 def copy_artifacts(ep: Episode, dest: Path) -> None:
@@ -272,8 +293,14 @@ def render_episode(ep: Episode) -> tuple[str, str, dict[str, Any]]:
     devices = bench.get("devices") or {}
     cpu = devices.get("cpu") or {}
     gpu = devices.get("cuda") or devices.get("gpu") or {}
-    title = trans.get("title") or ep.slug
-    source_url = trans.get("url") or ""
+    page_ctx = ep.page_context or {}
+    llm_summary = read_json(ep.output_dir / "podcast_summary.json", {}) or {}
+    title = page_ctx.get("official_title") or llm_summary.get("title") or trans.get("title") or ep.slug
+    podcast_title = page_ctx.get("podcast_title") or llm_summary.get("podcast") or ""
+    source_url = page_ctx.get("source_url") or trans.get("url") or ""
+    published_time = page_ctx.get("published_time") or llm_summary.get("published_time") or ""
+    description = page_ctx.get("description") or ""
+    outline = page_ctx.get("outline") or llm_summary.get("official_outline") or []
     duration_seconds = float(trans.get("duration_seconds") or summary.get("audio_seconds") or 0)
     transcript_md = f"transcript_{ep.device}.md"
     transcript_txt = f"transcript_{ep.device}.txt"
@@ -281,22 +308,16 @@ def render_episode(ep: Episode) -> tuple[str, str, dict[str, Any]]:
     transcription_json = f"transcription_{ep.device}.json"
     bench_name = ep.benchmark_path.name if ep.benchmark_path else ""
     published_at = datetime.now().isoformat(timespec="seconds")
-    llm_summary = read_json(ep.output_dir / "podcast_summary.json", {}) or {}
-    llm_summary_html = render_llm_summary_html(llm_summary)
     llm_tldr = str(llm_summary.get("tldr") or "")
 
-    cards = [
-        ("音频时长", trans.get("duration_formatted") or fmt_ts(duration_seconds), f"{duration_seconds:,.1f}s"),
-        ("覆盖率", f"{coverage:.1f}%", f"{len(ok_chunks)}/{len(chunks)} chunks OK"),
-        ("GPU 总耗时", f"{float(summary.get('pipeline_wall_seconds') or summary.get('wall_seconds') or 0):.1f}s", f"{summary.get('x_realtime_wall', '—')}× realtime"),
-        ("GPU RTF", f"{float(summary.get('pipeline_rtf') or summary.get('rtf_wall') or 0):.4f}", "越低越快"),
-        ("转写文本", f"{int(summary.get('chars') or sum(int(c.get('chars') or 0) for c in chunks)):,}", "字符"),
-        ("GPU vs CPU", f"{float(speedups.get('cuda_vs_cpu_inference') or 0):.2f}×", "inference speedup"),
+    metric_cards = [
+        ("ASR 覆盖率", f"{coverage:.1f}%", f"{len(ok_chunks)}/{len(chunks)} chunks OK"),
+        ("GPU pipeline", f"{float(summary.get('pipeline_wall_seconds') or summary.get('wall_seconds') or 0):.1f}s", f"{summary.get('x_realtime_wall', '—')}× realtime"),
+        ("文本规模", f"{int(summary.get('chars') or sum(int(c.get('chars') or 0) for c in chunks)):,}", "characters"),
+        ("CPU/GPU", f"{float(speedups.get('cuda_vs_cpu_inference') or 0):.2f}×", "inference speedup"),
     ]
-    card_html = "\n".join(
-        f'<div class="metric"><small>{esc(k)}</small><strong>{esc(v)}</strong><small>{esc(note)}</small></div>'
-        for k, v, note in cards
-    )
+    metrics_html = "".join(f'<div class="metric"><small>{esc(k)}</small><strong>{esc(v)}</strong><span class="dim">{esc(note)}</span></div>' for k, v, note in metric_cards)
+
     chunk_rows = []
     transcript_sections = []
     for c in chunks:
@@ -304,31 +325,27 @@ def render_episode(ep: Episode) -> tuple[str, str, dict[str, Any]]:
         text = c.get("text") or ""
         plain = re.sub(r"\s+", " ", text).strip()
         status = "OK" if not c.get("error") else str(c.get("error"))
-        chunk_rows.append(
-            f'<tr><td><a href="full.html#chunk-{idx:03d}">{idx+1:02d}</a></td><td>{esc(c.get("start_ts"))}–{esc(c.get("end_ts"))}</td><td>{float(c.get("duration_seconds") or 0):.1f}s</td><td>{int(c.get("chars") or 0):,}</td><td>{float(c.get("inference_seconds") or 0):.2f}s</td><td>{float(c.get("rtf_inference") or 0):.4f}</td><td>{esc(status)}</td></tr>'
-        )
-        transcript_sections.append(
-            f'<article class="chunk" id="chunk-{idx:03d}" data-text="{esc(plain)}"><div class="chunk-head"><span class="pill">Chunk {idx+1:02d}</span><h3>{esc(c.get("start_ts"))} → {esc(c.get("end_ts"))}</h3><span class="pill">{int(c.get("chars") or 0):,} 字符</span></div><p>{esc(text)}</p></article>'
-        )
-
-    work_steps = [
-        ("自动发现", "publisher 扫描 PODCAST_ROOT 下 */output/transcription_*.json，发现完成的 ASR 结果。"),
-        ("复制轻量文件", "只发布 Markdown/TXT/SRT/JSON/ZIP/benchmark，不复制原始音频和切片 WAV。"),
-        ("生成单集页面", "自动生成报告页、全文页、下载链接和可搜索分段转写。"),
-        ("更新总索引", "自动更新 /static/podcast-asr/，把新播客加入网站列表。"),
-        ("保留旧链接", "如果旧的 /static/<slug>/ 已存在，会同步镜像，避免旧链接失效。"),
-    ]
-    steps_html = "".join(f'<li><strong>{esc(a)}</strong><span class="muted">{esc(b)}</span></li>' for a, b in work_steps)
+        chunk_rows.append(f'<tr><td><a href="full.html#chunk-{idx:03d}">{idx+1:02d}</a></td><td>{esc(c.get("start_ts"))}–{esc(c.get("end_ts"))}</td><td>{float(c.get("duration_seconds") or 0):.1f}s</td><td>{int(c.get("chars") or 0):,}</td><td>{float(c.get("inference_seconds") or 0):.2f}s</td><td>{float(c.get("rtf_inference") or 0):.4f}</td><td>{esc(status)}</td></tr>')
+        transcript_sections.append(f'<article class="chunk" id="chunk-{idx:03d}" data-text="{esc(plain)}"><div class="chunk-head"><span class="pill">Chunk {idx+1:02d}</span><h3>{esc(c.get("start_ts"))} → {esc(c.get("end_ts"))}</h3><span class="pill">{int(c.get("chars") or 0):,} 字符</span></div><p>{esc(text)}</p></article>')
 
     source_link = f'<a class="btn" href="{esc(source_url)}" target="_blank" rel="noopener">小宇宙原链接</a>' if source_url else ""
     bench_button = f'<a class="btn" href="{esc(bench_name)}" download>Benchmark JSON</a>' if bench_name else ""
-    report_html = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}｜播客 ASR 报告</title><style>{CSS}</style></head><body><main class="shell"><section class="hero"><span class="eyebrow"><span class="dot"></span>Podcast ASR · Auto Published</span><h1>小宇宙播客完整转写报告</h1><p class="lead">{esc(title)}</p><div class="actions"><a class="btn primary" href="full.html">打开全文网页</a><a class="btn" href="#{'transcript'}">页内全文</a>{source_link}<a class="btn" href="{esc(transcript_md)}" download>下载 Markdown</a><a class="btn" href="asr_results.zip" download>下载结果包</a></div></section><section class="metrics">{card_html}</section>{llm_summary_html}<section class="section"><h2>网站发布状态</h2><div class="table-wrap"><table><tbody><tr><th>Episode ID</th><td>{esc(trans.get('episode_id'))}</td></tr><tr><th>源链接</th><td>{f'<a href="{esc(source_url)}" target="_blank" rel="noopener">{esc(source_url)}</a>' if source_url else '—'}</td></tr><tr><th>全文网页</th><td><a href="full.html">full.html</a> · <a href="{esc(transcript_md)}">Markdown 全文</a> · <a href="{esc(transcript_txt)}">TXT 全文</a></td></tr><tr><th>自动发布</th><td>由 <code>scripts/publish_podcast_asr_site.py</code> 生成；发布时间 {esc(published_at)}</td></tr></tbody></table></div></section><section class="section"><h2>自动发布流程</h2><ol class="summary">{steps_html}</ol></section><section class="grid2"><div class="section"><h2>CPU / GPU 对比</h2><div class="table-wrap"><table><thead><tr><th>设备</th><th>Model load</th><th>Inference</th><th>Wall</th><th>RTF</th><th>字符</th></tr></thead><tbody><tr><td>CPU</td><td>{float(cpu.get('model_load_seconds') or 0):.2f}s</td><td>{float(cpu.get('inference_seconds') or 0):.2f}s</td><td>{float(cpu.get('wall_seconds') or 0):.2f}s</td><td>{float(cpu.get('rtf_inference') or 0):.4f}</td><td>{int(cpu.get('chars') or 0):,}</td></tr><tr><td>GPU / CUDA</td><td>{float(gpu.get('model_load_seconds') or 0):.2f}s</td><td>{float(gpu.get('inference_seconds') or 0):.2f}s</td><td>{float(gpu.get('wall_seconds') or 0):.2f}s</td><td>{float(gpu.get('rtf_inference') or 0):.4f}</td><td>{int(gpu.get('chars') or 0):,}</td></tr></tbody></table></div><p class="notice">同一 {float(bench.get('audio_seconds') or 0):.0f}s 片段：GPU 纯 inference 提速 {float(speedups.get('cuda_vs_cpu_inference') or 0):.2f}×，端到端 wall time 提速 {float(speedups.get('cuda_vs_cpu_wall') or 0):.2f}×。</p></div><div class="section"><h2>完整转写统计</h2><div class="table-wrap"><table><tbody><tr><th>原始 M4A</th><td>{fmt_bytes(trans.get('source_size_bytes'))}</td></tr><tr><th>16k WAV</th><td>{fmt_bytes(trans.get('wav_size_bytes'))}</td></tr><tr><th>音频时长</th><td>{esc(trans.get('duration_formatted') or fmt_ts(duration_seconds))} / {duration_seconds:,.1f}s</td></tr><tr><th>切片数</th><td>{len(chunks)} 段；成功 {len(ok_chunks)}，失败 {len(failed_chunks)}</td></tr><tr><th>覆盖区间</th><td>{fmt_ts(merged[0][0]) if merged else '—'} → {fmt_ts(merged[-1][1]) if merged else '—'}，{coverage:.1f}%</td></tr><tr><th>GPU pipeline wall</th><td>{float(summary.get('pipeline_wall_seconds') or summary.get('wall_seconds') or 0):.1f}s；RTF {float(summary.get('pipeline_rtf') or summary.get('rtf_wall') or 0):.4f}</td></tr><tr><th>实时倍速</th><td>{esc(summary.get('x_realtime_wall', '—'))}× realtime</td></tr></tbody></table></div></div></section><section class="section"><h2>下载与全文链接</h2><div class="downloads"><a class="btn primary" href="full.html">全文网页</a><a class="btn" href="{esc(transcript_md)}" download>Markdown 全文</a><a class="btn" href="{esc(transcript_txt)}" download>TXT 全文</a><a class="btn" href="{esc(transcript_srt)}" download>SRT 字幕</a><a class="btn" href="{esc(transcription_json)}" download>JSON</a>{bench_button}<a class="btn" href="asr_results.zip" download>结果包 ZIP</a></div></section><section class="section"><h2>分段性能明细</h2><div class="table-wrap"><table><thead><tr><th>#</th><th>时间</th><th>音频长</th><th>字符</th><th>GPU inference</th><th>RTF</th><th>状态</th></tr></thead><tbody>{''.join(chunk_rows)}</tbody></table></div></section><section class="section" id="transcript"><h2>完整转写稿</h2><p class="notice">原始 SenseVoice 输出已做标签清理，但未做专名纠错；英文、人名、公司名可能有音译误差。更适合知识库入库前再做一次纠错清洗。</p><div class="toolbar"><a class="btn primary" href="full.html">打开独立全文页</a><input id="searchBox" class="search" placeholder="搜索全文，例如 SpaceX / 马斯克 / IPO / 火箭"><button class="btn" id="clearSearch">清除</button><span class="pill" id="matchCount">{len(chunks)} 段</span></div><div id="chunks">{''.join(transcript_sections)}</div></section><div class="footer">Generated locally on GB10 · Auto Podcast ASR Publisher · {esc(published_at)}</div></main><script>{SEARCH_JS}</script></body></html>'''
+    official_context_link = '<a class="btn" href="episode_page_context.md" download>官方上下文</a>' if (ep.output_dir / "episode_page_context.md").exists() else ""
+    description_html = f'<p>{esc(description)}</p>' if description else '<p class="dim">暂无官方简介；重新导入小宇宙链接后会自动抓取。</p>'
+    outline_html = render_outline_html(outline)
+    llm_html = render_llm_summary_html(llm_summary)
 
-    full_html = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}｜完整转写全文</title><style>{CSS}</style></head><body><main class="shell"><section class="hero"><span class="eyebrow"><span class="dot"></span>Full Transcript</span><h1>完整转写全文</h1><p class="lead">{esc(title)}</p><div class="actions"><a class="btn primary" href="index.html">返回报告</a>{source_link}<a class="btn" href="{esc(transcript_md)}" download>Markdown</a><a class="btn" href="{esc(transcript_txt)}" download>TXT</a></div></section><section class="section"><div class="toolbar"><input id="searchBox" class="search" placeholder="搜索全文"><button class="btn" id="clearSearch">清除</button><span class="pill" id="matchCount">{len(chunks)} 段</span></div><div id="chunks">{''.join(transcript_sections)}</div></section><div class="footer">全文网页链接：<code>full.html</code> · 原始播客：{f'<a href="{esc(source_url)}">小宇宙</a>' if source_url else '—'}</div></main><script>{SEARCH_JS}</script></body></html>'''
+    report_html = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}｜播客 ASR 报告</title><style>{CSS}</style></head><body><main class="shell"><nav class="top"><a class="btn" href="../index.html">← 返回索引</a><span class="pill"><span class="dot"></span>Episode report</span></nav><section class="hero"><div class="intro"><div class="eyebrow">Official context + LLM summary + Transcript</div><h1>{esc(title)}</h1><p class="lead">{esc(llm_tldr or description[:220])}</p><div class="meta"><span class="pill">{esc(podcast_title or 'Podcast')}</span><span class="pill">{esc(trans.get('duration_formatted') or fmt_ts(duration_seconds))}</span><span class="pill">{esc(published_time or 'published time unknown')}</span><span class="pill">{len(ok_chunks)}/{len(chunks)} chunks</span></div><div class="actions"><a class="btn primary" href="#summary">读总结</a><a class="btn" href="#outline">官方 OUTLINE</a><a class="btn" href="full.html">打开全文</a>{source_link}</div></div><div class="side metrics">{metrics_html}</div></section><main class="episode-layout"><aside class="panel toc"><div class="eyebrow">Contents</div><a href="#official">官方介绍</a><a href="#outline">官方 OUTLINE</a><a href="#summary">LLM 总结</a><a href="#metrics">运行指标</a><a href="#downloads">下载与全文</a></aside><div class="content"><section class="panel" id="official"><h2>官方介绍 / Show Notes</h2>{description_html}</section><section class="panel" id="outline"><h2>官方 OUTLINE</h2>{outline_html}</section><section class="panel" id="summary"><h2>LLM 总结</h2><p class="dim">模型：{esc(llm_summary.get('summary_model') or '')} · 生成时间：{esc(llm_summary.get('generated_at') or '')} · 页面上下文：{esc('已使用' if llm_summary.get('has_page_context') or page_ctx else '未使用')}</p><div class="downloads"><a class="btn primary" href="podcast_summary.md" download>下载总结 Markdown</a><a class="btn" href="podcast_summary.json" download>下载总结 JSON</a></div>{llm_html}</section><section class="panel" id="metrics"><h2>运行指标</h2><div class="compare"><div class="metric"><small>完整转写</small><strong>{len(ok_chunks)}/{len(chunks)}</strong><span class="dim">覆盖 {fmt_ts(merged[0][0]) if merged else '—'} → {fmt_ts(merged[-1][1]) if merged else '—'}</span></div><div class="metric"><small>Benchmark</small><strong>{float(speedups.get('cuda_vs_cpu_wall') or 0):.2f}× wall</strong><span class="dim">同一 {float(bench.get('audio_seconds') or 0):.0f}s 片段</span></div></div><div class="table-wrap"><table><thead><tr><th>设备</th><th>Model load</th><th>Inference</th><th>Wall</th><th>RTF</th><th>字符</th></tr></thead><tbody><tr><td>CPU</td><td>{float(cpu.get('model_load_seconds') or 0):.2f}s</td><td>{float(cpu.get('inference_seconds') or 0):.2f}s</td><td>{float(cpu.get('wall_seconds') or 0):.2f}s</td><td>{float(cpu.get('rtf_inference') or 0):.4f}</td><td>{int(cpu.get('chars') or 0):,}</td></tr><tr><td>GPU / CUDA</td><td>{float(gpu.get('model_load_seconds') or 0):.2f}s</td><td>{float(gpu.get('inference_seconds') or 0):.2f}s</td><td>{float(gpu.get('wall_seconds') or 0):.2f}s</td><td>{float(gpu.get('rtf_inference') or 0):.4f}</td><td>{int(gpu.get('chars') or 0):,}</td></tr></tbody></table></div></section><section class="panel" id="downloads"><h2>全文与下载</h2><div class="downloads"><a class="btn primary" href="full.html">全文网页</a><a class="btn" href="{esc(transcript_md)}" download>Markdown 全文</a><a class="btn" href="{esc(transcript_txt)}" download>TXT 全文</a><a class="btn" href="{esc(transcript_srt)}" download>SRT 字幕</a><a class="btn" href="{esc(transcription_json)}" download>JSON</a>{bench_button}{official_context_link}<a class="btn" href="asr_results.zip" download>结果包 ZIP</a></div><h3>分段性能明细</h3><div class="table-wrap"><table><thead><tr><th>#</th><th>时间</th><th>音频长</th><th>字符</th><th>GPU inference</th><th>RTF</th><th>状态</th></tr></thead><tbody>{''.join(chunk_rows)}</tbody></table></div></section></div></main><div class="footer">Auto Podcast ASR Publisher · {esc(published_at)}</div></main></body></html>'''
+
+    full_html = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}｜完整转写全文</title><style>{CSS}</style></head><body><main class="shell"><section class="panel intro"><span class="eyebrow">Full Transcript</span><h1>完整转写全文</h1><p class="lead">{esc(title)}</p><div class="actions"><a class="btn primary" href="index.html">返回报告</a>{source_link}<a class="btn" href="{esc(transcript_md)}" download>Markdown</a><a class="btn" href="{esc(transcript_txt)}" download>TXT</a></div></section><section class="section"><div class="toolbar"><input id="searchBox" class="search" placeholder="搜索全文"><button class="btn" id="clearSearch">清除</button><span class="pill" id="matchCount">{len(chunks)} 段</span></div><div id="chunks">{''.join(transcript_sections)}</div></section><div class="footer">全文网页链接：<code>full.html</code></div></main><script>{SEARCH_JS}</script></body></html>'''
 
     episode_json = {
         "slug": ep.slug,
         "title": title,
+        "podcast": podcast_title,
+        "published_time": published_time,
+        "description_snippet": re.sub(r"\s+", " ", description).strip()[:260],
+        "official_outline_count": len(outline),
         "episode_id": trans.get("episode_id"),
         "source_url": source_url,
         "report_path": f"{ep.slug}/index.html",
@@ -337,6 +354,7 @@ def render_episode(ep: Episode) -> tuple[str, str, dict[str, Any]]:
         "txt_path": f"{ep.slug}/{transcript_txt}",
         "summary_markdown_path": f"{ep.slug}/podcast_summary.md" if (ep.output_dir / "podcast_summary.md").exists() else "",
         "summary_json_path": f"{ep.slug}/podcast_summary.json" if (ep.output_dir / "podcast_summary.json").exists() else "",
+        "page_context_path": f"{ep.slug}/episode_page_context.md" if (ep.output_dir / "episode_page_context.md").exists() else "",
         "llm_tldr": llm_tldr,
         "summary_model": llm_summary.get("summary_model") or "",
         "duration_seconds": duration_seconds,
@@ -356,11 +374,6 @@ def render_episode(ep: Episode) -> tuple[str, str, dict[str, Any]]:
     return report_html, full_html, episode_json
 
 
-SEARCH_JS = r"""
-const searchBox=document.getElementById('searchBox');const clearSearch=document.getElementById('clearSearch');const matchCount=document.getElementById('matchCount');const chunks=[...document.querySelectorAll('.chunk')];const original=new Map(chunks.map(c=>[c.id,c.querySelector('p').textContent]));function escReg(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}function applySearch(){const q=(searchBox?.value||'').trim();let shown=0;const re=q?new RegExp(escReg(q),'gi'):null;chunks.forEach(c=>{const text=original.get(c.id)||'';const hit=!q||text.toLowerCase().includes(q.toLowerCase());c.style.display=hit?'':'none';if(hit)shown++;const p=c.querySelector('p');p.innerHTML=re?text.replace(re,m=>`<mark>${m}</mark>`):text});if(matchCount)matchCount.textContent=q?`${shown} 段匹配`:`${chunks.length} 段`}if(searchBox){searchBox.addEventListener('input',applySearch)}if(clearSearch){clearSearch.addEventListener('click',()=>{searchBox.value='';applySearch();searchBox.focus()})}
-""".strip()
-
-
 def publish_episode(ep: Episode) -> dict[str, Any]:
     report_html, full_html, episode_json = render_episode(ep)
     for dest in [ep.dest_dir] + ([ep.legacy_dir] if ep.legacy_dir.exists() and ep.legacy_dir != ep.dest_dir else []):
@@ -372,12 +385,20 @@ def publish_episode(ep: Episode) -> dict[str, Any]:
 
 
 def render_site_index(episodes: list[dict[str, Any]]) -> str:
+    episodes_sorted = sorted(episodes, key=lambda x: x.get("published_at") or "", reverse=True)
+    total_seconds = sum(float(ep.get("duration_seconds") or 0) for ep in episodes_sorted)
+    total_chars = sum(int(ep.get("chars") or 0) for ep in episodes_sorted)
+    total_chunks = sum(int(ep.get("chunks") or 0) for ep in episodes_sorted)
+    ok_chunks = sum(int(ep.get("ok_chunks") or 0) for ep in episodes_sorted)
+    avg_realtime_values = [float(ep.get("gpu_x_realtime_wall") or 0) for ep in episodes_sorted if ep.get("gpu_x_realtime_wall")]
+    avg_realtime = sum(avg_realtime_values) / len(avg_realtime_values) if avg_realtime_values else 0
     cards = []
-    for ep in sorted(episodes, key=lambda x: x.get("published_at") or "", reverse=True):
+    for ep in episodes_sorted:
         source = ep.get("source_url") or ""
-        cards.append(f'''<article class="card"><span class="eyebrow"><span class="dot"></span>{esc(ep.get('duration_formatted'))} · {int(ep.get('chars') or 0):,} 字</span><div class="card-title">{esc(ep.get('title'))}</div><p>{esc(ep.get('llm_tldr') or '')}</p><p class="muted">{esc(ep.get('episode_id'))} · {ep.get('ok_chunks')}/{ep.get('chunks')} chunks · 覆盖率 {float(ep.get('coverage_pct') or 0):.1f}% · 总结模型 {esc(ep.get('summary_model') or '—')}</p><div class="actions"><a class="btn primary" href="{esc(ep.get('report_path'))}">报告</a><a class="btn" href="{esc(ep.get('full_text_path'))}">完整转写全文</a><a class="btn" href="{esc(ep.get('summary_markdown_path') or ep.get('report_path'))}">总结</a><a class="btn" href="{esc(ep.get('markdown_path'))}">Markdown</a>{f'<a class="btn" href="{esc(source)}" target="_blank" rel="noopener">小宇宙原链接</a>' if source else ''}</div></article>''')
+        searchable = " ".join(str(ep.get(k) or "") for k in ["title", "podcast", "llm_tldr", "description_snippet"])
+        cards.append(f'''<article class="card episode" data-text="{esc(searchable)}"><div class="meta"><span class="pill">{esc(ep.get('duration_formatted'))}</span><span class="pill">{int(ep.get('chars') or 0):,} 字</span><span class="pill">{ep.get('ok_chunks')}/{ep.get('chunks')} chunks</span><span class="pill">OUTLINE {int(ep.get('official_outline_count') or 0)}</span></div><h3>{esc(ep.get('title'))}</h3><p class="summary">{esc(ep.get('llm_tldr') or ep.get('description_snippet') or '')}</p><div class="mini-grid"><div class="mini"><small>GPU</small><strong>{float(ep.get('gpu_x_realtime_wall') or 0):.1f}×</strong></div><div class="mini"><small>覆盖率</small><strong>{float(ep.get('coverage_pct') or 0):.0f}%</strong></div><div class="mini"><small>CPU/GPU</small><strong>{float(ep.get('gpu_vs_cpu_inference') or 0):.2f}×</strong></div><div class="mini"><small>状态</small><strong>已发布</strong></div></div><div class="actions"><a class="btn primary" href="{esc(ep.get('report_path'))}">报告</a><a class="btn" href="{esc(ep.get('full_text_path'))}">全文</a><a class="btn" href="{esc(ep.get('summary_markdown_path') or ep.get('report_path'))}">总结</a>{f'<a class="btn" href="{esc(source)}" target="_blank" rel="noopener">小宇宙</a>' if source else ''}</div></article>''')
     updated = datetime.now().isoformat(timespec="seconds")
-    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>播客 ASR 全文库</title><style>{CSS}</style></head><body><main class="shell"><section class="hero"><span class="eyebrow"><span class="dot"></span>Auto Podcast ASR Library</span><h1>播客 ASR 全文库</h1><p class="lead">自动收录 PODCAST_ROOT 下已经完成的播客转写，包含报告、全文网页、原始播客链接和下载文件。</p><div class="actions"><a class="btn primary" href="../">返回转写首页</a><a class="btn" href="episodes.json">episodes.json</a></div></section><section class="cards">{''.join(cards)}</section><div class="footer">Updated {esc(updated)} · publisher: scripts/publish_podcast_asr_site.py</div></main></body></html>'''
+    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Podcast ASR Studio</title><style>{CSS}</style></head><body><main class="wrap"><nav class="top"><div class="brand"><div class="logo"></div><div>Podcast ASR Studio<br><span class="dim">GB10 local transcription library</span></div></div><span class="pill"><span class="dot"></span>Auto published</span></nav><section class="hero"><div class="panel intro"><div class="eyebrow">Import + Library</div><h1>从链接或音频，一步生成可检索播客知识页。</h1><p class="lead">首页拆成两个明确区域：上方是导入入口，支持贴入小宇宙链接或上传音频；下方是已完成转写的播客索引。每集页面统一承载官方介绍、LLM 总结、全文、下载与运行指标。</p><div class="actions"><a class="btn primary" href="#import">开始导入</a><a class="btn" href="#library">查看索引</a><a class="btn" href="episodes.json">episodes.json</a></div></div><div class="panel import" id="import"><div class="section-head" style="margin:0"><div><div class="eyebrow">Import</div><h2>导入播客</h2></div><span class="pill">URL / Audio</span></div><div class="tabs"><button class="tab active" data-tab="url">贴入链接</button><button class="tab" data-tab="file">上传音频</button></div><div id="urlPane"><div class="field"><input id="episodeUrl" placeholder="https://www.xiaoyuzhoufm.com/episode/..." /><button class="btn primary" id="mockRun">创建任务</button></div><p class="dim">小宇宙链接会先抓取官方标题、简介、OUTLINE、封面和音频 URL，再进入 ASR / LLM 总结。</p></div><div id="filePane" style="display:none"><div class="drop">拖入 M4A / MP3 / WAV，或点击选择文件。<br><span class="dim">当前为静态入口；后续接入后台任务 API。</span></div></div><div class="pipeline"><div class="step"><strong>1. 抓取介绍</strong>标题 / show notes / outline</div><div class="step"><strong>2. GPU ASR</strong>SenseVoice 分片转写</div><div class="step"><strong>3. LLM 总结</strong>Qwen 结合官方信息</div><div class="step"><strong>4. 发布</strong>索引 + 单集页面</div></div></div></section><section class="stats"><div class="stat"><small>已收录</small><strong>{len(episodes_sorted)}</strong><span class="dim">episodes</span></div><div class="stat"><small>总音频</small><strong>{fmt_ts(total_seconds)}</strong><span class="dim">已转写</span></div><div class="stat"><small>ASR 成功率</small><strong>{(ok_chunks / total_chunks * 100 if total_chunks else 0):.0f}%</strong><span class="dim">{ok_chunks} / {total_chunks} chunks</span></div><div class="stat"><small>平均 GPU 倍速</small><strong>{avg_realtime:.0f}×</strong><span class="dim">wall realtime</span></div></section><section class="section" id="library"><div class="section-head"><div><div class="eyebrow">Library</div><h2>已转写播客索引</h2></div><input class="search" id="filter" placeholder="搜索标题 / 摘要 / SpaceX / Coding" /></div><div class="grid" id="episodes">{''.join(cards)}</div></section><div class="footer">Updated {esc(updated)} · publisher: publish_podcast_asr_site.py</div></main><div class="toast" id="toast"><strong>任务已创建（静态原型）</strong><br><span class="dim">真实版本会创建后台 job，展示下载、转码、ASR、总结、发布的实时进度。</span></div><script>{INDEX_JS}</script></body></html>'''
 
 
 def publish_all(only_if_changed: bool = False) -> dict[str, Any]:
@@ -408,8 +429,6 @@ def publish_all(only_if_changed: bool = False) -> dict[str, Any]:
         if ep_json:
             published.append(ep_json)
 
-    # Always refresh the aggregate index when running manually; refresh on cron
-    # only when something changed or the index is missing.
     index_missing = not (LIBRARY_DIR / "index.html").exists()
     if published and (changed_slugs or index_missing or not only_if_changed):
         episodes_sorted = sorted(published, key=lambda x: x.get("published_at") or "", reverse=True)
