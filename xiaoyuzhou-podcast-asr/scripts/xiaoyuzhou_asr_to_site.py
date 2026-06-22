@@ -25,6 +25,7 @@ from typing import Any
 PODCAST_ROOT = Path(os.environ.get("PODCAST_ROOT", "~/podcast")).expanduser()
 ASR_TEMPLATE = Path(os.environ.get("PODCAST_ASR_TEMPLATE", str(PODCAST_ROOT / "asr_pipeline_template.py"))).expanduser()
 SUMMARY_SCRIPT = Path(os.environ.get("PODCAST_SUMMARY_SCRIPT", str(PODCAST_ROOT / "generate_podcast_summary.py"))).expanduser()
+TLDR_IMAGE_SCRIPT = Path(os.environ.get("PODCAST_TLDR_IMAGE_SCRIPT", str(PODCAST_ROOT / "generate_podcast_tldr_infographic.py"))).expanduser()
 PUBLISH_SCRIPT = Path(os.environ.get("PODCAST_PUBLISH_SCRIPT", str(PODCAST_ROOT / "publish_podcast_asr_site.py"))).expanduser()
 WIKI_EXPORT_SCRIPT = Path(os.environ.get("PODCAST_WIKI_EXPORT_SCRIPT", str(PODCAST_ROOT / "export_podcast_summary_to_wiki.py"))).expanduser()
 DEFAULT_WIKI_PATH = Path(os.environ.get("WIKI_PATH", "~/wiki")).expanduser()
@@ -284,13 +285,35 @@ def zip_outputs(work_dir: Path, episode_id: str) -> Path:
     out = work_dir / "output"
     zip_path = out / f"xiaoyuzhou_{episode_id}_asr_results.zip"
     candidates = []
-    for pattern in ["transcript_*.md", "transcript_*.txt", "transcript_*.srt", "transcription_*.json", "benchmark_cpu_gpu_*.json", "manifest.json", "podcast_summary.*", "episode_page_context.*", "site_meta.json"]:
+    for pattern in ["transcript_*.md", "transcript_*.txt", "transcript_*.srt", "transcription_*.json", "benchmark_cpu_gpu_*.json", "manifest.json", "podcast_summary.*", "tldr_infographic*", "episode_page_context.*", "site_meta.json"]:
         candidates.extend(out.glob(pattern))
     if not candidates:
         return zip_path
     rels = [str(p.relative_to(work_dir)) for p in sorted(set(candidates))]
     run(["zip", "-9", "-j", str(zip_path)] + [str(work_dir / r) for r in rels], cwd=work_dir, check=True)
     return zip_path
+
+
+def transcription_ok_chunks(path: Path) -> int:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        summary = data.get("summary") or {}
+        if "ok_chunks" in summary:
+            return int(summary.get("ok_chunks") or 0)
+        return sum(1 for c in data.get("chunks") or [] if not c.get("error"))
+    except Exception:
+        return 0
+
+
+def transcription_chunk_counts(path: Path) -> tuple[int, int]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        summary = data.get("summary") or {}
+        total = int(summary.get("chunks") or len(data.get("chunks") or []))
+        ok = int(summary.get("ok_chunks") or sum(1 for c in data.get("chunks") or [] if not c.get("error")))
+        return ok, total
+    except Exception:
+        return 0, 0
 
 
 def main() -> int:
@@ -309,6 +332,8 @@ def main() -> int:
     parser.add_argument("--skip-asr-if-exists", action="store_true", default=True)
     parser.add_argument("--force-asr", action="store_true")
     parser.add_argument("--force-summary", action="store_true")
+    parser.add_argument("--force-tldr-image", action="store_true", help="Regenerate the TLDR infographic even if output/tldr_infographic.png exists")
+    parser.add_argument("--skip-tldr-image", action="store_true", help="Skip GPT Image2/TLDR infographic generation")
     parser.add_argument("--model-dir", default=DEFAULT_MODEL_DIR)
     parser.add_argument("--punc-model-dir", default=DEFAULT_PUNC_MODEL_DIR)
     parser.add_argument("--vad-model-dir", default=DEFAULT_VAD_MODEL_DIR)
@@ -373,9 +398,22 @@ def main() -> int:
         run(["python3.12", str(pipeline), "prepare", "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)], log_prefix.with_name(log_prefix.name + "_prepare.log"))
         if not args.skip_benchmark:
             run(["python3.12", str(pipeline), "benchmark", "--devices", "cpu,cuda", "--start", str(args.benchmark_start), "--seconds", str(args.benchmark_seconds), "--language", args.language], log_prefix.with_name(log_prefix.name + "_benchmark.log"))
-        run(["python3.12", str(pipeline), "transcribe", "--device", "cuda", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)] + (["--force"] if args.force_asr else []), log_prefix.with_name(log_prefix.name + "_transcribe.log"))
+        cuda_cmd = ["python3.12", str(pipeline), "transcribe", "--device", "cuda", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)] + (["--force"] if args.force_asr else [])
+        cuda_failed = False
+        try:
+            run(cuda_cmd, log_prefix.with_name(log_prefix.name + "_transcribe.log"))
+        except subprocess.CalledProcessError:
+            cuda_failed = True
+        cuda_ok, cuda_total = transcription_chunk_counts(transcription)
+        if cuda_failed or cuda_ok < cuda_total:
+            print(f"WARN: CUDA ASR incomplete ({cuda_ok}/{cuda_total} chunks); retrying full transcription on CPU fallback.", flush=True)
+            cpu_transcription = work_dir / "output" / "transcription_cpu.json"
+            run(["python3.12", str(pipeline), "transcribe", "--device", "cpu", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds), "--force"], log_prefix.with_name(log_prefix.name + "_transcribe_cpu_fallback.log"))
+            transcription = cpu_transcription
     else:
         print(f"transcription exists, skipping ASR: {transcription}", flush=True)
+        if transcription_ok_chunks(transcription) == 0 and (work_dir / "output" / "transcription_cpu.json").exists():
+            transcription = work_dir / "output" / "transcription_cpu.json"
 
     summary_cmd = ["python3.12", str(SUMMARY_SCRIPT), str(transcription), "--api-base", args.llm_api_base, "--model", args.llm_model]
     page_context_json = work_dir / "output" / "episode_page_context.json"
@@ -384,6 +422,26 @@ def main() -> int:
     if args.force_summary:
         summary_cmd.append("--force")
     run(summary_cmd, log_prefix.with_name(log_prefix.name + "_summary.log"))
+    tldr_image_path = work_dir / "output" / "tldr_infographic.png"
+    if not args.skip_tldr_image:
+        tldr_cmd = [
+            "uv",
+            "run",
+            "--with",
+            "openai",
+            "--with",
+            "python-dotenv",
+            "--with",
+            "pillow",
+            "--with",
+            "requests",
+            "python",
+            str(TLDR_IMAGE_SCRIPT),
+            str(work_dir / "output" / "podcast_summary.json"),
+        ]
+        if args.force_tldr_image:
+            tldr_cmd.append("--force")
+        run(tldr_cmd, log_prefix.with_name(log_prefix.name + "_tldr_image.log"), cwd=PODCAST_ROOT)
     wiki_export_stdout = ""
     if not args.skip_wiki_export:
         wiki_cmd = [
@@ -416,6 +474,7 @@ def main() -> int:
         "transcription": str(transcription),
         "summary_json": str(work_dir / "output" / "podcast_summary.json"),
         "summary_markdown": str(work_dir / "output" / "podcast_summary.md"),
+        "tldr_infographic": str(tldr_image_path) if tldr_image_path.exists() else "",
         "site_report": f"{DEFAULT_SITE_BASE_LAN}/{slug}/index.html",
         "site_full_text": f"{DEFAULT_SITE_BASE_LAN}/{slug}/full.html",
         "site_index": f"{DEFAULT_SITE_BASE_LAN}/index.html",
