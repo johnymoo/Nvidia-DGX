@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
+._*
+*.swp
+*.swo
+
+# Local secrets/config
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs and generated runtime artifacts
+logs/
+*.log
+*.log.txt
