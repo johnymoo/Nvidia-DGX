@@ -1,12 +1,14 @@
-# Qwen3.6-35B-A3B on DGX Spark (GB10) - 部署与测试指南
+# Qwen3.6 on DGX Spark (GB10) - 部署与测试指南
 
 ## 概述
 
-本指南介绍如何在 NVIDIA DGX Spark (GB10) 上部署 Qwen3.6-35B-A3B 模型，对比 vLLM (FP8 / NVFP4) 和 llama.cpp (Q4_K_S) 多种推理方案的性能与适用场景。
+本指南记录 NVIDIA DGX Spark (GB10) 上的 Qwen3.6 部署：当前 8004 服务使用 `unsloth/Qwen3.6-27B-NVFP4`，历史方案包括 Qwen3.6-35B-A3B 的 vLLM FP8/NVFP4 与 llama.cpp Q4_K_S。
 
-Qwen3.6-35B-A3B 是 Qwen 系列最新 MoE 模型，总参数量 35B，激活参数量仅 3B，支持 256K 原生上下文，具备 Tool use、Reasoning 和 Code generation 能力。
+27B checkpoint 是原生多模态 dense 模型，包含混合 FP8 与 W4A4 NVFP4 层及 checkpoint-native MTP；35B-A3B 是 MoE 模型。两者在本文中分别标明，避免把真实 checkpoint 与兼容 API 别名混淆。
 
 > 2026-06-18 更新：新增 NVIDIA 官方 DGX Spark / ARM64 recipe 的 `Qwen3.6-35B-A3B-NVFP4` vLLM 部署与 FP8 对比 benchmark。详见 [NVFP4-BENCHMARK-RESULTS.md](./NVFP4-BENCHMARK-RESULTS.md)。
+>
+> 2026-07-16 更新：当前 8004 端点切换到 `unsloth/Qwen3.6-27B-NVFP4`，启用原生 FlashInfer B12x NVFP4 与 2-token MTP。单流由 11.088 提升到 25.681 tok/s（2.316×）；完整 48-request benchmark 全部成功。服务使用 128K 上下文并通过长上下文和图片输入验证。为兼容现有客户端，对外 model ID 继续保持 `qwen3.6-35b-fp8`。详见 [MTP2 benchmark 报告](./UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md)。
 
 ## 硬件环境
 
@@ -23,6 +25,7 @@ Qwen3.6-35B-A3B 是 Qwen 系列最新 MoE 模型，总参数量 35B，激活参�
 
 | 模型 | 大小 | 路径 | 格式 |
 |------|------|------|------|
+| Unsloth Qwen3.6-27B-NVFP4 | 23.42 GB | `~/models/unsloth-Qwen3.6-27B-NVFP4` | mixed FP8 + W4A4 NVFP4 Safetensors |
 | Qwen3.6-35B-A3B-FP8 | ~35 GB | `~/models/Qwen3.6-35B-A3B-FP8` | Safetensors |
 | Qwen3.6-35B-A3B-NVFP4 | ~22 GB | `~/models/Qwen3.6-35B-A3B-NVFP4` | ModelOpt NVFP4 Safetensors |
 | Qwen3.6-35B-A3B-Q4_K_S | ~19.4 GB | `~/models/qwen36-q4ks/Qwen3.6-35B-A3B-UD-Q4_K_S.gguf` | GGUF |
@@ -39,6 +42,117 @@ modelscope download --model unsloth/Qwen3.6-35B-A3B-GGUF --local_dir ~/models/qw
 huggingface-cli download Qwen/Qwen3.6-35B-A3B-FP8 --local-dir ~/models/Qwen3.6-35B-A3B-FP8
 huggingface-cli download unsloth/Qwen3.6-35B-A3B-GGUF --local-dir ~/models/qwen36-q4ks
 ```
+
+---
+
+## 当前方案：Unsloth Qwen3.6-27B NVFP4 + native MTP2
+
+该方案是当前 8004 服务。真实 checkpoint 与 API 兼容名称必须分开理解：
+
+| 项目 | 值 |
+|------|-----|
+| 实际 checkpoint | `unsloth/Qwen3.6-27B-NVFP4` |
+| 对外兼容 model ID | `qwen3.6-35b-fp8` |
+| 部署标记 alias | `qwen3.6-27b-unsloth-nvfp4` |
+| API | `http://127.0.0.1:8004/v1` |
+| 默认上下文上限 | 131,072 tokens（可用 `MAX_MODEL_LEN` 覆盖） |
+| Speculative decoding | checkpoint-native MTP，2 tokens |
+| 主要 NVFP4 kernel | `FlashInferB12xNvFp4LinearKernel` |
+| KV cache | FP8 |
+| 多模态 | 文本、图片；checkpoint 同时包含视频 processor |
+
+`qwen3.6-35b-fp8` 是现有客户端依赖的稳定 API 别名，也是 benchmark 请求继续使用的默认名称；它不表示底层仍是 35B。`qwen3.6-27b-unsloth-nvfp4` 是第二个 served alias，用作部署标记以降低误测到其他服务的风险。该标记只加强意外服务检测，**不是** checkpoint 的密码学证明；严格溯源仍应核对 revision 和权重哈希。切换 checkpoint 时不要修改兼容名称，除非同步迁移所有客户端。
+
+### 构建和启动
+
+```bash
+cd ~/project/nvidia-dgx/qwen36-dgx-spark
+
+# 在 SM121 上为 W4A4 层选择 native B12x NVFP4 kernel
+docker build \
+  -f Dockerfile.vllm-sm121-native-fp4 \
+  -t local/vllm-openai:sm121-native-fp4 .
+
+# MODEL_DIR 可以覆盖默认的 $HOME/models/unsloth-Qwen3.6-27B-NVFP4
+MODEL_DIR="$HOME/models/unsloth-Qwen3.6-27B-NVFP4" \
+  docker compose \
+  -f docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native-mtp2.yml \
+  up -d
+```
+
+`Dockerfile.vllm-sm121-native-fp4` 已将 base image 固定为 `vllm/vllm-openai@sha256:1aef087aa5159bcb8f8cb91301ecdf2f6daa6aa41420706afe30b6a9a7001858`，不再依赖可变 nightly tag。验证运行中观测到的 vLLM 版本为 `0.23.1rc1.dev101+g4c6266331`。
+
+两个新 compose 默认只把 8004 发布到 `127.0.0.1`。只有在受信任 LAN 中确实需要远程访问时，才显式设置 `VLLM_BIND_ADDRESS=0.0.0.0`；这些 compose 本身没有 API 认证，开放到非 loopback 前必须增加认证（或带认证的反向代理）和防火墙/源地址白名单控制。
+
+验证：
+
+```bash
+curl -fsS http://127.0.0.1:8004/health
+curl -fsS http://127.0.0.1:8004/v1/models
+
+curl -fsS http://127.0.0.1:8004/v1/chat/completions \
+  -H 'content-type: application/json' \
+  -d '{
+    "model": "qwen3.6-35b-fp8",
+    "messages": [{"role": "user", "content": "Reply exactly: OK"}],
+    "max_tokens": 8,
+    "temperature": 0,
+    "chat_template_kwargs": {"enable_thinking": false}
+  }'
+```
+
+### 关键实测结果
+
+| 测试 | 结果 |
+|------|------|
+| 单流固定 256 tokens，无 MTP | 11.088 tok/s |
+| 单流固定 256 tokens，MTP2 | **25.681 tok/s** |
+| 单流提升 | **2.316×（+131.6%）** |
+| 完整矩阵 | **48/48 成功，0 API error** |
+| 完整矩阵加权 wall throughput | **22.790 tok/s** |
+| MTP draft-token 接受率 | **82.80%** |
+| 第一 / 第二 speculative token | 89.33% / 76.27% |
+| 40,020-token prompt | HTTP 200 |
+| 图片理解 smoke test | 通过 |
+
+运行完整 benchmark：
+
+```bash
+python3 run_full_mtp2_benchmark.py
+```
+
+当前 MTP2 compose 的默认值是 `MAX_MODEL_LEN=131072`，无 MTP compose 的默认值是 `MAX_MODEL_LEN=32768`。上表的 11.088 → 25.681 tok/s 严格对照在两边都显式使用 **`MAX_MODEL_LEN=32768`**；因此当前 128K 默认 compose 不是 benchmark 当时的原样上下文设置。按历史 32K 条件复现时使用以下环境：
+
+```bash
+# 无 MTP 对照
+MODEL_DIR="$HOME/models/unsloth-Qwen3.6-27B-NVFP4" \
+VLLM_BIND_ADDRESS=127.0.0.1 \
+MAX_MODEL_LEN=32768 \
+  docker compose -f docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native.yml up -d
+
+# 收集无 MTP 单流结果后先 down，再启动 MTP2 对照
+MODEL_DIR="$HOME/models/unsloth-Qwen3.6-27B-NVFP4" \
+VLLM_BIND_ADDRESS=127.0.0.1 \
+MAX_MODEL_LEN=32768 \
+  docker compose -f docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native-mtp2.yml up -d
+
+# 复现历史 32K 的完整 MTP2 matrix；脚本默认 EXPECTED_MAX_MODEL_LEN=131072，
+# 所以复现历史运行必须明确覆盖为 32768。
+BENCH_URL=http://127.0.0.1:8004/v1/chat/completions \
+METRICS_URL=http://127.0.0.1:8004/metrics \
+EXPECTED_MAX_MODEL_LEN=32768 \
+SERVED_MODEL_NAME=qwen3.6-35b-fp8 \
+  python3 run_full_mtp2_benchmark.py
+```
+
+两个 compose 都绑定宿主机 8004；任一时刻只能运行一个。切换前先对当前 compose 执行 `docker compose ... down`，不要为了释放端口终止其他未知进程。
+
+完整配置、kernel 证据、原始指标与已知的非致命 `NV_ERR_NO_MEMORY` 启动 profiling 提示见：
+
+- [Native FP4 验证报告](./UNSLOTH-QWEN36-27B-NVFP4-NATIVE-FP4-RESULTS.md)
+- [MTP2 与 48-request benchmark 报告](./UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md)
+
+`benchmark_outputs/` 中本 PR 选定的结构化 benchmark JSON 虽然属于生成输出，但为了保留可审计的结果证据而有意提交；冗长 console log 仍不纳入 Git。
 
 ---
 
@@ -352,6 +466,14 @@ API_URL=http://localhost:8004/v1/chat/completions MODEL=qwen3.6-35b-fp8 ./benchm
 | `deploy-llamacpp.sh` | llama.cpp 一键部署脚本 (128K/256K) |
 | `benchmark.sh` | 基础性能与推理准确性测试 |
 | `benchmark-context.sh` | 上下文长度压力测试 |
+| `Dockerfile.vllm-sm121-native-fp4` | 基于 digest-pinned ARM64 vLLM image 构建 SM121 native B12x NVFP4 镜像 |
+| `patch_vllm_sm121_native_fp4.py` | 将 B12x kernel 加入 NVFP4 自动选择注册表 |
+| `docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native-mtp2.yml` | 当前 27B NVFP4 + MTP2 部署，默认 128K，保留兼容 model ID 与部署标记 |
+| `docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native.yml` | 无 MTP 单流对照配置，默认 32K；可用 `MAX_MODEL_LEN` 覆盖 |
+| `benchmark_vllm_qwen36_27b_unsloth_nvfp4_mtp2.py` | 4 prompts × 4 configs × 3 runs benchmark |
+| `run_full_mtp2_benchmark.py` | benchmark runner 与 speculative metrics 快照 |
+| `UNSLOTH-QWEN36-27B-NVFP4-NATIVE-FP4-RESULTS.md` | native FP4 kernel 与无 MTP 基线报告 |
+| `UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md` | MTP2、48-request、128K 和多模态报告 |
 
 ---
 

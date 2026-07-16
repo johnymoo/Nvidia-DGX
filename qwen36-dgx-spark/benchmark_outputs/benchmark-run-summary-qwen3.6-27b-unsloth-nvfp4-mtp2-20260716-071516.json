@@ -1,0 +1,36 @@
+{
+  "started": "2026-07-16T07:15:16.086167+08:00",
+  "ended": "2026-07-16T07:35:07.113318+08:00",
+  "duration_seconds": 1191.027134623997,
+  "benchmark_exit_code": 0,
+  "benchmark_script": "benchmark_vllm_qwen36_27b_unsloth_nvfp4_mtp2.py",
+  "benchmark_log": "benchmark_outputs/benchmark-run-qwen3.6-27b-unsloth-nvfp4-mtp2-20260716-071516.log",
+  "benchmark_result": "benchmark_outputs/benchmark-results-qwen3.6-27b-unsloth-nvfp4-mtp2-20260716-073507.json",
+  "speculative_config": {
+    "method": "mtp",
+    "num_speculative_tokens": 2
+  },
+  "metrics_before": {
+    "spec_decode_num_drafts_total": 427.0,
+    "spec_decode_num_draft_tokens_total": 854.0,
+    "spec_decode_num_accepted_tokens_total": 854.0,
+    "spec_decode_num_accepted_tokens_per_pos_total_pos0": 427.0,
+    "spec_decode_num_accepted_tokens_per_pos_total_pos1": 427.0
+  },
+  "metrics_after": {
+    "spec_decode_num_drafts_total": 10653.0,
+    "spec_decode_num_draft_tokens_total": 21306.0,
+    "spec_decode_num_accepted_tokens_total": 17788.0,
+    "spec_decode_num_accepted_tokens_per_pos_total_pos0": 9562.0,
+    "spec_decode_num_accepted_tokens_per_pos_total_pos1": 8226.0
+  },
+  "metrics_delta": {
+    "spec_decode_num_accepted_tokens_per_pos_total_pos0": 9135.0,
+    "spec_decode_num_drafts_total": 10226.0,
+    "spec_decode_num_accepted_tokens_per_pos_total_pos1": 7799.0,
+    "spec_decode_num_accepted_tokens_total": 16934.0,
+    "spec_decode_num_draft_tokens_total": 20452.0
+  },
+  "acceptance_rate": 0.8279874828867593,
+  "accepted_tokens_per_draft_step": 1.6559749657735185
+}

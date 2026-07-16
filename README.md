@@ -9,7 +9,7 @@ NVIDIA DGX 相关项目集合，包括 DGX Spark (GB10) 部署指南、模型推
 | 目录 | 描述 |
 |------|------|
 | [`qwen35-dgx-spark/`](./qwen35-dgx-spark/) | Qwen3.5 在 DGX Spark 上的部署指南与性能测试 |
-| [`qwen36-dgx-spark/`](./qwen36-dgx-spark/) | Qwen3.6-35B-A3B 在 DGX Spark 上的部署指南与性能测试（vLLM FP8/NVFP4 + llama.cpp Q4_K_S） |
+| [`qwen36-dgx-spark/`](./qwen36-dgx-spark/) | Qwen3.6 27B/35B 在 DGX Spark 上的部署指南与性能测试（vLLM FP8/NVFP4/MTP + llama.cpp Q4_K_S） |
 | [`xiaoyuzhou-podcast-asr/`](./xiaoyuzhou-podcast-asr/) | Xiaoyuzhou 播客 GPU ASR、Qwen 总结和静态网站发布流水线 |
 
 ---

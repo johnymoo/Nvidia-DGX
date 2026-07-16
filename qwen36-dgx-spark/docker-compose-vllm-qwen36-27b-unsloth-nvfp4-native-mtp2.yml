@@ -1,0 +1,83 @@
+# Unsloth Qwen3.6-27B mixed FP8 + W4A4 NVFP4 on DGX Spark (GB10/SM121)
+# Native FlashInfer B12x for W4A4 MLP layers plus checkpoint-native MTP.
+# MTP uses one checkpoint MTP layer twice to propose two speculative tokens.
+services:
+  vllm-qwen36-27b-unsloth-nvfp4-native-mtp2:
+    image: local/vllm-openai:sm121-native-fp4
+    pull_policy: never
+    container_name: vllm-qwen36-27b-unsloth-nvfp4-native-mtp2
+    restart: "no"
+    ports:
+      - "${VLLM_BIND_ADDRESS:-127.0.0.1}:8004:8000"
+    volumes:
+      - ${MODEL_DIR:-${HOME}/models/unsloth-Qwen3.6-27B-NVFP4}:/models:ro
+      - ${HOME}/.cache/vllm:/root/.cache/vllm
+      - ${HOME}/.cache/flashinfer:/root/.cache/flashinfer
+      - ${HOME}/.triton:/root/.triton
+    environment:
+      HF_HOME: /tmp
+      CUDA_VISIBLE_DEVICES: "0"
+      VLLM_HOST_IP: 127.0.0.1
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+      VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "1"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ipc: host
+    shm_size: 64gb
+    command:
+      - /models
+      - --served-model-name
+      - qwen3.6-35b-fp8
+      - qwen3.6-27b-unsloth-nvfp4
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --tensor-parallel-size
+      - "1"
+      - --trust-remote-code
+      - --dtype
+      - bfloat16
+      - --kv-cache-dtype
+      - fp8
+      - --attention-backend
+      - flashinfer
+      - --gpu-memory-utilization
+      - "0.60"
+      - --max-model-len
+      - "${MAX_MODEL_LEN:-131072}"
+      - --max-num-seqs
+      - "4"
+      - --max-num-batched-tokens
+      - "8192"
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --load-format
+      - fastsafetensors
+      - --speculative-config
+      - '{"method":"mtp","num_speculative_tokens":2}'
+      - --reasoning-parser
+      - qwen3
+      - --tool-call-parser
+      - qwen3_xml
+      - --enable-auto-tool-choice
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 1200s
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"
+
+networks:
+  default:
+    name: vllm-qwen36-27b-unsloth-nvfp4-mtp2-network
