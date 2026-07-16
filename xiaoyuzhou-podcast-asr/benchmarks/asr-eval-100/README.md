@@ -22,6 +22,16 @@ benchmarks/asr-eval-100/
     └── make_comparison_image.py
 ```
 
+
+## Dataset origin
+
+The 100 WAV samples are synthetic dictation audio generated locally with macOS system text-to-speech voices for Podcast ASR regression testing:
+
+- **Tingting** for Chinese content (categories: 中文日常, 中文标点, 数字日期, 专有名词, 长句, 输入法操作, 中英混合, 边界场景, 代码命令)
+- **Samantha** for English content (categories: English daily, English punctuation)
+
+Each sample is a short, manually crafted prompt sentence rendered to 16-bit mono 16 kHz PCM. The dataset does not contain third-party audio or copyrighted recordings. The reference transcripts and baseline Nemotron TER/latency measurements are stored in dataset/baseline-nemotron-results.json.
+
 ## Metric definitions
 
 - **TER**: token error rate against the `reference` field from `baseline-nemotron-results.json`.
