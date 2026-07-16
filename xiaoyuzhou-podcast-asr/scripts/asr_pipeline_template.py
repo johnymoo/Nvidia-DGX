@@ -278,7 +278,12 @@ def transcribe_one(engine: SenseVoiceEngine, chunk_index: int, start: float, end
     out_txt = out_prefix.with_suffix(".txt")
     if out_json.exists() and out_txt.exists() and out_txt.stat().st_size > 0 and not force:
         data = json.loads(out_json.read_text(encoding="utf-8"))
-        return ChunkResult(**data)
+        # Reuse only completed chunk results. A previous CUDA OOM writes an
+        # error JSON plus a one-byte txt file; treating that as resumable would
+        # permanently poison future retries.
+        if not data.get("error"):
+            return ChunkResult(**data)
+        print(f"retrying previous failed chunk {chunk_index}: {str(data.get('error'))[:160]}", flush=True)
     wall0 = time.perf_counter()
     model_load_before = engine.load_seconds
     text = ""
@@ -449,7 +454,10 @@ def cmd_transcribe(args: argparse.Namespace) -> None:
     elapsed = time.perf_counter() - run_started
     summary = summarize_results(results)
     summary["pipeline_wall_seconds"] = round(elapsed, 3)
-    summary["pipeline_rtf"] = round(elapsed / sum(r.duration_seconds for r in results if not r.error), 4) if results else None
+    successful_audio = sum(r.duration_seconds for r in results if not r.error)
+    summary["pipeline_rtf"] = round(elapsed / successful_audio, 4) if successful_audio else None
+    if results and not successful_audio:
+        summary["status"] = "all_chunks_failed"
     full = {
         **info,
         "created_at": now_iso(),
