@@ -27,6 +27,7 @@ End-to-end pipeline for turning a Xiaoyuzhou episode into GPU SenseVoice ASR art
 | `scripts/publish_podcast_asr_site.py` | Static site publisher and index builder. |
 | `scripts/podcast_asr_task_api.py` | FastAPI router for persistent background website import jobs. |
 | `scripts/publish_podcast_asr_site_watchdog.sh` | Silent watchdog wrapper for cron/no-agent jobs. |
+| `benchmarks/asr-eval-100/` | 100-sample dictation benchmark, baseline results, SenseVoice CUDA result, and reusable evaluation scripts. |
 | `skills/xiaoyuzhou-asr-to-site/SKILL.md` | Hermes skill procedure used by the local agent. |
 
 ## Requirements
@@ -132,6 +133,18 @@ $SENSEVOICE_STATIC_ROOT/podcast-asr/<episode-slug>/index.html
 $SENSEVOICE_STATIC_ROOT/podcast-asr/<episode-slug>/full.html
 ```
 
+## ASR Benchmark
+
+The `benchmarks/asr-eval-100/` directory contains a reusable 100-sample dictation benchmark for tracking ASR accuracy and latency across model/config updates. It includes the WAV samples, reference transcripts, baseline Nemotron results, the 2026-06-29 SenseVoiceSmall CUDA run, and scripts to re-run the benchmark and regenerate the comparison image.
+
+```bash
+cd benchmarks/asr-eval-100
+ASR_EVAL_DEVICE=cuda python3.12 scripts/eval_sensevoice_asr100.py
+python3.12 scripts/make_comparison_image.py
+```
+
+See `benchmarks/asr-eval-100/README.md` for metric definitions, environment overrides, and the checked-in benchmark summary.
+
 ## Verification
 
 ```bash
@@ -143,6 +156,6 @@ The page should include LLM summary sections, transcript download links, CPU/GPU
 
 ## Notes
 
-- Do not commit raw audio, WAV chunks, model weights, credentials, logs, or private `.env` files.
+- Do not commit raw podcast episode audio, generated WAV chunks, model weights, credentials, logs, or private `.env` files. Small curated benchmark audio sets under `benchmarks/` are allowed when they are part of a reproducible test fixture.
 - The Xiaoyuzhou public page usually exposes a media URL; authenticated opencli fallback is optional and should not expose credentials.
 - Qwen summary calls disable thinking so the final JSON lands in `message.content`.
