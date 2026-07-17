@@ -1,0 +1,5 @@
+FROM vllm/vllm-openai@sha256:1aef087aa5159bcb8f8cb91301ecdf2f6daa6aa41420706afe30b6a9a7001858
+
+COPY patch_vllm_sm121_native_fp4.py /tmp/patch_vllm_sm121_native_fp4.py
+RUN python3 /tmp/patch_vllm_sm121_native_fp4.py \
+    && rm /tmp/patch_vllm_sm121_native_fp4.py

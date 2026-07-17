@@ -1,0 +1,61 @@
+{
+  "baseline_artifact": "benchmark_outputs/single-stream-nomtp-20260716-070601.json",
+  "mtp2_artifact": "benchmark_outputs/single-stream-mtp2-20260716-071424.json",
+  "baseline_weighted_tok_s": 11.087528868866853,
+  "mtp2_weighted_tok_s": 25.6814765594524,
+  "speedup_ratio": 2.3162489011924485,
+  "speedup_percent": 131.62489011924487,
+  "baseline_std": 0.004312371551620784,
+  "mtp2_std": 0.05353772318150242,
+  "acceptance_rate": 1.0,
+  "accepted_per_draft_step": 2.0,
+  "runs": [
+    {
+      "run": 1,
+      "wall_seconds": 9.942536223999923,
+      "completion_tokens": 256,
+      "wall_tok_s": 25.74795748614433,
+      "finish_reason": "length",
+      "preview": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,"
+    },
+    {
+      "run": 2,
+      "wall_seconds": 9.950065151999297,
+      "completion_tokens": 256,
+      "wall_tok_s": 25.72847474758104,
+      "finish_reason": "length",
+      "preview": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,"
+    },
+    {
+      "run": 3,
+      "wall_seconds": 9.988790736002557,
+      "completion_tokens": 256,
+      "wall_tok_s": 25.62872791771483,
+      "finish_reason": "length",
+      "preview": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,"
+    },
+    {
+      "run": 4,
+      "wall_seconds": 9.975753007995081,
+      "completion_tokens": 256,
+      "wall_tok_s": 25.662223172008012,
+      "finish_reason": "length",
+      "preview": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,"
+    },
+    {
+      "run": 5,
+      "wall_seconds": 9.984225839994906,
+      "completion_tokens": 256,
+      "wall_tok_s": 25.64044564922728,
+      "finish_reason": "length",
+      "preview": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,"
+    }
+  ],
+  "metrics_delta": {
+    "spec_decode_num_accepted_tokens_per_pos_total_pos0": 425.0,
+    "spec_decode_num_accepted_tokens_total": 850.0,
+    "spec_decode_num_accepted_tokens_per_pos_total_pos1": 425.0,
+    "spec_decode_num_drafts_total": 425.0,
+    "spec_decode_num_draft_tokens_total": 850.0
+  }
+}
