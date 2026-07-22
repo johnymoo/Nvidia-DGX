@@ -1,0 +1,73 @@
+{
+  "timestamp": "2026-07-22T09:20:24.250965+00:00",
+  "benchmark_id": "53f940b97ecd41eca81b8e82a2830e44",
+  "model": "qwen3.6:35b-a3b",
+  "url": "http://127.0.0.1:8004/api/chat",
+  "image": {
+    "path": "benchmark_multimodal_card.png",
+    "width": 640,
+    "height": 360,
+    "expected": {
+      "blue_squares": 3,
+      "yellow_circles": 2,
+      "red_rectangles": 1
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "answer": {
+        "blue_squares": 3,
+        "yellow_circles": 2,
+        "red_rectangles": 1
+      },
+      "correct": true,
+      "response": "```json\n{\n    \"blue_squares\": 3,\n    \"yellow_circles\": 2,\n    \"red_rectangles\": 1\n}\n```",
+      "client_ttft_ms": 295.19604495726526,
+      "client_wall_ms": 602.3918120190501,
+      "prompt_tokens": 304,
+      "completion_tokens": 38,
+      "prompt_tok_s": 3215.919478454027,
+      "decode_tok_s": 134.68096142982526
+    },
+    {
+      "run": 2,
+      "answer": {
+        "blue_squares": 3,
+        "yellow_circles": 2,
+        "red_rectangles": 1
+      },
+      "correct": true,
+      "response": "```json\n{\n  \"blue_squares\": 3,\n  \"yellow_circles\": 2,\n  \"red_rectangles\": 1\n}\n```",
+      "client_ttft_ms": 259.6517379861325,
+      "client_wall_ms": 559.7097050631419,
+      "prompt_tokens": 304,
+      "completion_tokens": 38,
+      "prompt_tok_s": 3401.6300835151656,
+      "decode_tok_s": 134.8900449123504
+    },
+    {
+      "run": 3,
+      "answer": {
+        "blue_squares": 3,
+        "yellow_circles": 2,
+        "red_rectangles": 1
+      },
+      "correct": true,
+      "response": "```json\n{\n  \"blue_squares\": 3,\n  \"yellow_circles\": 2,\n  \"red_rectangles\": 1\n}\n```",
+      "client_ttft_ms": 251.77193293347955,
+      "client_wall_ms": 547.3213639343157,
+      "prompt_tokens": 304,
+      "completion_tokens": 38,
+      "prompt_tok_s": 3396.8163673808863,
+      "decode_tok_s": 136.43514714873504
+    }
+  ],
+  "summary": {
+    "runs": 3,
+    "correct_runs": 3,
+    "client_ttft_ms_mean": 268.8732386256258,
+    "prompt_tok_s_mean": 3338.121976450026,
+    "decode_tok_s_mean": 135.33538449697022
+  }
+}
