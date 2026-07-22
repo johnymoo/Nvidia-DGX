@@ -21,7 +21,21 @@ def repeated_context(target_words):
     return " ".join([unit] * ((target_words + 9) // 10))
 
 
-def scenarios():
+def prefill_scenario(name, target_words):
+    return {
+        "name": name,
+        "prompt": (
+            "Read the following reference text. Reply with exactly the word ACK.\n\n"
+            + repeated_context(target_words)
+        ),
+        "num_predict": 16,
+        "think": False,
+        "fresh_prefix": True,
+        "target_words": target_words,
+    }
+
+
+def standard_scenarios():
     return [
         {
             "name": "decode_256",
@@ -50,36 +64,19 @@ def scenarios():
             "num_predict": 512,
             "think": True,
         },
-        {
-            "name": "prefill_1k",
-            "prompt": (
-                "Read the following reference text. Reply with exactly the word ACK.\n\n"
-                + repeated_context(1000)
-            ),
-            "num_predict": 16,
-            "think": False,
-            "fresh_prefix": True,
-        },
-        {
-            "name": "prefill_8k",
-            "prompt": (
-                "Read the following reference text. Reply with exactly the word ACK.\n\n"
-                + repeated_context(8000)
-            ),
-            "num_predict": 16,
-            "think": False,
-            "fresh_prefix": True,
-        },
-        {
-            "name": "prefill_16k",
-            "prompt": (
-                "Read the following reference text. Reply with exactly the word ACK.\n\n"
-                + repeated_context(16000)
-            ),
-            "num_predict": 16,
-            "think": False,
-            "fresh_prefix": True,
-        },
+        prefill_scenario("prefill_1k", 1000),
+        prefill_scenario("prefill_8k", 8000),
+        prefill_scenario("prefill_16k", 16000),
+    ]
+
+
+def long_context_scenarios():
+    # Word counts are chosen to stay below the 128K allocation after tokenization.
+    return [
+        prefill_scenario("prefill_32k", 30000),
+        prefill_scenario("prefill_64k", 58000),
+        prefill_scenario("prefill_96k", 87000),
+        prefill_scenario("prefill_124k", 112000),
     ]
 
 
@@ -168,9 +165,10 @@ def mean_metric(runs, key):
     return statistics.mean(values) if values else None
 
 
-def summary(name, runs):
+def summary(name, runs, scenario):
     return {
         "name": name,
+        "target_words": scenario.get("target_words"),
         "thinking": runs[0]["thinking"] if runs else None,
         "runs": len(runs),
         "prompt_tokens_mean": mean_metric(runs, "prompt_tokens"),
@@ -203,6 +201,11 @@ def main():
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--timeout", type=int, default=300)
+    parser.add_argument(
+        "--long-context-only",
+        action="store_true",
+        help="run 32K, 64K, 96K, and approximately 124K fresh-prefix prefill scenarios only",
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -231,10 +234,11 @@ def main():
     with urllib.request.urlopen(request, timeout=args.timeout):
         pass
 
+    selected_scenarios = long_context_scenarios() if args.long_context_only else standard_scenarios()
     all_runs = {}
     summaries = []
     benchmark_id = uuid.uuid4().hex
-    for scenario in scenarios():
+    for scenario in selected_scenarios:
         name = scenario["name"]
         print(f"\n{name}")
         runs = []
@@ -249,7 +253,7 @@ def main():
                 f"e2e={result['end_to_end_tok_s']:.1f} tok/s"
             )
         all_runs[name] = runs
-        summaries.append(summary(name, runs))
+        summaries.append(summary(name, runs, scenario))
 
     result = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -257,6 +261,7 @@ def main():
         "url": args.url,
         "runs_per_scenario": args.runs,
         "benchmark_id": benchmark_id,
+        "scenario_set": "long-context-only" if args.long_context_only else "standard",
         "hardware": gpu_info(),
         "methodology": {
             "streaming": True,
