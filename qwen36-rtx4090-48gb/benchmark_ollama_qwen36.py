@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 DEFAULT_URL = "http://127.0.0.1:8004/api/chat"
-DEFAULT_MODEL = "qwen3.6:35b-a3b"
+DEFAULT_MODEL = "qwen3.6:27b"
 
 
 def repeated_context(target_words):

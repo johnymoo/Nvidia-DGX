@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 URL = "http://127.0.0.1:8004/api/chat"
-MODEL = "qwen3.6:35b-a3b"
+MODEL = "qwen3.6:27b"
 WIDTH = 640
 HEIGHT = 360
 EXPECTED = {"blue_squares": 3, "yellow_circles": 2, "red_rectangles": 1}

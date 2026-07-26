@@ -36,7 +36,7 @@ services:
         condition: service_healthy
     environment:
       OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: qwen3.6:35b-a3b
+      OLLAMA_MODEL: qwen3.6:27b
     volumes:
       - ollama-models:/root/.ollama
     entrypoint: ["/bin/sh", "-ec", "ollama pull \"$${OLLAMA_MODEL}\""]
