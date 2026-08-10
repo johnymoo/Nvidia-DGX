@@ -1,0 +1,7 @@
+ARG BASE_IMAGE=gb10-ds4-vllm:stage-c-f277b3d
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/tonyd2wild/DeepSeek-v4-Flash-0731-DSpark-1M-NVFP4-KV-2x-DGX-Spark" \
+      org.opencontainers.image.revision="f277b3dfa718a5962bed64e69e7e640a5384ec2f" \
+      io.shili.gb10-ds4.model="DeepSeek-V4-Flash-0731" \
+      io.shili.gb10-ds4.kv-cache="nvfp4_ds_mla"

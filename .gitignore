@@ -1,0 +1,16 @@
+# Raw source repositories, model artifacts, captures, and research material.
+/planning/01-raw/*
+!/planning/01-raw/README.md
+
+# Local deployment inputs and generated evidence.
+.env
+.env.*
+!.env.example
+execution/logs/
+execution/artifacts/
+execution/env/*.env
+execution/**/env/*.env
+*.log
+
+# OS/editor files.
+.DS_Store

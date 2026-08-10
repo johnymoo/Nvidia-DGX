@@ -1,0 +1,131 @@
+name: gb10-unsloth-ab
+
+x-server-base: &server-base
+  image: ${UNSLOTH_LLAMA_IMAGE:?set UNSLOTH_LLAMA_IMAGE}
+  network_mode: host
+  ipc: host
+  restart: "${RESTART_POLICY:-no}"
+
+  # The coordinator does not execute CUDA kernels locally, but the CUDA-linked
+  # llama-server binary still needs the driver libraries mounted at startup.
+  gpus: all
+
+  devices:
+    - /dev/infiniband:/dev/infiniband
+
+  ulimits:
+    memlock: -1
+    stack: 67108864
+
+  volumes:
+    - ${GGUF_MODEL_ROOT:?set GGUF_MODEL_ROOT}:/models:ro
+    - ${LLAMA_CACHE_ROOT:?set LLAMA_CACHE_ROOT}:/root/.cache/llama.cpp
+
+  environment:
+    CUDA_VISIBLE_DEVICES: ""
+    LLAMA_CACHE: /root/.cache/llama.cpp
+
+services:
+  rpc:
+    image: ${UNSLOTH_LLAMA_IMAGE:?set UNSLOTH_LLAMA_IMAGE}
+    network_mode: host
+    ipc: host
+    restart: "${RESTART_POLICY:-no}"
+
+    gpus: all
+
+    devices:
+      - /dev/infiniband:/dev/infiniband
+
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
+    volumes:
+      - ${LLAMA_CACHE_ROOT:?set LLAMA_CACHE_ROOT}:/root/.cache/llama.cpp
+
+    environment:
+      LLAMA_CACHE: /root/.cache/llama.cpp
+      GGML_RPC_DEBUG: "${GGML_RPC_DEBUG:-0}"
+
+    command:
+      - ggml-rpc-server
+      - --cache
+      - --host
+      - ${RPC_BIND_ADDR:?set RPC_BIND_ADDR}
+      - --port
+      - ${RPC_PORT:?set RPC_PORT}
+      - --device
+      - CUDA0
+
+  server-target:
+    <<: *server-base
+    profiles: [target]
+    command:
+      - llama-server
+      - --model
+      - ${GGUF_TARGET_MODEL:?set GGUF_TARGET_MODEL}
+      - --rpc
+      - ${RPC_ENDPOINTS:?set RPC_ENDPOINTS}
+      - --tensor-split
+      - ${TENSOR_SPLIT:-1,1}
+      - --split-mode
+      - layer
+      - --n-gpu-layers
+      - "99"
+      - --fit
+      - "off"
+      - --flash-attn
+      - "on"
+      - --ctx-size
+      - "${CONTEXT_SIZE:-262144}"
+      - --parallel
+      - "${PARALLEL:-1}"
+      - --cache-ram
+      - "0"
+      - --jinja
+      - --metrics
+      - --host
+      - ${LLAMA_HOST:-0.0.0.0}
+      - --port
+      - "${LLAMA_PORT:-8891}"
+
+  server-dspark:
+    <<: *server-base
+    profiles: [dspark]
+    command:
+      - llama-server
+      - --model
+      - ${GGUF_TARGET_MODEL:?set GGUF_TARGET_MODEL}
+      - --model-draft
+      - ${GGUF_DRAFT_MODEL:?set GGUF_DRAFT_MODEL}
+      - --rpc
+      - ${RPC_ENDPOINTS:?set RPC_ENDPOINTS}
+      - --tensor-split
+      - ${TENSOR_SPLIT:-1,1}
+      - --split-mode
+      - layer
+      - --n-gpu-layers
+      - "99"
+      - --n-gpu-layers-draft
+      - "99"
+      - --fit
+      - "off"
+      - --spec-type
+      - draft-dspark
+      - --spec-draft-n-max
+      - "${SPEC_DRAFT_N_MAX:-3}"
+      - --flash-attn
+      - "on"
+      - --ctx-size
+      - "${CONTEXT_SIZE:-262144}"
+      - --parallel
+      - "${PARALLEL:-1}"
+      - --cache-ram
+      - "0"
+      - --jinja
+      - --metrics
+      - --host
+      - ${LLAMA_HOST:-0.0.0.0}
+      - --port
+      - "${LLAMA_PORT:-8891}"
