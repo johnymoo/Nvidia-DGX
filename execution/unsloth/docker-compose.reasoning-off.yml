@@ -1,0 +1,8 @@
+services:
+  server-target:
+    environment:
+      LLAMA_ARG_REASONING: "off"
+
+  server-dspark:
+    environment:
+      LLAMA_ARG_REASONING: "off"
