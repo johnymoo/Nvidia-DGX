@@ -17,7 +17,7 @@ CURRENT_PHASE="pre-transition"
 REVIEW_PID=""
 
 usage() {
-  echo "Usage: $0 {--preflight|--run|--status|--restore-qwen}" >&2
+  echo "Usage: $0 {--preflight|--run|--resume-run ARTIFACT|--status|--restore-qwen}" >&2
 }
 
 log() {
@@ -176,6 +176,64 @@ run_formal() {
   cat "$artifact/receipt.json"
 }
 
+resume_formal() {
+  local artifact="$1" artifact_base run_id service_receipt transition_receipt package_receipt final_status review_url
+  artifact="$(cd "$artifact" && pwd)"
+  artifact_base="$(mkdir -p "$ARTIFACT_BASE" && cd "$ARTIFACT_BASE" && pwd)"
+  case "$artifact/" in
+    "$artifact_base"/*/) ;;
+    *) echo "resume artifact is outside the benchmark run root" >&2; return 64 ;;
+  esac
+  [ -f "$artifact/benchmark-state.json" ] || { echo "resume benchmark state missing" >&2; return 1; }
+  [ -f "$artifact/resume-source-preflight-receipt.json" ] || { echo "resume source preflight missing" >&2; return 1; }
+  jq -e '.status == "completed" and .attempt_count == 14' "$artifact/phase-deepseek-receipt.json" >/dev/null
+  jq -e '.state == "qwen-running" and .qwen.restored == true' "$artifact/service-transition-receipt.json" >/dev/null
+  [ ! -e "$artifact/receipt.json" ] || { echo "resume artifact already has a final receipt" >&2; return 1; }
+
+  CURRENT_ARTIFACT="$artifact"
+  CURRENT_PHASE="post-transition"
+  run_id="$(basename "$artifact")"
+  service_receipt="$artifact/service-deepseek-receipt.json"
+  transition_receipt="$artifact/service-transition-receipt.json"
+
+  log "resume: static checks and frozen checkpoint validation"
+  static_checks
+  remote_service "--status" >"$artifact/service-resume-status.json"
+  jq -e '.state == "stopped" and .qwen_health == "healthy"' "$artifact/service-resume-status.json" >/dev/null
+  trap recover_on_exit EXIT ERR INT TERM
+  runner --rebind-preflight --old-preflight "$artifact/resume-source-preflight-receipt.json" --artifact-root "$artifact" | tee "$artifact/runner-resume-rebind.stdout.json"
+
+  log "resume: execute only missing Qwen attempts"
+  runner --phase qwen --artifact-root "$artifact" | tee "$artifact/runner-qwen-resume.stdout.json"
+  jq -e '.status == "completed" and .attempt_count == 7' "$artifact/phase-qwen-receipt.json" >/dev/null
+
+  log "resume: invoke blind judge and package sealed human review"
+  runner --package --artifact-root "$artifact" | tee "$artifact/runner-package.stdout.json"
+  package_receipt="$artifact/phase-package-receipt.json"
+  jq -e '.status == "ready_for_review" and .task_count == 7 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
+  review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
+
+  remote_service "--status" >"$artifact/service-final-status.json"
+  final_status="$artifact/service-final-status.json"
+  jq -e '.state == "stopped" and .qwen_health == "healthy"' "$final_status" >/dev/null
+  jq -n \
+    --arg run_id "$run_id" --arg artifact "$artifact" --arg url "$review_url" \
+    --arg service "$service_receipt" --arg transition "$transition_receipt" \
+    --arg deepseek "$artifact/phase-deepseek-receipt.json" --arg qwen "$artifact/phase-qwen-receipt.json" \
+    --arg package "$package_receipt" --arg final "$final_status" --arg ended "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{schema_version:1,status:"review_pending",baseline_revision:"claude-ds-pilot-r2",run_id:$run_id,ended_at:$ended,artifact:$artifact,review_url:$url,resumed:true,
+      phases:{deepseek_service:$service,deepseek_attempts:$deepseek,transition:$transition,qwen_attempts:$qwen,package:$package,final_service:$final},
+      final_state:{deepseek:"stopped",qwen:"healthy"},note:"Human review is pending; no statistical superiority claim."}' \
+    >"$artifact/receipt.json"
+  CURRENT_PHASE="complete"
+  trap - EXIT ERR INT TERM
+  log "resume passed; DeepSeek is stopped, Qwen is healthy, review URL: $review_url"
+  if command -v open >/dev/null 2>&1; then
+    open "$review_url" >/dev/null 2>&1 || true
+  fi
+  cat "$artifact/receipt.json"
+}
+
 status() {
   remote_service "--status"
 }
@@ -185,12 +243,13 @@ restore_qwen() {
 }
 
 main() {
-  [ "$#" -eq 1 ] || { usage; return 64; }
+  [ "$#" -ge 1 ] || { usage; return 64; }
   case "$1" in
-    --preflight) run_preflight ;;
-    --run) run_formal ;;
-    --status) status ;;
-    --restore-qwen) restore_qwen ;;
+    --preflight) [ "$#" -eq 1 ] || { usage; return 64; }; run_preflight ;;
+    --run) [ "$#" -eq 1 ] || { usage; return 64; }; run_formal ;;
+    --resume-run) [ "$#" -eq 2 ] || { usage; return 64; }; resume_formal "$2" ;;
+    --status) [ "$#" -eq 1 ] || { usage; return 64; }; status ;;
+    --restore-qwen) [ "$#" -eq 1 ] || { usage; return 64; }; restore_qwen ;;
     *) usage; return 64 ;;
   esac
 }

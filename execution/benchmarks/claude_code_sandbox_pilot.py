@@ -40,6 +40,7 @@ TREATMENTS = ("online_ds", "offline_ds", "qwen_local")
 DEEPSEEK_TREATMENTS = ("online_ds", "offline_ds")
 LETTERS = ("A", "B", "C")
 CRITERIA = ("accuracy", "following", "clarity_style")
+ALLOWED_CLAUDE_TOOLS = frozenset({"Bash", "Edit", "Read", "Glob", "Grep", "Write"})
 JUDGE_MODEL = "gpt-5.6-sol"
 JUDGE_EFFORT = "xhigh"
 FORBIDDEN_BLIND_TERMS = (
@@ -290,11 +291,6 @@ def validate_identity(parsed: dict[str, Any], treatment: str, expected_version: 
         models = set((result.get("modelUsage") or {}).keys())
         if models and models != {spec["model"]}:
             raise InfrastructureError(f"{treatment}: modelUsage contains unexpected models: {sorted(models)}")
-    allowed = {"Bash", "Edit", "Read", "Glob", "Grep", "Write"}
-    if any(call not in allowed for call in parsed["tool_calls"]):
-        raise InfrastructureError(f"{treatment}: disallowed tool activity")
-
-
 def run_claude(*, treatment: str, prompt: str, cwd: Path, timeout_seconds: int, toolchain: Path, real_claude: Path, expected_version: str, output_path: Path, with_tools: bool, manifest: dict[str, Any] | None = None) -> dict[str, Any]:
     env, spec = claude_environment(treatment, toolchain, real_claude, manifest)
     contract = toolchain_contract(toolchain)
@@ -317,12 +313,19 @@ def run_claude(*, treatment: str, prompt: str, cwd: Path, timeout_seconds: int, 
     parsed = parse_stream(output)
     validate_identity(parsed, treatment, expected_version, manifest)
     result = parsed.get("result") or {}
-    return {"treatment": treatment, "route": spec["route"], "model": spec["model"], "claude_code_version": parsed["init"]["claude_code_version"], "fallback_configured": "--fallback-model" in argv, "agent_status": "timeout" if timed_out else "completed" if process.returncode == 0 else "agent_exit_error", "exit_code": process.returncode, "timed_out": timed_out, "elapsed_seconds": round(time.monotonic() - started, 3), "duration_ms": result.get("duration_ms"), "duration_api_ms": result.get("duration_api_ms"), "ttft_ms": result.get("ttft_ms"), "num_turns": result.get("num_turns"), "terminal_reason": "timeout" if timed_out else result.get("terminal_reason"), "usage": result.get("usage") or {}, "model_usage": result.get("modelUsage") or {}, "cost_usd": result.get("total_cost_usd"), "permission_denials": result.get("permission_denials") or [], "tool_calls": parsed["tool_calls"], "stream_path": str(output_path), "assistant_text": parsed["assistant_text"]}
+    disallowed = sorted({call for call in parsed["tool_calls"] if call not in ALLOWED_CLAUDE_TOOLS})
+    agent_status = "timeout" if timed_out else "completed" if process.returncode == 0 else "agent_exit_error"
+    if disallowed and agent_status == "completed":
+        agent_status = "invalid_tool_activity"
+    return {"treatment": treatment, "route": spec["route"], "model": spec["model"], "claude_code_version": parsed["init"]["claude_code_version"], "fallback_configured": "--fallback-model" in argv, "agent_status": agent_status, "exit_code": process.returncode, "timed_out": timed_out, "elapsed_seconds": round(time.monotonic() - started, 3), "duration_ms": result.get("duration_ms"), "duration_api_ms": result.get("duration_api_ms"), "ttft_ms": result.get("ttft_ms"), "num_turns": result.get("num_turns"), "terminal_reason": "timeout" if timed_out else result.get("terminal_reason"), "usage": result.get("usage") or {}, "model_usage": result.get("modelUsage") or {}, "cost_usd": result.get("total_cost_usd"), "permission_denials": result.get("permission_denials") or [], "tool_calls": parsed["tool_calls"], "disallowed_tool_calls": disallowed, "stream_path": str(output_path), "assistant_text": parsed["assistant_text"]}
 
 
 def probe_provider(treatment: str, toolchain: Path, real_claude: Path, expected_version: str, artifact: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     artifact.mkdir(parents=True, exist_ok=True)
-    return run_claude(treatment=treatment, prompt="Reply with exactly: benchmark-ready", cwd=artifact, timeout_seconds=120, toolchain=toolchain, real_claude=real_claude, expected_version=expected_version, output_path=artifact / f"probe-{treatment}.jsonl", with_tools=False, manifest=manifest)
+    probe = run_claude(treatment=treatment, prompt="Reply with exactly: benchmark-ready", cwd=artifact, timeout_seconds=120, toolchain=toolchain, real_claude=real_claude, expected_version=expected_version, output_path=artifact / f"probe-{treatment}.jsonl", with_tools=False, manifest=manifest)
+    if probe["tool_calls"] or probe["agent_status"] != "completed":
+        raise InfrastructureError(f"{treatment}: protocol probe used tools or did not complete")
+    return probe
 
 
 def codex_binary() -> Path:
@@ -523,7 +526,7 @@ def prompt_contract_hash(task: dict[str, Any], manifest: dict[str, Any]) -> str:
 
 
 def deterministic_tier(hidden: dict[str, Any], agent_status: str) -> int:
-    if agent_status == "timeout" or hidden["total"] <= 0:
+    if agent_status != "completed" or hidden["total"] <= 0:
         return 1
     if hidden["passed"] == hidden["total"]:
         return 3
@@ -631,6 +634,59 @@ def load_state(root: Path, manifest: dict[str, Any], preflight: dict[str, Any]) 
     return state
 
 
+def validate_resume_attempts(state: dict[str, Any], manifest: dict[str, Any]) -> None:
+    tasks = {task["task_id"]: task for task in manifest["tasks"]}
+    expected = {attempt_key(task_id, treatment) for task_id in tasks for treatment in TREATMENTS}
+    seen: set[str] = set()
+    for attempt in state.get("attempts") or []:
+        task_id = attempt.get("task_id")
+        treatment = attempt.get("treatment")
+        key = attempt_key(str(task_id), str(treatment))
+        if key not in expected or key in seen:
+            raise InfrastructureError(f"resume state has an invalid or duplicate attempt: {key}")
+        seen.add(key)
+        task = tasks[str(task_id)]
+        spec = provider_spec(str(treatment), manifest)
+        if attempt.get("route") != spec["route"] or attempt.get("model") != spec["model"]:
+            raise InfrastructureError(f"resume attempt identity mismatch: {key}")
+        if attempt.get("claude_code_version") != manifest["claude_code_version"] or attempt.get("fallback_configured") is not False:
+            raise InfrastructureError(f"resume attempt runtime mismatch: {key}")
+        if attempt.get("prompt_contract_sha256") != prompt_contract_hash(task, manifest):
+            raise InfrastructureError(f"resume attempt prompt contract mismatch: {key}")
+        artifact = Path(str(attempt.get("artifact_dir") or ""))
+        if not artifact.is_dir() or not (artifact / "attempt.json").is_file():
+            raise InfrastructureError(f"resume attempt artifact missing: {key}")
+
+
+def rebind_preflight(cache: Path, artifact_root: Path, toolchain: Path, old_preflight_path: Path) -> dict[str, Any]:
+    manifest = load_manifest()
+    real_claude = find_real_claude(manifest["claude_code_version"])
+    current = require_fresh_preflight(cache, manifest, toolchain, real_claude)
+    old = read_json(old_preflight_path)
+    state = read_json(state_path(artifact_root))
+    if old.get("status") != "passed" or state.get("preflight_key") != old.get("preflight_key"):
+        raise InfrastructureError("resume source preflight does not own the benchmark state")
+    stable_fields = ("baseline_revision", "manifest_sha256", "toolchain", "claude_real_sha256", "claude_code_version", "task_ids", "treatment_contracts")
+    if any(old.get(field) != current.get(field) for field in stable_fields):
+        raise InfrastructureError("resume preflight changed a frozen benchmark contract")
+    for receipt in (old, current):
+        online = receipt.get("online_probe") or {}
+        judge = receipt.get("judge_runtime_probe") or {}
+        runtime = judge.get("runtime") or {}
+        if online.get("route") != "claude_ds" or online.get("model") != "deepseek-v4-flash" or online.get("fallback_configured") is not False:
+            raise InfrastructureError("resume preflight online identity is invalid")
+        if runtime.get("model") != JUDGE_MODEL or runtime.get("reasoning_effort") != JUDGE_EFFORT or judge.get("fallback_configured") is not False:
+            raise InfrastructureError("resume preflight judge identity is invalid")
+    validate_resume_attempts(state, manifest)
+    migration = {"at": utc_now(), "reason": "runner-only candidate tool classification fix", "old_preflight_key": old["preflight_key"], "new_preflight_key": current["preflight_key"], "old_runner_sha256": old.get("runner_sha256"), "new_runner_sha256": current.get("runner_sha256"), "validated_attempts": len(state.get("attempts") or [])}
+    state["preflight_key"] = current["preflight_key"]
+    state.setdefault("preflight_migrations", []).append(migration)
+    write_json(state_path(artifact_root), state)
+    receipt = {"schema_version": 1, "status": "passed", **migration}
+    write_json(artifact_root / "resume-preflight-rebind-receipt.json", receipt)
+    return receipt
+
+
 def attempt_key(task_id: str, treatment: str) -> str:
     return f"{task_id}:{treatment}"
 
@@ -651,7 +707,7 @@ def run_attempt(task: dict[str, Any], treatment: str, root: Path, toolchain: Pat
     (attempt_tmp / "changes.patch").write_text(patch, encoding="utf-8")
     artifact = review_artifact(task, scratch, patch)
     (attempt_tmp / "review-artifact.txt").write_text(artifact, encoding="utf-8")
-    attempt.update({"task_id": task["task_id"], "title": task["title"], "category": task["category"], "task_kind": task["task_kind"], "base_commit": base_commit, "workspace": str(scratch), "visible_tests": visible, "hidden_grader": hidden, "task_status": "passed" if hidden["status"] == "passed" else "failed", "changed_files": changed_files(scratch), "patch_sha256": hashlib.sha256(patch.encode()).hexdigest(), "patch_bytes": len(patch.encode()), "review_artifact": artifact, "prompt_contract_sha256": prompt_contract_hash(task, manifest)})
+    attempt.update({"task_id": task["task_id"], "title": task["title"], "category": task["category"], "task_kind": task["task_kind"], "base_commit": base_commit, "workspace": str(scratch), "visible_tests": visible, "hidden_grader": hidden, "task_status": "passed" if hidden["status"] == "passed" and attempt["agent_status"] == "completed" else "failed", "changed_files": changed_files(scratch), "patch_sha256": hashlib.sha256(patch.encode()).hexdigest(), "patch_bytes": len(patch.encode()), "review_artifact": artifact, "prompt_contract_sha256": prompt_contract_hash(task, manifest)})
     write_json(attempt_tmp / "attempt.json", attempt)
     attempt_final.parent.mkdir(parents=True, exist_ok=True)
     os.replace(attempt_tmp, attempt_final)
@@ -1005,11 +1061,13 @@ def parse_args() -> argparse.Namespace:
     mode.add_argument("--preflight", action="store_true")
     mode.add_argument("--phase", choices=("deepseek", "qwen"))
     mode.add_argument("--package", action="store_true")
+    mode.add_argument("--rebind-preflight", action="store_true")
     mode.add_argument("--serve-review", action="store_true")
     mode.add_argument("--fake-run", action="store_true")
     parser.add_argument("--cache", type=Path, default=Path(os.environ.get("CLAUDE_PILOT_CACHE", DEFAULT_CACHE)))
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--review-root", type=Path)
+    parser.add_argument("--old-preflight", type=Path)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--toolchain", type=Path, default=Path(os.environ.get("CODING_AGENT_TOOLCHAIN", DEFAULT_TOOLCHAIN)))
@@ -1029,6 +1087,10 @@ def main() -> int:
             output = run_phase(args.phase, args.cache, args.artifact_root, args.toolchain)
         elif args.package:
             output = build_package(args.cache, args.artifact_root, args.toolchain)
+        elif args.rebind_preflight:
+            if args.old_preflight is None:
+                raise InfrastructureError("--rebind-preflight requires --old-preflight")
+            output = rebind_preflight(args.cache, args.artifact_root, args.toolchain, args.old_preflight.resolve())
         elif args.fake_run:
             output = run_fake_benchmark(args.artifact_root)
         else:

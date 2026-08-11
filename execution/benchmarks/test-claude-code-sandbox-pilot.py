@@ -29,9 +29,15 @@ def make_fake_toolchain(root: Path) -> tuple[Path, Path]:
 set -euo pipefail
 model="${FAKE_MODEL:-${CLAUDE_DS_MODEL:-${CLAUDE_LOCAL_MODEL:-missing}}}"
 version="${FAKE_VERSION:-2.1.207}"
+tools=""
+previous=""
+for argument in "$@"; do
+  if [ "$previous" = "--tools" ]; then tools="$argument"; fi
+  previous="$argument"
+done
 printf '{"type":"system","subtype":"init","model":"%s","claude_code_version":"%s"}\\n' "$model" "$version"
 if [ -n "${FAKE_SLEEP:-}" ]; then sleep "$FAKE_SLEEP"; fi
-printf '%s\\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}'
+if [ -n "$tools" ]; then printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"%s"}]}}\\n' "${FAKE_TOOL_NAME:-Read}"; fi
 printf '{"type":"result","subtype":"success","duration_ms":5,"num_turns":1,"total_cost_usd":0.01,"modelUsage":{"%s":{"inputTokens":1,"outputTokens":1}},"usage":{"input_tokens":1,"output_tokens":1},"permission_denials":[],"terminal_reason":"completed"}\\n' "$model"
 """,
         encoding="utf-8",
@@ -113,7 +119,14 @@ def main() -> None:
         run = pilot.run_claude(treatment="online_ds", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "online.jsonl", with_tools=True, manifest=manifest)
         assert run["model"] == "deepseek-v4-flash" and run["route"] == "claude_ds" and run["tool_calls"] == ["Read"]
         qwen = pilot.run_claude(treatment="qwen_local", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "qwen.jsonl", with_tools=False, manifest=manifest)
-        assert qwen["model"] == "qwen3.6-35b-fp8" and qwen["route"] == "claude_local"
+        assert qwen["model"] == "qwen3.6-35b-fp8" and qwen["route"] == "claude_local" and qwen["tool_calls"] == []
+
+        os.environ["FAKE_TOOL_NAME"] = "shell"
+        invalid_tool = pilot.run_claude(treatment="qwen_local", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "invalid-tool.jsonl", with_tools=True, manifest=manifest)
+        assert invalid_tool["agent_status"] == "invalid_tool_activity"
+        assert invalid_tool["disallowed_tool_calls"] == ["shell"]
+        assert pilot.deterministic_tier({"passed": 8, "total": 8}, invalid_tool["agent_status"]) == 1
+        os.environ.pop("FAKE_TOOL_NAME")
 
         os.environ["FAKE_MODEL"] = "deepseek-v4-pro"
         try:
