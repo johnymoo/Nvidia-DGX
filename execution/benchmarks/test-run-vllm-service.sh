@@ -45,7 +45,11 @@ assert_runtime() { :; }
 qwen_contract() {
   printf '%s\n' '{"name":"qwen","running":true,"project":"qwen","service":"vllm","config_files":"/mock/compose.yml","working_dir":"/mock"}'
 }
-qwen_compose() { printf 'qwen %s\n' "$*" >>"$MOCK_LOG"; }
+qwen_compose() {
+  printf 'qwen %s\n' "$*" >>"$MOCK_LOG"
+  [ "${1:-}" != start ] || QWEN_STOPPED=0
+}
+wait_qwen() { :; }
 remote() {
   case "$*" in
     *inspect*) printf 'healthy\n' ;;
@@ -76,6 +80,19 @@ worker_line="$(grep -n '^worker up -d vllm-dspark$' "$MOCK_LOG" | cut -d: -f1)"
 head_line="$(grep -n '^head up -d vllm-dspark$' "$MOCK_LOG" | cut -d: -f1)"
 [ "$qwen_line" -lt "$worker_line" ]
 [ "$worker_line" -lt "$head_line" ]
+
+: >"$MOCK_LOG"
+service_transition_qwen >"$FIXTURE/transition.json"
+jq -e '.state == "qwen-running" and .qwen.restored == true' "$FIXTURE/transition.json" >/dev/null
+test ! -e "$SERVICE_ACTIVE_STATE"
+grep -Fqx 'head stop vllm-dspark' "$MOCK_LOG"
+grep -Fqx 'worker stop vllm-dspark' "$MOCK_LOG"
+grep -Fqx 'qwen start' "$MOCK_LOG"
+
+printf '%s\n' '{"schema_version":1,"state":"running","run_id":"active","started_at":"2026-08-11T00:00:00Z","artifact":"'"$FIXTURE"'/adopt","worker_artifact":"'"$FIXTURE"'/worker","containers":{"head":"head-container","worker":"worker-container"},"release":{"revision":"f277b3dfa718a5962bed64e69e7e640a5384ec2f","fingerprint":"36adbf92fe8cdd5c57609b2c5ccfa8e2fc32a340c9ee3d727be538143dda74db","model":"deepseek-v4-flash-0731","patch4":true},"qwen":{"was_running":false,"stopped":true},"protected":{"pdf2md_was_running":true,"trading_was_running":true,"lexdata_before":"healthy"}}' >"$SERVICE_ACTIVE_STATE"
+service_status() { printf '%s\n' '{"state":"running","model":"deepseek-v4-flash-0731","protected_services_ok":true,"qwen_running":false}'; }
+service_ensure_active >"$FIXTURE/adopt.json"
+jq -e '.mode == "adopted-active" and .mutation == false' "$FIXTURE/adopt.json" >/dev/null
 
 rm -f "$SERVICE_ACTIVE_STATE"
 : >"$MOCK_LOG"

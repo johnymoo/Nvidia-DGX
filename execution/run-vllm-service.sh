@@ -11,7 +11,7 @@ SERVICE_START_COMPLETE=0
 SERVICE_RECEIPT=""
 
 service_usage() {
-  echo "Usage: $0 {--check|--start|--status|--stop --restore-qwen}" >&2
+  echo "Usage: $0 {--check|--ensure-active|--start|--status|--transition-qwen|--stop --restore-qwen}" >&2
 }
 
 service_write_receipt() {
@@ -232,6 +232,60 @@ service_status() {
       model_ok:$model_ok,qwen_running:$qwen_running,protected_services_ok:$protected_ok}'
 }
 
+service_ensure_active() {
+  local status
+  if [ -s "$SERVICE_ACTIVE_STATE" ]; then
+    status="$(service_status)"
+    "$JQ_BIN" -e '.state == "running" and .model == "deepseek-v4-flash-0731" and .protected_services_ok == true and .qwen_running == false' \
+      <<<"$status" >/dev/null || die "existing DeepSeek service is not an exact healthy active contract"
+    "$JQ_BIN" -n --argjson status "$status" \
+      '{schema_version:1,status:"passed",mode:"adopted-active",mutation:false,service:$status}'
+    return 0
+  fi
+  service_start
+}
+
+service_transition_qwen() {
+  load_env
+  service_load_active
+  [ -s "$ARTIFACT_DIR/qwen-contract.json" ] || die "captured Qwen contract is missing: $ARTIFACT_DIR/qwen-contract.json"
+  DEEPSEEK_TOUCHED=1
+  STATUS=passed
+  RESTORE_QWEN_ON_SUCCESS=1
+  KEEP_QWEN_STOPPED_ON_FAILURE=1
+  PRESERVE_DEEPSEEK_CONTAINERS=1
+
+  if ! restore_services; then
+    FAILURE_REASON="DeepSeek-to-Qwen transition failed"
+    service_write_receipt degraded 1
+    "$JQ_BIN" . "$SERVICE_RECEIPT"
+    return 1
+  fi
+  service_protected_state_ok || {
+    FAILURE_REASON="protected service drift after DeepSeek-to-Qwen transition"
+    service_write_receipt degraded 1
+    "$JQ_BIN" . "$SERVICE_RECEIPT"
+    return 1
+  }
+  container_running "$QWEN_CONTAINER" || {
+    FAILURE_REASON="Qwen is not running after transition"
+    service_write_receipt degraded 1
+    "$JQ_BIN" . "$SERVICE_RECEIPT"
+    return 1
+  }
+  wait_qwen || {
+    FAILURE_REASON="Qwen health or model identity failed after transition"
+    service_write_receipt degraded 1
+    "$JQ_BIN" . "$SERVICE_RECEIPT"
+    return 1
+  }
+  capture_host_snapshot qwen-running "$ARTIFACT_DIR/qwen-running-head"
+  capture_worker_snapshot qwen-running "$WORKER_ARTIFACT_DIR/qwen-running-worker"
+  service_write_receipt qwen-running 0
+  rm -f "$SERVICE_ACTIVE_STATE"
+  "$JQ_BIN" . "$SERVICE_RECEIPT"
+}
+
 service_stop_restore() {
   load_env
   service_load_active
@@ -256,8 +310,10 @@ service_stop_restore() {
 service_main() {
   case "$#:$1:${2:-}" in
     1:--check:) run_checks ;;
+    1:--ensure-active:) service_ensure_active ;;
     1:--start:) service_start ;;
     1:--status:) service_status ;;
+    1:--transition-qwen:) service_transition_qwen ;;
     2:--stop:--restore-qwen) service_stop_restore ;;
     *) service_usage; return 64 ;;
   esac

@@ -7,6 +7,9 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 
@@ -28,72 +31,93 @@ model="${FAKE_MODEL:-${CLAUDE_DS_MODEL:-${CLAUDE_LOCAL_MODEL:-missing}}}"
 version="${FAKE_VERSION:-2.1.207}"
 printf '{"type":"system","subtype":"init","model":"%s","claude_code_version":"%s"}\\n' "$model" "$version"
 if [ -n "${FAKE_SLEEP:-}" ]; then sleep "$FAKE_SLEEP"; fi
-printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}\\n'
+printf '%s\\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}'
 printf '{"type":"result","subtype":"success","duration_ms":5,"num_turns":1,"total_cost_usd":0.01,"modelUsage":{"%s":{"inputTokens":1,"outputTokens":1}},"usage":{"input_tokens":1,"output_tokens":1},"permission_denials":[],"terminal_reason":"completed"}\\n' "$model"
 """,
         encoding="utf-8",
     )
     shim.chmod(0o755)
     subprocess.run(["git", "init", "-q", str(toolchain)], check=True)
-    subprocess.run(
-        ["git", "-C", str(toolchain), "config", "user.name", "Test"], check=True
-    )
-    subprocess.run(
-        ["git", "-C", str(toolchain), "config", "user.email", "test@localhost"],
-        check=True,
-    )
+    subprocess.run(["git", "-C", str(toolchain), "config", "user.name", "Test"], check=True)
+    subprocess.run(["git", "-C", str(toolchain), "config", "user.email", "test@localhost"], check=True)
     subprocess.run(["git", "-C", str(toolchain), "add", "bin/claude"], check=True)
     subprocess.run(["git", "-C", str(toolchain), "commit", "-qm", "fake"], check=True)
     real = root / "claude-real"
-    real.write_text(
-        "#!/usr/bin/env bash\necho '2.1.207 (Claude Code)'\n", encoding="utf-8"
-    )
+    real.write_text("#!/usr/bin/env bash\necho '2.1.207 (Claude Code)'\n", encoding="utf-8")
     real.chmod(0o755)
     return toolchain, real
 
 
+def make_fake_codex(root: Path) -> tuple[Path, Path]:
+    binary = root / "codex"
+    audit_root = root / "codex-audit"
+    binary.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+if [ "${1:-}" = "--version" ]; then echo 'codex-cli 0.144.5'; exit 0; fi
+model=""; effort=""; approval=""; output=""; prompt=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --model) model="$2"; shift 2 ;;
+    --config) case "$2" in *model_reasoning_effort*) effort="$2";; *approval_policy*) approval="$2";; esac; shift 2 ;;
+    --output-last-message) output="$2"; shift 2 ;;
+    *) prompt="$1"; shift ;;
+  esac
+done
+[ "$model" = "gpt-5.6-sol" ]
+[ "$effort" = 'model_reasoning_effort="xhigh"' ]
+[ "$approval" = 'approval_policy="never"' ]
+thread="fake-codex-thread"
+mkdir -p "$CODEX_JUDGE_AUDIT_ROOT/2026/08/11"
+printf '{"type":"thread.started","thread_id":"%s"}\\n' "$thread"
+printf '%s\\n' '{"type":"turn.completed"}'
+printf '%s\\n' '{"type":"turn_context","payload":{"model":"gpt-5.6-sol","effort":"xhigh","approval_policy":"never","sandbox_policy":{"type":"read-only"},"collaboration_mode":{"settings":{"model":"gpt-5.6-sol","reasoning_effort":"xhigh"}}}}' >"$CODEX_JUDGE_AUDIT_ROOT/2026/08/11/rollout-$thread.jsonl"
+if [[ "$prompt" == *"exact JSON object"* ]]; then
+  printf '%s\\n' '{"ready":true}' >"$output"
+else
+  printf '%s\\n' '{"candidates":{"A":{"accuracy":3,"following":3,"clarity_style":3},"B":{"accuracy":2,"following":2,"clarity_style":2},"C":{"accuracy":1,"following":1,"clarity_style":1}},"preference":"A","rationale":"Content-only assessment."}' >"$output"
+fi
+""",
+        encoding="utf-8",
+    )
+    binary.chmod(0o755)
+    return binary, audit_root
+
+
+def rating(task_id: str) -> dict[str, object]:
+    return {"task_id": task_id, "scores": {letter: {criterion: 2 for criterion in pilot.CRITERIA} for letter in pilot.LETTERS}, "preference": "tie"}
+
+
+def assert_http_status(url: str, expected: int) -> None:
+    try:
+        urllib.request.urlopen(url, timeout=3)
+    except urllib.error.HTTPError as exc:
+        assert exc.code == expected, (url, exc.code)
+    else:
+        raise AssertionError(f"{url} unexpectedly succeeded")
+
+
 def main() -> None:
     manifest = pilot.load_manifest()
-    assert len(manifest["tasks"]) == 4
-    assert [task["treatment_order"] for task in manifest["tasks"]] == [
-        ["online", "private"],
-        ["private", "online"],
-        ["online", "private"],
-        ["private", "online"],
-    ]
+    assert len(manifest["tasks"]) == 7
+    assert set(manifest["treatments"]) == set(pilot.TREATMENTS)
+    assert [task["treatment_order"][0] for task in manifest["tasks"]].count("online_ds") == 4
+    assert all("fallback" not in json.dumps(contract).lower() for contract in manifest["treatments"].values())
 
     with tempfile.TemporaryDirectory(prefix="claude-pilot-test-") as raw:
         root = Path(raw)
         toolchain, real = make_fake_toolchain(root)
-
-        run = pilot.run_claude(
-            treatment="online",
-            prompt="test",
-            cwd=root,
-            timeout_seconds=5,
-            toolchain=toolchain,
-            real_claude=real,
-            expected_version="2.1.207",
-            output_path=root / "online.jsonl",
-            with_tools=True,
-        )
-        assert run["model"] == "deepseek-v4-flash"
-        assert run["route"] == "claude_ds"
-        assert run["tool_calls"] == ["Read"]
+        codex, audit_root = make_fake_codex(root)
+        os.environ["CODEX_BIN"] = str(codex)
+        os.environ["CODEX_JUDGE_AUDIT_ROOT"] = str(audit_root)
+        run = pilot.run_claude(treatment="online_ds", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "online.jsonl", with_tools=True, manifest=manifest)
+        assert run["model"] == "deepseek-v4-flash" and run["route"] == "claude_ds" and run["tool_calls"] == ["Read"]
+        qwen = pilot.run_claude(treatment="qwen_local", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "qwen.jsonl", with_tools=False, manifest=manifest)
+        assert qwen["model"] == "qwen3.6-35b-fp8" and qwen["route"] == "claude_local"
 
         os.environ["FAKE_MODEL"] = "deepseek-v4-pro"
         try:
-            pilot.run_claude(
-                treatment="online",
-                prompt="test",
-                cwd=root,
-                timeout_seconds=5,
-                toolchain=toolchain,
-                real_claude=real,
-                expected_version="2.1.207",
-                output_path=root / "mismatch.jsonl",
-                with_tools=False,
-            )
+            pilot.run_claude(treatment="online_ds", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "mismatch.jsonl", with_tools=False, manifest=manifest)
         except pilot.InfrastructureError as exc:
             assert "model mismatch" in str(exc)
         else:
@@ -101,48 +125,82 @@ def main() -> None:
         os.environ.pop("FAKE_MODEL")
 
         os.environ["FAKE_SLEEP"] = "3"
-        timeout = pilot.run_claude(
-            treatment="private",
-            prompt="test",
-            cwd=root,
-            timeout_seconds=1,
-            toolchain=toolchain,
-            real_claude=real,
-            expected_version="2.1.207",
-            output_path=root / "timeout.jsonl",
-            with_tools=True,
-        )
-        assert timeout["timed_out"] is True
-        assert timeout["terminal_reason"] == "timeout"
+        timeout = pilot.run_claude(treatment="offline_ds", prompt="test", cwd=root, timeout_seconds=1, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "timeout.jsonl", with_tools=True, manifest=manifest)
+        assert timeout["timed_out"] is True and timeout["terminal_reason"] == "timeout"
         os.environ.pop("FAKE_SLEEP")
 
         for task in manifest["tasks"]:
             workspace = root / "sandboxes" / task["task_id"]
             fixture = pilot.checked_path(pilot.FIXTURE_ROOT, task["fixture"])
             solution = pilot.checked_path(pilot.SOLUTION_ROOT, task["solution"])
-            commit = pilot.prepare_workspace(fixture, workspace)
-            assert len(commit) == 40
-            initial = pilot.run_hidden_grader(
-                task, workspace, root / "grades" / "initial" / task["task_id"], 30
-            )
+            assert len(pilot.prepare_workspace(fixture, workspace)) == 40
+            initial = pilot.run_hidden_grader(task, workspace, root / "grades" / "initial" / task["task_id"], 30)
             assert initial["status"] == "failed", task["task_id"]
             pilot.overlay_solution(solution, workspace)
-            visible = pilot.run_visible_tests(
-                task, workspace, root / "grades" / "gold" / task["task_id"], 30
-            )
-            hidden = pilot.run_hidden_grader(
-                task, workspace, root / "grades" / "gold" / task["task_id"], 30
-            )
-            assert visible["status"] == "passed", task["task_id"]
-            assert hidden["status"] == "passed", task["task_id"]
-            assert hidden["total"] >= 8
+            visible = pilot.run_visible_tests(task, workspace, root / "grades" / "gold" / task["task_id"], 30)
+            hidden = pilot.run_hidden_grader(task, workspace, root / "grades" / "gold" / task["task_id"], 30)
+            assert visible["status"] == "passed" and hidden["status"] == "passed", task["task_id"]
 
         argv = pilot.claude_argv(toolchain / "bin" / "claude", "model", "p", True)
-        assert "Agent" not in argv[argv.index("--tools") + 1]
-        assert "--fallback-model" not in argv
+        assert "Agent" not in argv[argv.index("--tools") + 1] and "--fallback-model" not in argv
         assert "--strict-mcp-config" in argv and "--safe-mode" in argv
+        assert [pilot.deterministic_tier({"passed": passed, "total": 8}, "completed") for passed in (8, 4, 3)] == [3, 2, 1]
 
-    print(json.dumps({"status": "passed", "tests": 5}))
+        try:
+            pilot.validate_judge_payload({"candidates": {}, "preference": "A"})
+        except pilot.InfrastructureError:
+            pass
+        else:
+            raise AssertionError("invalid judge schema did not fail")
+        try:
+            pilot.validate_judge_payload({"candidates": {letter: {criterion: 3 for criterion in pilot.CRITERIA} for letter in pilot.LETTERS}, "preference": "A", "rationale": "The online route wins."})
+        except pilot.InfrastructureError:
+            pass
+        else:
+            raise AssertionError("identity speculation did not fail")
+
+        probe = pilot.run_codex_probe(root / "judge-probe")
+        assert probe["runtime"]["model"] == "gpt-5.6-sol"
+        assert probe["runtime"]["reasoning_effort"] == "xhigh"
+        judged = pilot.run_judge(manifest["tasks"][0], {"A": "one", "B": "two", "C": "three"}, root / "judge", manifest)
+        assert judged["payload"]["preference"] == "A"
+        assert judged["runtime"]["fallback_configured"] is False
+
+        fake_root = root / "fake-run"
+        result = pilot.run_fake_benchmark(fake_root)
+        assert result["attempt_count"] == 21
+        review_root = fake_root / "review"
+        public = pilot.public_review_payload(review_root)
+        assert len(public["tasks"]) == 7
+        assert all(term not in json.dumps(public).lower() for term in ("online_ds", "offline_ds", "qwen_local", "hidden_grader", "cost_usd"))
+        assert not (review_root / "public" / "mappings.json").exists() and (review_root / "sealed" / "mappings.json").is_file()
+
+        server = pilot.ThreadingHTTPServer(("127.0.0.1", 0), pilot.make_review_handler(review_root))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_port}"
+        assert_http_status(base + "/sealed/mappings.json", 404)
+        assert_http_status(base + "/api/reveal", 403)
+        server.shutdown()
+        thread.join(timeout=3)
+        server.server_close()
+
+        for task in public["tasks"]:
+            accepted = pilot.submit_rating(review_root, public, rating(task["task_id"]))
+        assert accepted["completed"] is True
+        try:
+            pilot.submit_rating(review_root, public, rating(public["tasks"][0]["task_id"]))
+        except FileExistsError:
+            pass
+        else:
+            raise AssertionError("atomic resume allowed a duplicate rating")
+        reveal = pilot.aggregate_reveal(review_root)
+        assert reveal["status"] == "revealed" and set(reveal["aggregates"]) == set(pilot.TREATMENTS)
+
+        os.environ.pop("CODEX_BIN")
+        os.environ.pop("CODEX_JUDGE_AUDIT_ROOT")
+
+    print(json.dumps({"status": "passed", "tests": 12}))
 
 
 if __name__ == "__main__":

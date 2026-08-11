@@ -25,7 +25,9 @@ def run_suite(suite):
         last_line = detail.strip().splitlines()[-1] if detail.strip() else "failure"
         failures.append(f"{test.id()}: {last_line}")
     total = result.testsRun
-    passed = total - len(result.failures) - len(result.errors)
+    # A unittest with several subtest failures still runs one parent test.
+    # Keep the machine-readable score in the required non-negative range.
+    passed = max(0, total - len(result.failures) - len(result.errors))
     payload = {
         "schema_version": 1,
         "status": "passed" if result.wasSuccessful() else "failed",

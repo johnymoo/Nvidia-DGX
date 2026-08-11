@@ -9,20 +9,27 @@ trap 'rm -rf "$TMP"' EXIT
 # shellcheck source=../run-claude-code-flash-pilot.sh
 source "$PILOT_SCRIPT"
 
-ACTIVE_REMOTE_SERVICE=1
 CURRENT_ARTIFACT="$TMP"
-REMOTE_ALIAS="fake-head"
-REMOTE_ROOT="/fake/root"
-
-ssh() {
-  printf '{"state":"stopped","qwen_restore":"passed"}\n'
+remote_service() {
+  printf '%s\n' "$*" >>"$TMP/actions.log"
+  printf '{"state":"stopped","qwen_health":"healthy"}\n'
 }
 
-rollback_active_service
-
+CURRENT_PHASE="pre-transition"
+if (false; recover_on_exit); then
+  echo "pre-transition recovery unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -Fxq -- '--stop --restore-qwen' "$TMP/actions.log"
 test -s "$TMP/rollback-receipt.json"
-jq -e '.state == "stopped" and .qwen_restore == "passed"' \
-  "$TMP/rollback-receipt.json" >/dev/null
-test ! -s "$TMP/rollback.stderr.log"
 
-printf '{"status":"passed","tests":1}\n'
+: >"$TMP/actions.log"
+CURRENT_PHASE="post-transition"
+if (false; recover_on_exit); then
+  echo "post-transition recovery unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -Fxq -- '--transition-qwen' "$TMP/actions.log"
+test -s "$TMP/qwen-recovery-receipt.json"
+
+printf '{"status":"passed","tests":2}\n'

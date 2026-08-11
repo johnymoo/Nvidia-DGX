@@ -1,10 +1,37 @@
 {
-  "schema_version": 2,
-  "baseline_revision": "claude-ds-pilot-r1",
+  "schema_version": 3,
+  "baseline_revision": "claude-ds-pilot-r2",
+  "audit_history": [
+    {
+      "date": "2026-08-11",
+      "revision": "claude-ds-pilot-r2",
+      "change": "Expanded the frozen R1 corpus to the approved seven-task, three-treatment benchmark contract."
+    }
+  ],
   "claude_code_version": "2.1.207",
   "task_timeout_seconds": 900,
   "visible_test_timeout_seconds": 60,
   "grade_timeout_seconds": 60,
+  "treatments": {
+    "online_ds": {
+      "route": "claude_ds",
+      "provider": "ds",
+      "model": "deepseek-v4-flash",
+      "base_url_env": "CLAUDE_DS_BASE_URL"
+    },
+    "offline_ds": {
+      "route": "claude_local",
+      "provider": "local",
+      "model": "deepseek-v4-flash-0731",
+      "base_url": "http://192.168.88.181:8890"
+    },
+    "qwen_local": {
+      "route": "claude_local",
+      "provider": "local",
+      "model": "qwen3.6-35b-fp8",
+      "base_url": "http://192.168.88.181:8004"
+    }
+  },
   "tasks": [
     {
       "task_id": "miniconfig-escaped-paths",
@@ -15,7 +42,8 @@
       "grader": "grade_miniconfig.py",
       "solution": "miniconfig-escaped-paths",
       "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
-      "treatment_order": ["online", "private"],
+      "task_kind": "code",
+      "treatment_order": ["online_ds", "offline_ds"],
       "instruction": "The get_path helper handles ordinary dotted dictionary paths, but escaped dots and list traversal are broken. Implement backslash escaping for the next path character, support non-negative decimal list indexes, reject empty segments and dangling escapes with ValueError, and raise TypeError when a list segment is not an index or traversal reaches a scalar. A supplied default must be returned only for a missing dictionary key or an out-of-range list index. Preserve the public get_path(data, path, default=MISSING) API."
     },
     {
@@ -27,7 +55,8 @@
       "grader": "grade_retry_after.py",
       "solution": "retry-after-policy",
       "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
-      "treatment_order": ["private", "online"],
+      "task_kind": "code",
+      "treatment_order": ["offline_ds", "online_ds"],
       "instruction": "Complete parse_retry_after and integrate it into next_delay. Retry-After accepts either non-negative integer seconds or an RFC 7231 HTTP date. Date calculations must use the injected timezone-aware now value and past dates produce zero. Missing, malformed, negative, or timezone-naive values are ignored. next_delay keeps exponential backoff, uses the larger of backoff and a valid Retry-After delay, and then applies the cap. Reject negative attempts, base delays, or caps with ValueError. Keep all calculations deterministic and do not read the system clock when now is supplied."
     },
     {
@@ -39,7 +68,8 @@
       "grader": "grade_event_summary.py",
       "solution": "event-summary-refactor",
       "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
-      "treatment_order": ["online", "private"],
+      "task_kind": "code",
+      "treatment_order": ["online_ds", "offline_ds"],
       "instruction": "Refactor event_summary so text and JSON rendering share one aggregation path. Add a frozen Summary dataclass and summarize(events), which must consume any iterable exactly once without mutating input events. total counts every event, ok and failed count only those exact statuses, unknown statuses count only toward total, and a missing duration_ms contributes zero. Reject bool or negative/non-integer duration_ms values with ValueError. Preserve the exact existing text and compact sorted JSON output formats, and have both render functions delegate to summarize."
     },
     {
@@ -51,8 +81,48 @@
       "grader": "grade_ndjson_decoder.py",
       "solution": "ndjson-stream-decoder",
       "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
-      "treatment_order": ["private", "online"],
+      "task_kind": "code",
+      "treatment_order": ["offline_ds", "online_ds"],
       "instruction": "Fix NDJSONDecoder's incremental behavior and add focused regression coverage where useful. feed(chunk) must emit only complete newline-terminated JSON values while retaining a partial record, including when CRLF is split across chunks. Blank or whitespace-only lines are ignored but still advance the one-based physical line number. finalize() parses one final unterminated nonblank record exactly once; repeated finalize calls return an empty list. Malformed JSON raises NDJSONError with the physical line number and original decoder message. Feeding after finalization raises RuntimeError."
+    },
+    {
+      "task_id": "general-knowledge-zh-qa",
+      "title": "Answer stable Chinese general-knowledge questions",
+      "category": "structured-answer",
+      "difficulty": "small",
+      "task_kind": "qa",
+      "fixture": "general-knowledge-zh-qa",
+      "grader": "grade_general_knowledge_zh.py",
+      "solution": "general-knowledge-zh-qa",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "Answer the following eight stable questions in answers.json. The file must be a JSON object with exactly q1 through q8 and one concise string answer for each key. q1 Australia's capital; q2 largest ocean; q3 gold's chemical symbol; q4 the Red Planet; q5 author of Pride and Prejudice; q6 largest human organ; q7 boiling point of pure water at sea level in Celsius; q8 days in a leap year. Do not add keys or commentary outside answers.json."
+    },
+    {
+      "task_id": "patch4-acceptance-zh-brief",
+      "title": "Write a Patch4 acceptance brief in Chinese",
+      "category": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "patch4-acceptance-zh-brief",
+      "grader": "grade_patch4_acceptance_zh.py",
+      "solution": "patch4-acceptance-zh-brief",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["offline_ds", "online_ds"],
+      "instruction": "Write answer.md containing 220-320 Chinese characters based only on these fixed facts: run 20260811T002139Z; date 2026-08-11; model deepseek-v4-flash-0731 with Patch4; two hosts, TP=2, RoCE, and NCCL NET/IB; correctness, tool, agent, concurrency, and 40-minute c4 soak passed; 621 requests; 223,268 generated tokens; zero empty, garbled, or HTTP-error responses. Do not claim a production SLA, Qwen co-loading, or superiority."
+    },
+    {
+      "task_id": "first-pilot-result-en-brief",
+      "title": "Write the first pilot result brief in English",
+      "category": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "first-pilot-result-en-brief",
+      "grader": "grade_first_pilot_en.py",
+      "solution": "first-pilot-result-en-brief",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "Write answer.md with 170-230 English words from these fixed facts: Claude Code 2.1.207; online deepseek-v4-flash and private deepseek-v4-flash-0731; each passed 3/4 hidden graders; elapsed 571.060 and 417.190 seconds; provider token, cache, and cost accounting differs; one repetition proves neither efficiency nor statistical superiority. Do not declare an overall winner or a significance result."
     }
   ]
 }
