@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage GB10 DGX Spark Cluster"
+  short_description: "Operate and validate a two-node GB10 cluster"
+  default_prompt: "$manage-gb10-dgx-spark-cluster safely inventories, operates, and validates the GB10 cluster."

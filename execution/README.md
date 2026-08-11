@@ -7,8 +7,8 @@ run.
 
 ## Files
 
-- `docker-compose.yml`: two-node vLLM/DSpark candidate. It is configuration
-  only and is not started during pre-link preparation.
+- `docker-compose.yml`: immutable base for the accepted two-node vLLM/DSpark
+  0731 deployment. Use only with the documented additive override.
 - `docker-compose.f277b3d-timeout.yml`: additive f277b3d override used with
   the base Compose file by the acceptance owner. It sets the upstream engine
   readiness timeout and unbuffered Python logging without changing model or
@@ -29,12 +29,13 @@ run.
 - `run-vllm-acceptance.sh`: single-entry official 0731 + Patch 4 distributed
   acceptance owner. Run it only on `gb10` from
   `/home/chriswang/gb10-ds4`; it controls `gb10-2` through the worker SSH
-  contract in the real head env. Coordinator review must approve `--run`:
+  contract in the real head env. The 2026-08-11 formal run passed; use `--run`
+  only in an authorized maintenance window:
 
   ```bash
   cd /home/chriswang/gb10-ds4
   execution/run-vllm-acceptance.sh --check
-  # After Coordinator approval only:
+  # After maintenance-window approval only:
   execution/run-vllm-acceptance.sh --run
   ```
 
@@ -89,3 +90,9 @@ run.
 
 The Unsloth/llama.cpp route intentionally has a separate Compose file rather
 than weakening the vLLM contract with conditional commands.
+
+The A/B run passed for both target and DSpark profiles. Add
+`unsloth/docker-compose.reasoning-off.yml` to the base Unsloth Compose: it
+only sets `LLAMA_ARG_REASONING=off` so OpenAI responses carry usable content.
+Do not edit either base Compose file; create an explicit new override for a
+future approved experiment.
