@@ -534,6 +534,7 @@ def controlled_files(toolchain: Path) -> list[Path]:
         SCRIPT_PATH,
         MANIFEST_PATH,
         PROJECT_ROOT / "execution" / "run-claude-code-flash-pilot.sh",
+        PROJECT_ROOT / "execution" / "run-vllm-acceptance.sh",
         PROJECT_ROOT / "execution" / "run-vllm-service.sh",
         toolchain / "bin" / "claude",
     ]

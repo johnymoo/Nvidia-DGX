@@ -6,6 +6,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUNNER="$SCRIPT_DIR/benchmarks/claude_code_sandbox_pilot.py"
 TASK_MANIFEST="$SCRIPT_DIR/benchmarks/claude-code-sandbox-pilot-tasks.json"
 SERVICE_SCRIPT="$SCRIPT_DIR/run-vllm-service.sh"
+ACCEPTANCE_SCRIPT="$SCRIPT_DIR/run-vllm-acceptance.sh"
 TOOLCHAIN="${CODING_AGENT_TOOLCHAIN:-/Users/chris/project/Shili/workspaces/coding-agent-toolchain}"
 CACHE_ROOT="${CLAUDE_PILOT_CACHE:-$SCRIPT_DIR/artifacts/claude-code-pilot/cache}"
 ARTIFACT_BASE="${CLAUDE_PILOT_ARTIFACT_ROOT:-$SCRIPT_DIR/artifacts/claude-code-pilot/runs}"
@@ -32,13 +33,16 @@ runner() {
 }
 
 sync_service_script() {
-  rsync -az --checksum "$SERVICE_SCRIPT" "$REMOTE_ALIAS:$REMOTE_ROOT/execution/run-vllm-service.sh"
-  ssh "$REMOTE_ALIAS" "chmod 0755 '$REMOTE_ROOT/execution/run-vllm-service.sh'"
-  local local_sha remote_sha
-  local_sha="$(shasum -a 256 "$SERVICE_SCRIPT" | awk '{print $1}')"
-  remote_sha="$(ssh "$REMOTE_ALIAS" "sha256sum '$REMOTE_ROOT/execution/run-vllm-service.sh'")"
-  remote_sha="${remote_sha%% *}"
-  [ "$local_sha" = "$remote_sha" ] || { echo "remote service script SHA mismatch" >&2; return 1; }
+  local name local_path local_sha remote_sha
+  for local_path in "$SERVICE_SCRIPT" "$ACCEPTANCE_SCRIPT"; do
+    name="$(basename "$local_path")"
+    rsync -az --checksum "$local_path" "$REMOTE_ALIAS:$REMOTE_ROOT/execution/$name"
+    ssh "$REMOTE_ALIAS" "chmod 0755 '$REMOTE_ROOT/execution/$name'"
+    local_sha="$(shasum -a 256 "$local_path" | awk '{print $1}')"
+    remote_sha="$(ssh "$REMOTE_ALIAS" "sha256sum '$REMOTE_ROOT/execution/$name'")"
+    remote_sha="${remote_sha%% *}"
+    [ "$local_sha" = "$remote_sha" ] || { echo "remote $name SHA mismatch" >&2; return 1; }
+  done
 }
 
 static_checks() {
