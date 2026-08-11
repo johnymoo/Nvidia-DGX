@@ -194,11 +194,17 @@ def main() -> None:
         fake_root = root / "fake-run"
         result = pilot.run_fake_benchmark(fake_root)
         assert result["attempt_count"] == 21
+        assert result["package"]["task_count"] == 7
+        assert result["package"]["judge_count"] == 7
+        assert result["package"]["human_task_count"] == 2
         review_root = fake_root / "review"
         public = pilot.public_review_payload(review_root)
-        assert len(public["tasks"]) == 7
+        assert len(public["tasks"]) == 2
+        assert {task["task_id"] for task in public["tasks"]} == {task["task_id"] for task in manifest["tasks"] if task["category"] == pilot.HUMAN_REVIEW_CATEGORY}
         assert all(term not in json.dumps(public).lower() for term in ("online_ds", "offline_ds", "qwen_local", "hidden_grader", "cost_usd"))
         assert not (review_root / "public" / "mappings.json").exists() and (review_root / "sealed" / "mappings.json").is_file()
+        migration = pilot.migrate_review_scope(fake_root)
+        assert migration["judge_results_reused"] == 7 and len(migration["human_task_ids"]) == 2
 
         server = pilot.ThreadingHTTPServer(("127.0.0.1", 0), pilot.make_review_handler(review_root))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -221,6 +227,8 @@ def main() -> None:
             raise AssertionError("atomic resume allowed a duplicate rating")
         reveal = pilot.aggregate_reveal(review_root)
         assert reveal["status"] == "revealed" and set(reveal["aggregates"]) == set(pilot.TREATMENTS)
+        assert len(reveal["tasks"]) == 7 and sum(task["human_scored"] for task in reveal["tasks"]) == 2
+        assert all(all(score["human_layer"] is None for score in task["scores"].values()) for task in reveal["tasks"] if not task["human_scored"])
 
         os.environ.pop("CODEX_BIN")
         os.environ.pop("CODEX_JUDGE_AUDIT_ROOT")

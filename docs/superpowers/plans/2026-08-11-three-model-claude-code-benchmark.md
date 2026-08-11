@@ -8,7 +8,7 @@ Authority:
 
 - Design: `docs/superpowers/specs/2026-08-11-three-model-claude-code-benchmark-design.md`
 - Design commit: `dc0235c`
-- Current amended design SHA-256: `b57b21e69c1e369355ab1d73a2f678b94f1e1541e4ebf43f644abfd9af08550b`; amendment authority is the user's explicit 2026-08-11 `gpt-5.6-sol`/`xhigh` correction
+- Current amended design SHA-256: `88a2efeefbe0fe8f9d90c45ab748a2b82067fd712792fc0ef51aaa34dd881758`; amendment authority is the user's explicit 2026-08-11 `gpt-5.6-sol`/`xhigh` correction and writing-only human review instruction
 - Baseline: `claude-ds-pilot-r2`
 - Visual authority: `.superpowers/brainstorm/23770-1786451377/content/three-treatment-side-by-side-blind-review.html`, SHA-256 `14473ffd410837a9b9c364770bc6bfaa3c50310358c75b832a07bfebbc7dfd4a`
 - Repository base SHA: `dc0235c923e968ea041776d83dc5dfa1cec28070`
@@ -21,7 +21,7 @@ Implement and execute the approved seven-task, three-treatment benchmark through
 
 - all 21 Claude Code treatment attempts run sequentially with exact identities and no fallback;
 - deterministic hidden grading and blind Codex `gpt-5.6-sol`/`xhigh` judging complete;
-- the seven-page anonymous A/B/C human review site is running and resumable;
+- the two-page anonymous A/B/C human writing review site is running and resumable, while the other five tasks use model-judge scores;
 - the public payload contains no identity or performance clues before completion;
 - both Patch4 DeepSeek ranks are stopped, Qwen `qwen3.6-35b-fp8` is healthy on `:8004`, pdf2md remains stopped, and trading/lexdata remain healthy;
 - focused tests, fake end-to-end tests, preflight, formal receipt, and final service evidence pass.
@@ -59,7 +59,7 @@ Acceptance:
 - manifest is dynamic and contains the existing four coding tasks plus general knowledge, Chinese writing, and English writing;
 - runner supports `online_ds`, `offline_ds`, and `qwen_local` phases, exact identities, declared non-code artifacts, deterministic tiers, blind judge packaging, and no fallback;
 - service controller supports receipt-backed DS-to-Qwen transition with bounded recovery and protected-state checks;
-- local review server implements the approved three-column, three-level, seven-page sealed/reveal flow and atomic resume;
+- local review server implements the approved three-column, three-level, two-writing-page sealed/reveal flow and atomic resume;
 - top-level `--preflight` is non-mutating on hosts, and `--run` owns the full phase state machine;
 - candidate task failures remain measured results while infrastructure failures fail closed.
 
@@ -82,7 +82,7 @@ Task `R2-RUN`, dependent on `R2-IMPLEMENT`, stories `US-R2-01`, `US-R2-02`, `US-
 3. After preflight passes, invoke exactly one top-level `--run`; the script owns all treatment loops, service transition, retries, health checks, judge calls, evidence, and final summary.
 4. Re-enter manually only on nonzero exit, rollback, degraded/blocked receipt, timeout, or an unmodeled invariant. Never finish the normal path with per-task Agent calls or manual service commands.
 5. Verify the final receipt, exact treatment/model/version evidence, protected services, DS stopped/Qwen healthy state, and browser behavior at desktop and mobile viewports.
-6. Publish the review URL while identities remain sealed. Final human aggregate is expected only after the user submits all seven pages.
+6. Publish the review URL while identities remain sealed. Final aggregate is expected after the user submits both writing pages; the other five tasks reuse the completed model-judge results.
 
 ## Alignment And Stop Conditions
 

@@ -2,7 +2,7 @@
 
 Date: 2026-08-11
 
-Status: approved; judge contract amended by the user's explicit 2026-08-11 correction to exact Codex `gpt-5.6-sol`/`xhigh`
+Status: approved; judge contract amended by the user's explicit 2026-08-11 correction to exact Codex `gpt-5.6-sol`/`xhigh`; human review scope amended by the user's explicit 2026-08-11 instruction to score only the Chinese and English writing tasks
 
 Baseline revision: `claude-ds-pilot-r2`
 
@@ -145,18 +145,19 @@ Judge JSON contains integer `1/2/3` scores for each candidate on:
 - instruction following;
 - clarity and style;
 
-and one overall preference `A/B/C/tie`. It may include a short content-only rationale. Validation rejects missing/extra candidates, non-integers, out-of-range values, identity speculation, and malformed JSON. One bounded retry receives only schema-correction instructions; a second invalid output is infrastructure failure.
+and one overall preference `A/B/C/tie`. A short content-only rationale is required so the strict structured-output schema requires every declared property. Validation rejects missing/extra candidates, non-integers, out-of-range values, identity speculation, and malformed JSON. One bounded retry receives only schema-correction instructions; a second invalid output is infrastructure failure.
 
 For candidate `c` and task `t`:
 
 ```text
 deterministic_tier(c,t) = hidden pass-ratio tier
 judge_layer(c,t)        = mean(accuracy, following, clarity/style)
-human_layer(c,t)        = mean(accuracy, following, clarity/style)
-quality(c,t)            = mean(deterministic_tier, judge_layer, human_layer)
+human_layer(c,t)        = mean(accuracy, following, clarity/style), writing tasks only
+quality(c,t)            = mean(deterministic_tier, judge_layer, human_layer), writing tasks
+quality(c,t)            = mean(deterministic_tier, judge_layer), all other tasks
 ```
 
-All values stay on the 1-3 scale. Final quality is computed only after human completion. Treatment aggregate quality is the unweighted mean of seven per-task quality scores; layer means are also reported. JSON retains full precision and display rounding is consistent.
+All values stay on the 1-3 scale. Final quality is computed after the two writing-task human ratings are complete. Treatment aggregate quality is the unweighted mean of seven per-task quality scores; the human mean covers only the two writing tasks, while deterministic and judge means cover all seven. JSON retains full precision and display rounding is consistent.
 
 Judge and human preference wins/ties are reported separately and never alter numeric scores. Timing, tools, tokens, and provider-reported cost are supporting telemetry revealed only after human completion.
 
@@ -168,7 +169,7 @@ The UI authority is:
 
 Its SHA-256 is `14473ffd410837a9b9c364770bc6bfaa3c50310358c75b832a07bfebbc7dfd4a`. Browser verification covered a 1440 x 1000 desktop viewport and a 390 x 844 mobile viewport; the mobile layout had no horizontal overflow. Implementation follows it for layout, hierarchy, interaction, and responsiveness without reinterpreting the selected design. Its lineage is the approved Option A prototype listed in Sources.
 
-The site has exactly seven task pages. Each shows the prompt at top and Answer A/B/C side by side on desktop; mobile stacks A, then B, then C coherently. Each answer has the same three required criteria, each scored on exactly three levels:
+The site has exactly two task pages: the Chinese writing brief and the English writing brief. The other five tasks use the independent model judge without human input. Each human page shows the prompt at top and Answer A/B/C side by side on desktop; mobile stacks A, then B, then C coherently. Each answer has the same three required criteria, each scored on exactly three levels:
 
 | Score | Meaning |
 | ---: | --- |
@@ -176,11 +177,11 @@ The site has exactly seven task pages. Each shows the prompt at top and Answer A
 | `2` | Acceptable with limited errors or weaknesses |
 | `3` | Correct, complete, and clear |
 
-The reviewer also selects overall `A/B/C/tie`. Progress shows completed tasks out of seven. `Submit and next` is disabled until all nine criterion ratings and the overall preference are set, then atomically persists and opens the next unrated task. Restart/refresh resumes from persisted ratings.
+The reviewer also selects overall `A/B/C/tie`. Progress shows completed human tasks out of two. `Submit and next` is disabled until all nine criterion ratings and the overall preference are set, then atomically persists and opens the next unrated task. Restart/refresh resumes from persisted ratings.
 
 Each task's random treatment permutation is persisted. The public payload contains only prompt/context, anonymous artifacts, score labels, and progress. It contains no identity, route, attempt order, speed, cost, tokens, tools, stream, hidden-grade, judge, or revealing path clues.
 
-The sealed mapping is outside the served root and inaccessible through generic routes/listing. Ratings use temporary file, flush/fsync, and atomic rename. After all seven pages, the server emits a separate reveal payload joining sealed mappings to ratings/scores, revealing identities and aggregates. Raw sealed files remain unserved.
+The sealed mapping is outside the served root and inaccessible through generic routes/listing. Ratings use temporary file, flush/fsync, and atomic rename. After both writing pages, the server emits a separate reveal payload joining sealed mappings to the two human ratings and all seven model-judge results, revealing identities and aggregates. Raw sealed files remain unserved.
 
 The standard-library server binds to `127.0.0.1`; its URL is printed and opened after benchmark packaging. It is a local operational review tool, not a hosted/authenticated/multi-user product.
 
@@ -213,7 +214,7 @@ Preflight is read-only on both GB10 hosts and requires:
 
 A real Qwen Claude probe occurs only after Qwen starts in the formal transition.
 
-Implementation verification additionally requires all fixture red/gold calibration, a fake sequential 21-attempt end-to-end run, identity/fallback negatives, judge retry tests, sealed/reveal tests, score tests, and browser checks on desktop/mobile for seven pages, three-column/stacked layouts, controls, progress, submit-next, resume, completion, and reveal.
+Implementation verification additionally requires all fixture red/gold calibration, a fake sequential 21-attempt end-to-end run, identity/fallback negatives, judge retry tests, sealed/reveal tests, score tests, and browser checks on desktop/mobile for two human writing pages, three-column/stacked layouts, controls, progress, submit-next, resume, completion, and reveal.
 
 The formal receipt must prove both DS ranks stopped, Qwen `qwen3.6-35b-fp8` healthy on `:8004`, pdf2md still stopped, and trading/lexdata healthy.
 

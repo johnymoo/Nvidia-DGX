@@ -150,7 +150,7 @@ run_formal() {
   log "run: invoke blind judge and package sealed human review"
   runner --package --artifact-root "$artifact" | tee "$artifact/runner-package.stdout.json"
   package_receipt="$artifact/phase-package-receipt.json"
-  jq -e '.status == "ready_for_review" and .task_count == 7 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
+  jq -e '.status == "ready_for_review" and .task_count == 7 and .human_task_count == 2 and .judge_only_task_count == 5 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
   review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
 
   log "run: verify DeepSeek remains stopped and Qwen is healthy"
@@ -210,7 +210,7 @@ resume_formal() {
   log "resume: invoke blind judge and package sealed human review"
   runner --package --artifact-root "$artifact" | tee "$artifact/runner-package.stdout.json"
   package_receipt="$artifact/phase-package-receipt.json"
-  jq -e '.status == "ready_for_review" and .task_count == 7 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
+  jq -e '.status == "ready_for_review" and .task_count == 7 and .human_task_count == 2 and .judge_only_task_count == 5 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
   review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
 
   remote_service "--status" >"$artifact/service-final-status.json"

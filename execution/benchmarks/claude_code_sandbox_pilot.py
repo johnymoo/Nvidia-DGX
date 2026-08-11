@@ -40,6 +40,7 @@ TREATMENTS = ("online_ds", "offline_ds", "qwen_local")
 DEEPSEEK_TREATMENTS = ("online_ds", "offline_ds")
 LETTERS = ("A", "B", "C")
 CRITERIA = ("accuracy", "following", "clarity_style")
+HUMAN_REVIEW_CATEGORY = "writing"
 ALLOWED_CLAUDE_TOOLS = frozenset({"Bash", "Edit", "Read", "Glob", "Grep", "Write"})
 JUDGE_MODEL = "gpt-5.6-sol"
 JUDGE_EFFORT = "xhigh"
@@ -886,29 +887,35 @@ def aggregate_reveal(review_root: Path) -> dict[str, Any]:
     public = read_json(review_root / "public" / "review.json")
     sealed = read_json(review_root / "sealed" / "mappings.json")
     ratings = load_ratings(review_root)["ratings"]
-    if len(ratings) != len(public["tasks"]):
+    human_task_ids = {task["task_id"] for task in public["tasks"]}
+    if set(ratings) != human_task_ids:
         raise PermissionError("review is not complete")
     totals: dict[str, list[dict[str, float]]] = {treatment: [] for treatment in TREATMENTS}
     mappings: list[dict[str, Any]] = []
-    for task in public["tasks"]:
-        task_id = task["task_id"]
+    for task_id in sealed["tasks"]:
         human_mapping = sealed["tasks"][task_id]["human"]
         judge_mapping = sealed["tasks"][task_id]["judge"]
         judge = sealed["judges"][task_id]
-        rating = ratings[task_id]
+        rating = ratings.get(task_id)
         by_treatment: dict[str, dict[str, float]] = {}
         for treatment in TREATMENTS:
-            human_label = next(label for label, value in human_mapping.items() if value == treatment)
             judge_label = next(label for label, value in judge_mapping.items() if value == treatment)
             deterministic = float(sealed["deterministic"][task_id][treatment])
             judge_layer = score_mean(judge["candidates"][judge_label])
-            human_layer = score_mean(rating["scores"][human_label])
-            quality = (deterministic + judge_layer + human_layer) / 3
+            human_layer = None
+            if rating is not None:
+                human_label = next(label for label, value in human_mapping.items() if value == treatment)
+                human_layer = score_mean(rating["scores"][human_label])
+            layers = [deterministic, judge_layer] + ([] if human_layer is None else [human_layer])
+            quality = sum(layers) / len(layers)
             by_treatment[treatment] = {"deterministic_tier": deterministic, "judge_layer": judge_layer, "human_layer": human_layer, "quality": quality}
             totals[treatment].append(by_treatment[treatment])
-        mappings.append({"task_id": task_id, "human_mapping": human_mapping, "judge_mapping": judge_mapping, "scores": by_treatment, "human_preference": rating["preference"], "judge_preference": judge["preference"]})
-    aggregates = {treatment: {"deterministic_mean": sum(row["deterministic_tier"] for row in rows) / len(rows), "judge_mean": sum(row["judge_layer"] for row in rows) / len(rows), "human_mean": sum(row["human_layer"] for row in rows) / len(rows), "quality_mean": sum(row["quality"] for row in rows) / len(rows)} for treatment, rows in totals.items()}
-    payload = {"schema_version": 1, "status": "revealed", "revealed_at": utc_now(), "tasks": mappings, "aggregates": aggregates, "note": "Single-repetition benchmark; no statistical superiority claim."}
+        mappings.append({"task_id": task_id, "human_scored": rating is not None, "human_mapping": human_mapping if rating is not None else None, "judge_mapping": judge_mapping, "scores": by_treatment, "human_preference": rating["preference"] if rating is not None else None, "judge_preference": judge["preference"]})
+    aggregates = {}
+    for treatment, rows in totals.items():
+        human_rows = [row["human_layer"] for row in rows if row["human_layer"] is not None]
+        aggregates[treatment] = {"deterministic_mean": sum(row["deterministic_tier"] for row in rows) / len(rows), "judge_mean": sum(row["judge_layer"] for row in rows) / len(rows), "human_mean": sum(human_rows) / len(human_rows), "quality_mean": sum(row["quality"] for row in rows) / len(rows)}
+    payload = {"schema_version": 1, "status": "revealed", "revealed_at": utc_now(), "benchmark_task_count": len(sealed["tasks"]), "human_task_count": len(human_task_ids), "judge_only_task_count": len(sealed["tasks"]) - len(human_task_ids), "tasks": mappings, "aggregates": aggregates, "note": "Writing tasks combine deterministic, judge, and human layers; all other tasks combine deterministic and judge layers. Single repetition; no statistical superiority claim."}
     write_json(review_root / "private" / "reveal.json", payload)
     return payload
 
@@ -924,8 +931,8 @@ const el=(tag,attrs={},text='')=>{const n=document.createElement(tag);Object.ass
 function nextTask(){return review.tasks.find(t=>!review.completed_task_ids.includes(t.task_id))||review.tasks[review.tasks.length-1]}
 function scoreRow(letter,key,label,chosen){const f=el('fieldset',{className:'row'}),l=el('legend',{},label),s=el('div',{className:'scale'});f.append(l,s);[1,2,3].forEach(v=>{const lab=el('label'),i=el('input',{type:'radio',name:`${letter}-${key}`,value:v});i.checked=chosen===v;i.onchange=updateButton;lab.append(i,document.createTextNode(String(v)));s.append(lab)});return f}
 function updateButton(){const complete=letters=>letters.every(letter=>criteria.every(([key])=>document.querySelector(`input[name="${letter}-${key}"]:checked`)));const pref=document.querySelector('input[name="preference"]:checked');document.querySelector('button').disabled=!(complete(['A','B','C'])&&pref)}
-function render(){current=nextTask();const done=review.completed_task_ids.length,app=document.querySelector('#app');app.replaceChildren();const surface=el('main',{className:'surface'}),bar=el('header',{className:'toolbar'}),title=el('div');title.append(el('h1',{},`Blind benchmark review · task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')} / 07`),el('small',{},'Anonymous candidate order is sealed'));const prog=el('div'),copy=el('div',{className:'progress-copy'});copy.append(el('strong',{},`${done} / 7 submitted`),el('span',{className:'muted'},`Current task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')}`));const track=el('div',{className:'track'}),fill=el('span');fill.style.width=`${done/7*100}%`;track.append(fill);prog.append(copy,track);bar.append(title,prog);surface.append(bar);const context=el('section',{className:'context'}),task=el('div'),instruction=el('div');task.append(el('strong',{},'Task'),el('p',{},current.title));instruction.append(el('strong',{},'Task instruction'),el('p',{className:'muted'},current.instruction));context.append(task,instruction);surface.append(context);const answers=el('div',{className:'answers'});for(const letter of ['A','B','C']){const item=el('section',{className:'answer'}),head=el('div',{className:'heading'});head.append(el('h2',{},`Answer ${letter}`),el('small',{},'Anonymous response'));item.append(head,el('pre',{className:'copy'},current.candidates[letter]));const sheet=el('div',{className:'sheet'});criteria.forEach(([key,label])=>sheet.append(scoreRow(letter,key,label)));item.append(sheet);answers.append(item)}surface.append(answers);const foot=el('footer'),pref=el('fieldset',{className:'prefs'});pref.append(el('legend',{},'Overall preference'));['A','B','C','tie'].forEach(value=>{const lab=el('label'),i=el('input',{type:'radio',name:'preference',value});i.onchange=updateButton;lab.append(i,document.createTextNode(value));pref.append(lab)});const submit=el('button',{type:'button',disabled:true},'Submit and next');submit.onclick=submitRating;foot.append(pref,submit);surface.append(foot);app.append(surface);const reveal=el('section',{className:'reveal'}),left=el('div');left.append(el('h3',{},'Reveal after 7 / 7'),el('p',{className:'muted'},'Identity mappings and aggregate scores remain sealed until every task is submitted.'));const items=el('div',{className:'reveal-items'});for(const [a,b] of [['A / B / C identity mapping','Await all 7 submissions'],['Score and preference summary','Await all 7 submissions']]){const i=el('div',{className:'reveal-item'});i.append(el('strong',{},a),el('small',{},b));items.append(i)}reveal.append(left,items);app.append(reveal)}
-async function submitRating(){const scores={};for(const letter of ['A','B','C']){scores[letter]={};for(const [key] of criteria)scores[letter][key]=Number(document.querySelector(`input[name="${letter}-${key}"]:checked`).value)}const preference=document.querySelector('input[name="preference"]:checked').value;const response=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:current.task_id,scores,preference})});if(!response.ok){alert('Unable to save this rating. Refresh and retry.');return}review=await (await fetch('/api/review')).json();if(review.completed_task_ids.length===7){const reveal=await fetch('/api/reveal');if(reveal.ok){document.querySelector('#app').textContent=JSON.stringify(await reveal.json(),null,2);return}}render()}
+function render(){current=nextTask();const done=review.completed_task_ids.length,total=review.tasks.length,app=document.querySelector('#app');app.replaceChildren();const surface=el('main',{className:'surface'}),bar=el('header',{className:'toolbar'}),title=el('div');title.append(el('h1',{},`Blind writing review · task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}`),el('small',{},'Anonymous candidate order is sealed'));const prog=el('div'),copy=el('div',{className:'progress-copy'});copy.append(el('strong',{},`${done} / ${total} submitted`),el('span',{className:'muted'},`Current task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')}`));const track=el('div',{className:'track'}),fill=el('span');fill.style.width=`${done/total*100}%`;track.append(fill);prog.append(copy,track);bar.append(title,prog);surface.append(bar);const context=el('section',{className:'context'}),task=el('div'),instruction=el('div');task.append(el('strong',{},'Task'),el('p',{},current.title));instruction.append(el('strong',{},'Task instruction'),el('p',{className:'muted'},current.instruction));context.append(task,instruction);surface.append(context);const answers=el('div',{className:'answers'});for(const letter of ['A','B','C']){const item=el('section',{className:'answer'}),head=el('div',{className:'heading'});head.append(el('h2',{},`Answer ${letter}`),el('small',{},'Anonymous response'));item.append(head,el('pre',{className:'copy'},current.candidates[letter]));const sheet=el('div',{className:'sheet'});criteria.forEach(([key,label])=>sheet.append(scoreRow(letter,key,label)));item.append(sheet);answers.append(item)}surface.append(answers);const foot=el('footer'),pref=el('fieldset',{className:'prefs'});pref.append(el('legend',{},'Overall preference'));['A','B','C','tie'].forEach(value=>{const lab=el('label'),i=el('input',{type:'radio',name:'preference',value});i.onchange=updateButton;lab.append(i,document.createTextNode(value));pref.append(lab)});const submit=el('button',{type:'button',disabled:true},'Submit and next');submit.onclick=submitRating;foot.append(pref,submit);surface.append(foot);app.append(surface);const reveal=el('section',{className:'reveal'}),left=el('div');left.append(el('h3',{},`Reveal after ${total} / ${total}`),el('p',{className:'muted'},'Identity mappings and aggregate scores remain sealed until both writing tasks are submitted.'));const items=el('div',{className:'reveal-items'});for(const [a,b] of [['A / B / C identity mapping',`Await all ${total} submissions`],['Score and preference summary',`Await all ${total} submissions`]]){const i=el('div',{className:'reveal-item'});i.append(el('strong',{},a),el('small',{},b));items.append(i)}reveal.append(left,items);app.append(reveal)}
+async function submitRating(){const scores={};for(const letter of ['A','B','C']){scores[letter]={};for(const [key] of criteria)scores[letter][key]=Number(document.querySelector(`input[name="${letter}-${key}"]:checked`).value)}const preference=document.querySelector('input[name="preference"]:checked').value;const response=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:current.task_id,scores,preference})});if(!response.ok){alert('Unable to save this rating. Refresh and retry.');return}review=await (await fetch('/api/review')).json();if(review.completed_task_ids.length===review.tasks.length){const reveal=await fetch('/api/reveal');if(reveal.ok){document.querySelector('#app').textContent=JSON.stringify(await reveal.json(),null,2);return}}render()}
 fetch('/api/review').then(r=>r.json()).then(value=>{review=value;render()}).catch(()=>document.querySelector('#app').textContent='Review data is unavailable.');
 </script>'''
 
@@ -955,12 +962,13 @@ def build_package(cache: Path, artifact_root: Path, toolchain: Path, fake_judge:
         judge_candidates = {label: by_key[attempt_key(task_id, treatment)]["review_artifact"] for label, treatment in judge_mapping.items()}
         judge_result = run_judge(task, judge_candidates, review_root / "private" / "judge" / task_id, manifest, fake=fake_judge)
         judge = judge_result["payload"]
-        public_tasks.append({"task_id": task_id, "title": task["title"], "instruction": task["instruction"], "candidates": human_candidates})
+        if task["category"] == HUMAN_REVIEW_CATEGORY:
+            public_tasks.append({"task_id": task_id, "title": task["title"], "instruction": task["instruction"], "candidates": human_candidates})
         sealed_tasks[task_id] = {"human": human_mapping, "judge": judge_mapping}
         deterministic[task_id] = {treatment: deterministic_tier(by_key[attempt_key(task_id, treatment)]["hidden_grader"], by_key[attempt_key(task_id, treatment)]["agent_status"]) for treatment in TREATMENTS}
         judges[task_id] = judge
         judge_runtime[task_id] = judge_result["runtime"]
-    public = {"schema_version": 1, "baseline_revision": manifest["baseline_revision"], "tasks": public_tasks, "score_levels": {"1": "Materially incorrect, incomplete, or unclear", "2": "Acceptable with limited errors or weaknesses", "3": "Correct, complete, and clear"}, "completed_task_ids": []}
+    public = {"schema_version": 1, "baseline_revision": manifest["baseline_revision"], "benchmark_task_count": len(manifest["tasks"]), "human_task_count": len(public_tasks), "tasks": public_tasks, "score_levels": {"1": "Materially incorrect, incomplete, or unclear", "2": "Acceptable with limited errors or weaknesses", "3": "Correct, complete, and clear"}, "completed_task_ids": []}
     forbidden_public = json.dumps(public, ensure_ascii=False).lower()
     if any(term in forbidden_public for term in ("online_ds", "offline_ds", "qwen_local", "hidden_grader", "elapsed_seconds", "cost_usd", "tool_calls")):
         raise InfrastructureError("public review package leaks treatment telemetry")
@@ -968,12 +976,48 @@ def build_package(cache: Path, artifact_root: Path, toolchain: Path, fake_judge:
     write_json(sealed_root / "mappings.json", sealed)
     write_json(public_root / "review.json", public)
     atomic_write(public_root / "index.html", REVIEW_HTML.encode("utf-8"))
-    package = {"schema_version": 1, "status": "ready_for_review", "review_root": str(review_root), "public_sha256": sha256_file(public_root / "review.json"), "sealed_sha256": sha256_file(sealed_root / "mappings.json"), "judge_count": len(judges), "task_count": len(public_tasks), "judge_runtime_contract": {"model": JUDGE_MODEL, "reasoning_effort": JUDGE_EFFORT, "fallback_configured": False, "validated_calls": len(judge_runtime)}}
+    package = {"schema_version": 1, "status": "ready_for_review", "review_root": str(review_root), "public_sha256": sha256_file(public_root / "review.json"), "sealed_sha256": sha256_file(sealed_root / "mappings.json"), "judge_count": len(judges), "task_count": len(manifest["tasks"]), "human_task_count": len(public_tasks), "judge_only_task_count": len(manifest["tasks"]) - len(public_tasks), "judge_runtime_contract": {"model": JUDGE_MODEL, "reasoning_effort": JUDGE_EFFORT, "fallback_configured": False, "validated_calls": len(judge_runtime)}}
     write_json(artifact_root / "phase-package-receipt.json", package)
     state["phase_receipts"]["package"] = package
     state["status"] = "review_pending"
     write_json(state_path(artifact_root), state)
     return package
+
+
+def migrate_review_scope(artifact_root: Path) -> dict[str, Any]:
+    manifest = load_manifest()
+    review_root = artifact_root / "review"
+    public_path = review_root / "public" / "review.json"
+    sealed_path = review_root / "sealed" / "mappings.json"
+    package_path = artifact_root / "phase-package-receipt.json"
+    if not public_path.is_file() or not sealed_path.is_file() or not package_path.is_file():
+        raise InfrastructureError("review package is incomplete")
+    human_ids = [task["task_id"] for task in manifest["tasks"] if task["category"] == HUMAN_REVIEW_CATEGORY]
+    public = read_json(public_path)
+    public_by_id = {task["task_id"]: task for task in public["tasks"]}
+    if any(task_id not in public_by_id for task_id in human_ids):
+        raise InfrastructureError("review package is missing a writing task")
+    ratings = load_ratings(review_root)["ratings"]
+    if set(ratings) - set(human_ids):
+        raise InfrastructureError("non-writing human ratings already exist")
+    public["benchmark_task_count"] = len(manifest["tasks"])
+    public["human_task_count"] = len(human_ids)
+    public["tasks"] = [public_by_id[task_id] for task_id in human_ids]
+    public["completed_task_ids"] = [task_id for task_id in human_ids if task_id in ratings]
+    write_json(public_path, public)
+    atomic_write(review_root / "public" / "index.html", REVIEW_HTML.encode("utf-8"))
+    package = read_json(package_path)
+    package["public_sha256"] = sha256_file(public_path)
+    package["task_count"] = len(manifest["tasks"])
+    package["human_task_count"] = len(human_ids)
+    package["judge_only_task_count"] = len(manifest["tasks"]) - len(human_ids)
+    write_json(package_path, package)
+    state = read_json(state_path(artifact_root))
+    state["phase_receipts"]["package"] = package
+    write_json(state_path(artifact_root), state)
+    receipt = {"schema_version": 1, "status": "completed", "migrated_at": utc_now(), "benchmark_task_count": len(manifest["tasks"]), "human_task_ids": human_ids, "judge_only_task_count": len(manifest["tasks"]) - len(human_ids), "judge_results_reused": len(read_json(sealed_path)["judges"]), "public_sha256": package["public_sha256"], "sealed_sha256": package["sealed_sha256"]}
+    write_json(artifact_root / "review-scope-migration-receipt.json", receipt)
+    return receipt
 
 
 def public_review_payload(review_root: Path) -> dict[str, Any]:
@@ -1079,6 +1123,7 @@ def parse_args() -> argparse.Namespace:
     mode.add_argument("--rebind-preflight", action="store_true")
     mode.add_argument("--serve-review", action="store_true")
     mode.add_argument("--fake-run", action="store_true")
+    mode.add_argument("--migrate-review-scope", action="store_true")
     parser.add_argument("--cache", type=Path, default=Path(os.environ.get("CLAUDE_PILOT_CACHE", DEFAULT_CACHE)))
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--review-root", type=Path)
@@ -1108,6 +1153,8 @@ def main() -> int:
             output = rebind_preflight(args.cache, args.artifact_root, args.toolchain, args.old_preflight.resolve())
         elif args.fake_run:
             output = run_fake_benchmark(args.artifact_root)
+        elif args.migrate_review_scope:
+            output = migrate_review_scope(args.artifact_root)
         else:
             serve_review((args.review_root or args.artifact_root / "review").resolve(), args.host, args.port)
             return 0
