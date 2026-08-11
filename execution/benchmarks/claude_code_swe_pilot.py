@@ -622,6 +622,16 @@ def run_preflight(cache: Path, artifact_root: Path, toolchain: Path) -> dict[str
     online_probe = probe_provider(
         "online", toolchain, real_claude, manifest["claude_code_version"], probe_dir
     )
+    run_command(
+        ["docker", "pull", "--platform", "linux/amd64", "ubuntu:22.04"],
+        timeout=1800,
+        log_path=artifact_root / "docker-amd64-base-pull.log",
+    )
+    base_arch = run_command(
+        ["docker", "image", "inspect", "ubuntu:22.04", "--format", "{{.Architecture}}"]
+    ).stdout.strip()
+    if base_arch != "amd64":
+        raise InfrastructureError(f"SWE-bench base platform mismatch: {base_arch}")
     key = expected_preflight_key(manifest)
     gold_dir = cache / "gold" / key
     run_id = f"gold-{key[:12]}"
