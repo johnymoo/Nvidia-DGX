@@ -86,10 +86,10 @@ acceptance metrics. The benchmark may retain provider-reported timing or token
 usage from Claude Code runs as supporting evidence, but it measures completed
 coding work rather than the serving layer in isolation.
 
-The user selected a mixed coding-task corpus. It must contain both replayable
-tasks representative of the user's private repositories and a bounded subset
-of a public SWE benchmark. Results for the private and public strata must be
-reported separately before any aggregate is calculated.
+The user selected a mixed coding-task direction for later expansion, then
+bounded the first run to project-owned standard mini-SWE tasks. Private-repo
+replays, a public SWE stratum, and cross-stratum aggregation are deferred until
+the user reviews this pilot.
 
 The user also required the online `claude_ds` treatment to use the Flash model.
 The frozen treatment identities are `deepseek-v4-flash` online and
@@ -97,16 +97,17 @@ The frozen treatment identities are `deepseek-v4-flash` online and
 Both identities must be observed in run evidence, and fallback or a route to
 `deepseek-v4-pro` invalidates the affected run.
 
-The first execution is a calibration pilot using public standard tasks only.
-The previously discussed full mixed-corpus run count is deferred. The user will
-review pilot evidence before deciding whether to add private tasks, repetitions,
-or a larger public sample. The current design recommendation is four bounded
-SWE-bench Verified tasks, one sequential run per treatment per task.
+The first execution is a calibration pilot using four project-owned mini-SWE
+tasks in isolated local Git sandboxes. The user explicitly rejected a Docker or
+SWE-bench harness dependency for this pilot. The previously discussed full
+mixed-corpus run count is deferred. The user will review pilot evidence before
+deciding whether to add private tasks, repetitions, or a larger public sample.
 
 ## Open Product Decision
 
-The exact pilot task IDs remain to be frozen by reproducibility criteria. The
-post-pilot run budget is intentionally outside the current baseline.
+The frozen tasks cover a bug fix, feature, behavior-preserving refactor, and
+debug/test workflow. The post-pilot run budget is intentionally outside the
+current baseline.
 
 ## Approved User-Story Baseline
 
@@ -124,7 +125,7 @@ than one test at a time through separately dispatched agents.
 - `US-02`: As a coding-model evaluator, I want the online
   `deepseek-v4-flash` and local Patch4 `deepseek-v4-flash-0731` treatments to
   run under the same Claude Code version, tool policy, task snapshots, and
-  timeout, so that four SWE-bench Verified pilot tasks can be compared one
+  timeout, so that four frozen sandbox pilot tasks can be compared one
   sequential run per treatment without fallback.
 - `US-03`: As a decision maker, I want per-task executable-test outcomes,
   completion state, elapsed time, tool calls, retries, and available token/cost
@@ -145,16 +146,11 @@ preflight passes, and repair discovered infrastructure issues before retrying.
 
 ## Standard Harness Checks
 
-- Official SWE-bench release: tag `v4.1.0`, Git commit
-  `726c5461e2ef52d83cf1ea2107870a8bb3328d57`.
-- SWE-bench Verified dataset revision:
-  `c104f840cc67f8b6eec6f759ebc8b2693d585d4a`.
-- Verified test parquet SHA-256:
-  `a45b1fe4e2f0c8390b2b2938ac83e92ed5979000856808f3679c07812e9e6dcd`.
-- The local Docker engine is Linux arm64. Upstream documents arm64 as
-  experimental and requires locally built images (`--namespace ''`). The
-  preflight must therefore run gold-patch calibration for every frozen task
-  before changing the GB10 service state.
+- The runner uses only Python's standard library and local Git workspaces; it
+  does not download a dataset, build an image, or invoke Docker.
+- Preflight verifies each broken fixture fails hidden grading and each frozen
+  calibration solution passes visible and hidden tests before changing GB10
+  service state.
 - The configured toolchain `CLAUDE_REAL_BIN` pointed to Claude Code `2.1.195`,
   while the current installed binary was `2.1.207`. An online Flash protocol
   probe confirmed that stream-json exposes the actual model, Claude Code

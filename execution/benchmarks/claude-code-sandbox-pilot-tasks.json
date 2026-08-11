@@ -1,0 +1,58 @@
+{
+  "schema_version": 2,
+  "baseline_revision": "claude-ds-pilot-r1",
+  "claude_code_version": "2.1.207",
+  "task_timeout_seconds": 900,
+  "visible_test_timeout_seconds": 60,
+  "grade_timeout_seconds": 60,
+  "tasks": [
+    {
+      "task_id": "miniconfig-escaped-paths",
+      "title": "Fix escaped configuration paths",
+      "category": "bug-fix",
+      "difficulty": "small",
+      "fixture": "miniconfig-escaped-paths",
+      "grader": "grade_miniconfig.py",
+      "solution": "miniconfig-escaped-paths",
+      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "treatment_order": ["online", "private"],
+      "instruction": "The get_path helper handles ordinary dotted dictionary paths, but escaped dots and list traversal are broken. Implement backslash escaping for the next path character, support non-negative decimal list indexes, reject empty segments and dangling escapes with ValueError, and raise TypeError when a list segment is not an index or traversal reaches a scalar. A supplied default must be returned only for a missing dictionary key or an out-of-range list index. Preserve the public get_path(data, path, default=MISSING) API."
+    },
+    {
+      "task_id": "retry-after-policy",
+      "title": "Add Retry-After handling to retry policy",
+      "category": "feature",
+      "difficulty": "small-medium",
+      "fixture": "retry-after-policy",
+      "grader": "grade_retry_after.py",
+      "solution": "retry-after-policy",
+      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "treatment_order": ["private", "online"],
+      "instruction": "Complete parse_retry_after and integrate it into next_delay. Retry-After accepts either non-negative integer seconds or an RFC 7231 HTTP date. Date calculations must use the injected timezone-aware now value and past dates produce zero. Missing, malformed, negative, or timezone-naive values are ignored. next_delay keeps exponential backoff, uses the larger of backoff and a valid Retry-After delay, and then applies the cap. Reject negative attempts, base delays, or caps with ValueError. Keep all calculations deterministic and do not read the system clock when now is supplied."
+    },
+    {
+      "task_id": "event-summary-refactor",
+      "title": "Refactor duplicated event summaries",
+      "category": "refactor",
+      "difficulty": "medium",
+      "fixture": "event-summary-refactor",
+      "grader": "grade_event_summary.py",
+      "solution": "event-summary-refactor",
+      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "treatment_order": ["online", "private"],
+      "instruction": "Refactor event_summary so text and JSON rendering share one aggregation path. Add a frozen Summary dataclass and summarize(events), which must consume any iterable exactly once without mutating input events. total counts every event, ok and failed count only those exact statuses, unknown statuses count only toward total, and a missing duration_ms contributes zero. Reject bool or negative/non-integer duration_ms values with ValueError. Preserve the exact existing text and compact sorted JSON output formats, and have both render functions delegate to summarize."
+    },
+    {
+      "task_id": "ndjson-stream-decoder",
+      "title": "Debug incremental NDJSON decoding",
+      "category": "debug-and-test",
+      "difficulty": "medium",
+      "fixture": "ndjson-stream-decoder",
+      "grader": "grade_ndjson_decoder.py",
+      "solution": "ndjson-stream-decoder",
+      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "treatment_order": ["private", "online"],
+      "instruction": "Fix NDJSONDecoder's incremental behavior and add focused regression coverage where useful. feed(chunk) must emit only complete newline-terminated JSON values while retaining a partial record, including when CRLF is split across chunks. Blank or whitespace-only lines are ignored but still advance the one-based physical line number. finalize() parses one final unterminated nonblank record exactly once; repeated finalize calls return an empty list. Malformed JSON raises NDJSONError with the physical line number and original decoder message. Feeding after finalization raises RuntimeError."
+    }
+  ]
+}

@@ -230,11 +230,11 @@
 <h1>Claude Code Flash Pilot Design</h1>
 <p>Date: 2026-08-11 Status: approved for continuous execution by the user Baseline: <code>claude-ds-pilot-r1</code></p>
 <h2>Outcome</h2>
-<p>One project-owned command safely replaces the running Qwen service with the accepted two-host DeepSeek V4 Flash 0731 Patch4 deployment, runs a four-task SWE-bench Verified pilot through real Claude Code against online and private Flash treatments, grades the generated patches with the official harness, and leaves DeepSeek running after a successful pilot. Infrastructure failure stops DeepSeek and restores the captured Qwen state. A benchmark task that fails its tests is a measured result and does not abort later tasks.</p>
+<p>One project-owned command safely replaces the running Qwen service with the accepted two-host DeepSeek V4 Flash 0731 Patch4 deployment, runs four project-owned mini-SWE tasks through real Claude Code against online and private Flash treatments, grades each isolated Git sandbox with hidden deterministic tests, and leaves DeepSeek running after a successful pilot. Infrastructure failure stops DeepSeek and restores the captured Qwen state. A benchmark task that fails its tests is a measured result and does not abort later tasks.</p>
 <p>The user approved baseline <code>claude-ds-pilot-r1</code>, selected architecture A, and then explicitly authorized the coordinator to design the script, run preflight, proceed without another confirmation when preflight passes, and fix infrastructure issues as needed.</p>
 <h2>User Stories</h2>
 <p>accepted two-host Patch4 DeepSeek service so that private Claude Code uses the exact model, with restoration of the captured Qwen state on startup failure. After a successful pilot, DeepSeek remains running and Qwen remains stopped until an explicit restore action.</p>
-<p><code>deepseek-v4-flash</code> and local Patch4 <code>deepseek-v4-flash-0731</code> treatments to run under the same Claude Code version, tool policy, task snapshots, and timeout, so that four SWE-bench Verified pilot tasks can be compared one sequential run per treatment without fallback.</p>
+<p><code>deepseek-v4-flash</code> and local Patch4 <code>deepseek-v4-flash-0731</code> treatments to run under the same Claude Code version, tool policy, task snapshots, and timeout, so that four frozen sandbox tasks can be compared one sequential run per treatment without fallback.</p>
 <p>completion state, elapsed time, tool calls, retries, and available token/cost evidence so that I can decide whether to expand the corpus or repetitions.</p>
 <ul>
 <li><code>US-01</code>: As a GB10 operator, I want to safely offload Qwen and start the</li>
@@ -244,7 +244,7 @@
 <h2>Single-Command Architecture</h2>
 <p>The top-level entry point is <code>execution/run-claude-code-flash-pilot.sh</code>. It supports <code>--preflight</code> and <code>--run</code>; <code>--run</code> repeats freshness checks but reuses a content-addressed gold calibration receipt. The user invokes one <code>--run</code> command for the real pilot.</p>
 <p>The shell entry point owns phase transitions and SSH. It calls two internal, deterministic components:</p>
-<p>1. <code>execution/run-vllm-service.sh</code> reuses the accepted deployment script&#39;s identity, Compose, Qwen capture, worker-first/head-second startup, runtime assertion, diagnostics, and rollback functions. It adds persistent <code>--start</code>, read-only <code>--status</code>, and explicit <code>--stop --restore-qwen</code> operations. It never edits the existing Compose files. 2. <code>execution/benchmarks/claude_code_swe_pilot.py</code> prepares isolated task workspaces, invokes Claude Code subprocesses sequentially, validates their stream-json identity, captures patches, invokes official SWE-bench grading, and writes aggregate JSON and Markdown results.</p>
+<p>1. <code>execution/run-vllm-service.sh</code> reuses the accepted deployment script&#39;s identity, Compose, Qwen capture, worker-first/head-second startup, runtime assertion, diagnostics, and rollback functions. It adds persistent <code>--start</code>, read-only <code>--status</code>, and explicit <code>--stop --restore-qwen</code> operations. It never edits the existing Compose files. 2. <code>execution/benchmarks/claude_code_sandbox_pilot.py</code> prepares isolated task workspaces, invokes Claude Code subprocesses sequentially, validates their stream-json identity, captures patches, invokes project-owned hidden tests, and writes aggregate JSON and Markdown results without Docker.</p>
 <p>No Codex/Claude implementation agent is dispatched per benchmark task. The runner loops over a frozen manifest and directly creates the eight Claude Code subprocesses.</p>
 <h2>Frozen Treatments</h2>
 <p>Both treatments use the same real Claude Code binary and must report version <code>2.1.207</code> in their init events. The runner explicitly overrides the stale toolchain <code>CLAUDE_REAL_BIN</code> that currently points to <code>2.1.195</code>.</p>
@@ -256,33 +256,31 @@
 </tbody></table>
 <p>The runner uses <code>coding-agent-toolchain/bin/claude</code> with an explicit provider, model, and real binary. No fallback model is configured. A missing token, provider error, init model mismatch, init version mismatch, or local model/API identity mismatch is an infrastructure failure that invalidates the run. Tokens remain process environment only and are never written to commands, settings, logs, receipts, or Git.</p>
 <h2>Frozen Tasks</h2>
-<p>Harness: SWE-bench <code>v4.1.0</code> at <code>726c5461e2ef52d83cf1ea2107870a8bb3328d57</code>.</p>
-<p>Dataset: SWE-bench Verified revision <code>c104f840cc67f8b6eec6f759ebc8b2693d585d4a</code>, test parquet SHA-256 <code>a45b1fe4e2f0c8390b2b2938ac83e92ed5979000856808f3679c07812e9e6dcd</code>.</p>
 <table>
-<thead><tr><th>Order</th><th>Instance</th><th>Published difficulty</th><th>Pair order</th></tr></thead>
+<thead><tr><th>Order</th><th>Task</th><th>Category</th><th>Pair order</th></tr></thead>
 <tbody>
-<tr><td>1</td><td><code>django__django-11133</code></td><td><code>&lt;15 min fix</code></td><td>online, private</td></tr>
-<tr><td>2</td><td><code>astropy__astropy-12907</code></td><td><code>15 min - 1 hour</code></td><td>private, online</td></tr>
-<tr><td>3</td><td><code>sympy__sympy-20428</code></td><td><code>15 min - 1 hour</code></td><td>online, private</td></tr>
-<tr><td>4</td><td><code>pytest-dev__pytest-6197</code></td><td><code>1-4 hours</code></td><td>private, online</td></tr>
+<tr><td>1</td><td><code>miniconfig-escaped-paths</code></td><td>bug fix</td><td>online, private</td></tr>
+<tr><td>2</td><td><code>retry-after-policy</code></td><td>feature</td><td>private, online</td></tr>
+<tr><td>3</td><td><code>event-summary-refactor</code></td><td>refactor</td><td>online, private</td></tr>
+<tr><td>4</td><td><code>ndjson-stream-decoder</code></td><td>debug and test</td><td>private, online</td></tr>
 </tbody></table>
-<p>Alternating pair order balances the only order effect available in a single-repetition pilot. Runs remain strictly sequential so local requests do not compete for GB10 capacity. Each Claude Code subprocess has a 45-minute wall-clock limit. The hidden test patch and gold solution are never placed in the agent workspace or prompt.</p>
+<p>Alternating pair order balances the only order effect available in a single-repetition pilot. Runs remain strictly sequential so local requests do not compete for GB10 capacity. Each Claude Code subprocess has a 15-minute wall-clock limit. Hidden tests and calibration solutions are never copied into an agent workspace or prompt.</p>
 <h2>Claude Code Contract</h2>
-<p>Each treatment starts from its own clean checkout at the dataset <code>base_commit</code>. The prompt contains only the public problem statement plus fixed instructions to inspect the repository, implement the fix, run relevant tests when available, avoid network access, and leave the best patch in the worktree.</p>
+<p>Each treatment starts from its own clean project fixture committed to a new Git repository. The prompt contains only the task statement plus fixed instructions to inspect the repository, implement the fix, run relevant tests when available, avoid network access, and leave the best patch in the worktree.</p>
 <p>Claude Code runs non-interactively with session persistence, user/project customizations, MCP, web tools, subagents, and fallback disabled. Its allowed tool surface is the built-in file/search/edit/shell set. The complete stream-json output is retained. The runner extracts init model/version, duration, turns, usage, model usage, cost, terminal reason, permission denials, and <code>git diff --binary</code>.</p>
-<p>Official executable grading is authoritative. The runner writes one prediction file per treatment and invokes the pinned SWE-bench evaluator with one worker and <code>--namespace &#39;&#39;</code> for local arm64 image builds. Claude completion text and model self-reports do not count as task success.</p>
+<p>Hidden executable grading is authoritative. Each grader runs after Claude exits and covers the complete frozen behavior contract independently of visible tests. Claude completion text and model self-reports do not count as task success.</p>
 <h2>Preflight</h2>
 <p><code>--preflight</code> is fail-fast and does not change either GB10 service state. It:</p>
-<p>1. runs shell syntax/static tests and calibrated fake tests for start failure, rollback failure, identity mismatch, measured task failure, and timeout; 2. verifies SSH aliases, protected service state, free ports, fabric, model manifest, Patch4 source, image revision/fingerprint, and rendered Compose on both hosts through the accepted checks; 3. verifies the exact Claude binary, toolchain commit/provider contract, online model catalog, and a no-tool online Flash stream-json probe; 4. verifies Docker/disk capacity, pinned harness and dataset hashes, repository reachability, and clean workspace creation; and 5. grades the gold patch for all four frozen tasks on the local arm64 harness.</p>
-<p>Gold calibration produces a receipt keyed by script, task manifest, harness, dataset, Docker architecture, and task image hashes. <code>--run</code> accepts only a fresh matching receipt. Any failed gold task blocks GB10 mutation and is fixed as infrastructure, not reported as model performance.</p>
+<p>1. runs shell syntax/static tests and calibrated fake tests for start failure, rollback failure, identity mismatch, measured task failure, and timeout; 2. verifies SSH aliases, protected service state, free ports, fabric, model manifest, Patch4 source, image revision/fingerprint, and rendered Compose on both hosts through the accepted checks; 3. verifies the exact Claude binary, toolchain commit/provider contract, online model catalog, and a no-tool online Flash stream-json probe; 4. verifies clean Git sandbox creation and that every broken fixture fails its hidden grader; and 5. verifies every project-owned calibration solution passes visible and hidden tests without using Docker.</p>
+<p>Gold calibration produces a receipt keyed by the scripts, task manifest, fixtures, graders, solutions, toolchain shim, and real Claude binary. <code>--run</code> accepts only a fresh matching receipt. Any failed gold task blocks GB10 mutation and is fixed as infrastructure, not reported as model performance.</p>
 <h2>Real Run and Recovery</h2>
 <p>The formal run creates a UTC artifact root, refreshes all non-mutating checks, and then executes these phases inside the one top-level process:</p>
-<p>1. capture Qwen/protected-service state and host evidence; 2. stop only Qwen and wait for port 8004 to release; 3. start worker DeepSeek, then head DeepSeek; 4. verify API model, both ranks, Patch4 source, NCCL <code>NET/IB</code>, and absence of fatal NCCL/CUDA/OOM/worker-loss evidence; 5. probe private Claude Code model/version identity; 6. run all eight Claude Code task attempts in the frozen alternating order; 7. grade online and private prediction sets with the official harness; 8. verify the DeepSeek runtime and protected services again; and 9. write results and a service receipt while leaving DeepSeek running and Qwen stopped.</p>
+<p>1. capture Qwen/protected-service state and host evidence; 2. stop only Qwen and wait for port 8004 to release; 3. start worker DeepSeek, then head DeepSeek; 4. verify API model, both ranks, Patch4 source, NCCL <code>NET/IB</code>, and absence of fatal NCCL/CUDA/OOM/worker-loss evidence; 5. probe private Claude Code model/version identity; 6. run all eight Claude Code task attempts in the frozen alternating order; 7. grade every completed sandbox with its hidden deterministic tests; 8. verify the DeepSeek runtime and protected services again; and 9. write results and a service receipt while leaving DeepSeek running and Qwen stopped.</p>
 <p>Signals and infrastructure exceptions after Qwen is stopped enter one cleanup handler: preserve current DeepSeek logs/inspect/events, stop head then worker, restore only the captured Qwen state, verify model <code>qwen3.6-35b-fp8</code> on port 8004, and prove pdf2md/trading/lexdata unchanged. A Claude timeout or unresolved patch after a valid init is a measured task outcome, so the runner records it and continues.</p>
 <p>After a successful pilot, the explicit rollback command is the same top-level script with <code>--restore-qwen</code>; it verifies the active service receipt before stopping DeepSeek and restoring Qwen. <code>--status</code> is read-only.</p>
 <h2>Evidence and Decision Output</h2>
 <p>Local evidence lives under ignored <code>execution/artifacts/claude-code-pilot/&lt;UTC&gt;/</code>. The head centralizes its own service evidence plus remotely captured worker logs, inspect, and events under <code>/home/chriswang/gb10-ds4/artifacts/service/&lt;UTC&gt;/</code>.</p>
-<p>The result schema reports each treatment separately and each task individually: official resolved/unresolved/error, patch SHA, process exit/timeout, elapsed and API duration, turn count, token usage, cost when provided, tool calls, permission denials, actual model/version, and evidence paths. The summary may show raw counts and deltas but does not claim statistical superiority from one run per task.</p>
+<p>The result schema reports each treatment separately and each task individually: test passed/failed/error, patch SHA, process exit/timeout, elapsed and API duration, turn count, token usage, cost when provided, tool calls, permission denials, actual model/version, and evidence paths. The summary may show raw counts and deltas but does not claim statistical superiority from one run per task.</p>
 <p>The next decision is deliberately outside this run: after reviewing the pilot, the user chooses whether to add private tasks, more public tasks, or repeated runs.</p>
 <h2>Alignment Playback</h2>
 <p>Subject: this design, baseline <code>claude-ds-pilot-r1</code>.</p>
@@ -295,6 +293,7 @@
 </tbody></table>
 <p>Drift: none. Drift score: 0. Gate: <code>DESIGN_ALIGNED</code>.</p>
 <h2>Sources</h2>
+<p><code>execution/benchmarks</code></p>
 <ul>
 <li><code>planning/02-working/2026-08-11-claude-ds-local-benchmark-discovery.md</code></li>
 <li><code>planning/03-core/02-official-0731-deployment.md</code></li>
@@ -302,7 +301,7 @@
 <li><code>planning/03-core/05-multi-model-capacity-plan.md</code></li>
 <li><code>execution/run-vllm-acceptance.sh</code></li>
 <li>coding-agent-toolchain commit <code>c074ba8</code></li>
-<li>SWE-bench <code>v4.1.0</code> and SWE-bench Verified dataset revision/hash listed above</li>
+<li>project-owned frozen fixtures, graders, and calibration solutions in</li>
 </ul>
 </article>
     </div>

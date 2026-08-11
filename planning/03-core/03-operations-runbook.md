@@ -58,8 +58,9 @@ manual multi-command production procedure.
 Status: candidate pending the first `claude-ds-pilot-r1` real-run receipt.
 
 Run the local preflight first. It performs static/fake checks, the accepted
-two-host read-only checks, online Flash identity probing, and official
-SWE-bench gold calibration before any model service changes:
+two-host read-only checks, online Flash identity probing, and deterministic
+project-owned sandbox calibration before any model service changes. It has no
+local Docker or SWE-bench harness dependency:
 
 ```bash
 cd /Users/chris/project/Shili/workspaces/dev-lite/GB10-DS
@@ -67,8 +68,9 @@ execution/run-claude-code-flash-pilot.sh --preflight
 ```
 
 The formal pilot is one command. The script captures and stops Qwen, starts the
-worker then head Patch4 DeepSeek ranks, runs the frozen Claude Code task loop,
-grades both treatments, and leaves DeepSeek running on success. Infrastructure
+worker then head Patch4 DeepSeek ranks, directly runs `claude_ds` and
+`claude_local` semantics in isolated Git sandboxes, grades both treatments, and
+leaves DeepSeek running on success. Infrastructure
 failure automatically stops DeepSeek and restores the captured Qwen state.
 
 ```bash

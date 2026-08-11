@@ -7,9 +7,10 @@ Baseline: `claude-ds-pilot-r1`
 ## Outcome
 
 One project-owned command safely replaces the running Qwen service with the
-accepted two-host DeepSeek V4 Flash 0731 Patch4 deployment, runs a four-task
-SWE-bench Verified pilot through real Claude Code against online and private
-Flash treatments, grades the generated patches with the official harness, and
+accepted two-host DeepSeek V4 Flash 0731 Patch4 deployment, runs four
+project-owned mini-SWE tasks through real Claude Code against online and
+private Flash treatments, grades each isolated Git sandbox with hidden
+deterministic tests, and
 leaves DeepSeek running after a successful pilot. Infrastructure failure stops
 DeepSeek and restores the captured Qwen state. A benchmark task that fails its
 tests is a measured result and does not abort later tasks.
@@ -29,7 +30,7 @@ infrastructure issues as needed.
 - `US-02`: As a coding-model evaluator, I want the online
   `deepseek-v4-flash` and local Patch4 `deepseek-v4-flash-0731` treatments to
   run under the same Claude Code version, tool policy, task snapshots, and
-  timeout, so that four SWE-bench Verified pilot tasks can be compared one
+  timeout, so that four frozen sandbox tasks can be compared one
   sequential run per treatment without fallback.
 - `US-03`: As a decision maker, I want per-task executable-test outcomes,
   completion state, elapsed time, tool calls, retries, and available token/cost
@@ -50,10 +51,10 @@ deterministic components:
    assertion, diagnostics, and rollback functions. It adds persistent
    `--start`, read-only `--status`, and explicit `--stop --restore-qwen`
    operations. It never edits the existing Compose files.
-2. `execution/benchmarks/claude_code_swe_pilot.py` prepares isolated task
+2. `execution/benchmarks/claude_code_sandbox_pilot.py` prepares isolated task
    workspaces, invokes Claude Code subprocesses sequentially, validates their
-   stream-json identity, captures patches, invokes official SWE-bench grading,
-   and writes aggregate JSON and Markdown results.
+   stream-json identity, captures patches, invokes project-owned hidden tests,
+   and writes aggregate JSON and Markdown results without Docker.
 
 No Codex/Claude implementation agent is dispatched per benchmark task. The
 runner loops over a frozen manifest and directly creates the eight Claude Code
@@ -79,30 +80,23 @@ settings, logs, receipts, or Git.
 
 ## Frozen Tasks
 
-Harness: SWE-bench `v4.1.0` at
-`726c5461e2ef52d83cf1ea2107870a8bb3328d57`.
-
-Dataset: SWE-bench Verified revision
-`c104f840cc67f8b6eec6f759ebc8b2693d585d4a`, test parquet SHA-256
-`a45b1fe4e2f0c8390b2b2938ac83e92ed5979000856808f3679c07812e9e6dcd`.
-
-| Order | Instance | Published difficulty | Pair order |
+| Order | Task | Category | Pair order |
 | --- | --- | --- | --- |
-| 1 | `django__django-11133` | `<15 min fix` | online, private |
-| 2 | `astropy__astropy-12907` | `15 min - 1 hour` | private, online |
-| 3 | `sympy__sympy-20428` | `15 min - 1 hour` | online, private |
-| 4 | `pytest-dev__pytest-6197` | `1-4 hours` | private, online |
+| 1 | `miniconfig-escaped-paths` | bug fix | online, private |
+| 2 | `retry-after-policy` | feature | private, online |
+| 3 | `event-summary-refactor` | refactor | online, private |
+| 4 | `ndjson-stream-decoder` | debug and test | private, online |
 
 Alternating pair order balances the only order effect available in a
 single-repetition pilot. Runs remain strictly sequential so local requests do
-not compete for GB10 capacity. Each Claude Code subprocess has a 45-minute
-wall-clock limit. The hidden test patch and gold solution are never placed in
-the agent workspace or prompt.
+not compete for GB10 capacity. Each Claude Code subprocess has a 15-minute
+wall-clock limit. Hidden tests and calibration solutions are never copied into
+an agent workspace or prompt.
 
 ## Claude Code Contract
 
-Each treatment starts from its own clean checkout at the dataset `base_commit`.
-The prompt contains only the public problem statement plus fixed instructions
+Each treatment starts from its own clean project fixture committed to a new Git
+repository. The prompt contains only the task statement plus fixed instructions
 to inspect the repository, implement the fix, run relevant tests when
 available, avoid network access, and leave the best patch in the worktree.
 
@@ -113,10 +107,9 @@ stream-json output is retained. The runner extracts init model/version,
 duration, turns, usage, model usage, cost, terminal reason, permission denials,
 and `git diff --binary`.
 
-Official executable grading is authoritative. The runner writes one prediction
-file per treatment and invokes the pinned SWE-bench evaluator with one worker
-and `--namespace ''` for local arm64 image builds. Claude completion text and
-model self-reports do not count as task success.
+Hidden executable grading is authoritative. Each grader runs after Claude exits
+and covers the complete frozen behavior contract independently of visible tests.
+Claude completion text and model self-reports do not count as task success.
 
 ## Preflight
 
@@ -129,14 +122,15 @@ model self-reports do not count as task success.
    both hosts through the accepted checks;
 3. verifies the exact Claude binary, toolchain commit/provider contract, online
    model catalog, and a no-tool online Flash stream-json probe;
-4. verifies Docker/disk capacity, pinned harness and dataset hashes, repository
-   reachability, and clean workspace creation; and
-5. grades the gold patch for all four frozen tasks on the local arm64 harness.
+4. verifies clean Git sandbox creation and that every broken fixture fails its
+   hidden grader; and
+5. verifies every project-owned calibration solution passes visible and hidden
+   tests without using Docker.
 
-Gold calibration produces a receipt keyed by script, task manifest, harness,
-dataset, Docker architecture, and task image hashes. `--run` accepts only a
-fresh matching receipt. Any failed gold task blocks GB10 mutation and is fixed
-as infrastructure, not reported as model performance.
+Gold calibration produces a receipt keyed by the scripts, task manifest,
+fixtures, graders, solutions, toolchain shim, and real Claude binary. `--run`
+accepts only a fresh matching receipt. Any failed gold task blocks GB10
+mutation and is fixed as infrastructure, not reported as model performance.
 
 ## Real Run and Recovery
 
@@ -150,7 +144,7 @@ and then executes these phases inside the one top-level process:
    fatal NCCL/CUDA/OOM/worker-loss evidence;
 5. probe private Claude Code model/version identity;
 6. run all eight Claude Code task attempts in the frozen alternating order;
-7. grade online and private prediction sets with the official harness;
+7. grade every completed sandbox with its hidden deterministic tests;
 8. verify the DeepSeek runtime and protected services again; and
 9. write results and a service receipt while leaving DeepSeek running and Qwen
    stopped.
@@ -174,7 +168,7 @@ service evidence plus remotely captured worker logs, inspect, and events under
 `/home/chriswang/gb10-ds4/artifacts/service/<UTC>/`.
 
 The result schema reports each treatment separately and each task individually:
-official resolved/unresolved/error, patch SHA, process exit/timeout, elapsed and
+test passed/failed/error, patch SHA, process exit/timeout, elapsed and
 API duration, turn count, token usage, cost when provided, tool calls,
 permission denials, actual model/version, and evidence paths. The summary may
 show raw counts and deltas but does not claim statistical superiority from one
@@ -204,4 +198,5 @@ Drift: none. Drift score: 0. Gate: `DESIGN_ALIGNED`.
 - `planning/03-core/05-multi-model-capacity-plan.md`
 - `execution/run-vllm-acceptance.sh`
 - coding-agent-toolchain commit `c074ba8`
-- SWE-bench `v4.1.0` and SWE-bench Verified dataset revision/hash listed above
+- project-owned frozen fixtures, graders, and calibration solutions in
+  `execution/benchmarks`
