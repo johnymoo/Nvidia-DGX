@@ -1,14 +1,26 @@
 ---
 name: manage-gb10-dgx-spark-cluster
-description: Safely inventory, operate, recover, and verify the two-node GB10 DGX Spark inference cluster.
+description: Use when inventorying, deploying, recovering, or benchmarking Qwen, official DeepSeek, or Unsloth on the GB10 pair.
 ---
 
 # Manage GB10 DGX Spark Cluster
 
-Use for `gb10` and `gb10-2`. Begin read-only with `free -h`, `swapon --show`,
-`nvidia-smi`, `docker ps/stats/inspect`, `ss`, `rdma link show`, and fabric
-carrier/IP checks. Treat `nvidia-smi [N/A]` as unknown GPU memory, not zero.
-Read [operations](references/operations.md) for volatile paths and contracts.
+Use for `gb10` and `gb10-2`. Locate the project, read `AGENTS.md`, then read
+`planning/03-core/02-official-0731-deployment.md`,
+`03-operations-runbook.md`, and `05-multi-model-capacity-plan.md`. Begin
+read-only with `free -h`, `swapon --show`, `nvidia-smi`, `docker ps/stats/inspect`,
+`ss`, `rdma link show`, and fabric carrier/IP checks.
+
+## Workflow
+
+1. Inventory and record services and ports; do not infer GPU memory from
+   `[N/A]` fields when process evidence exists.
+2. Select official DeepSeek only for its accepted contract; select Unsloth
+   only for isolated A/B. Read the matching core runbook first.
+3. Mutation gate: capture Qwen/other service state, verify maintenance
+   authorization, render an explicit additive override, and state restore.
+4. Verify receipt/API/logs/inspect/events. Stop test services and restore only
+   captured state; verify Qwen `:8004` last.
 
 ## Guardrails
 
