@@ -80,7 +80,7 @@ settings, logs, receipts, or Git.
 ## Frozen Tasks
 
 Harness: SWE-bench `v4.1.0` at
-`726c5461e2ef52d83cf1ea2107870a8bb3328d57e`.
+`726c5461e2ef52d83cf1ea2107870a8bb3328d57`.
 
 Dataset: SWE-bench Verified revision
 `c104f840cc67f8b6eec6f759ebc8b2693d585d4a`, test parquet SHA-256

@@ -53,6 +53,43 @@ The acceptance script always stops DeepSeek after acceptance. It is not a
 validated leave-running production launcher; persistent start is a gap, not a
 manual multi-command production procedure.
 
+## Persistent Patch4 Service and Claude Code Pilot
+
+Status: candidate pending the first `claude-ds-pilot-r1` real-run receipt.
+
+Run the local preflight first. It performs static/fake checks, the accepted
+two-host read-only checks, online Flash identity probing, and official
+SWE-bench gold calibration before any model service changes:
+
+```bash
+cd /Users/chris/project/Shili/workspaces/dev-lite/GB10-DS
+execution/run-claude-code-flash-pilot.sh --preflight
+```
+
+The formal pilot is one command. The script captures and stops Qwen, starts the
+worker then head Patch4 DeepSeek ranks, runs the frozen Claude Code task loop,
+grades both treatments, and leaves DeepSeek running on success. Infrastructure
+failure automatically stops DeepSeek and restores the captured Qwen state.
+
+```bash
+execution/run-claude-code-flash-pilot.sh --run
+```
+
+Status is read-only. The explicit rollback stops DeepSeek and restores only the
+captured Qwen state, then verifies the protected services:
+
+```bash
+execution/run-claude-code-flash-pilot.sh --status
+execution/run-claude-code-flash-pilot.sh --restore-qwen
+```
+
+The head service controller is
+`/home/chriswang/gb10-ds4/execution/run-vllm-service.sh`. Its active-state
+receipt is `/home/chriswang/gb10-ds4/artifacts/service/active.json`. Do not
+manually start or stop one DeepSeek rank while this receipt exists. Local pilot
+evidence is under ignored `execution/artifacts/claude-code-pilot/runs/<UTC>/`;
+the head artifact named in `active.json` centralizes both-rank runtime evidence.
+
 ## Unsloth A/B
 
 Use base `execution/unsloth/docker-compose.yml` plus the additive

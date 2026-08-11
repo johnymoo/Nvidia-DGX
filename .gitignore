@@ -11,6 +11,7 @@ execution/artifacts/
 execution/env/*.env
 execution/**/env/*.env
 *.log
+__pycache__/
 
 # OS/editor files.
 .DS_Store

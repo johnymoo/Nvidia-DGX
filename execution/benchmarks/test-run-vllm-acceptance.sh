@@ -79,7 +79,8 @@ qwen_compose() { printf 'qwen-compose %s\n' "$*" >>"$MOCK_LOG"; }
 wait_qwen() { :; }
 container_running() {
   case "$1" in
-    "$PDF_CONTAINER"|"$TRADING_CONTAINER"|"$QWEN_CONTAINER") return 0 ;;
+    "$PDF_CONTAINER"|"$TRADING_CONTAINER") return 0 ;;
+    "$QWEN_CONTAINER") [ "$QWEN_STOPPED" -eq 0 ] ;;
     *) return 1 ;;
   esac
 }

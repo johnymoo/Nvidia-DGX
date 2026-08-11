@@ -146,7 +146,7 @@ preflight passes, and repair discovered infrastructure issues before retrying.
 ## Standard Harness Checks
 
 - Official SWE-bench release: tag `v4.1.0`, Git commit
-  `726c5461e2ef52d83cf1ea2107870a8bb3328d57e`.
+  `726c5461e2ef52d83cf1ea2107870a8bb3328d57`.
 - SWE-bench Verified dataset revision:
   `c104f840cc67f8b6eec6f759ebc8b2693d585d4a`.
 - Verified test parquet SHA-256:
