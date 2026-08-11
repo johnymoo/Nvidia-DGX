@@ -95,8 +95,13 @@ recover_on_exit() {
     log "infrastructure failure before transition: restoring captured Qwen state"
     remote_service "--stop --restore-qwen" >"$CURRENT_ARTIFACT/rollback-receipt.json" 2>"$CURRENT_ARTIFACT/rollback.stderr.log"
   else
-    log "infrastructure failure after transition: keeping DeepSeek stopped and retrying Qwen recovery"
-    remote_service "--transition-qwen" >"$CURRENT_ARTIFACT/qwen-recovery-receipt.json" 2>"$CURRENT_ARTIFACT/qwen-recovery.stderr.log"
+    log "infrastructure failure after transition: keeping DeepSeek stopped and verifying Qwen recovery"
+    if remote_service "--status" >"$CURRENT_ARTIFACT/qwen-recovery-receipt.json" 2>"$CURRENT_ARTIFACT/qwen-recovery.stderr.log" \
+      && jq -e '.state == "stopped" and .qwen_health == "healthy"' "$CURRENT_ARTIFACT/qwen-recovery-receipt.json" >/dev/null; then
+      log "Qwen is already healthy; no recovery transition needed"
+    else
+      remote_service "--transition-qwen" >"$CURRENT_ARTIFACT/qwen-recovery-receipt.json" 2>>"$CURRENT_ARTIFACT/qwen-recovery.stderr.log"
+    fi
   fi
   exit "$original_code"
 }

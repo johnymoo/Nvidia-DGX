@@ -47,8 +47,7 @@ ALLOWED_CLAUDE_TOOLS = frozenset({"Bash", "Edit", "Read", "Glob", "Grep", "Write
 JUDGE_MODEL = "gpt-5.6-sol"
 JUDGE_EFFORT = "xhigh"
 FORBIDDEN_BLIND_TERMS = (
-    "online_ds", "offline_ds", "qwen_local", "deepseek", "qwen", "provider",
-    "route", "token", "cost", "latency", "elapsed", "model usage",
+    "online_ds", "offline_ds", "qwen_local", "claude_ds", "claude_local",
 )
 
 

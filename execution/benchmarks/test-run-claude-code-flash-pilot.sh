@@ -31,8 +31,31 @@ if (false; recover_on_exit); then
   echo "post-transition recovery unexpectedly succeeded" >&2
   exit 1
 fi
-grep -Fxq -- '--transition-qwen' "$TMP/actions.log"
+grep -Fxq -- '--status' "$TMP/actions.log"
+if grep -Fxq -- '--transition-qwen' "$TMP/actions.log"; then
+  echo "healthy Qwen recovery unexpectedly transitioned" >&2
+  exit 1
+fi
 test -s "$TMP/qwen-recovery-receipt.json"
 test -d "$TMP/.recovery-lock"
+rmdir "$TMP/.recovery-lock"
 
-printf '{"status":"passed","tests":2}\n'
+: >"$TMP/actions.log"
+remote_service() {
+  printf '%s\n' "$*" >>"$TMP/actions.log"
+  if [ "$*" = "--status" ]; then
+    printf '{"state":"stopped","qwen_health":"unhealthy"}\n'
+  else
+    printf '{"state":"qwen-running","qwen":{"restored":true}}\n'
+  fi
+}
+CURRENT_PHASE="post-transition"
+if (false; recover_on_exit); then
+  echo "unhealthy post-transition recovery unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -Fxq -- '--status' "$TMP/actions.log"
+grep -Fxq -- '--transition-qwen' "$TMP/actions.log"
+test -s "$TMP/qwen-recovery-receipt.json"
+
+printf '{"status":"passed","tests":3}\n'

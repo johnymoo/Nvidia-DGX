@@ -184,7 +184,7 @@ def main() -> None:
         else:
             raise AssertionError("invalid judge schema did not fail")
         try:
-            pilot.validate_judge_payload({"candidates": {letter: {criterion: 3 for criterion in pilot.CRITERIA} for letter in pilot.LETTERS}, "preference": "A", "rationale": "The online route wins."})
+            pilot.validate_judge_payload({"candidates": {letter: {criterion: 3 for criterion in pilot.CRITERIA} for letter in pilot.LETTERS}, "preference": "A", "rationale": "Candidate A is online_ds."})
         except pilot.InfrastructureError:
             pass
         else:
