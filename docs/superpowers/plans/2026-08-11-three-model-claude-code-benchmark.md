@@ -2,12 +2,13 @@
 
 Date: 2026-08-11
 
-Status: approved for continuous execution by the user's approval of design SHA-256 `9e358baebbc0d31e81c0dcbcf3c4355ef8f9e92f8309c8ad85169d6583cad2ad` and prior instruction to proceed from preflight to the formal run without another confirmation.
+Status: approved for continuous execution by the user's approval of design SHA-256 `9e358baebbc0d31e81c0dcbcf3c4355ef8f9e92f8309c8ad85169d6583cad2ad`, the user's 2026-08-11 correction that supersedes the prior judge route with exact `gpt-5.6-sol`/`xhigh`, and the prior instruction to proceed from preflight to the formal run without another confirmation.
 
 Authority:
 
 - Design: `docs/superpowers/specs/2026-08-11-three-model-claude-code-benchmark-design.md`
 - Design commit: `dc0235c`
+- Current amended design SHA-256: `b57b21e69c1e369355ab1d73a2f678b94f1e1541e4ebf43f644abfd9af08550b`; amendment authority is the user's explicit 2026-08-11 `gpt-5.6-sol`/`xhigh` correction
 - Baseline: `claude-ds-pilot-r2`
 - Visual authority: `.superpowers/brainstorm/23770-1786451377/content/three-treatment-side-by-side-blind-review.html`, SHA-256 `14473ffd410837a9b9c364770bc6bfaa3c50310358c75b832a07bfebbc7dfd4a`
 - Repository base SHA: `dc0235c923e968ea041776d83dc5dfa1cec28070`
@@ -19,7 +20,7 @@ Authority:
 Implement and execute the approved seven-task, three-treatment benchmark through one validated script. Completion requires:
 
 - all 21 Claude Code treatment attempts run sequentially with exact identities and no fallback;
-- deterministic hidden grading and blind `claude_kimi` judging complete;
+- deterministic hidden grading and blind Codex `gpt-5.6-sol`/`xhigh` judging complete;
 - the seven-page anonymous A/B/C human review site is running and resumable;
 - the public payload contains no identity or performance clues before completion;
 - both Patch4 DeepSeek ranks are stopped, Qwen `qwen3.6-35b-fp8` is healthy on `:8004`, pdf2md remains stopped, and trading/lexdata remain healthy;

@@ -2,7 +2,7 @@
 
 Date: 2026-08-11
 
-Status: design content complete; implementation remains blocked until the user approves the current rendered document hash
+Status: approved; judge contract amended by the user's explicit 2026-08-11 correction to exact Codex `gpt-5.6-sol`/`xhigh`
 
 Baseline revision: `claude-ds-pilot-r2`
 
@@ -130,7 +130,12 @@ Each hidden grader returns positive `passed` and `total` check counts. The deter
 
 A grader protocol/schema error is infrastructure failure, not a fabricated score.
 
-The judge route is `claude_kimi`, not a treatment. Preflight observes its actual init model/version and pins both for the formal run. No fallback is allowed.
+The judge is a direct noninteractive Codex CLI invocation using exact model
+`gpt-5.6-sol` with reasoning effort `xhigh`; it is not a treatment and does not
+use a Claude route. Preflight binds the returned Codex thread ID to its runtime
+`turn_context` and requires the observed model, effort, read-only sandbox, and
+noninteractive approval policy to match the frozen contract. No fallback is
+allowed.
 
 For each task, the judge receives task context and three review artifacts under a fresh persisted random A/B/C permutation independent of the human permutation. It receives no treatment, route, path, order, hidden-grade, timing, tool, token, or cost evidence.
 
@@ -201,7 +206,7 @@ Preflight is read-only on both GB10 hosts and requires:
 3. Fake stopped-to-DS, exact-active-DS adoption, DS-active-to-Qwen, pre/post-transition failures, bounded Qwen recovery, stale receipt, partial rank, protected drift, and idempotent cleanup tests.
 4. Every broken coding fixture and invalid/missing non-code artifact fails; every gold solution/answer passes all checks.
 5. Exact online Flash identity plus negative Pro/default, fallback, provider, model-usage, and version tests.
-6. `claude_kimi` init/model pinning plus judge schema, retry, and blinding tests.
+6. Codex `gpt-5.6-sol`/`xhigh` runtime pinning plus judge schema, retry, and blinding tests.
 7. Current DS receipt or stopped start contract, accepted image/revision/fingerprint, topology/fabric, ranks/API/logs, and protected services.
 8. Captured stopped Qwen Compose path/labels/service/image/command/port/model contract without starting Qwen.
 9. Public/sealed separation, persisted permutations, atomic resume, reveal gate, score math, and denied sealed/telemetry HTTP access.
@@ -226,7 +231,7 @@ Subject: this design at baseline `claude-ds-pilot-r2`.
 | --- | --- | --- |
 | `US-R2-01`: As a GB10 operator, I want one validated command to finish the online/private DeepSeek phase, stop both Patch4 DeepSeek ranks, start the captured Qwen Docker service, and leave Qwen healthy so that the benchmark follows the authorized model transition without manual per-step operation. | One shell state machine, active/stopped DS handling, receipt-backed transition, forced captured-Compose Qwen start, DS-stopped/Qwen-healthy receipt | Covered |
 | `US-R2-02`: As a model evaluator, I want online DeepSeek Flash, private Patch4 DeepSeek Flash, and private Qwen 3.6 35B to run the same seven tasks through the same Claude Code version, sandbox policy, prompts, and time limits without fallback so that their end-to-end performance is comparable. | Exact routes/models, seven tasks, identical Claude contract, balanced DS order, 21 sequential attempts, identity/no-fallback gates | Covered |
-| `US-R2-03`: As a decision maker, I want deterministic hidden grading, an identity-blind independent model judge, and a seven-page anonymous A/B/C human review with three-level scores and delayed reveal so that I can compare all three treatments without provider or performance cues biasing qualitative scoring. | Tier math, blind `claude_kimi`, independent permutations, seven A/B/C pages, three-level criteria, sealed delayed reveal | Covered |
+| `US-R2-03`: As a decision maker, I want deterministic hidden grading, an identity-blind independent model judge, and a seven-page anonymous A/B/C human review with three-level scores and delayed reveal so that I can compare all three treatments without provider or performance cues biasing qualitative scoring. | Tier math, blind Codex `gpt-5.6-sol`/`xhigh`, independent permutations, seven A/B/C pages, three-level criteria, sealed delayed reveal | Covered |
 
 Drift: none. Drift score: `0`. Gate: `DESIGN_ALIGNED`.
 
