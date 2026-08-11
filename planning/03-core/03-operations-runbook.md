@@ -55,7 +55,8 @@ manual multi-command production procedure.
 
 ## Persistent Patch4 Service and Claude Code Pilot
 
-Status: candidate pending the first `claude-ds-pilot-r1` real-run receipt.
+Status: passed. Run `20260811T102815Z` completed on 2026-08-11 with baseline
+`claude-ds-pilot-r1`.
 
 Run the local preflight first. It performs static/fake checks, the accepted
 two-host read-only checks, online Flash identity probing, and deterministic
@@ -91,6 +92,37 @@ receipt is `/home/chriswang/gb10-ds4/artifacts/service/active.json`. Do not
 manually start or stop one DeepSeek rank while this receipt exists. Local pilot
 evidence is under ignored `execution/artifacts/claude-code-pilot/runs/<UTC>/`;
 the head artifact named in `active.json` centralizes both-rank runtime evidence.
+
+### First Pilot Result
+
+The accepted local receipt is
+`execution/artifacts/claude-code-pilot/runs/20260811T102815Z/receipt.json`.
+The detailed result and Markdown summary are in the same directory. The remote
+service receipt is
+`/home/chriswang/gb10-ds4/artifacts/service/20260811T102904Z/service-receipt.json`.
+
+Both treatments used Claude Code `2.1.207`. Stream evidence reported online
+route `claude_ds` with `deepseek-v4-flash`, and private route `claude_local`
+with `deepseek-v4-flash-0731`; no fallback, timeout, agent exit error, or model
+identity mismatch occurred.
+
+| Task | Online | Private | Online seconds | Private seconds |
+| --- | --- | --- | ---: | ---: |
+| `miniconfig-escaped-paths` | passed | failed | 162.232 | 147.479 |
+| `retry-after-policy` | failed | passed | 131.069 | 96.626 |
+| `event-summary-refactor` | passed | passed | 41.581 | 39.225 |
+| `ndjson-stream-decoder` | passed | passed | 236.178 | 133.860 |
+
+Each treatment passed three of four hidden graders. Online totaled 571.060
+seconds, 54 turns, 50 tool calls, and USD 2.175609 reported cost. Private
+totaled 417.190 seconds, 55 turns, 51 tool calls, and USD 2.551305 reported
+cost. Provider token/cache accounting differs materially, so token totals and
+reported cost are supporting telemetry rather than direct efficiency proof.
+This is one repetition and does not establish statistical superiority.
+
+The successful run leaves both Patch4 ranks and API `:8890` running while Qwen
+and pdf2md remain stopped. Trading and lexdata remained healthy. Post-run API,
+container, kernel-fatal, and filtered runtime-log checks passed.
 
 ## Unsloth A/B
 
