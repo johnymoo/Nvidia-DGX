@@ -110,6 +110,11 @@ def main() -> None:
     assert set(manifest["treatments"]) == set(pilot.TREATMENTS)
     assert [task["treatment_order"][0] for task in manifest["tasks"]].count("online_ds") == 4
     assert all("fallback" not in json.dumps(contract).lower() for contract in manifest["treatments"].values())
+    judge_schema = pilot.codex_schema("judge")
+    assert set(judge_schema["required"]) == set(judge_schema["properties"])
+    candidate_schema = judge_schema["properties"]["candidates"]
+    assert set(candidate_schema["required"]) == set(candidate_schema["properties"])
+    assert all(set(item["required"]) == set(item["properties"]) for item in candidate_schema["properties"].values())
 
     with tempfile.TemporaryDirectory(prefix="claude-pilot-test-") as raw:
         root = Path(raw)

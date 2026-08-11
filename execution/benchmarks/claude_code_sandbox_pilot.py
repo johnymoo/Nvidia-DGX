@@ -353,7 +353,7 @@ def codex_contract() -> dict[str, str]:
 def codex_schema(mode: str) -> dict[str, Any]:
     if mode == "probe":
         return {"type": "object", "additionalProperties": False, "properties": {"ready": {"type": "boolean"}}, "required": ["ready"]}
-    return {"type": "object", "additionalProperties": False, "properties": {"candidates": {"type": "object", "additionalProperties": False, "properties": {letter: {"type": "object", "additionalProperties": False, "properties": {criterion: {"type": "integer", "enum": [1, 2, 3]} for criterion in CRITERIA}, "required": list(CRITERIA)} for letter in LETTERS}, "required": list(LETTERS)}, "preference": {"type": "string", "enum": [*LETTERS, "tie"]}, "rationale": {"type": "string"}}, "required": ["candidates", "preference"]}
+    return {"type": "object", "additionalProperties": False, "properties": {"candidates": {"type": "object", "additionalProperties": False, "properties": {letter: {"type": "object", "additionalProperties": False, "properties": {criterion: {"type": "integer", "enum": [1, 2, 3]} for criterion in CRITERIA}, "required": list(CRITERIA)} for letter in LETTERS}, "required": list(LETTERS)}, "preference": {"type": "string", "enum": [*LETTERS, "tie"]}, "rationale": {"type": "string"}}, "required": ["candidates", "preference", "rationale"]}
 
 
 def codex_thread_id(events_path: Path) -> str:
@@ -682,7 +682,7 @@ def rebind_preflight(cache: Path, artifact_root: Path, toolchain: Path, old_pref
         if runtime.get("model") != JUDGE_MODEL or runtime.get("reasoning_effort") != JUDGE_EFFORT or judge.get("fallback_configured") is not False:
             raise InfrastructureError("resume preflight judge identity is invalid")
     validate_resume_attempts(state, manifest)
-    migration = {"at": utc_now(), "reason": "runner-only candidate tool classification fix", "old_preflight_key": old["preflight_key"], "new_preflight_key": current["preflight_key"], "old_runner_sha256": old.get("runner_sha256"), "new_runner_sha256": current.get("runner_sha256"), "validated_attempts": len(state.get("attempts") or [])}
+    migration = {"at": utc_now(), "reason": "runner-only benchmark recovery fix", "old_preflight_key": old["preflight_key"], "new_preflight_key": current["preflight_key"], "old_runner_sha256": old.get("runner_sha256"), "new_runner_sha256": current.get("runner_sha256"), "validated_attempts": len(state.get("attempts") or [])}
     state["preflight_key"] = current["preflight_key"]
     state.setdefault("preflight_migrations", []).append(migration)
     write_json(state_path(artifact_root), state)
@@ -770,7 +770,7 @@ def shuffled_mapping() -> dict[str, str]:
 def judge_prompt(task: dict[str, Any], choices: dict[str, str], retry: bool = False) -> str:
     correction = " Return JSON only and correct the schema exactly." if retry else ""
     rendered = "\n\n".join(f"Candidate {label}:\n{choices[label]}" for label in LETTERS)
-    return f"Independently score three anonymous candidate responses. Do not infer identity, model, provider, route, timing, tooling, token, cost, hidden grading, or attempt order. Task title: {task['title']}.\n\nTask instruction:\n{task['instruction']}\n\n{rendered}\n\nReturn a JSON object with exactly candidates, preference, and optional rationale. candidates must map A, B, and C to accuracy, following, and clarity_style integer scores from 1 to 3. preference must be A, B, C, or tie.{correction}"
+    return f"Independently score three anonymous candidate responses. Do not infer identity, model, provider, route, timing, tooling, token, cost, hidden grading, or attempt order. Task title: {task['title']}.\n\nTask instruction:\n{task['instruction']}\n\n{rendered}\n\nReturn a JSON object with exactly candidates, preference, and rationale. candidates must map A, B, and C to accuracy, following, and clarity_style integer scores from 1 to 3. preference must be A, B, C, or tie. rationale must be a short content-only string.{correction}"
 
 
 def parse_json_object(text: str) -> dict[str, Any]:
@@ -787,7 +787,7 @@ def parse_json_object(text: str) -> dict[str, Any]:
 
 
 def validate_judge_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    if set(payload) - {"candidates", "preference", "rationale"} or not {"candidates", "preference"}.issubset(payload):
+    if set(payload) != {"candidates", "preference", "rationale"}:
         raise InfrastructureError("judge response has invalid keys")
     candidates = payload["candidates"]
     if not isinstance(candidates, dict) or set(candidates) != set(LETTERS):
@@ -799,6 +799,8 @@ def validate_judge_payload(payload: dict[str, Any]) -> dict[str, Any]:
             raise InfrastructureError(f"judge score range invalid for {label}")
     if payload["preference"] not in {*LETTERS, "tie"}:
         raise InfrastructureError("judge preference invalid")
+    if not isinstance(payload["rationale"], str) or not payload["rationale"].strip():
+        raise InfrastructureError("judge rationale invalid")
     forbidden = " ".join(str(value) for value in payload.values()).lower()
     if any(term in forbidden for term in FORBIDDEN_BLIND_TERMS):
         raise InfrastructureError("judge response contains identity speculation")
