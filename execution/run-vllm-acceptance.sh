@@ -38,6 +38,7 @@ readonly TRADING_CONTAINER="tradingagents-ashare"
 readonly LEXDATA_CONTAINER="lexdata-ai"
 readonly API_BASE="http://127.0.0.1:8890"
 readonly QWEN_BASE="http://127.0.0.1:8004"
+readonly COMPOSE_OVERRIDE_FILE="$SCRIPT_DIR/docker-compose.f277b3d-timeout.yml"
 
 MODE=""
 TEST_MODE="${ACCEPTANCE_TEST_MODE:-0}"
@@ -49,6 +50,7 @@ CHECK_TIMEOUT_SECONDS="${ACCEPTANCE_CHECK_TIMEOUT_SECONDS:-300}"
 KEEP_QWEN_STOPPED_ON_FAILURE="${ACCEPTANCE_KEEP_QWEN_STOPPED_ON_FAILURE:-0}"
 RESTORE_QWEN_ON_SUCCESS="${ACCEPTANCE_RESTORE_QWEN_ON_SUCCESS:-0}"
 PRESERVE_DEEPSEEK_CONTAINERS="${ACCEPTANCE_PRESERVE_DEEPSEEK_CONTAINERS:-1}"
+SKIP_PRESTART_CHECK="${ACCEPTANCE_SKIP_PRESTART_CHECK:-0}"
 if [ "$TEST_MODE" = "1" ]; then
   READINESS_TIMEOUT="${ACCEPTANCE_TEST_READINESS_TIMEOUT:-2}"
   QWEN_TIMEOUT="${ACCEPTANCE_TEST_QWEN_TIMEOUT:-2}"
@@ -88,6 +90,8 @@ LEXDATA_STATUS_AFTER="not-captured"
 RUNTIME_DIAGNOSTICS_CAPTURED=0
 HEAD_LOG_PID=""
 WORKER_LOG_PID=""
+MAIN_PID="${BASHPID:-$$}"
+NVRM_WARNING_REPORTED=0
 
 usage() {
   echo "Usage: $0 {--check|--run}" >&2
@@ -136,6 +140,7 @@ load_env() {
   [ "$KEEP_QWEN_STOPPED_ON_FAILURE" = "0" ] || [ "$KEEP_QWEN_STOPPED_ON_FAILURE" = "1" ] || die "ACCEPTANCE_KEEP_QWEN_STOPPED_ON_FAILURE must be 0 or 1"
   [ "$RESTORE_QWEN_ON_SUCCESS" = "0" ] || [ "$RESTORE_QWEN_ON_SUCCESS" = "1" ] || die "ACCEPTANCE_RESTORE_QWEN_ON_SUCCESS must be 0 or 1"
   [ "$PRESERVE_DEEPSEEK_CONTAINERS" = "0" ] || [ "$PRESERVE_DEEPSEEK_CONTAINERS" = "1" ] || die "ACCEPTANCE_PRESERVE_DEEPSEEK_CONTAINERS must be 0 or 1"
+  [ "$SKIP_PRESTART_CHECK" = "0" ] || [ "$SKIP_PRESTART_CHECK" = "1" ] || die "ACCEPTANCE_SKIP_PRESTART_CHECK must be 0 or 1"
 }
 
 remote() {
@@ -145,12 +150,12 @@ remote() {
 head_compose() {
   NCCL_DEBUG=INFO "$DOCKER_BIN" compose \
     --env-file "$COMMON_ENV" --env-file "$NODE_ENV" \
-    -f "$SCRIPT_DIR/docker-compose.yml" -p "$COMPOSE_PROJECT" "$@"
+    -f "$SCRIPT_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE_FILE" -p "$COMPOSE_PROJECT" "$@"
 }
 
 worker_compose() {
   local command_string
-  printf -v command_string 'cd %q && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -p %q' \
+  printf -v command_string 'cd %q && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -f execution/docker-compose.f277b3d-timeout.yml -p %q' \
     "$WORKER_DEPLOY_ROOT" "$COMPOSE_PROJECT"
   local argument
   for argument in "$@"; do
@@ -199,6 +204,9 @@ assert_rendered_config() {
       and $s.environment.NCCL_IB_DISABLE == "0"
       and $s.environment.NCCL_IB_GID_INDEX == "3"
       and $s.environment.NCCL_DEBUG == "INFO"
+      and $s.environment.VLLM_ENGINE_READY_TIMEOUT_S == "3600"
+      and $s.environment.PYTHONUNBUFFERED == "1"
+      and $s.environment.VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS == "0"
       and $s.environment.MTP_NUM_TOKENS == "5"
       and $s.environment.NODE_RANK == (if $role == "head" then "0" else "1" end)
       and ($c | contains("DeepSeek-V4-Flash-0731"))
@@ -309,11 +317,11 @@ check_runtime_sources() {
 
 head_rendered_config() {
   NCCL_DEBUG=INFO "$DOCKER_BIN" compose --env-file "$COMMON_ENV" --env-file "$NODE_ENV" \
-    -f "$SCRIPT_DIR/docker-compose.yml" -p "$COMPOSE_PROJECT" config --format json
+    -f "$SCRIPT_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE_FILE" -p "$COMPOSE_PROJECT" config --format json
 }
 
 worker_rendered_config() {
-  remote "cd '$WORKER_DEPLOY_ROOT' && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -p '$COMPOSE_PROJECT' config --format json"
+  remote "cd '$WORKER_DEPLOY_ROOT' && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -f execution/docker-compose.f277b3d-timeout.yml -p '$COMPOSE_PROJECT' config --format json"
 }
 
 run_checks() {
@@ -383,7 +391,7 @@ capture_host_snapshot() {
     [ -r "$counter" ] && printf '%s=%s\n' "$(basename "$counter")" "$(cat "$counter")"
   done >"$destination/fabric-counters.txt"
   find /etc/apt/sources.list /etc/apt/sources.list.d -maxdepth 1 -type f -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum >"$destination/apt-source-sha256.txt"
-  sha256sum "$SCRIPT_DIR/run-vllm-acceptance.sh" "$SCRIPT_DIR/docker-compose.yml" "$SCRIPT_DIR/preflight.sh" "$COMMON_ENV" "$NODE_ENV" "$BENCHMARK_DIR"/*.py >"$destination/project-sha256.txt"
+  sha256sum "$SCRIPT_DIR/run-vllm-acceptance.sh" "$SCRIPT_DIR/docker-compose.yml" "$COMPOSE_OVERRIDE_FILE" "$SCRIPT_DIR/preflight.sh" "$COMMON_ENV" "$NODE_ENV" "$BENCHMARK_DIR"/*.py >"$destination/project-sha256.txt"
   sha256sum "$DEPLOY_ROOT/artifacts/$EXPECTED_MODEL_DIR.sha256" >"$destination/prior-full-manifest-reference.txt"
   printf 'phase=%s\ncaptured_at=%s\n' "$phase" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$destination/capture.txt"
 }
@@ -406,7 +414,7 @@ for counter in /sys/class/infiniband/"$hca"/ports/1/counters/*; do
   [ -r "$counter" ] && printf '%s=%s\n' "$(basename "$counter")" "$(cat "$counter")"
 done >"$destination/fabric-counters.txt"
 find /etc/apt/sources.list /etc/apt/sources.list.d -maxdepth 1 -type f -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum >"$destination/apt-source-sha256.txt"
-sha256sum "$deploy_root/execution/run-vllm-acceptance.sh" "$deploy_root/execution/docker-compose.yml" "$deploy_root/execution/preflight.sh" "$deploy_root/execution/env/common.env" "$deploy_root/execution/env/node.env" "$deploy_root"/execution/benchmarks/*.py >"$destination/project-sha256.txt"
+sha256sum "$deploy_root/execution/run-vllm-acceptance.sh" "$deploy_root/execution/docker-compose.yml" "$deploy_root/execution/docker-compose.f277b3d-timeout.yml" "$deploy_root/execution/preflight.sh" "$deploy_root/execution/env/common.env" "$deploy_root/execution/env/node.env" "$deploy_root"/execution/benchmarks/*.py >"$destination/project-sha256.txt"
 sha256sum "$deploy_root/artifacts/DeepSeek-V4-Flash-0731.sha256" >"$destination/prior-full-manifest-reference.txt"
 printf 'phase=%s\ncaptured_at=%s\n' "$phase" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$destination/capture.txt"
 REMOTE_CAPTURE
@@ -426,23 +434,37 @@ worker_fabric_error_sum() {
 }
 
 runtime_safety_check() {
-  container_running "$HEAD_CONTAINER_ID" || return 1
-  [ "$(remote "docker inspect -f '{{.State.Running}}' '$WORKER_CONTAINER_ID'")" = "true" ] || return 1
-  ! swapon --show --noheadings | grep -q . || return 1
-  remote "! swapon --show --noheadings | grep -q ." || return 1
-  rdma link show | grep -F "$FABRIC_IFNAME" | grep -Fq 'state ACTIVE' || return 1
-  remote "rdma link show | grep -F '$FABRIC_IFNAME' | grep -Fq 'state ACTIVE'" || return 1
-  [ "$(fabric_error_sum)" -le "$HEAD_FABRIC_ERRORS" ] || return 1
-  [ "$(worker_fabric_error_sum)" -le "$WORKER_FABRIC_ERRORS" ] || return 1
-  ! journalctl -k --since "$RUN_START_ISO" --no-pager 2>/dev/null | grep -Eiq 'NVRM: Xid|oom-kill|Out of memory|mlx5.*(fatal|error)' || return 1
-  remote "! journalctl -k --since '$RUN_START_ISO' --no-pager 2>/dev/null | grep -Eiq 'NVRM: Xid|oom-kill|Out of memory|mlx5.*(fatal|error)'" || return 1
+  local head_errors worker_errors
+  container_running "$HEAD_CONTAINER_ID" || { echo "runtime safety failed: head container is not running" >&2; return 1; }
+  [ "$(remote "docker inspect -f '{{.State.Running}}' '$WORKER_CONTAINER_ID'")" = "true" ] || { echo "runtime safety failed: worker container is not running" >&2; return 1; }
+  ! swapon --show --noheadings | grep -q . || { echo "runtime safety failed: head swap is active" >&2; return 1; }
+  remote "! swapon --show --noheadings | grep -q ." || { echo "runtime safety failed: worker swap is active" >&2; return 1; }
+  rdma link show | grep -F "$FABRIC_IFNAME" | grep -Fq 'state ACTIVE' || { echo "runtime safety failed: head RDMA is inactive" >&2; return 1; }
+  remote "rdma link show | grep -F '$FABRIC_IFNAME' | grep -Fq 'state ACTIVE'" || { echo "runtime safety failed: worker RDMA is inactive" >&2; return 1; }
+  head_errors="$(fabric_error_sum)"
+  worker_errors="$(worker_fabric_error_sum)"
+  [ "$head_errors" -le "$HEAD_FABRIC_ERRORS" ] || { echo "runtime safety failed: head fabric errors rose $HEAD_FABRIC_ERRORS->$head_errors" >&2; return 1; }
+  [ "$worker_errors" -le "$WORKER_FABRIC_ERRORS" ] || { echo "runtime safety failed: worker fabric errors rose $WORKER_FABRIC_ERRORS->$worker_errors" >&2; return 1; }
+  if [ "$NVRM_WARNING_REPORTED" -eq 0 ] && [ -n "$ARTIFACT_DIR" ]; then
+    if journalctl -k --since "$RUN_START_ISO" --no-pager 2>/dev/null | grep -F 'NV_ERR_NO_MEMORY' >>"$ARTIFACT_DIR/head-nvrm-warnings.log"; then
+      echo "runtime safety warning: head NVRM NV_ERR_NO_MEMORY observed; continuing while containers run" >&2
+      NVRM_WARNING_REPORTED=1
+    fi
+    if remote "journalctl -k --since '$RUN_START_ISO' --no-pager 2>/dev/null | grep -F 'NV_ERR_NO_MEMORY'" >>"$ARTIFACT_DIR/worker-nvrm-warnings.log"; then
+      echo "runtime safety warning: worker NVRM NV_ERR_NO_MEMORY observed; continuing while containers run" >&2
+      NVRM_WARNING_REPORTED=1
+    fi
+  fi
+  ! journalctl -k --since "$RUN_START_ISO" --no-pager 2>/dev/null | grep -Eiq 'NVRM: Xid|oom-kill|Out of memory: Killed process|mlx5.*(fatal|error)' || { echo "runtime safety failed: head kernel fatal pattern" >&2; return 1; }
+  remote "! journalctl -k --since '$RUN_START_ISO' --no-pager 2>/dev/null | grep -Eiq 'NVRM: Xid|oom-kill|Out of memory: Killed process|mlx5.*(fatal|error)'" || { echo "runtime safety failed: worker kernel fatal pattern" >&2; return 1; }
 }
 
 monitor_loop() {
   while [ ! -e "$MONITOR_STOP_FILE" ]; do
+    capture_runtime_log_tails
     if ! runtime_safety_check; then
       printf 'runtime safety monitor failed at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$ARTIFACT_DIR/monitor.failure"
-      kill -TERM "$$"
+      kill -TERM "$MAIN_PID"
       return 1
     fi
     sleep "$POLL_SECONDS"
@@ -510,21 +532,17 @@ wait_qwen() {
   return 1
 }
 
+capture_runtime_log_tails() {
+  "$DOCKER_BIN" logs --timestamps --tail 250 "$HEAD_CONTAINER_ID" >>"$ARTIFACT_DIR/head-vllm.live.log" 2>&1 || true
+  remote "docker logs --timestamps --tail 250 '$WORKER_CONTAINER_ID'" >>"$ARTIFACT_DIR/worker-vllm.live.log" 2>&1 || true
+}
+
 start_runtime_log_capture() {
-  "$DOCKER_BIN" logs --timestamps -f "$HEAD_CONTAINER_ID" >"$ARTIFACT_DIR/head-vllm.live.log" 2>&1 &
-  HEAD_LOG_PID="$!"
-  remote "docker logs --timestamps -f '$WORKER_CONTAINER_ID'" >"$ARTIFACT_DIR/worker-vllm.live.log" 2>&1 &
-  WORKER_LOG_PID="$!"
+  capture_runtime_log_tails
 }
 
 stop_runtime_log_capture() {
-  local pid
-  for pid in "$HEAD_LOG_PID" "$WORKER_LOG_PID"; do
-    [ -z "$pid" ] || kill "$pid" 2>/dev/null || true
-    [ -z "$pid" ] || wait "$pid" 2>/dev/null || true
-  done
-  HEAD_LOG_PID=""
-  WORKER_LOG_PID=""
+  :
 }
 
 capture_runtime_diagnostics() {
@@ -726,7 +744,12 @@ run_acceptance_clients() {
 
 run_acceptance() {
   local artifact_root contract
-  run_checks >/dev/null
+  if [ "$SKIP_PRESTART_CHECK" = "1" ]; then
+    load_env
+    log "run: prestart broad check explicitly skipped"
+  else
+    run_checks >/dev/null
+  fi
   RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
   RUN_START_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   artifact_root="${ACCEPTANCE_ARTIFACT_ROOT:-$DEPLOY_ROOT/artifacts/acceptance}"

@@ -9,6 +9,14 @@ run.
 
 - `docker-compose.yml`: two-node vLLM/DSpark candidate. It is configuration
   only and is not started during pre-link preparation.
+- `docker-compose.f277b3d-timeout.yml`: additive f277b3d override used with
+  the base Compose file by the acceptance owner. It sets the upstream engine
+  readiness timeout and unbuffered Python logging without changing model or
+  scheduler parameters.
+- `docker-compose.f277b3d-memory-profile.yml`: inactive diagnostic artifact
+  retained from investigating NVRM warmup allocations. The acceptance owner
+  uses the base memory-profiling setting unless an explicitly approved run
+  selects this override.
 - `env/*.env.example`: common, head, and worker settings. Copy to untracked
   `common.env` and `node.env` on each host.
 - `prepare-docker.sh`: verify Docker or, under sudo, grant the deployment user

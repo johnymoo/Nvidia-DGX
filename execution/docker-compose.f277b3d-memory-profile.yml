@@ -1,0 +1,4 @@
+services:
+  vllm-dspark:
+    environment:
+      VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "1"
