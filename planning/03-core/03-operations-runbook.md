@@ -34,9 +34,14 @@ active; do not activate the memory-profile override without explicit approval.
 
 Status uses `docker ps -a`, receipt JSON, `curl :8890/v1/models` during the
 window, and Qwen `curl http://192.168.88.181:8004/v1/models` after recovery.
-The success path stops DeepSeek on both hosts and restores Qwen only if it was
-captured running. If sudo is genuinely needed for host fabric or maintenance,
-use the restricted project wrappers; never store or request a password here.
+The success path stops DeepSeek on both hosts. With the documented
+`ACCEPTANCE_RESTORE_QWEN_ON_SUCCESS=1`, it forces Qwen service
+`vllm-qwen36-35b-nvfp4` healthy even when the captured state was stopped;
+without that override the script preserves the captured state.
+`ACCEPTANCE_KEEP_QWEN_STOPPED_ON_FAILURE=1` deliberately defers Qwen restore
+on acceptance failure for the maintenance window. If sudo is genuinely needed
+for host fabric or maintenance, use the restricted project wrappers; never
+store or request a password here.
 
 ```bash
 ssh gb10 'docker ps -a; tail -100 /home/chriswang/gb10-ds4/artifacts/acceptance/<UTC>/monitor.log'
