@@ -475,18 +475,11 @@ def ensure_repo(cache: Path, row: dict[str, Any]) -> Path:
     repo_cache = cache / "repositories" / repo_name
     url = f"https://github.com/{row['repo']}.git"
     if not (repo_cache / ".git").exists():
-        repo_cache.parent.mkdir(parents=True, exist_ok=True)
-        run_command(
-            [
-                "git",
-                "clone",
-                "--filter=blob:none",
-                "--no-checkout",
-                url,
-                str(repo_cache),
-            ],
-            timeout=1800,
-        )
+        repo_cache.mkdir(parents=True, exist_ok=True)
+        run_command(["git", "init", "-q"], cwd=repo_cache)
+        run_command(["git", "remote", "add", "origin", url], cwd=repo_cache)
+    else:
+        run_command(["git", "remote", "set-url", "origin", url], cwd=repo_cache)
     check = run_command(
         ["git", "cat-file", "-e", f"{row['base_commit']}^{{commit}}"],
         cwd=repo_cache,
@@ -494,7 +487,15 @@ def ensure_repo(cache: Path, row: dict[str, Any]) -> Path:
     )
     if check.returncode != 0:
         run_command(
-            ["git", "fetch", "--filter=blob:none", "origin", row["base_commit"]],
+            [
+                "git",
+                "fetch",
+                "--depth",
+                "1",
+                "--filter=blob:none",
+                "origin",
+                row["base_commit"],
+            ],
             cwd=repo_cache,
             timeout=1800,
         )
