@@ -1,0 +1,1 @@
+Restore `max_connections: 16` in `./config/pool.json` if the acquire timeout or pool waiters do not improve during the bounded observation window. Record the observation and rollback decision before any further tuning.

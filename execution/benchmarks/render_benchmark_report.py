@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 from pathlib import Path
@@ -66,17 +67,22 @@ def score_triplet(scores: dict[str, int] | None) -> str:
 def render_report(project_root: Path, artifact_root: Path, output: Path) -> None:
     manifest = read_json(project_root / "execution" / "benchmarks" / "claude-code-sandbox-pilot-tasks.json")
     state = read_json(artifact_root / "benchmark-state.json")
-    reveal = read_json(artifact_root / "review" / "private" / "reveal.json")
+    results_path = artifact_root / "review" / "private" / "baseline-results.json"
+    if not results_path.is_file():
+        results_path = artifact_root / "review" / "private" / "reveal.json"
+    reveal = read_json(results_path)
     sealed = read_json(artifact_root / "review" / "sealed" / "mappings.json")
-    ratings = read_json(artifact_root / "review" / "private" / "ratings.json")["ratings"]
-    if reveal.get("status") != "revealed" or len(ratings) != 2:
-        raise ValueError("benchmark must be fully revealed before rendering")
+    ratings_path = artifact_root / "review" / "private" / "ratings.json"
+    ratings = read_json(ratings_path)["ratings"] if ratings_path.is_file() else {}
+    if reveal.get("status") not in {"completed", "revealed"}:
+        raise ValueError("benchmark results must be complete before rendering")
 
     attempts = {(item["task_id"], item["treatment"]): item for item in state["attempts"]}
     revealed_tasks = {item["task_id"]: item for item in reveal["tasks"]}
     tasks = manifest["tasks"]
-    if len(tasks) != 7 or len(attempts) != 21:
+    if len(tasks) != reveal.get("benchmark_task_count") or len(attempts) != len(tasks) * len(TREATMENTS):
         raise ValueError("unexpected benchmark shape")
+    task_count = len(tasks)
 
     summaries: dict[str, dict[str, Any]] = {}
     judge_wins = {treatment: 0 for treatment in TREATMENTS}
@@ -117,14 +123,15 @@ def render_report(project_root: Path, artifact_root: Path, output: Path) -> None
         meta = TREATMENT_META[treatment]
         item = summaries[treatment]
         width = item["quality_mean"] / 3 * 100
+        human_mean = f"{item['human_mean']:.3f}" if item["human_mean"] is not None else "--"
         ranking_rows.append(
             f'''<tr>
               <td class="rank">{rank}</td>
               <td><span class="model-key {meta['class']}"></span><strong>{esc(meta['name'])}</strong><small>{esc(meta['route'])} · {esc(meta['model'])}</small></td>
               <td><div class="score"><strong>{item['quality_mean']:.3f}</strong><span><i class="{meta['class']}" style="width:{width:.1f}%"></i></span></div></td>
-              <td>{item['passed']}/7</td>
+              <td>{item['passed']}/{task_count}</td>
               <td>{item['judge_mean']:.3f}</td>
-              <td>{item['human_mean']:.3f}</td>
+              <td>{human_mean}</td>
               <td>{item['elapsed']:.3f}s</td>
             </tr>'''
         )
@@ -150,7 +157,7 @@ def render_report(project_root: Path, artifact_root: Path, output: Path) -> None
             judge_label = next(label for label, value in judge_mapping.items() if value == treatment)
             judge_scores = judge["candidates"][judge_label]
             human_scores = None
-            if revealed["human_scored"]:
+            if revealed["human_scored"] and task_id in ratings:
                 human_label = next(label for label, value in revealed["human_mapping"].items() if value == treatment)
                 human_scores = ratings[task_id]["scores"][human_label]
             hidden = attempt["hidden_grader"]
@@ -185,6 +192,18 @@ def render_report(project_root: Path, artifact_root: Path, output: Path) -> None
             choice = treatment_for_preference(row["human_preference"], row["human_mapping"])
             human_summary.append(f'{esc(task["title"])}: <strong>{esc(TREATMENT_META[choice]["name"] if choice != "tie" else "平局")}</strong>')
 
+    domain_labels = {"legacy": "原有 R2", "terminal": "终端", "server_ops": "服务器运维", "writing": "文字处理", "programming": "编程"}
+    domain_rows = []
+    for domain in ("legacy", "terminal", "server_ops", "writing", "programming"):
+        domain_tasks = [task for task in tasks if (task.get("r3_domain") or "legacy") == domain]
+        if not domain_tasks:
+            continue
+        cells = []
+        for treatment in TREATMENTS:
+            value = mean([revealed_tasks[task["task_id"]]["scores"][treatment]["quality"] for task in domain_tasks])
+            cells.append(f"<td>{value:.3f}</td>")
+        domain_rows.append(f'<tr><td><strong>{domain_labels[domain]}</strong><small>{len(domain_tasks)} 题</small></td>{"".join(cells)}</tr>')
+
     claude_version = manifest["claude_code_version"]
     timeout_seconds = manifest["task_timeout_seconds"]
     document = f'''<!doctype html>
@@ -199,12 +218,12 @@ def render_report(project_root: Path, artifact_root: Path, output: Path) -> None
 </head>
 <body>
 <main>
-  <header class="intro"><div><p class="eyebrow">三组模型 · 最终结果</p><h1>Claude Code 三模型评测</h1></div><div class="run"><small>运行编号</small><strong>{esc(artifact_root.name)}</strong><small>21 次候选执行 · 7 次 GPT 评审 · 2 次人工写作评分</small></div></header>
-  <section class="environment"><h2>测试环境</h2><div class="environment-lead"><strong>三组候选任务全部通过 Claude Code {esc(claude_version)} 执行</strong><span>相同的 7 道题、隔离 Git 沙盒、工具策略、{esc(timeout_seconds)} 秒任务上限；每组每题执行一次。</span></div><div class="environment-grid"><article><h3><span class="model-key online"></span>Online DeepSeek Flash</h3><p><code>claude_ds</code> → 在线 Flash 路由 <code>deepseek-v4-flash</code></p></article><article><h3><span class="model-key offline"></span>Private DeepSeek Patch4</h3><p><code>claude_local</code> → 双机 GB10 Patch4 服务 <code>deepseek-v4-flash-0731</code></p></article><article><h3><span class="model-key qwen"></span>Private Qwen 3.6 35B</h3><p><code>claude_local</code> → GB10 <code>:8004</code> 上的 <code>qwen3.6-35b-fp8</code></p></article></div><p class="environment-note">GPT <code>gpt-5.6-sol/xhigh</code> 只对保存后的匿名答案进行独立盲评，不参与完成候选任务。DeepSeek 与 Qwen 因 GB10 内存限制而串行运行。</p></section>
-  <section class="summary"><h2>综合排名</h2><div class="table-wrap"><table><thead><tr><th>排名</th><th>模型</th><th>综合分 / 3</th><th>通过数</th><th>GPT 评分</th><th>人工写作</th><th>总耗时</th></tr></thead><tbody>{''.join(ranking_rows)}</tbody></table></div><div class="preferences"><div><strong>GPT 偏好统计</strong><p>Online DS {judge_wins['online_ds']} · Private DS {judge_wins['offline_ds']} · Qwen {judge_wins['qwen_local']} · 平局 {judge_ties}</p></div><div><strong>人工写作偏好</strong><p>{' · '.join(human_summary)}{f' · 平局 {human_ties}' if human_ties else ''}</p></div></div></section>
+  <header class="intro"><div><p class="eyebrow">三组模型 · 最终结果</p><h1>Claude Code 三模型评测</h1></div><div class="run"><small>运行编号</small><strong>{esc(artifact_root.name)}</strong><small>{task_count * 3} 次候选执行 · {task_count} 次 GPT 评审 · {len(ratings)} 次可选人工写作评分</small></div></header>
+  <section class="environment"><h2>测试环境</h2><div class="environment-lead"><strong>三组候选任务全部通过 Claude Code {esc(claude_version)} 执行</strong><span>相同的 {task_count} 道题、隔离 Git 沙盒、工具策略、{esc(timeout_seconds)} 秒任务上限；每组每题执行一次。</span></div><div class="environment-grid"><article><h3><span class="model-key online"></span>Online DeepSeek Flash</h3><p><code>claude_ds</code> → 在线 Flash 路由 <code>deepseek-v4-flash</code></p></article><article><h3><span class="model-key offline"></span>Private DeepSeek Patch4</h3><p><code>claude_local</code> → 双机 GB10 Patch4 服务 <code>deepseek-v4-flash-0731</code></p></article><article><h3><span class="model-key qwen"></span>Private Qwen 3.6 35B</h3><p><code>claude_local</code> → GB10 <code>:8004</code> 上的 <code>qwen3.6-35b-fp8</code></p></article></div><p class="environment-note">GPT <code>gpt-5.6-sol/xhigh</code> 只对保存后的匿名答案进行独立盲评，不参与完成候选任务。DeepSeek 与 Qwen 因 GB10 内存限制而串行运行。</p></section>
+  <section class="summary"><h2>综合排名</h2><div class="table-wrap"><table><thead><tr><th>排名</th><th>模型</th><th>综合分 / 3</th><th>通过数</th><th>GPT 评分</th><th>可选人工写作</th><th>总耗时</th></tr></thead><tbody>{''.join(ranking_rows)}</tbody></table></div><h2>分领域得分</h2><div class="table-wrap"><table><thead><tr><th>领域</th><th>Online DS</th><th>Private DS</th><th>Qwen Local</th></tr></thead><tbody>{''.join(domain_rows)}</tbody></table></div><div class="preferences"><div><strong>GPT 偏好统计</strong><p>Online DS {judge_wins['online_ds']} · Private DS {judge_wins['offline_ds']} · Qwen {judge_wins['qwen_local']} · 平局 {judge_ties}</p></div><div><strong>可选人工写作偏好</strong><p>{(' · '.join(human_summary) + (f' · 平局 {human_ties}' if human_ties else '')) if human_summary else '尚未进行；不影响最终排名'}</p></div></div></section>
   <nav class="task-nav"><strong>题目</strong>{nav}</nav>
   {''.join(task_sections)}
-  <p class="footnote">写作题综合隐藏测试、GPT 评审和人工评分；其他题综合隐藏测试与 GPT 评审。不同路由的 token、缓存与成本口径不可直接比较。本次每组仅执行一次，不构成统计显著性结论。</p>
+  <p class="footnote">全部题目的综合分统一取确定性隐藏测试档位与 GPT 评审分的平均值；人工写作评分仅单独展示，不改变综合排名。不同路由的 token、缓存与成本口径不可直接比较。本次每组仅执行一次，不构成统计显著性结论。</p>
 </main>
 </body>
 </html>'''
@@ -219,7 +238,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     render_report(args.project_root.resolve(), args.artifact_root.resolve(), args.output.resolve())
-    print(json.dumps({"status": "rendered", "output": str(args.output.resolve())}))
+    content = args.output.resolve().read_bytes()
+    print(json.dumps({"status": "rendered", "output": str(args.output.resolve()), "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()}))
 
 
 if __name__ == "__main__":

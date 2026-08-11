@@ -1,0 +1,8 @@
+[Service]
+ExecStart=./bin/worker --config ./config/worker.toml
+ExecStartPost=./bin/check-ready --probe-file ./runtime/worker-ready.json
+MemoryHigh=768M
+MemoryMax=1024M
+MemorySwapMax=0
+Restart=on-failure
+RestartSec=10

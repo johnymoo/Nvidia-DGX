@@ -18,6 +18,11 @@ SPEC = importlib.util.spec_from_file_location("claude_code_sandbox_pilot", MODUL
 assert SPEC and SPEC.loader
 pilot = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(pilot)
+REPORTER_PATH = Path(__file__).with_name("render_benchmark_report.py")
+REPORTER_SPEC = importlib.util.spec_from_file_location("render_benchmark_report", REPORTER_PATH)
+assert REPORTER_SPEC and REPORTER_SPEC.loader
+reporter = importlib.util.module_from_spec(REPORTER_SPEC)
+REPORTER_SPEC.loader.exec_module(reporter)
 
 
 def make_fake_toolchain(root: Path) -> tuple[Path, Path]:
@@ -106,9 +111,13 @@ def assert_http_status(url: str, expected: int) -> None:
 
 def main() -> None:
     manifest = pilot.load_manifest()
-    assert len(manifest["tasks"]) == 7
+    task_count = len(manifest["tasks"])
+    human_count = sum(task["category"] == pilot.HUMAN_REVIEW_CATEGORY for task in manifest["tasks"])
+    assert task_count == 47
+    assert human_count == 12
+    assert manifest["corpus_contract"]["new_domain_counts"] == {"terminal": 10, "server_ops": 10, "writing": 10, "programming": 10}
     assert set(manifest["treatments"]) == set(pilot.TREATMENTS)
-    assert [task["treatment_order"][0] for task in manifest["tasks"]].count("online_ds") == 4
+    assert [task["treatment_order"][0] for task in manifest["tasks"]].count("online_ds") == 24
     assert all("fallback" not in json.dumps(contract).lower() for contract in manifest["treatments"].values())
     judge_schema = pilot.codex_schema("judge")
     assert set(judge_schema["required"]) == set(judge_schema["properties"])
@@ -193,18 +202,30 @@ def main() -> None:
 
         fake_root = root / "fake-run"
         result = pilot.run_fake_benchmark(fake_root)
-        assert result["attempt_count"] == 21
-        assert result["package"]["task_count"] == 7
-        assert result["package"]["judge_count"] == 7
-        assert result["package"]["human_task_count"] == 2
+        assert result["attempt_count"] == task_count * len(pilot.TREATMENTS)
+        assert result["package"]["status"] == "completed"
+        assert result["package"]["task_count"] == task_count
+        assert result["package"]["attempt_count"] == task_count * len(pilot.TREATMENTS)
+        assert result["package"]["judge_count"] == task_count
+        assert result["package"]["human_task_count"] == human_count
+        assert result["package"]["human_review_required"] is False
+        assert (fake_root / "review" / "private" / "baseline-results.json").is_file()
         review_root = fake_root / "review"
         public = pilot.public_review_payload(review_root)
-        assert len(public["tasks"]) == 2
+        assert len(public["tasks"]) == human_count
         assert {task["task_id"] for task in public["tasks"]} == {task["task_id"] for task in manifest["tasks"] if task["category"] == pilot.HUMAN_REVIEW_CATEGORY}
         assert all(term not in json.dumps(public).lower() for term in ("online_ds", "offline_ds", "qwen_local", "hidden_grader", "cost_usd"))
         assert not (review_root / "public" / "mappings.json").exists() and (review_root / "sealed" / "mappings.json").is_file()
-        migration = pilot.migrate_review_scope(fake_root)
-        assert migration["judge_results_reused"] == 7 and len(migration["human_task_ids"]) == 2
+        baseline = pilot.aggregate_baseline(review_root)
+        assert baseline["status"] == "completed" and baseline["human_ratings_completed"] == 0
+        assert len(baseline["tasks"]) == task_count
+        assert all(value["quality_mean"] == 3 for value in baseline["aggregates"].values())
+        report_path = review_root / "public" / "final-report.html"
+        reporter.render_report(pilot.PROJECT_ROOT, fake_root, report_path)
+        report = report_path.read_text(encoding="utf-8")
+        assert report.count('<section class="task"') == task_count
+        assert report.count('<article class="answer') == task_count * len(pilot.TREATMENTS)
+        assert report.count("<blockquote>") == task_count
 
         server = pilot.ThreadingHTTPServer(("127.0.0.1", 0), pilot.make_review_handler(review_root))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -227,8 +248,8 @@ def main() -> None:
             raise AssertionError("atomic resume allowed a duplicate rating")
         reveal = pilot.aggregate_reveal(review_root)
         assert reveal["status"] == "revealed" and set(reveal["aggregates"]) == set(pilot.TREATMENTS)
-        assert len(reveal["tasks"]) == 7 and sum(task["human_scored"] for task in reveal["tasks"]) == 2
-        assert all(all(score["human_layer"] is None for score in task["scores"].values()) for task in reveal["tasks"] if not task["human_scored"])
+        assert len(reveal["tasks"]) == task_count and sum(task["human_scored"] for task in reveal["tasks"]) == human_count
+        assert all(value["quality_mean"] == 3 for value in reveal["aggregates"].values())
 
         os.environ.pop("CODEX_BIN")
         os.environ.pop("CODEX_JUDGE_AUDIT_ROOT")

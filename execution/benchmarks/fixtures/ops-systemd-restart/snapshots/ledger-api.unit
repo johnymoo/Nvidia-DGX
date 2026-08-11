@@ -1,0 +1,6 @@
+[Unit]
+After=network.target
+
+[Service]
+ExecStart=ledger-api
+Restart=always

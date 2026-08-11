@@ -32,6 +32,8 @@ MANIFEST_PATH = BENCHMARK_DIR / "claude-code-sandbox-pilot-tasks.json"
 FIXTURE_ROOT = BENCHMARK_DIR / "fixtures"
 GRADER_ROOT = BENCHMARK_DIR / "graders"
 SOLUTION_ROOT = BENCHMARK_DIR / "solutions"
+R3_ROOT = BENCHMARK_DIR / "r3"
+REPORTER_PATH = BENCHMARK_DIR / "render_benchmark_report.py"
 DEFAULT_TOOLCHAIN = Path("/Users/chris/project/Shili/workspaces/coding-agent-toolchain")
 DEFAULT_CACHE = EXECUTION_DIR / "artifacts" / "claude-code-pilot" / "cache"
 DEFAULT_CODEX_BIN = os.environ.get("CODEX_BIN", "codex")
@@ -132,7 +134,7 @@ def load_manifest() -> dict[str, Any]:
     manifest = read_json(MANIFEST_PATH)
     if manifest.get("schema_version") != 3:
         raise InfrastructureError("unsupported task manifest schema")
-    if manifest.get("baseline_revision") != "claude-ds-pilot-r2":
+    if manifest.get("baseline_revision") != "claude-ds-pilot-r3":
         raise InfrastructureError("task manifest baseline revision mismatch")
     treatments = manifest.get("treatments")
     if not isinstance(treatments, dict) or set(treatments) != set(TREATMENTS):
@@ -153,11 +155,11 @@ def load_manifest() -> dict[str, Any]:
     if treatments["qwen_local"].get("base_url") != "http://192.168.88.181:8004":
         raise InfrastructureError("Qwen base URL mismatch")
     tasks = manifest.get("tasks")
-    if not isinstance(tasks, list) or len(tasks) != 7:
-        raise InfrastructureError("task manifest must contain seven tasks")
+    if not isinstance(tasks, list) or not tasks:
+        raise InfrastructureError("task manifest must contain tasks")
     task_ids = [task.get("task_id") for task in tasks]
-    if len(set(task_ids)) != 7 or any(not isinstance(value, str) or not value for value in task_ids):
-        raise InfrastructureError("task manifest must contain seven unique task IDs")
+    if len(set(task_ids)) != len(tasks) or any(not isinstance(value, str) or not value for value in task_ids):
+        raise InfrastructureError("task manifest must contain unique task IDs")
     starts: list[str] = []
     for task in tasks:
         task_id = task["task_id"]
@@ -178,8 +180,17 @@ def load_manifest() -> dict[str, Any]:
             raise InfrastructureError(f"task instruction missing for {task_id}")
         if not isinstance(task.get("visible_test_command"), list) or not task["visible_test_command"]:
             raise InfrastructureError(f"visible test command missing for {task_id}")
-    if starts.count("online_ds") != 4 or starts.count("offline_ds") != 3:
-        raise InfrastructureError("DeepSeek task ordering is not balanced 4/3")
+    if abs(starts.count("online_ds") - starts.count("offline_ds")) > 1:
+        raise InfrastructureError("DeepSeek task ordering is not balanced")
+    contract = manifest.get("corpus_contract")
+    if not isinstance(contract, dict) or contract.get("task_count") != len(tasks):
+        raise InfrastructureError("manifest corpus contract is missing or inconsistent")
+    expected_domains = contract.get("new_domain_counts")
+    actual_domains = {domain: sum(task.get("r3_domain") == domain for task in tasks) for domain in ("terminal", "server_ops", "writing", "programming")}
+    if expected_domains != actual_domains or actual_domains != {"terminal": 10, "server_ops": 10, "writing": 10, "programming": 10}:
+        raise InfrastructureError("R3 domain counts are invalid")
+    if len(tasks) != 47:
+        raise InfrastructureError("R3 task manifest must contain 47 tasks")
     return manifest
 
 
@@ -454,6 +465,9 @@ def prepare_workspace(fixture: Path, destination: Path) -> str:
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(fixture, destination)
     run_command(["git", "init", "-q"], cwd=destination)
+    hooks_path = destination / ".git" / "benchmark-hooks"
+    hooks_path.mkdir()
+    run_command(["git", "config", "core.hooksPath", str(hooks_path)], cwd=destination)
     run_command(["git", "config", "user.name", "Claude Code Benchmark"], cwd=destination)
     run_command(["git", "config", "user.email", "benchmark@localhost"], cwd=destination)
     run_command(["git", "add", "."], cwd=destination)
@@ -482,7 +496,18 @@ def changed_files(workspace: Path) -> list[str]:
 
 
 def command_for_task(task: dict[str, Any]) -> list[str]:
-    return [sys.executable if token == "{python}" else str(token) for token in task["visible_test_command"]]
+    node = shutil.which("node")
+    command = []
+    for token in task["visible_test_command"]:
+        if token == "{python}":
+            command.append(sys.executable)
+        elif token == "{node}":
+            if not node:
+                raise InfrastructureError("Node.js is required by the task manifest")
+            command.append(node)
+        else:
+            command.append(str(token))
+    return command
 
 
 def run_visible_tests(task: dict[str, Any], workspace: Path, artifact: Path, timeout: int) -> dict[str, Any]:
@@ -493,7 +518,10 @@ def run_visible_tests(task: dict[str, Any], workspace: Path, artifact: Path, tim
 
 def run_hidden_grader(task: dict[str, Any], workspace: Path, artifact: Path, timeout: int) -> dict[str, Any]:
     grader = checked_path(GRADER_ROOT, task["grader"])
-    outcome = run_measured_command([sys.executable, str(grader), str(workspace)], cwd=workspace, timeout=timeout, log_path=artifact / "hidden-grader.log")
+    command = [sys.executable, str(grader), str(workspace)]
+    if task.get("r3_domain"):
+        command.append(task["task_id"])
+    outcome = run_measured_command(command, cwd=workspace, timeout=timeout, log_path=artifact / "hidden-grader.log")
     parsed: dict[str, Any] | None = None
     if not outcome["timed_out"]:
         for line in reversed(Path(outcome["log_path"]).read_text(encoding="utf-8").splitlines()):
@@ -557,8 +585,8 @@ def review_artifact(task: dict[str, Any], workspace: Path, patch: str) -> str:
 
 
 def controlled_files(toolchain: Path) -> list[Path]:
-    files = [SCRIPT_PATH, MANIFEST_PATH, PROJECT_ROOT / "execution" / "run-claude-code-flash-pilot.sh", PROJECT_ROOT / "execution" / "run-vllm-service.sh", PROJECT_ROOT / "execution" / "run-vllm-acceptance.sh", toolchain / "bin" / "claude"]
-    for root in (FIXTURE_ROOT, GRADER_ROOT, SOLUTION_ROOT):
+    files = [SCRIPT_PATH, REPORTER_PATH, MANIFEST_PATH, PROJECT_ROOT / "execution" / "run-claude-code-flash-pilot.sh", PROJECT_ROOT / "execution" / "run-vllm-service.sh", PROJECT_ROOT / "execution" / "run-vllm-acceptance.sh", toolchain / "bin" / "claude"]
+    for root in (FIXTURE_ROOT, GRADER_ROOT, SOLUTION_ROOT, R3_ROOT):
         files.extend(tree_files(root))
     return sorted(set(path.resolve() for path in files))
 
@@ -751,7 +779,7 @@ def run_phase(phase: str, cache: Path, artifact_root: Path, toolchain: Path) -> 
         state["attempts"].append(attempt)
         write_json(state_path(artifact_root), state)
         known.add(key)
-    expected = 14 if phase == "deepseek" else 7
+    expected = len(manifest["tasks"]) * (2 if phase == "deepseek" else 1)
     count = sum(1 for item in state["attempts"] if item["treatment"] in DEEPSEEK_TREATMENTS) if phase == "deepseek" else sum(1 for item in state["attempts"] if item["treatment"] == "qwen_local")
     if count != expected:
         raise InfrastructureError(f"{phase} phase attempt count mismatch: {count}/{expected}")
@@ -883,12 +911,12 @@ def submit_rating(review_root: Path, public: dict[str, Any], payload: dict[str, 
     return {"status": "accepted", "completed": complete, "completed_count": len(ratings["ratings"]), "total": len(public["tasks"])}
 
 
-def aggregate_reveal(review_root: Path) -> dict[str, Any]:
+def aggregate_results(review_root: Path, *, require_human: bool) -> dict[str, Any]:
     public = read_json(review_root / "public" / "review.json")
     sealed = read_json(review_root / "sealed" / "mappings.json")
     ratings = load_ratings(review_root)["ratings"]
     human_task_ids = {task["task_id"] for task in public["tasks"]}
-    if set(ratings) != human_task_ids:
+    if set(ratings) - human_task_ids or (require_human and set(ratings) != human_task_ids):
         raise PermissionError("review is not complete")
     totals: dict[str, list[dict[str, float]]] = {treatment: [] for treatment in TREATMENTS}
     mappings: list[dict[str, Any]] = []
@@ -906,17 +934,28 @@ def aggregate_reveal(review_root: Path) -> dict[str, Any]:
             if rating is not None:
                 human_label = next(label for label, value in human_mapping.items() if value == treatment)
                 human_layer = score_mean(rating["scores"][human_label])
-            layers = [deterministic, judge_layer] + ([] if human_layer is None else [human_layer])
-            quality = sum(layers) / len(layers)
+            quality = (deterministic + judge_layer) / 2
             by_treatment[treatment] = {"deterministic_tier": deterministic, "judge_layer": judge_layer, "human_layer": human_layer, "quality": quality}
             totals[treatment].append(by_treatment[treatment])
         mappings.append({"task_id": task_id, "human_scored": rating is not None, "human_mapping": human_mapping if rating is not None else None, "judge_mapping": judge_mapping, "scores": by_treatment, "human_preference": rating["preference"] if rating is not None else None, "judge_preference": judge["preference"]})
     aggregates = {}
     for treatment, rows in totals.items():
         human_rows = [row["human_layer"] for row in rows if row["human_layer"] is not None]
-        aggregates[treatment] = {"deterministic_mean": sum(row["deterministic_tier"] for row in rows) / len(rows), "judge_mean": sum(row["judge_layer"] for row in rows) / len(rows), "human_mean": sum(human_rows) / len(human_rows), "quality_mean": sum(row["quality"] for row in rows) / len(rows)}
-    payload = {"schema_version": 1, "status": "revealed", "revealed_at": utc_now(), "benchmark_task_count": len(sealed["tasks"]), "human_task_count": len(human_task_ids), "judge_only_task_count": len(sealed["tasks"]) - len(human_task_ids), "tasks": mappings, "aggregates": aggregates, "note": "Writing tasks combine deterministic, judge, and human layers; all other tasks combine deterministic and judge layers. Single repetition; no statistical superiority claim."}
+        aggregates[treatment] = {"deterministic_mean": sum(row["deterministic_tier"] for row in rows) / len(rows), "judge_mean": sum(row["judge_layer"] for row in rows) / len(rows), "human_mean": (sum(human_rows) / len(human_rows)) if human_rows else None, "quality_mean": sum(row["quality"] for row in rows) / len(rows)}
+    now = utc_now()
+    payload = {"schema_version": 2, "status": "revealed" if require_human else "completed", "completed_at": now, "benchmark_task_count": len(sealed["tasks"]), "human_task_count": len(human_task_ids), "human_ratings_completed": len(ratings), "judge_only_task_count": len(sealed["tasks"]) - len(human_task_ids), "tasks": mappings, "aggregates": aggregates, "note": "Baseline quality uses deterministic and GPT judge layers for every task. Human writing scores are an optional separate overlay. Single repetition; no statistical superiority claim."}
+    return payload
+
+
+def aggregate_reveal(review_root: Path) -> dict[str, Any]:
+    payload = aggregate_results(review_root, require_human=True)
     write_json(review_root / "private" / "reveal.json", payload)
+    return payload
+
+
+def aggregate_baseline(review_root: Path) -> dict[str, Any]:
+    payload = aggregate_results(review_root, require_human=False)
+    write_json(review_root / "private" / "baseline-results.json", payload)
     return payload
 
 
@@ -931,7 +970,7 @@ const el=(tag,attrs={},text='')=>{const n=document.createElement(tag);Object.ass
 function nextTask(){return review.tasks.find(t=>!review.completed_task_ids.includes(t.task_id))||review.tasks[review.tasks.length-1]}
 function scoreRow(letter,key,label,chosen){const f=el('fieldset',{className:'row'}),l=el('legend',{},label),s=el('div',{className:'scale'});f.append(l,s);[1,2,3].forEach(v=>{const lab=el('label'),i=el('input',{type:'radio',name:`${letter}-${key}`,value:v});i.checked=chosen===v;i.onchange=updateButton;lab.append(i,document.createTextNode(String(v)));s.append(lab)});return f}
 function updateButton(){const complete=letters=>letters.every(letter=>criteria.every(([key])=>document.querySelector(`input[name="${letter}-${key}"]:checked`)));const pref=document.querySelector('input[name="preference"]:checked');document.querySelector('button').disabled=!(complete(['A','B','C'])&&pref)}
-function render(){current=nextTask();const done=review.completed_task_ids.length,total=review.tasks.length,app=document.querySelector('#app');app.replaceChildren();const surface=el('main',{className:'surface'}),bar=el('header',{className:'toolbar'}),title=el('div');title.append(el('h1',{},`Blind writing review · task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}`),el('small',{},'Anonymous candidate order is sealed'));const prog=el('div'),copy=el('div',{className:'progress-copy'});copy.append(el('strong',{},`${done} / ${total} submitted`),el('span',{className:'muted'},`Current task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')}`));const track=el('div',{className:'track'}),fill=el('span');fill.style.width=`${done/total*100}%`;track.append(fill);prog.append(copy,track);bar.append(title,prog);surface.append(bar);const context=el('section',{className:'context'}),task=el('div'),instruction=el('div');task.append(el('strong',{},'Task'),el('p',{},current.title));instruction.append(el('strong',{},'Task instruction'),el('p',{className:'muted'},current.instruction));context.append(task,instruction);surface.append(context);const answers=el('div',{className:'answers'});for(const letter of ['A','B','C']){const item=el('section',{className:'answer'}),head=el('div',{className:'heading'});head.append(el('h2',{},`Answer ${letter}`),el('small',{},'Anonymous response'));item.append(head,el('pre',{className:'copy'},current.candidates[letter]));const sheet=el('div',{className:'sheet'});criteria.forEach(([key,label])=>sheet.append(scoreRow(letter,key,label)));item.append(sheet);answers.append(item)}surface.append(answers);const foot=el('footer'),pref=el('fieldset',{className:'prefs'});pref.append(el('legend',{},'Overall preference'));['A','B','C','tie'].forEach(value=>{const lab=el('label'),i=el('input',{type:'radio',name:'preference',value});i.onchange=updateButton;lab.append(i,document.createTextNode(value));pref.append(lab)});const submit=el('button',{type:'button',disabled:true},'Submit and next');submit.onclick=submitRating;foot.append(pref,submit);surface.append(foot);app.append(surface);const reveal=el('section',{className:'reveal'}),left=el('div');left.append(el('h3',{},`Reveal after ${total} / ${total}`),el('p',{className:'muted'},'Identity mappings and aggregate scores remain sealed until both writing tasks are submitted.'));const items=el('div',{className:'reveal-items'});for(const [a,b] of [['A / B / C identity mapping',`Await all ${total} submissions`],['Score and preference summary',`Await all ${total} submissions`]]){const i=el('div',{className:'reveal-item'});i.append(el('strong',{},a),el('small',{},b));items.append(i)}reveal.append(left,items);app.append(reveal)}
+function render(){current=nextTask();const done=review.completed_task_ids.length,total=review.tasks.length,app=document.querySelector('#app');app.replaceChildren();const surface=el('main',{className:'surface'}),bar=el('header',{className:'toolbar'}),title=el('div');title.append(el('h1',{},`Blind writing review · task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}`),el('small',{},'Anonymous candidate order is sealed'));const prog=el('div'),copy=el('div',{className:'progress-copy'});copy.append(el('strong',{},`${done} / ${total} submitted`),el('span',{className:'muted'},`Current task ${String(review.tasks.indexOf(current)+1).padStart(2,'0')}`));const track=el('div',{className:'track'}),fill=el('span');fill.style.width=`${done/total*100}%`;track.append(fill);prog.append(copy,track);bar.append(title,prog);surface.append(bar);const context=el('section',{className:'context'}),task=el('div'),instruction=el('div');task.append(el('strong',{},'Task'),el('p',{},current.title));instruction.append(el('strong',{},'Task instruction'),el('p',{className:'muted'},current.instruction));context.append(task,instruction);surface.append(context);const answers=el('div',{className:'answers'});for(const letter of ['A','B','C']){const item=el('section',{className:'answer'}),head=el('div',{className:'heading'});head.append(el('h2',{},`Answer ${letter}`),el('small',{},'Anonymous response'));item.append(head,el('pre',{className:'copy'},current.candidates[letter]));const sheet=el('div',{className:'sheet'});criteria.forEach(([key,label])=>sheet.append(scoreRow(letter,key,label)));item.append(sheet);answers.append(item)}surface.append(answers);const foot=el('footer'),pref=el('fieldset',{className:'prefs'});pref.append(el('legend',{},'Overall preference'));['A','B','C','tie'].forEach(value=>{const lab=el('label'),i=el('input',{type:'radio',name:'preference',value});i.onchange=updateButton;lab.append(i,document.createTextNode(value));pref.append(lab)});const submit=el('button',{type:'button',disabled:true},'Submit and next');submit.onclick=submitRating;foot.append(pref,submit);surface.append(foot);app.append(surface);const reveal=el('section',{className:'reveal'}),left=el('div');left.append(el('h3',{},`Reveal after ${total} / ${total}`),el('p',{className:'muted'},'Identity mappings and optional human scores remain sealed until all writing tasks are submitted.'));const items=el('div',{className:'reveal-items'});for(const [a,b] of [['A / B / C identity mapping',`Await all ${total} submissions`],['Score and preference summary',`Await all ${total} submissions`]]){const i=el('div',{className:'reveal-item'});i.append(el('strong',{},a),el('small',{},b));items.append(i)}reveal.append(left,items);app.append(reveal)}
 async function submitRating(){const scores={};for(const letter of ['A','B','C']){scores[letter]={};for(const [key] of criteria)scores[letter][key]=Number(document.querySelector(`input[name="${letter}-${key}"]:checked`).value)}const preference=document.querySelector('input[name="preference"]:checked').value;const response=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:current.task_id,scores,preference})});if(!response.ok){alert('Unable to save this rating. Refresh and retry.');return}review=await (await fetch('/api/review')).json();if(review.completed_task_ids.length===review.tasks.length){const reveal=await fetch('/api/reveal');if(reveal.ok){document.querySelector('#app').textContent=JSON.stringify(await reveal.json(),null,2);return}}render()}
 fetch('/api/review').then(r=>r.json()).then(value=>{review=value;render()}).catch(()=>document.querySelector('#app').textContent='Review data is unavailable.');
 </script>'''
@@ -941,26 +980,51 @@ def build_package(cache: Path, artifact_root: Path, toolchain: Path, fake_judge:
     manifest = load_manifest()
     state = read_json(state_path(artifact_root))
     attempts = state.get("attempts", [])
-    if len(attempts) != 21 or {attempt_key(item["task_id"], item["treatment"]) for item in attempts} != {attempt_key(task["task_id"], treatment) for task in manifest["tasks"] for treatment in TREATMENTS}:
-        raise InfrastructureError("cannot package an incomplete 21-attempt benchmark")
+    expected_attempts = {attempt_key(task["task_id"], treatment) for task in manifest["tasks"] for treatment in TREATMENTS}
+    if len(attempts) != len(expected_attempts) or {attempt_key(item["task_id"], item["treatment"]) for item in attempts} != expected_attempts:
+        raise InfrastructureError(f"cannot package an incomplete {len(expected_attempts)}-attempt benchmark")
     review_root = artifact_root / "review"
     sealed_root = review_root / "sealed"
     public_root = review_root / "public"
-    if (public_root / "review.json").exists() or (sealed_root / "mappings.json").exists():
-        raise InfrastructureError("review package already exists and is immutable")
+    receipt_path = artifact_root / "phase-package-receipt.json"
+    if receipt_path.is_file() and (public_root / "review.json").is_file() and (sealed_root / "mappings.json").is_file() and (review_root / "private" / "baseline-results.json").is_file():
+        package = read_json(receipt_path)
+        if package.get("status") != "completed" or package.get("task_count") != len(manifest["tasks"]):
+            raise InfrastructureError("existing package receipt is inconsistent")
+        if package.get("public_sha256") != sha256_file(public_root / "review.json") or package.get("sealed_sha256") != sha256_file(sealed_root / "mappings.json"):
+            raise InfrastructureError("existing package hashes are inconsistent")
+        return package
     by_key = {attempt_key(item["task_id"], item["treatment"]): item for item in attempts}
     public_tasks: list[dict[str, Any]] = []
     sealed_tasks: dict[str, Any] = {}
     deterministic: dict[str, dict[str, int]] = {}
     judges: dict[str, Any] = {}
     judge_runtime: dict[str, Any] = {}
+    attempts_sha256 = hashlib.sha256(json.dumps(attempts, sort_keys=True, default=str).encode()).hexdigest()
+    package_state_path = review_root / "private" / "package-state.json"
+    if package_state_path.is_file():
+        package_state = read_json(package_state_path)
+        if package_state.get("attempts_sha256") != attempts_sha256 or set(package_state.get("tasks", {})) != {task["task_id"] for task in manifest["tasks"]}:
+            raise InfrastructureError("judge package checkpoint belongs to a different candidate set")
+    else:
+        package_state = {"schema_version": 1, "attempts_sha256": attempts_sha256, "tasks": {task["task_id"]: {"human": shuffled_mapping(), "judge": shuffled_mapping()} for task in manifest["tasks"]}}
+        write_json(package_state_path, package_state)
     for task in manifest["tasks"]:
         task_id = task["task_id"]
-        human_mapping = shuffled_mapping()
-        judge_mapping = shuffled_mapping()
+        human_mapping = package_state["tasks"][task_id]["human"]
+        judge_mapping = package_state["tasks"][task_id]["judge"]
         human_candidates = {label: by_key[attempt_key(task_id, treatment)]["review_artifact"] for label, treatment in human_mapping.items()}
         judge_candidates = {label: by_key[attempt_key(task_id, treatment)]["review_artifact"] for label, treatment in judge_mapping.items()}
-        judge_result = run_judge(task, judge_candidates, review_root / "private" / "judge" / task_id, manifest, fake=fake_judge)
+        judge_root = review_root / "private" / "judge" / task_id
+        if (judge_root / "judge.json").is_file() and (judge_root / "judge-runtime.json").is_file():
+            payload = validate_judge_payload(read_json(judge_root / "judge.json"))
+            runtime = read_json(judge_root / "judge-runtime.json")
+            observed = runtime.get("runtime", runtime)
+            if runtime.get("fallback_configured") is not False or observed.get("model") != JUDGE_MODEL or observed.get("reasoning_effort") != JUDGE_EFFORT:
+                raise InfrastructureError(f"persisted judge runtime is invalid for {task_id}")
+            judge_result = {"payload": payload, "runtime": runtime}
+        else:
+            judge_result = run_judge(task, judge_candidates, judge_root, manifest, fake=fake_judge)
         judge = judge_result["payload"]
         if task["category"] == HUMAN_REVIEW_CATEGORY:
             public_tasks.append({"task_id": task_id, "title": task["title"], "instruction": task["instruction"], "candidates": human_candidates})
@@ -972,14 +1036,16 @@ def build_package(cache: Path, artifact_root: Path, toolchain: Path, fake_judge:
     forbidden_public = json.dumps(public, ensure_ascii=False).lower()
     if any(term in forbidden_public for term in ("online_ds", "offline_ds", "qwen_local", "hidden_grader", "elapsed_seconds", "cost_usd", "tool_calls")):
         raise InfrastructureError("public review package leaks treatment telemetry")
-    sealed = {"schema_version": 1, "tasks": sealed_tasks, "deterministic": deterministic, "judges": judges, "judge_runtime": judge_runtime, "attempts_sha256": hashlib.sha256(json.dumps(attempts, sort_keys=True, default=str).encode()).hexdigest()}
+    sealed = {"schema_version": 2, "tasks": sealed_tasks, "deterministic": deterministic, "judges": judges, "judge_runtime": judge_runtime, "attempts_sha256": attempts_sha256}
     write_json(sealed_root / "mappings.json", sealed)
     write_json(public_root / "review.json", public)
     atomic_write(public_root / "index.html", REVIEW_HTML.encode("utf-8"))
-    package = {"schema_version": 1, "status": "ready_for_review", "review_root": str(review_root), "public_sha256": sha256_file(public_root / "review.json"), "sealed_sha256": sha256_file(sealed_root / "mappings.json"), "judge_count": len(judges), "task_count": len(manifest["tasks"]), "human_task_count": len(public_tasks), "judge_only_task_count": len(manifest["tasks"]) - len(public_tasks), "judge_runtime_contract": {"model": JUDGE_MODEL, "reasoning_effort": JUDGE_EFFORT, "fallback_configured": False, "validated_calls": len(judge_runtime)}}
-    write_json(artifact_root / "phase-package-receipt.json", package)
+    atomic_write(public_root / "human-review.html", REVIEW_HTML.encode("utf-8"))
+    baseline = aggregate_baseline(review_root)
+    package = {"schema_version": 2, "status": "completed", "review_root": str(review_root), "baseline_results": str(review_root / "private" / "baseline-results.json"), "baseline_results_sha256": sha256_file(review_root / "private" / "baseline-results.json"), "public_sha256": sha256_file(public_root / "review.json"), "sealed_sha256": sha256_file(sealed_root / "mappings.json"), "judge_count": len(judges), "task_count": len(manifest["tasks"]), "attempt_count": len(attempts), "human_task_count": len(public_tasks), "human_review_required": False, "judge_only_task_count": len(manifest["tasks"]) - len(public_tasks), "aggregate_count": len(baseline["aggregates"]), "judge_runtime_contract": {"model": JUDGE_MODEL, "reasoning_effort": JUDGE_EFFORT, "fallback_configured": False, "validated_calls": len(judge_runtime)}}
+    write_json(receipt_path, package)
     state["phase_receipts"]["package"] = package
-    state["status"] = "review_pending"
+    state["status"] = "completed"
     write_json(state_path(artifact_root), state)
     return package
 
@@ -1043,8 +1109,9 @@ def make_review_handler(review_root: Path):
 
         def do_GET(self) -> None:
             path = urlparse(self.path).path
-            if path in {"/", "/index.html"}:
-                content = (review_root / "public" / "index.html").read_bytes()
+            if path in {"/", "/index.html", "/human-review.html"}:
+                name = "human-review.html" if path == "/human-review.html" else "index.html"
+                content = (review_root / "public" / name).read_bytes()
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(content)))
@@ -1097,7 +1164,7 @@ def serve_review(review_root: Path, host: str, port: int) -> None:
 
 def fake_attempt(task: dict[str, Any], treatment: str, manifest: dict[str, Any]) -> dict[str, Any]:
     hidden = {"status": "passed", "passed": 9, "total": 9}
-    return {"task_id": task["task_id"], "title": task["title"], "category": task["category"], "task_kind": task["task_kind"], "treatment": treatment, "route": manifest["treatments"][treatment]["route"], "model": manifest["treatments"][treatment]["model"], "claude_code_version": manifest["claude_code_version"], "agent_status": "completed", "hidden_grader": hidden, "visible_tests": {"status": "passed"}, "task_status": "passed", "review_artifact": f"Synthetic anonymous response for {task['task_id']}.", "prompt_contract_sha256": prompt_contract_hash(task, manifest)}
+    return {"task_id": task["task_id"], "title": task["title"], "category": task["category"], "task_kind": task["task_kind"], "treatment": treatment, "route": manifest["treatments"][treatment]["route"], "model": manifest["treatments"][treatment]["model"], "claude_code_version": manifest["claude_code_version"], "agent_status": "completed", "elapsed_seconds": 0.001, "num_turns": 1, "tool_calls": [], "hidden_grader": hidden, "visible_tests": {"status": "passed"}, "task_status": "passed", "review_artifact": f"Synthetic anonymous response for {task['task_id']}.", "prompt_contract_sha256": prompt_contract_hash(task, manifest)}
 
 
 def run_fake_benchmark(artifact_root: Path) -> dict[str, Any]:

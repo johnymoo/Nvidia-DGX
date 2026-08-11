@@ -1,0 +1,11 @@
+{
+  "incident_id": "INC-405",
+  "chain": ["./certs/edge-leaf.pem", "./certs/edge-intermediate.pem"],
+  "private_key": "./secrets/edge.key",
+  "bundle_path": "./runtime/tls/edge-chain.pem",
+  "verification": {
+    "hostname": "api.example.test",
+    "leaf_serial": "LEAF-0731"
+  },
+  "certainty": "evidence_limited"
+}

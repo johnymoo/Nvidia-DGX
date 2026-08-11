@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-406",
+  "primary_cause": "combined_capacity_pressure",
+  "constraints": {
+    "blocks_percent": 95,
+    "inodes_percent": 97,
+    "deleted_open_bytes": 3221225472
+  },
+  "reclaim_scope": ["./data/cache", "./data/tmp"],
+  "protected_paths": ["./data/current"],
+  "certainty": "evidence_limited"
+}

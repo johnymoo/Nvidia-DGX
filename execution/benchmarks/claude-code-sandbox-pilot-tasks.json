@@ -1,11 +1,16 @@
 {
   "schema_version": 3,
-  "baseline_revision": "claude-ds-pilot-r2",
+  "baseline_revision": "claude-ds-pilot-r3",
   "audit_history": [
     {
       "date": "2026-08-11",
       "revision": "claude-ds-pilot-r2",
       "change": "Expanded the frozen R1 corpus to the approved seven-task, three-treatment benchmark contract."
+    },
+    {
+      "date": "2026-08-12",
+      "revision": "claude-ds-pilot-r3",
+      "change": "Added forty sandbox tasks across terminal, server operations, bilingual writing, and Python/TypeScript programming."
     }
   ],
   "claude_code_version": "2.1.207",
@@ -41,9 +46,20 @@
       "fixture": "miniconfig-escaped-paths",
       "grader": "grade_miniconfig.py",
       "solution": "miniconfig-escaped-paths",
-      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
       "task_kind": "code",
-      "treatment_order": ["online_ds", "offline_ds"],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
       "instruction": "The get_path helper handles ordinary dotted dictionary paths, but escaped dots and list traversal are broken. Implement backslash escaping for the next path character, support non-negative decimal list indexes, reject empty segments and dangling escapes with ValueError, and raise TypeError when a list segment is not an index or traversal reaches a scalar. A supplied default must be returned only for a missing dictionary key or an out-of-range list index. Preserve the public get_path(data, path, default=MISSING) API."
     },
     {
@@ -54,9 +70,20 @@
       "fixture": "retry-after-policy",
       "grader": "grade_retry_after.py",
       "solution": "retry-after-policy",
-      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
       "task_kind": "code",
-      "treatment_order": ["offline_ds", "online_ds"],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
       "instruction": "Complete parse_retry_after and integrate it into next_delay. Retry-After accepts either non-negative integer seconds or an RFC 7231 HTTP date. Date calculations must use the injected timezone-aware now value and past dates produce zero. Missing, malformed, negative, or timezone-naive values are ignored. next_delay keeps exponential backoff, uses the larger of backoff and a valid Retry-After delay, and then applies the cap. Reject negative attempts, base delays, or caps with ValueError. Keep all calculations deterministic and do not read the system clock when now is supplied."
     },
     {
@@ -67,9 +94,20 @@
       "fixture": "event-summary-refactor",
       "grader": "grade_event_summary.py",
       "solution": "event-summary-refactor",
-      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
       "task_kind": "code",
-      "treatment_order": ["online_ds", "offline_ds"],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
       "instruction": "Refactor event_summary so text and JSON rendering share one aggregation path. Add a frozen Summary dataclass and summarize(events), which must consume any iterable exactly once without mutating input events. total counts every event, ok and failed count only those exact statuses, unknown statuses count only toward total, and a missing duration_ms contributes zero. Reject bool or negative/non-integer duration_ms values with ValueError. Preserve the exact existing text and compact sorted JSON output formats, and have both render functions delegate to summarize."
     },
     {
@@ -80,9 +118,20 @@
       "fixture": "ndjson-stream-decoder",
       "grader": "grade_ndjson_decoder.py",
       "solution": "ndjson-stream-decoder",
-      "visible_test_command": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
       "task_kind": "code",
-      "treatment_order": ["offline_ds", "online_ds"],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
       "instruction": "Fix NDJSONDecoder's incremental behavior and add focused regression coverage where useful. feed(chunk) must emit only complete newline-terminated JSON values while retaining a partial record, including when CRLF is split across chunks. Blank or whitespace-only lines are ignored but still advance the one-based physical line number. finalize() parses one final unterminated nonblank record exactly once; repeated finalize calls return an empty list. Malformed JSON raises NDJSONError with the physical line number and original decoder message. Feeding after finalization raises RuntimeError."
     },
     {
@@ -94,8 +143,15 @@
       "fixture": "general-knowledge-zh-qa",
       "grader": "grade_general_knowledge_zh.py",
       "solution": "general-knowledge-zh-qa",
-      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
-      "treatment_order": ["online_ds", "offline_ds"],
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
       "instruction": "Answer the following eight stable questions in answers.json. The file must be a JSON object with exactly q1 through q8 and one concise string answer for each key. q1 Australia's capital; q2 largest ocean; q3 gold's chemical symbol; q4 the Red Planet; q5 author of Pride and Prejudice; q6 largest human organ; q7 boiling point of pure water at sea level in Celsius; q8 days in a leap year. Do not add keys or commentary outside answers.json."
     },
     {
@@ -107,8 +163,15 @@
       "fixture": "patch4-acceptance-zh-brief",
       "grader": "grade_patch4_acceptance_zh.py",
       "solution": "patch4-acceptance-zh-brief",
-      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
-      "treatment_order": ["offline_ds", "online_ds"],
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
       "instruction": "Write answer.md containing 220-320 Chinese characters based only on these fixed facts: run 20260811T002139Z; date 2026-08-11; model deepseek-v4-flash-0731 with Patch4; two hosts, TP=2, RoCE, and NCCL NET/IB; correctness, tool, agent, concurrency, and 40-minute c4 soak passed; 621 requests; 223,268 generated tokens; zero empty, garbled, or HTTP-error responses. Do not claim a production SLA, Qwen co-loading, or superiority."
     },
     {
@@ -120,9 +183,1651 @@
       "fixture": "first-pilot-result-en-brief",
       "grader": "grade_first_pilot_en.py",
       "solution": "first-pilot-result-en-brief",
-      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
-      "treatment_order": ["online_ds", "offline_ds"],
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
       "instruction": "Write answer.md with 170-230 English words from these fixed facts: Claude Code 2.1.207; online deepseek-v4-flash and private deepseek-v4-flash-0731; each passed 3/4 hidden graders; elapsed 571.060 and 417.190 seconds; provider token, cache, and cost accounting differs; one repetition proves neither efficiency nor statistical superiority. Do not declare an overall winner or a significance result."
+    },
+    {
+      "task_id": "terminal-log-frequency",
+      "title": "Rank normalized rotated-log errors",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-log-frequency",
+      "solution": "terminal-log-frequency",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must scan regular app.log* files below INPUT_DIR, count ERROR signatures after normalizing user_id, request_id, trace_id, and numeric latency_ms fields, and write deterministic report.json. Use shell and standard Unix utilities only. Do not use Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-nul-inventory",
+      "title": "Build a NUL-safe filename inventory",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-nul-inventory",
+      "solution": "terminal-nul-inventory",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must inventory regular files below INPUT_DIR/tree into deterministic inventory.json with relative paths and byte counts. Filenames may contain spaces, tabs, and leading dashes; do not split on whitespace, follow symlinks, or use eval. Use shell and standard Unix utilities only, with no Python, Node, packages, network access, or parent paths.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-csv-pipeline",
+      "title": "Aggregate quoted CSV approvals",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-csv-pipeline",
+      "solution": "terminal-csv-pipeline",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must parse records.csv with quoted CSV fields, select approved records, and write deterministic summary.csv totals by team. Reject malformed rows, wrong headers, and invalid values without a stale output. Use shell and standard Unix utilities only; no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-safe-rename",
+      "title": "Plan and apply collision-safe renames",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-safe-rename",
+      "solution": "terminal-safe-rename",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must create rename-plan.json and rollback.tsv for files under INPUT_DIR/media; --apply must execute the plan without overwrite. Normalize ASCII basenames to lowercase hyphenated names, resolve collisions deterministically, remain inside media, and become idempotent after applying. Use shell and standard Unix utilities only, with no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-env-precedence",
+      "title": "Resolve dotenv precedence without evaluation",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-env-precedence",
+      "solution": "terminal-env-precedence",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must combine defaults.env, .env, and process overrides for the four documented APP_ keys into effective-env.json with process values taking precedence. Validate dotenv syntax and never source or evaluate its contents. Use shell and standard Unix utilities only; no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-permission-audit",
+      "title": "Audit and remediate permission drift",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-permission-audit",
+      "solution": "terminal-permission-audit",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must audit INPUT_DIR/tree, remediate the documented directory and regular-file modes, preserve symlinks, and write a deterministic permission-report.tsv. A repeat run must make no further mode changes. Use shell and standard Unix utilities only, with no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-archive-verify",
+      "title": "Verify and safely extract archive members",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-archive-verify",
+      "solution": "terminal-archive-verify",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must verify bundle.tar against manifest.tsv, write verification.json, and extract only checksum-verified safe members. Reject malformed manifests, mismatches, unsafe traversal paths, and unsupported archive members. Use shell and standard Unix utilities only; no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-process-join",
+      "title": "Join captured process and socket metadata",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-process-join",
+      "solution": "terminal-process-join",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must join ps.tsv, sockets.tsv, and services.tsv into a stable process-report.tsv. Validate headers and rows, reject duplicate or orphan PIDs, sort process and socket output deterministically, and use - for missing joins. Use shell and standard Unix utilities only; no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-jsonl-aggregate",
+      "title": "Validate and aggregate request JSONL",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-jsonl-aggregate",
+      "solution": "terminal-jsonl-aggregate",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must validate the constrained status/latency JSONL schema and write aggregate.json with deterministic status, latency, and sum buckets. Reject malformed, duplicate, extra, or invalid fields without stale output. Use shell and standard Unix utilities only; no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "terminal-checksum-audit",
+      "title": "Classify checksum manifest drift",
+      "category": "terminal",
+      "task_kind": "code",
+      "fixture": "terminal-checksum-audit",
+      "solution": "terminal-checksum-audit",
+      "grader": "r3_terminal.py",
+      "grader_args": [
+        "{task_id}"
+      ],
+      "visible_test_command": [
+        "sh",
+        "tests/visible.sh"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement executable solve.sh. ./solve.sh INPUT_DIR must classify a SHA-256 manifest against regular files in INPUT_DIR/tree as matching, missing, changed, or unexpected in audit.json. Reject malformed, duplicate, and unsafe manifest paths without following symlinks. Use shell and standard Unix utilities only; no Python, Node, packages, network access, parent paths, or eval.",
+      "r3_domain": "terminal"
+    },
+    {
+      "task_id": "ops-nginx-upstream",
+      "title": "Repair a synthetic reverse-proxy upstream",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-nginx-upstream",
+      "grader": "r3_ops.py",
+      "solution": "ops-nginx-upstream",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Use only the supplied synthetic snapshot. Create fix.conf and diagnosis.json. Repair the ledger_backend reverse-proxy fragment for the supplied connection-refused and upstream-timeout evidence, with bounded retry and forwarding semantics. diagnosis.json must identify the evidence-limited incident cause and changes. Do not invoke nginx, a network client, SSH, Docker, systemd, sudo, or any host path."
+    },
+    {
+      "task_id": "ops-systemd-restart",
+      "title": "Repair synthetic unit restart and readiness semantics",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-systemd-restart",
+      "grader": "r3_ops.py",
+      "solution": "ops-systemd-restart",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Use only the supplied synthetic unit, environment, and event snapshots. Create service-fixed.unit and diagnosis.json with restart, dependency, environment, and file-based readiness semantics. The unit is data for a project-owned parser; do not run systemd or any real service command. Keep every referenced path within the task workspace and state only evidence-limited conclusions."
+    },
+    {
+      "task_id": "ops-logrotate-policy",
+      "title": "Correct a synthetic log-rotation policy",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-logrotate-policy",
+      "grader": "r3_ops.py",
+      "solution": "ops-logrotate-policy",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "From the supplied synthetic retention incident, create logrotate-fixed.conf and diagnosis.json. Use a bounded weekly policy with safe ownership, compression, delayed compression, retention, and a project-local reload hook that preserves failure status. Do not run logrotate, reload a daemon, or use host paths."
+    },
+    {
+      "task_id": "ops-backup-schedule",
+      "title": "Repair a synthetic backup schedule",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-backup-schedule",
+      "grader": "r3_ops.py",
+      "solution": "ops-backup-schedule",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Use only the supplied schedule and failure snapshot. Create backup-fixed.sh and schedule.txt. The script must use UTC, a project-local lock, project-local snapshot and retention helpers, and failure propagation; the schedule must run it at 02:17 UTC. Do not run cron, use sudo, access host paths, or contact a service."
+    },
+    {
+      "task_id": "ops-tls-chain",
+      "title": "Prepare a synthetic TLS-chain deployment plan",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-tls-chain",
+      "grader": "r3_ops.py",
+      "solution": "ops-tls-chain",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Use only the supplied certificate metadata. Create deployment.json and rollback.md for the supplied synthetic edge endpoint. Assemble leaf then issuing intermediate, exclude the root, use only task-local paths, record a local verification step, and describe bounded rollback. Do not use certificate tools, network tools, daemon commands, or host paths."
+    },
+    {
+      "task_id": "ops-disk-pressure",
+      "title": "Triage synthetic disk and inode pressure",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-disk-pressure",
+      "grader": "r3_ops.py",
+      "solution": "ops-disk-pressure",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Correlate the supplied synthetic capacity snapshots. Create triage.json and remediation.md that identify block, inode, and deleted-open-file pressure, keep remediation bounded to supplied project paths, protect the current data path, and state evidence limits. Do not inspect the host filesystem or run destructive commands."
+    },
+    {
+      "task_id": "ops-oom-cgroup",
+      "title": "Bound a synthetic cgroup OOM incident",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-oom-cgroup",
+      "grader": "r3_ops.py",
+      "solution": "ops-oom-cgroup",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Use the supplied synthetic cgroup event and unit snapshot. Create service-fixed.unit and diagnosis.json that bound service memory, disable swap for the synthetic unit, use restart backoff, preserve project-local execution and readiness paths, and avoid unsupported certainty claims. Do not inspect cgroups or run systemd."
+    },
+    {
+      "task_id": "ops-proxy-health",
+      "title": "Repair synthetic proxy health semantics",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-proxy-health",
+      "grader": "r3_ops.py",
+      "solution": "ops-proxy-health",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Use only the supplied synthetic proxy trace. Create proxy-fixed.conf and diagnosis.json with both supplied upstream members, bounded health, connect/read timeouts, forwarding headers, and retry semantics. The fragment is parser input only. Do not invoke a proxy, reach a port, or claim the incident is fully resolved."
+    },
+    {
+      "task_id": "ops-db-pool",
+      "title": "Produce a bounded synthetic database-pool tuning plan",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium",
+      "fixture": "ops-db-pool",
+      "grader": "r3_ops.py",
+      "solution": "ops-db-pool",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Correlate the supplied synthetic request, pool, and database metrics. Create tuning.json and rollback.md with the bounded pool settings, statement timeout, observation guardrails, and reversible rollback conditions. Do not connect to a database, inspect a host, or claim capacity has been proven."
+    },
+    {
+      "task_id": "ops-release-rollback",
+      "title": "Implement a synthetic atomic release rollback",
+      "category": "server-operations",
+      "r3_domain": "server_ops",
+      "difficulty": "medium-high",
+      "fixture": "ops-release-rollback",
+      "grader": "r3_ops.py",
+      "solution": "ops-release-rollback",
+      "visible_test_command": [
+        "{python}",
+        "visible_check.py"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Use only the supplied release snapshot. Create rollback.sh and rollback-plan.json. The shell artifact must validate a task-local release target, precheck its marker, atomically replace the task-local current symlink, verify through the supplied helper, restore the captured target on verification failure, and atomically write a local audit record. Do not execute the script against a host, invoke a service manager, or use absolute or parent paths."
+    },
+    {
+      "task_id": "writing-zh-incident",
+      "title": "撰写缓存池事故复盘",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-incident",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-incident",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "在 answer.md 中为工程和支持团队写一份 260-420 个汉字的中文事故复盘，语气清晰、客观且不推责。必须用 Markdown 的 `## 事件摘要`、`## 影响`、`## 已完成`、`## 后续行动` 四个小节。事实包：事件 INC-2026-0810 发生于 2026-08-10；09:12 CST 起订单 API 的 p95 为 4.8 秒；发布 rel-20260810.3 后上游连接池耗尽；09:31 回退，09:37 p95 降至 180 毫秒；共影响 1,842 个请求；后续项为 CR-142 负载测试和 CR-143 回退告警。不要虚构数据丢失、额外客户影响、责任归属或未提供的修复承诺。",
+      "grading": {
+        "language": "zh",
+        "min_length": 260,
+        "max_length": 420,
+        "required_headings": [
+          "事件摘要",
+          "影响",
+          "已完成",
+          "后续行动"
+        ],
+        "required_facts": [
+          {
+            "id": "incident_id",
+            "aliases": [
+              "INC-2026-0810",
+              "INC 2026 0810"
+            ]
+          },
+          {
+            "id": "date",
+            "aliases": [
+              "2026-08-10",
+              "2026/08/10",
+              "2026年8月10日"
+            ]
+          },
+          {
+            "id": "start_time",
+            "aliases": [
+              "09:12 CST",
+              "09:12 中国标准时间"
+            ]
+          },
+          {
+            "id": "trigger_release",
+            "aliases": [
+              "rel-20260810.3"
+            ]
+          },
+          {
+            "id": "root_cause",
+            "aliases": [
+              "上游连接池耗尽",
+              "upstream connection pool exhausted"
+            ]
+          },
+          {
+            "id": "rollback_time",
+            "aliases": [
+              "09:31",
+              "9:31"
+            ]
+          },
+          {
+            "id": "recovery_metric",
+            "aliases": [
+              "09:37 p95 降至 180 毫秒",
+              "09:37 p95降至180毫秒",
+              "09:37 p95 180ms"
+            ]
+          },
+          {
+            "id": "affected_requests",
+            "aliases": [
+              "1,842 个请求",
+              "1842 个请求",
+              "1，842 个请求"
+            ]
+          },
+          {
+            "id": "load_test_action",
+            "aliases": [
+              "CR-142"
+            ]
+          },
+          {
+            "id": "rollback_alert_action",
+            "aliases": [
+              "CR-143"
+            ]
+          }
+        ]
+      },
+      "language": "zh"
+    },
+    {
+      "task_id": "writing-zh-change",
+      "title": "撰写账单服务变更审批备忘录",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-change",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-change",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "在 answer.md 中为变更咨询委员会写一份 230-360 个汉字的中文变更审批备忘录，语气审慎、可执行。必须用 Markdown 的 `## 变更范围`、`## 风险与控制`、`## 执行与回退`、`## 审批请求` 四个小节。事实包：变更单 CHG-4821 计划于 2026-08-16 02:00-02:30 CST 执行，将 billing-api 的 3 个副本从 v2.8.4 升至 v2.8.5；先灰度 1 个副本 10 分钟；成功条件是错误率低于 0.5% 且 p95 不高于 350 毫秒；回退版本为 v2.8.4；申请 Mei Lin 批准。不要把本备忘录写成已获批准或已执行的结果，也不要承诺未提供的可用性目标。",
+      "grading": {
+        "language": "zh",
+        "min_length": 230,
+        "max_length": 360,
+        "required_headings": [
+          "变更范围",
+          "风险与控制",
+          "执行与回退",
+          "审批请求"
+        ],
+        "required_facts": [
+          {
+            "id": "change_id",
+            "aliases": [
+              "CHG-4821",
+              "CHG 4821"
+            ]
+          },
+          {
+            "id": "date",
+            "aliases": [
+              "2026-08-16",
+              "2026/08/16",
+              "2026年8月16日"
+            ]
+          },
+          {
+            "id": "window",
+            "aliases": [
+              "02:00-02:30",
+              "02:00 至 02:30",
+              "2:00-2:30"
+            ]
+          },
+          {
+            "id": "service",
+            "aliases": [
+              "billing-api",
+              "billing api"
+            ]
+          },
+          {
+            "id": "replicas",
+            "aliases": [
+              "3 个副本",
+              "3个副本",
+              "三个副本"
+            ]
+          },
+          {
+            "id": "target_version",
+            "aliases": [
+              "v2.8.5"
+            ]
+          },
+          {
+            "id": "canary",
+            "aliases": [
+              "1 个副本 10 分钟",
+              "1个副本10分钟",
+              "一个副本十分钟"
+            ]
+          },
+          {
+            "id": "success_threshold",
+            "aliases": [
+              "错误率低于 0.5%",
+              "错误率<0.5%",
+              "p95 不高于 350 毫秒",
+              "p95≤350毫秒",
+              "p95 <= 350ms"
+            ]
+          },
+          {
+            "id": "rollback_version",
+            "aliases": [
+              "v2.8.4"
+            ]
+          },
+          {
+            "id": "approver",
+            "aliases": [
+              "Mei Lin"
+            ]
+          }
+        ]
+      },
+      "language": "zh"
+    },
+    {
+      "task_id": "writing-zh-customer",
+      "title": "撰写客户可见的导出故障通知",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small",
+      "task_kind": "brief",
+      "fixture": "writing-zh-customer",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-customer",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "在 answer.md 中面向客户写一份 180-280 个汉字的中文故障通知，使用平实、同理但不猜测的语气。必须用 Markdown 的 `## 当前情况`、`## 影响范围`、`## 建议`、`## 后续更新` 四个小节。事实包：通知编号 NOT-20260809-A；2026-08-09 14:05-14:27 UTC 期间，欧洲区域仪表板导出间歇不可用；CSV 导出和计划导出受影响；已成功提交的报表请求仍被保存，没有数据丢失；服务已恢复，客户可稍后重试；下一次更新不晚于 15:00 UTC。不要猜测故障原因、承诺补偿或声称未列出的功能未受影响。",
+      "grading": {
+        "language": "zh",
+        "min_length": 180,
+        "max_length": 280,
+        "required_headings": [
+          "当前情况",
+          "影响范围",
+          "建议",
+          "后续更新"
+        ],
+        "required_facts": [
+          {
+            "id": "notice_id",
+            "aliases": [
+              "NOT-20260809-A",
+              "NOT 20260809 A"
+            ]
+          },
+          {
+            "id": "date",
+            "aliases": [
+              "2026-08-09",
+              "2026/08/09",
+              "2026年8月9日"
+            ]
+          },
+          {
+            "id": "window",
+            "aliases": [
+              "14:05-14:27 UTC",
+              "14:05 至 14:27 UTC"
+            ]
+          },
+          {
+            "id": "region_and_surface",
+            "aliases": [
+              "欧洲区域仪表板导出",
+              "欧洲仪表板导出"
+            ]
+          },
+          {
+            "id": "affected_exports",
+            "aliases": [
+              "CSV 导出和计划导出",
+              "CSV导出和计划导出"
+            ]
+          },
+          {
+            "id": "data_preservation",
+            "aliases": [
+              "已成功提交的报表请求仍被保存",
+              "成功提交的报表请求仍被保存"
+            ]
+          },
+          {
+            "id": "no_data_loss",
+            "aliases": [
+              "没有数据丢失",
+              "无数据丢失"
+            ]
+          },
+          {
+            "id": "next_update",
+            "aliases": [
+              "15:00 UTC",
+              "15:00UTC"
+            ]
+          }
+        ]
+      },
+      "language": "zh"
+    },
+    {
+      "task_id": "writing-zh-runbook",
+      "title": "撰写工作队列积压处置手册",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-runbook",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-runbook",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "在 answer.md 中为值班工程师写一份 220-340 个汉字的中文操作手册，语气简洁、按顺序、可审计。必须用 Markdown 的 `## 触发条件`、`## 操作步骤`、`## 验证与升级` 三个小节，并在操作步骤中写出编号步骤。事实包：手册 RBK-17 处理 worker-queue 积压；当 queue_depth 连续 10 分钟超过 20,000 条消息时触发；先记录 request ID，并检查 queue_depth、active_workers 和 error_rate；只能每次增加 2 个 worker，最长观察 15 分钟；不得删除或重放消息；未恢复则创建 SEV-2 事件并通知 OPS-ONCALL。不要加入真实主机命令、破坏性操作或未经授权的扩容。",
+      "grading": {
+        "language": "zh",
+        "min_length": 220,
+        "max_length": 340,
+        "required_headings": [
+          "触发条件",
+          "操作步骤",
+          "验证与升级"
+        ],
+        "required_facts": [
+          {
+            "id": "runbook_id",
+            "aliases": [
+              "RBK-17",
+              "RBK 17"
+            ]
+          },
+          {
+            "id": "queue_name",
+            "aliases": [
+              "worker-queue",
+              "worker queue"
+            ]
+          },
+          {
+            "id": "trigger",
+            "aliases": [
+              "连续 10 分钟超过 20,000 条消息",
+              "连续10分钟超过20000条消息",
+              "10分钟超过20,000条消息"
+            ]
+          },
+          {
+            "id": "request_id",
+            "aliases": [
+              "request ID",
+              "请求 ID",
+              "请求ID"
+            ]
+          },
+          {
+            "id": "metrics",
+            "aliases": [
+              "queue_depth、active_workers 和 error_rate",
+              "queue_depth active_workers error_rate"
+            ]
+          },
+          {
+            "id": "scale_limit",
+            "aliases": [
+              "每次增加 2 个 worker",
+              "每次增加2个worker"
+            ]
+          },
+          {
+            "id": "observation_limit",
+            "aliases": [
+              "最长观察 15 分钟",
+              "最长观察15分钟"
+            ]
+          },
+          {
+            "id": "escalation",
+            "aliases": [
+              "SEV-2",
+              "SEV 2"
+            ]
+          },
+          {
+            "id": "on_call",
+            "aliases": [
+              "OPS-ONCALL",
+              "OPS ONCALL"
+            ]
+          }
+        ]
+      },
+      "language": "zh"
+    },
+    {
+      "task_id": "writing-zh-policy",
+      "title": "撰写数据保留政策摘要",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-policy",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-policy",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "在 answer.md 中为非技术同事写一份 240-380 个汉字的中文数据保留政策摘要，语气通俗、准确。必须用 Markdown 的 `## 适用内容`、`## 保存期限`、`## 例外与联系` 三个小节。事实包：政策编号 POL-07；支持聊天记录保存 180 天；已解决工单附件保存 365 天；账单发票保存 7 年；合法保全会暂停删除；问题请通过 PRIVACY-DESK 联系隐私团队。不要给出法律意见、承诺某个个人请求一定获批，或加入未提供的数据类别和期限。",
+      "grading": {
+        "language": "zh",
+        "min_length": 240,
+        "max_length": 380,
+        "required_headings": [
+          "适用内容",
+          "保存期限",
+          "例外与联系"
+        ],
+        "required_facts": [
+          {
+            "id": "policy_id",
+            "aliases": [
+              "POL-07",
+              "POL 07"
+            ]
+          },
+          {
+            "id": "chat_retention",
+            "aliases": [
+              "支持聊天记录保存 180 天",
+              "支持聊天记录保存180天"
+            ]
+          },
+          {
+            "id": "attachment_retention",
+            "aliases": [
+              "已解决工单附件保存 365 天",
+              "已解决工单附件保存365天"
+            ]
+          },
+          {
+            "id": "invoice_retention",
+            "aliases": [
+              "账单发票保存 7 年",
+              "账单发票保存7年",
+              "账单发票保存七年"
+            ]
+          },
+          {
+            "id": "legal_hold",
+            "aliases": [
+              "合法保全会暂停删除",
+              "法律保全会暂停删除"
+            ]
+          },
+          {
+            "id": "contact",
+            "aliases": [
+              "PRIVACY-DESK",
+              "PRIVACY DESK"
+            ]
+          }
+        ]
+      },
+      "language": "zh"
+    },
+    {
+      "task_id": "writing-en-incident",
+      "title": "Write a catalog API incident status update",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-incident",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-incident",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Write a 170-250 word English incident status update in answer.md for internal engineering and support readers. Use a factual, calm tone and the Markdown headings `## Summary`, `## Impact`, `## Current status`, and `## Next steps`. Fact packet: incident INC-API-204 ran on 2026-08-11 from 13:20-13:46 UTC; catalog-api returned a 7.2% 503 rate; the supplied cause is an upstream connection pool capped at 40; mitigation raised the cap to 80 and recycled affected workers; RCA-204 is tracked; a load test is due by 2026-08-15. Do not invent data loss, customer counts, a permanent fix, or an unprovided root cause.",
+      "grading": {
+        "language": "en",
+        "min_length": 170,
+        "max_length": 250,
+        "required_headings": [
+          "Summary",
+          "Impact",
+          "Current status",
+          "Next steps"
+        ],
+        "required_facts": [
+          {
+            "id": "incident_id",
+            "aliases": [
+              "INC-API-204",
+              "INC API 204"
+            ]
+          },
+          {
+            "id": "date",
+            "aliases": [
+              "2026-08-11",
+              "2026/08/11",
+              "August 11, 2026"
+            ]
+          },
+          {
+            "id": "window",
+            "aliases": [
+              "13:20-13:46 UTC",
+              "13:20 to 13:46 UTC"
+            ]
+          },
+          {
+            "id": "service",
+            "aliases": [
+              "catalog-api",
+              "catalog api"
+            ]
+          },
+          {
+            "id": "error_rate",
+            "aliases": [
+              "7.2% 503 rate",
+              "7.2% rate of 503"
+            ]
+          },
+          {
+            "id": "pool_cap",
+            "aliases": [
+              "connection pool capped at 40",
+              "connection pool cap of 40"
+            ]
+          },
+          {
+            "id": "mitigation",
+            "aliases": [
+              "raised the cap to 80",
+              "raised to 80"
+            ]
+          },
+          {
+            "id": "rca",
+            "aliases": [
+              "RCA-204",
+              "RCA 204"
+            ]
+          },
+          {
+            "id": "load_test_due",
+            "aliases": [
+              "2026-08-15",
+              "August 15, 2026"
+            ]
+          }
+        ]
+      },
+      "language": "en"
+    },
+    {
+      "task_id": "writing-en-release",
+      "title": "Write ExportJob release notes",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-release",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-release",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Write 180-260 word English release notes in answer.md for API integrators. Use precise, practical language and the Markdown headings `## What changed`, `## Compatibility`, and `## Upgrade`. Fact packet: REL-3.4.0 releases on 2026-08-18; it adds the ExportJob webhook event `export.completed`; this event requires API version `2026-06-01`; the `legacy_export` endpoint remains available now but is removed in 4.0.0; CSV output format is unchanged; integrators should update the version header and test in staging. Do not claim automatic migration, backward compatibility beyond these facts, or an unprovided delivery date for 4.0.0.",
+      "grading": {
+        "language": "en",
+        "min_length": 180,
+        "max_length": 260,
+        "required_headings": [
+          "What changed",
+          "Compatibility",
+          "Upgrade"
+        ],
+        "required_facts": [
+          {
+            "id": "release_id",
+            "aliases": [
+              "REL-3.4.0",
+              "REL 3.4.0"
+            ]
+          },
+          {
+            "id": "release_date",
+            "aliases": [
+              "2026-08-18",
+              "2026/08/18",
+              "August 18, 2026"
+            ]
+          },
+          {
+            "id": "event",
+            "aliases": [
+              "ExportJob",
+              "export.completed"
+            ]
+          },
+          {
+            "id": "api_version",
+            "aliases": [
+              "2026-06-01",
+              "2026/06/01"
+            ]
+          },
+          {
+            "id": "legacy_endpoint",
+            "aliases": [
+              "legacy_export"
+            ]
+          },
+          {
+            "id": "removal_version",
+            "aliases": [
+              "4.0.0"
+            ]
+          },
+          {
+            "id": "csv_stability",
+            "aliases": [
+              "CSV output format is unchanged",
+              "CSV format is unchanged"
+            ]
+          },
+          {
+            "id": "upgrade_actions",
+            "aliases": [
+              "update the version header",
+              "test in staging"
+            ]
+          }
+        ]
+      },
+      "language": "en"
+    },
+    {
+      "task_id": "writing-en-proposal",
+      "title": "Write a cache design proposal",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-proposal",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-proposal",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Write a 200-300 word English technical proposal in answer.md for an architecture review. Compare trade-offs without overclaiming and use the Markdown headings `## Decision`, `## Options`, and `## Recommendation and safeguards`. Fact packet: proposal PROP-77 compares a file cache with 12 ms latency, 15-minute invalidation, and $90/month cost against a Redis cache with 4 ms latency, 60-second invalidation, and $310/month cost; recommend a bounded 14-day Redis trial. Do not state that either option has already been approved, claim measured business benefit, or add unprovided availability or security properties.",
+      "grading": {
+        "language": "en",
+        "min_length": 200,
+        "max_length": 300,
+        "required_headings": [
+          "Decision",
+          "Options",
+          "Recommendation and safeguards"
+        ],
+        "required_facts": [
+          {
+            "id": "proposal_id",
+            "aliases": [
+              "PROP-77",
+              "PROP 77"
+            ]
+          },
+          {
+            "id": "file_latency",
+            "aliases": [
+              "12 ms",
+              "12ms"
+            ]
+          },
+          {
+            "id": "file_invalidation",
+            "aliases": [
+              "15-minute invalidation",
+              "15 minute invalidation"
+            ]
+          },
+          {
+            "id": "file_cost",
+            "aliases": [
+              "$90/month",
+              "$90 per month"
+            ]
+          },
+          {
+            "id": "redis_latency",
+            "aliases": [
+              "4 ms",
+              "4ms"
+            ]
+          },
+          {
+            "id": "redis_invalidation",
+            "aliases": [
+              "60-second invalidation",
+              "60 second invalidation"
+            ]
+          },
+          {
+            "id": "redis_cost",
+            "aliases": [
+              "$310/month",
+              "$310 per month"
+            ]
+          },
+          {
+            "id": "trial",
+            "aliases": [
+              "14-day Redis trial",
+              "14 day Redis trial"
+            ]
+          }
+        ]
+      },
+      "language": "en"
+    },
+    {
+      "task_id": "writing-en-support",
+      "title": "Write an MFA reset support response",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small",
+      "task_kind": "brief",
+      "fixture": "writing-en-support",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-support",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Write a 150-220 word English customer-support response in answer.md. Be helpful and privacy-conscious, with Markdown headings `## What we found`, `## What to try`, and `## If it still fails`. Fact packet: ticket SUP-5182 concerns an MFA reset after a device change; the reset email was delivered at 10:14 UTC; its link expires after 30 minutes; the account is not locked; advise using the newest reset email, checking device time, or using a recovery code; support cannot view MFA codes or passwords; escalate after 2 failed attempts with the timestamp and browser version. Do not ask the customer to share a password, MFA code, or recovery code, and do not promise immediate resolution.",
+      "grading": {
+        "language": "en",
+        "min_length": 150,
+        "max_length": 220,
+        "required_headings": [
+          "What we found",
+          "What to try",
+          "If it still fails"
+        ],
+        "required_facts": [
+          {
+            "id": "ticket_id",
+            "aliases": [
+              "SUP-5182",
+              "SUP 5182"
+            ]
+          },
+          {
+            "id": "delivery_time",
+            "aliases": [
+              "10:14 UTC",
+              "10:14UTC"
+            ]
+          },
+          {
+            "id": "expiry",
+            "aliases": [
+              "30 minutes",
+              "30-minute"
+            ]
+          },
+          {
+            "id": "account_state",
+            "aliases": [
+              "account is not locked",
+              "not locked"
+            ]
+          },
+          {
+            "id": "newest_email",
+            "aliases": [
+              "newest reset email",
+              "most recent reset email"
+            ]
+          },
+          {
+            "id": "device_time",
+            "aliases": [
+              "device time"
+            ]
+          },
+          {
+            "id": "recovery_code",
+            "aliases": [
+              "recovery code"
+            ]
+          },
+          {
+            "id": "privacy_boundary",
+            "aliases": [
+              "cannot view MFA codes or passwords",
+              "cannot see MFA codes or passwords"
+            ]
+          },
+          {
+            "id": "escalation",
+            "aliases": [
+              "2 failed attempts",
+              "two failed attempts"
+            ]
+          },
+          {
+            "id": "browser_version",
+            "aliases": [
+              "browser version"
+            ]
+          }
+        ]
+      },
+      "language": "en"
+    },
+    {
+      "task_id": "writing-en-executive",
+      "title": "Write a dashboard vendor decision brief",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-executive",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-executive",
+      "visible_test_command": [
+        "{python}",
+        "-c",
+        "from pathlib import Path; assert Path('README.md').is_file()"
+      ],
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Write a 170-240 word English executive decision brief in answer.md. Keep it concise, decision-oriented, and bounded by the evidence. Use the Markdown headings `## Decision requested`, `## Evidence`, and `## Guardrails and next step`. Fact packet: DEC-31 requests approval of a $48,000 annual dashboard-vendor contract; analysts currently spend 18 hours/week on the manual process, whose measured error rate is 3.1%; vendor processing must remain in us-east-1; no customer PII is included, only aggregated usage; run a 30-day pilot; the decision is needed by 2026-09-05. Do not describe the pilot as approved, claim savings have already occurred, or add a security certification or legal conclusion not in the packet.",
+      "grading": {
+        "language": "en",
+        "min_length": 170,
+        "max_length": 240,
+        "required_headings": [
+          "Decision requested",
+          "Evidence",
+          "Guardrails and next step"
+        ],
+        "required_facts": [
+          {
+            "id": "decision_id",
+            "aliases": [
+              "DEC-31",
+              "DEC 31"
+            ]
+          },
+          {
+            "id": "contract_cost",
+            "aliases": [
+              "$48,000 annual",
+              "$48000 annual"
+            ]
+          },
+          {
+            "id": "analyst_time",
+            "aliases": [
+              "18 hours/week",
+              "18 hours per week"
+            ]
+          },
+          {
+            "id": "error_rate",
+            "aliases": [
+              "3.1%"
+            ]
+          },
+          {
+            "id": "region",
+            "aliases": [
+              "us-east-1"
+            ]
+          },
+          {
+            "id": "data_scope",
+            "aliases": [
+              "no customer PII",
+              "no customer personally identifiable information"
+            ]
+          },
+          {
+            "id": "aggregate_scope",
+            "aliases": [
+              "aggregated usage"
+            ]
+          },
+          {
+            "id": "pilot",
+            "aliases": [
+              "30-day pilot",
+              "30 day pilot"
+            ]
+          },
+          {
+            "id": "decision_date",
+            "aliases": [
+              "2026-09-05",
+              "2026/09/05",
+              "September 5, 2026"
+            ]
+          }
+        ]
+      },
+      "language": "en"
+    },
+    {
+      "task_id": "python-async-cache",
+      "title": "Implement an async TTL cache",
+      "category": "programming",
+      "language": "python",
+      "difficulty": "medium",
+      "fixture": "python-async-cache",
+      "grader": "r3_programming.py",
+      "solution": "python-async-cache",
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement async_cache.AsyncTTLCache. Its constructor accepts a non-negative ttl_seconds and an optional injected clock. get_or_load(key, loader) must cache successful values until the TTL expires, provide one shared in-flight loader per key, and ensure cancellation of one waiter does not cancel another. A failed loader must neither cache a value nor strand the key. invalidate(key) removes a cached value and clear() removes all cached values. Keep the public class and methods usable with normal hashable keys and awaitable zero-argument loaders.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "python-streaming-csv",
+      "title": "Aggregate streaming CSV input",
+      "category": "programming",
+      "language": "python",
+      "difficulty": "medium",
+      "fixture": "python-streaming-csv",
+      "grader": "r3_programming.py",
+      "solution": "python-streaming-csv",
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement streaming_csv.aggregate_csv using Python's standard csv support and one pass over an iterable of CSV lines. Return frozen MalformedRow and CSVSummary values. CSVSummary must expose total_rows, accepted_rows, rejected_rows, deterministic totals as sorted (category, Decimal) pairs, and a bounded tuple of malformed-row reports. Require unique headers containing group_column and amount_column. Reject wrong-width rows, blank categories, and non-finite or invalid Decimal amounts while continuing; max_errors only bounds saved reports, not rejected_rows. Do not mutate or reread input.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "python-retry-decorator",
+      "title": "Build a sync and async retry decorator",
+      "category": "programming",
+      "language": "python",
+      "difficulty": "medium",
+      "fixture": "python-retry-decorator",
+      "grader": "r3_programming.py",
+      "solution": "python-retry-decorator",
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement retry_decorator.retry as a decorator factory for both ordinary and async callables. attempts is the total number of calls and must be positive. Retry only the configured non-empty tuple of exception classes, re-raising the final original exception. Wait after each retryable failure using delay * backoff**failure_index and an injectable sleeper; async functions accept an awaitable sleeper. Validate bad parameters without reading clocks or sleeping. Preserve wrapped callable metadata.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "python-toposort",
+      "title": "Produce stable dependency ordering",
+      "category": "programming",
+      "language": "python",
+      "difficulty": "medium",
+      "fixture": "python-toposort",
+      "grader": "r3_programming.py",
+      "solution": "python-toposort",
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement toposort.stable_toposort for a mapping of node to dependencies. Dependencies must precede dependents while preserving mapping order and each dependency iterable's order where possible. Do not mutate graph inputs or require reusable dependency iterables. Raise MissingDependencyError with node and dependency attributes when an edge names no node. Raise DependencyCycleError with a closed cycle tuple in traversal order when a cycle exists.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "python-bounded-map",
+      "title": "Map async work with a concurrency bound",
+      "category": "programming",
+      "language": "python",
+      "difficulty": "medium",
+      "fixture": "python-bounded-map",
+      "grader": "r3_programming.py",
+      "solution": "python-bounded-map",
+      "visible_test_command": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement bounded_map.bounded_map(function, items, *, limit). Invoke the awaitable function for iterable items with at most limit active calls and return results in input order. limit must be a positive integer. On any worker failure, stop starting later items, cancel and await outstanding workers, then re-raise the original error. If the caller cancels bounded_map, it must likewise cancel and await outstanding workers before propagating cancellation.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "typescript-config-merge",
+      "title": "Deep-merge immutable TypeScript configuration",
+      "category": "programming",
+      "language": "typescript",
+      "difficulty": "medium",
+      "fixture": "typescript-config-merge",
+      "grader": "r3_programming.py",
+      "solution": "typescript-config-merge",
+      "visible_test_command": [
+        "node",
+        "--test",
+        "tests/config_merge.test.ts"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement config_merge.mergeConfig in erasable TypeScript for Node's built-in type stripping. Export a MergeOptions interface and a generic mergeConfig declaration. Deep-merge plain objects without mutating or retaining mutable references to either input. Arrays replace by default or concatenate with { array: 'concat' }. Undefined override properties are ignored by default, including properties absent from the base; { undefined: 'overwrite' } retains an explicit undefined property. Reject unsupported option values. Use no package installation, compiler, enum, namespace, or non-erasable TypeScript syntax.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "typescript-event-emitter",
+      "title": "Implement a typed reentrant event emitter",
+      "category": "programming",
+      "language": "typescript",
+      "difficulty": "medium",
+      "fixture": "typescript-event-emitter",
+      "grader": "r3_programming.py",
+      "solution": "typescript-event-emitter",
+      "visible_test_command": [
+        "node",
+        "--test",
+        "tests/event_emitter.test.ts"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement event_emitter.TypedEventEmitter in erasable TypeScript. Export type declarations for event maps and listeners and make the emitter generic over event argument tuples. on and once return an unsubscribe function; off removes one most-recent matching registration and returns whether it did so. emit returns whether there were listeners. Emission uses a registration snapshot: additions wait for a later emit, removals before a listener's turn skip it, and once listeners are removed before invocation so reentrant emits cannot invoke them twice.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "typescript-url-router",
+      "title": "Match URL routes deterministically",
+      "category": "programming",
+      "language": "typescript",
+      "difficulty": "medium",
+      "fixture": "typescript-url-router",
+      "grader": "r3_programming.py",
+      "solution": "typescript-url-router",
+      "visible_test_command": [
+        "node",
+        "--test",
+        "tests/url_router.test.ts"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement url_router.matchRoute with exported Route and RouteMatch interfaces in erasable TypeScript. Patterns start with / and support literal segments, :named parameters, and one final *named wildcard. Match decoded path segments, return null for an unmatched or badly encoded input path, and reject invalid patterns. Resolve ambiguity by preferring literal over parameter over wildcard at the earliest differing segment; preserve input order on ties. Return decoded parameters and a Map query multimap retaining repeated values in encounter order.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "typescript-promise-pool",
+      "title": "Run an ordered bounded promise pool",
+      "category": "programming",
+      "language": "typescript",
+      "difficulty": "medium",
+      "fixture": "typescript-promise-pool",
+      "grader": "r3_programming.py",
+      "solution": "typescript-promise-pool",
+      "visible_test_command": [
+        "node",
+        "--test",
+        "tests/promise_pool.test.ts"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "online_ds",
+        "offline_ds"
+      ],
+      "instruction": "Implement promise_pool.promisePool in erasable TypeScript and export its generic PoolWorker type. The worker receives item, index, and an AbortSignal. Enforce a positive safe-integer concurrency limit, run no more than that many workers, and return results in input order. On the first failure, abort the shared signal, stop launching items, wait for already-started workers to settle, and reject with that original failure.",
+      "r3_domain": "programming"
+    },
+    {
+      "task_id": "typescript-lru-ttl",
+      "title": "Implement an LRU cache with TTL",
+      "category": "programming",
+      "language": "typescript",
+      "difficulty": "medium",
+      "fixture": "typescript-lru-ttl",
+      "grader": "r3_programming.py",
+      "solution": "typescript-lru-ttl",
+      "visible_test_command": [
+        "node",
+        "--test",
+        "tests/lru_ttl.test.ts"
+      ],
+      "task_kind": "code",
+      "treatment_order": [
+        "offline_ds",
+        "online_ds"
+      ],
+      "instruction": "Implement lru_ttl.LruTtlCache in erasable TypeScript with an exported LruTtlOptions interface and generic class declaration. The constructor takes positive integer capacity, non-negative ttlMs, and an optional injected now clock. get promotes a live entry; has does not promote; expired entries are absent at their exact expiry time. set overwrites and refreshes an entry, evicts the least-recently-used live entry when full, and returns this. Provide delete, clear, and a size getter that excludes expired entries.",
+      "r3_domain": "programming"
     }
-  ]
+  ],
+  "corpus_contract": {
+    "task_count": 47,
+    "attempt_count": 141,
+    "new_domain_counts": {
+      "terminal": 10,
+      "server_ops": 10,
+      "writing": 10,
+      "programming": 10
+    },
+    "writing_languages": {
+      "zh": 5,
+      "en": 5
+    },
+    "programming_languages": {
+      "python": 5,
+      "typescript": 5
+    },
+    "human_review_required": false
+  }
 }

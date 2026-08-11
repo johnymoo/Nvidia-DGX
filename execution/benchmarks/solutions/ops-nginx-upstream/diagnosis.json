@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-401",
+  "primary_cause": "upstream_connectivity_and_read_timeout",
+  "evidence": ["EV-401-connect-refused", "EV-401-timeout"],
+  "bounded_changes": ["bound connect timeout", "bound read timeout", "retry transient upstream failures", "preserve forwarding chain"],
+  "certainty": "evidence_limited",
+  "scope": "sandbox_snapshot_only"
+}

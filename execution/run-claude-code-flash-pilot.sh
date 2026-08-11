@@ -4,6 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUNNER="$SCRIPT_DIR/benchmarks/claude_code_sandbox_pilot.py"
+REPORTER="$SCRIPT_DIR/benchmarks/render_benchmark_report.py"
 TASK_MANIFEST="$SCRIPT_DIR/benchmarks/claude-code-sandbox-pilot-tasks.json"
 SERVICE_SCRIPT="$SCRIPT_DIR/run-vllm-service.sh"
 ACCEPTANCE_SCRIPT="$SCRIPT_DIR/run-vllm-acceptance.sh"
@@ -47,14 +48,14 @@ sync_service_script() {
 
 static_checks() {
   local command
-  for command in bash codex git jq python3 shasum ssh rsync; do
+  for command in bash codex git jq node python3 shasum ssh rsync; do
     require_command "$command"
   done
   [ -x "$TOOLCHAIN/bin/claude" ] || { echo "toolchain Claude shim missing" >&2; return 1; }
   [ -s "$TASK_MANIFEST" ] || { echo "task manifest missing" >&2; return 1; }
-  jq -e '.schema_version == 3 and .baseline_revision == "claude-ds-pilot-r2" and (.tasks | length == 7) and (.treatments | keys == ["offline_ds", "online_ds", "qwen_local"])' "$TASK_MANIFEST" >/dev/null
+  jq -e '.schema_version == 3 and .baseline_revision == "claude-ds-pilot-r3" and (.tasks | length == 47) and .corpus_contract.new_domain_counts == {programming:10,server_ops:10,terminal:10,writing:10} and (.treatments | keys == ["offline_ds", "online_ds", "qwen_local"])' "$TASK_MANIFEST" >/dev/null
   bash -n "$SERVICE_SCRIPT" "$ACCEPTANCE_SCRIPT" "$0"
-  python3 -m py_compile "$RUNNER"
+  python3 -m py_compile "$RUNNER" "$REPORTER"
   "$SCRIPT_DIR/benchmarks/test-run-vllm-acceptance.sh" >/dev/null
   python3 "$SCRIPT_DIR/benchmarks/test-claude-code-sandbox-pilot.py" >/dev/null
   "$SCRIPT_DIR/benchmarks/test-run-claude-code-flash-pilot.sh" >/dev/null
@@ -66,7 +67,7 @@ static_checks() {
 }
 
 run_preflight() {
-  local run_id artifact
+  local run_id artifact task_count
   run_id="preflight-$(date -u +%Y%m%dT%H%M%SZ)"
   artifact="$ARTIFACT_BASE/$run_id"
   mkdir -p "$artifact"
@@ -74,7 +75,8 @@ run_preflight() {
   static_checks
   log "preflight: Claude Code identity calibration"
   runner --preflight --artifact-root "$artifact" | tee "$artifact/runner-preflight.stdout.json"
-  jq -e '.status == "passed" and (.task_ids | length == 7) and (.treatment_contracts | keys == ["offline_ds", "online_ds", "qwen_local"])' "$artifact/preflight-receipt.json" >/dev/null
+  task_count="$(jq -r '.tasks | length' "$TASK_MANIFEST")"
+  jq -e --argjson count "$task_count" '.status == "passed" and (.task_ids | length == $count) and (.treatment_contracts | keys == ["offline_ds", "online_ds", "qwen_local"])' "$artifact/preflight-receipt.json" >/dev/null
   log "preflight passed: $artifact/preflight-receipt.json"
 }
 
@@ -117,7 +119,7 @@ start_review_server() {
 }
 
 run_formal() {
-  local run_id artifact service_receipt transition_receipt package_receipt final_status review_url
+  local run_id artifact service_receipt transition_receipt package_receipt final_status review_url task_count deepseek_count total_count human_count
   run_id="$(date -u +%Y%m%dT%H%M%SZ)"
   artifact="$ARTIFACT_BASE/$run_id"
   CURRENT_ARTIFACT="$artifact"
@@ -133,9 +135,13 @@ run_formal() {
   jq -e '(.state == "running") or (.service.state == "running")' "$service_receipt" >/dev/null
 
   trap recover_on_exit EXIT ERR INT TERM
-  log "run: execute fourteen frozen DeepSeek attempts"
+  task_count="$(jq -r '.tasks | length' "$TASK_MANIFEST")"
+  deepseek_count=$((task_count * 2))
+  total_count=$((task_count * 3))
+  human_count="$(jq '[.tasks[] | select(.category == "writing")] | length' "$TASK_MANIFEST")"
+  log "run: execute $deepseek_count frozen DeepSeek attempts"
   runner --phase deepseek --artifact-root "$artifact" | tee "$artifact/runner-deepseek.stdout.json"
-  jq -e '.status == "completed" and .attempt_count == 14' "$artifact/phase-deepseek-receipt.json" >/dev/null
+  jq -e --argjson count "$deepseek_count" '.status == "completed" and .attempt_count == $count' "$artifact/phase-deepseek-receipt.json" >/dev/null
 
   log "run: transition through the active receipt and force-start captured Qwen"
   CURRENT_PHASE="post-transition"
@@ -143,14 +149,16 @@ run_formal() {
   transition_receipt="$artifact/service-transition-receipt.json"
   jq -e '.state == "qwen-running" and .qwen.restored == true' "$transition_receipt" >/dev/null
 
-  log "run: execute seven frozen Qwen attempts"
+  log "run: execute $task_count frozen Qwen attempts"
   runner --phase qwen --artifact-root "$artifact" | tee "$artifact/runner-qwen.stdout.json"
-  jq -e '.status == "completed" and .attempt_count == 7' "$artifact/phase-qwen-receipt.json" >/dev/null
+  jq -e --argjson count "$task_count" '.status == "completed" and .attempt_count == $count' "$artifact/phase-qwen-receipt.json" >/dev/null
 
-  log "run: invoke blind judge and package sealed human review"
+  log "run: invoke $task_count blind judges and package final baseline results"
   runner --package --artifact-root "$artifact" | tee "$artifact/runner-package.stdout.json"
   package_receipt="$artifact/phase-package-receipt.json"
-  jq -e '.status == "ready_for_review" and .task_count == 7 and .human_task_count == 2 and .judge_only_task_count == 5 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
+  jq -e --argjson tasks "$task_count" --argjson attempts "$total_count" --argjson human "$human_count" '.status == "completed" and .task_count == $tasks and .attempt_count == $attempts and .human_task_count == $human and .human_review_required == false and .judge_count == $tasks and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == $tasks' "$package_receipt" >/dev/null
+  python3 "$REPORTER" --project-root "$PROJECT_ROOT" --artifact-root "$artifact" --output "$(jq -r '.review_root' "$package_receipt")/public/index.html" | tee "$artifact/report-render.stdout.json"
+  jq -e '.status == "rendered" and .bytes > 0 and (.sha256 | length == 64)' "$artifact/report-render.stdout.json" >/dev/null
   review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
 
   log "run: verify DeepSeek remains stopped and Qwen is healthy"
@@ -163,13 +171,14 @@ run_formal() {
     --arg service "$service_receipt" --arg transition "$transition_receipt" \
     --arg deepseek "$artifact/phase-deepseek-receipt.json" --arg qwen "$artifact/phase-qwen-receipt.json" \
     --arg package "$package_receipt" --arg final "$final_status" --arg ended "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '{schema_version:1,status:"review_pending",baseline_revision:"claude-ds-pilot-r2",run_id:$run_id,ended_at:$ended,artifact:$artifact,review_url:$url,
+    --arg report "$(jq -r '.output' "$artifact/report-render.stdout.json")" --arg report_sha "$(jq -r '.sha256' "$artifact/report-render.stdout.json")" \
+    '{schema_version:2,status:"completed",baseline_revision:"claude-ds-pilot-r3",run_id:$run_id,ended_at:$ended,artifact:$artifact,report_url:$url,report_path:$report,report_sha256:$report_sha,
       phases:{deepseek_service:$service,deepseek_attempts:$deepseek,transition:$transition,qwen_attempts:$qwen,package:$package,final_service:$final},
-      final_state:{deepseek:"stopped",qwen:"healthy"},note:"Human review is pending; no statistical superiority claim."}' \
+      final_state:{deepseek:"stopped",qwen:"healthy"},note:"Baseline results and report are complete; optional human writing review does not alter ranking. No statistical superiority claim."}' \
     >"$artifact/receipt.json"
   CURRENT_PHASE="complete"
   trap - EXIT ERR INT TERM
-  log "run passed; DeepSeek is stopped, Qwen is healthy, review URL: $review_url"
+  log "run passed; DeepSeek is stopped, Qwen is healthy, report URL: $review_url"
   if command -v open >/dev/null 2>&1; then
     open "$review_url" >/dev/null 2>&1 || true
   fi
@@ -177,7 +186,7 @@ run_formal() {
 }
 
 resume_formal() {
-  local artifact="$1" artifact_base run_id service_receipt transition_receipt package_receipt final_status review_url
+  local artifact="$1" artifact_base run_id service_receipt transition_receipt package_receipt final_status review_url task_count total_count human_count
   artifact="$(cd "$artifact" && pwd)"
   artifact_base="$(mkdir -p "$ARTIFACT_BASE" && cd "$ARTIFACT_BASE" && pwd)"
   case "$artifact/" in
@@ -186,7 +195,10 @@ resume_formal() {
   esac
   [ -f "$artifact/benchmark-state.json" ] || { echo "resume benchmark state missing" >&2; return 1; }
   [ -f "$artifact/resume-source-preflight-receipt.json" ] || { echo "resume source preflight missing" >&2; return 1; }
-  jq -e '.status == "completed" and .attempt_count == 14' "$artifact/phase-deepseek-receipt.json" >/dev/null
+  task_count="$(jq -r '.tasks | length' "$TASK_MANIFEST")"
+  total_count=$((task_count * 3))
+  human_count="$(jq '[.tasks[] | select(.category == "writing")] | length' "$TASK_MANIFEST")"
+  jq -e --argjson count "$((task_count * 2))" '.status == "completed" and .attempt_count == $count' "$artifact/phase-deepseek-receipt.json" >/dev/null
   jq -e '.state == "qwen-running" and .qwen.restored == true' "$artifact/service-transition-receipt.json" >/dev/null
   [ ! -e "$artifact/receipt.json" ] || { echo "resume artifact already has a final receipt" >&2; return 1; }
 
@@ -205,12 +217,14 @@ resume_formal() {
 
   log "resume: execute only missing Qwen attempts"
   runner --phase qwen --artifact-root "$artifact" | tee "$artifact/runner-qwen-resume.stdout.json"
-  jq -e '.status == "completed" and .attempt_count == 7' "$artifact/phase-qwen-receipt.json" >/dev/null
+  jq -e --argjson count "$task_count" '.status == "completed" and .attempt_count == $count' "$artifact/phase-qwen-receipt.json" >/dev/null
 
-  log "resume: invoke blind judge and package sealed human review"
+  log "resume: invoke missing blind judges and package final baseline results"
   runner --package --artifact-root "$artifact" | tee "$artifact/runner-package.stdout.json"
   package_receipt="$artifact/phase-package-receipt.json"
-  jq -e '.status == "ready_for_review" and .task_count == 7 and .human_task_count == 2 and .judge_only_task_count == 5 and .judge_count == 7 and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == 7' "$package_receipt" >/dev/null
+  jq -e --argjson tasks "$task_count" --argjson attempts "$total_count" --argjson human "$human_count" '.status == "completed" and .task_count == $tasks and .attempt_count == $attempts and .human_task_count == $human and .human_review_required == false and .judge_count == $tasks and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == $tasks' "$package_receipt" >/dev/null
+  python3 "$REPORTER" --project-root "$PROJECT_ROOT" --artifact-root "$artifact" --output "$(jq -r '.review_root' "$package_receipt")/public/index.html" | tee "$artifact/report-render.stdout.json"
+  jq -e '.status == "rendered" and .bytes > 0 and (.sha256 | length == 64)' "$artifact/report-render.stdout.json" >/dev/null
   review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
 
   remote_service "--status" >"$artifact/service-final-status.json"
@@ -221,13 +235,14 @@ resume_formal() {
     --arg service "$service_receipt" --arg transition "$transition_receipt" \
     --arg deepseek "$artifact/phase-deepseek-receipt.json" --arg qwen "$artifact/phase-qwen-receipt.json" \
     --arg package "$package_receipt" --arg final "$final_status" --arg ended "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '{schema_version:1,status:"review_pending",baseline_revision:"claude-ds-pilot-r2",run_id:$run_id,ended_at:$ended,artifact:$artifact,review_url:$url,resumed:true,
+    --arg report "$(jq -r '.output' "$artifact/report-render.stdout.json")" --arg report_sha "$(jq -r '.sha256' "$artifact/report-render.stdout.json")" \
+    '{schema_version:2,status:"completed",baseline_revision:"claude-ds-pilot-r3",run_id:$run_id,ended_at:$ended,artifact:$artifact,report_url:$url,report_path:$report,report_sha256:$report_sha,resumed:true,
       phases:{deepseek_service:$service,deepseek_attempts:$deepseek,transition:$transition,qwen_attempts:$qwen,package:$package,final_service:$final},
-      final_state:{deepseek:"stopped",qwen:"healthy"},note:"Human review is pending; no statistical superiority claim."}' \
+      final_state:{deepseek:"stopped",qwen:"healthy"},note:"Baseline results and report are complete; optional human writing review does not alter ranking. No statistical superiority claim."}' \
     >"$artifact/receipt.json"
   CURRENT_PHASE="complete"
   trap - EXIT ERR INT TERM
-  log "resume passed; DeepSeek is stopped, Qwen is healthy, review URL: $review_url"
+  log "resume passed; DeepSeek is stopped, Qwen is healthy, report URL: $review_url"
   if command -v open >/dev/null 2>&1; then
     open "$review_url" >/dev/null 2>&1 || true
   fi
