@@ -715,18 +715,26 @@ wait_ready() {
 }
 
 assert_runtime() {
-  "$DOCKER_BIN" logs "$HEAD_CONTAINER_ID" >"$ARTIFACT_DIR/head-vllm.log" 2>&1
-  remote "docker logs '$WORKER_CONTAINER_ID'" >"$ARTIFACT_DIR/worker-vllm.log" 2>&1
+  "$DOCKER_BIN" logs --since "$RUN_START_ISO" "$HEAD_CONTAINER_ID" >"$ARTIFACT_DIR/head-vllm.log" 2>&1
+  remote "docker logs --since '$RUN_START_ISO' '$WORKER_CONTAINER_ID'" >"$ARTIFACT_DIR/worker-vllm.log" 2>&1
   grep -Eiq 'rank.?0|\[rank0\]|rank 0' "$ARTIFACT_DIR/head-vllm.log" || die "head rank 0 evidence missing"
   grep -Eiq 'rank.?1|\[rank1\]|rank 1' "$ARTIFACT_DIR/worker-vllm.log" || die "worker rank 1 evidence missing"
   grep -Eiq 'NET/IB' "$ARTIFACT_DIR/head-vllm.log" "$ARTIFACT_DIR/worker-vllm.log" || die "NCCL NET/IB evidence missing"
   ! grep -Eiq 'NET/Socket.*Using' "$ARTIFACT_DIR/head-vllm.log" "$ARTIFACT_DIR/worker-vllm.log" || die "NCCL socket fallback detected"
-  ! grep -Eiq 'NCCL.*(fatal|error)|CUDA.*(fatal|error)|out of memory|traceback' "$ARTIFACT_DIR/head-vllm.log" "$ARTIFACT_DIR/worker-vllm.log" || die "fatal runtime log detected"
+  if runtime_log_fatal_matches "$ARTIFACT_DIR/head-vllm.log" "$ARTIFACT_DIR/worker-vllm.log" \
+    >"$ARTIFACT_DIR/runtime-fatal-matches.log"; then
+    die "fatal runtime log detected"
+  fi
   "$DOCKER_BIN" exec "$HEAD_CONTAINER_ID" /opt/env/bin/python -c \
     "import inspect; from vllm.v1.spec_decode import dspark; s=inspect.getsource(dspark); assert 'shared_experts.gate_up_proj' in s and '.shared_experts.w1' in s" \
     >"$ARTIFACT_DIR/patch4-head.txt"
   remote "docker exec '$WORKER_CONTAINER_ID' /opt/env/bin/python -c \"import inspect; from vllm.v1.spec_decode import dspark; s=inspect.getsource(dspark); assert 'shared_experts.gate_up_proj' in s and '.shared_experts.w1' in s\"" \
     >"$ARTIFACT_DIR/patch4-worker.txt"
+}
+
+runtime_log_fatal_matches() {
+  grep -EinH 'NCCL.*(fatal|error)|CUDA.*(fatal|error)|out of memory|traceback' "$@" \
+    | grep -Eiv 'ProcessGroupNCCL.*Failed to check the "should dump" flag on TCPStore'
 }
 
 run_acceptance_clients() {

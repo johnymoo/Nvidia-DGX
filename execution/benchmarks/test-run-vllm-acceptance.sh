@@ -129,4 +129,27 @@ if wait_port_free 8004 0; then
   exit 1
 fi
 
+printf '%s\n' \
+  '[rank1]:[W811 ProcessGroupNCCL.cpp:1826] Failed to check the "should dump" flag on TCPStore, with error: Broken pipe' \
+  >"$FIXTURE/benign-runtime.log"
+if runtime_log_fatal_matches "$FIXTURE/benign-runtime.log" >"$FIXTURE/benign-matches.log"; then
+  echo "known worker-first TCPStore warning was classified as fatal" >&2
+  exit 1
+fi
+
+for fatal in \
+  'NCCL fatal: unhandled system error' \
+  'CUDA error: illegal memory access' \
+  'Out of memory while allocating KV cache' \
+  'Traceback (most recent call last):'; do
+  printf '%s\n' "$fatal" >"$FIXTURE/fatal-runtime.log"
+  if ! runtime_log_fatal_matches "$FIXTURE/fatal-runtime.log" >"$FIXTURE/fatal-matches.log"; then
+    echo "fatal runtime pattern was not detected: $fatal" >&2
+    exit 1
+  fi
+done
+
+grep -Fq -- 'logs --since "$RUN_START_ISO" "$HEAD_CONTAINER_ID"' "$ACCEPTANCE_SCRIPT"
+grep -Fq -- "docker logs --since '\$RUN_START_ISO' '\$WORKER_CONTAINER_ID'" "$ACCEPTANCE_SCRIPT"
+
 printf 'mock_harness=passed fixture=%s\n' "$FIXTURE"
