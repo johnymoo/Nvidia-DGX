@@ -131,6 +131,9 @@ def main() -> None:
         codex, audit_root = make_fake_codex(root)
         os.environ["CODEX_BIN"] = str(codex)
         os.environ["CODEX_JUDGE_AUDIT_ROOT"] = str(audit_root)
+        candidate_env, _ = pilot.claude_environment("offline_ds", toolchain, real, manifest)
+        assert candidate_env["BASH_DEFAULT_TIMEOUT_MS"] == "1200000"
+        assert candidate_env["BASH_MAX_TIMEOUT_MS"] == "1200000"
         run = pilot.run_claude(treatment="online_ds", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "online.jsonl", with_tools=True, manifest=manifest)
         assert run["model"] == "deepseek-v4-flash" and run["route"] == "claude_ds" and run["tool_calls"] == ["Read"]
         qwen = pilot.run_claude(treatment="qwen_local", prompt="test", cwd=root, timeout_seconds=5, toolchain=toolchain, real_claude=real, expected_version="2.1.207", output_path=root / "qwen.jsonl", with_tools=False, manifest=manifest)

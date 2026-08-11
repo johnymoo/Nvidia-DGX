@@ -255,7 +255,7 @@ def provider_spec(treatment: str, manifest: dict[str, Any] | None = None) -> dic
 def claude_environment(treatment: str, toolchain: Path, real_claude: Path, manifest: dict[str, Any] | None = None) -> tuple[dict[str, str], dict[str, str]]:
     spec = provider_spec(treatment, manifest)
     env = os.environ.copy()
-    env.update({"CLAUDE_SHIM_REPO_DIR": str(toolchain), "CLAUDE_REAL_BIN": str(real_claude), "CLAUDE_DEFAULT_PROVIDER": spec["provider"], "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"})
+    env.update({"CLAUDE_SHIM_REPO_DIR": str(toolchain), "CLAUDE_REAL_BIN": str(real_claude), "CLAUDE_DEFAULT_PROVIDER": spec["provider"], "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "BASH_DEFAULT_TIMEOUT_MS": "1200000", "BASH_MAX_TIMEOUT_MS": "1200000"})
     prefix = "CLAUDE_" + spec["provider"].upper()
     env[f"{prefix}_MODEL"] = spec["model"]
     env[f"{prefix}_BASE_URL"] = spec["base_url"]

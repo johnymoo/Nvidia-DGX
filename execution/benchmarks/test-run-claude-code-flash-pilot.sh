@@ -22,6 +22,8 @@ if (false; recover_on_exit); then
 fi
 grep -Fxq -- '--stop --restore-qwen' "$TMP/actions.log"
 test -s "$TMP/rollback-receipt.json"
+test -d "$TMP/.recovery-lock"
+rmdir "$TMP/.recovery-lock"
 
 : >"$TMP/actions.log"
 CURRENT_PHASE="post-transition"
@@ -31,5 +33,6 @@ if (false; recover_on_exit); then
 fi
 grep -Fxq -- '--transition-qwen' "$TMP/actions.log"
 test -s "$TMP/qwen-recovery-receipt.json"
+test -d "$TMP/.recovery-lock"
 
 printf '{"status":"passed","tests":2}\n'

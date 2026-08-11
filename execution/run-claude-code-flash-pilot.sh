@@ -87,6 +87,9 @@ remote_service() {
 recover_on_exit() {
   local original_code=$?
   trap - EXIT ERR INT TERM
+  if ! mkdir "$CURRENT_ARTIFACT/.recovery-lock" 2>/dev/null; then
+    exit "$original_code"
+  fi
   set +e
   if [ "$CURRENT_PHASE" = "pre-transition" ]; then
     log "infrastructure failure before transition: restoring captured Qwen state"
@@ -127,6 +130,8 @@ run_formal() {
 
   log "run: static freshness checks"
   static_checks
+  [ -f "$CACHE_ROOT/preflight-receipt.json" ] || { echo "preflight receipt missing" >&2; return 1; }
+  cp "$CACHE_ROOT/preflight-receipt.json" "$artifact/resume-source-preflight-receipt.json"
   log "run: synchronize the immutable service controller"
   sync_service_script
   log "run: adopt the exact active Patch4 service or start its validated stopped contract"
@@ -186,7 +191,7 @@ run_formal() {
 }
 
 resume_formal() {
-  local artifact="$1" artifact_base run_id service_receipt transition_receipt package_receipt final_status review_url task_count total_count human_count
+  local artifact="$1" artifact_base run_id service_receipt transition_receipt package_receipt final_status review_url task_count deepseek_count total_count human_count deepseek_complete transition_complete
   artifact="$(cd "$artifact" && pwd)"
   artifact_base="$(mkdir -p "$ARTIFACT_BASE" && cd "$ARTIFACT_BASE" && pwd)"
   case "$artifact/" in
@@ -196,14 +201,25 @@ resume_formal() {
   [ -f "$artifact/benchmark-state.json" ] || { echo "resume benchmark state missing" >&2; return 1; }
   [ -f "$artifact/resume-source-preflight-receipt.json" ] || { echo "resume source preflight missing" >&2; return 1; }
   task_count="$(jq -r '.tasks | length' "$TASK_MANIFEST")"
+  deepseek_count=$((task_count * 2))
   total_count=$((task_count * 3))
   human_count="$(jq '[.tasks[] | select(.category == "writing")] | length' "$TASK_MANIFEST")"
-  jq -e --argjson count "$((task_count * 2))" '.status == "completed" and .attempt_count == $count' "$artifact/phase-deepseek-receipt.json" >/dev/null
-  jq -e '.state == "qwen-running" and .qwen.restored == true' "$artifact/service-transition-receipt.json" >/dev/null
+  deepseek_complete=false
+  transition_complete=false
+  if jq -e --argjson count "$deepseek_count" '.status == "completed" and .attempt_count == $count' "$artifact/phase-deepseek-receipt.json" >/dev/null 2>&1; then
+    deepseek_complete=true
+  fi
+  if jq -e '.state == "qwen-running" and .qwen.restored == true' "$artifact/service-transition-receipt.json" >/dev/null 2>&1; then
+    transition_complete=true
+  fi
+  if [ "$transition_complete" = true ] && [ "$deepseek_complete" != true ]; then
+    echo "transition receipt exists before DeepSeek phase completion" >&2
+    return 1
+  fi
   [ ! -e "$artifact/receipt.json" ] || { echo "resume artifact already has a final receipt" >&2; return 1; }
 
   CURRENT_ARTIFACT="$artifact"
-  CURRENT_PHASE="post-transition"
+  CURRENT_PHASE="pre-transition"
   run_id="$(basename "$artifact")"
   service_receipt="$artifact/service-deepseek-receipt.json"
   transition_receipt="$artifact/service-transition-receipt.json"
@@ -212,8 +228,32 @@ resume_formal() {
   static_checks
   remote_service "--status" >"$artifact/service-resume-status.json"
   jq -e '.state == "stopped" and .qwen_health == "healthy"' "$artifact/service-resume-status.json" >/dev/null
-  trap recover_on_exit EXIT ERR INT TERM
   runner --rebind-preflight --old-preflight "$artifact/resume-source-preflight-receipt.json" --artifact-root "$artifact" | tee "$artifact/runner-resume-rebind.stdout.json"
+  rmdir "$artifact/.recovery-lock" 2>/dev/null || true
+  trap recover_on_exit EXIT ERR INT TERM
+
+  if [ "$deepseek_complete" != true ]; then
+    log "resume: synchronize service controller and restart exact Patch4 service"
+    sync_service_script
+    remote_service "--ensure-active" | tee "$artifact/service-deepseek-resume-receipt.json"
+    service_receipt="$artifact/service-deepseek-resume-receipt.json"
+    jq -e '(.state == "running") or (.service.state == "running")' "$service_receipt" >/dev/null
+
+    log "resume: execute only missing DeepSeek attempts"
+    runner --phase deepseek --artifact-root "$artifact" | tee "$artifact/runner-deepseek-resume.stdout.json"
+    jq -e --argjson count "$deepseek_count" '.status == "completed" and .attempt_count == $count' "$artifact/phase-deepseek-receipt.json" >/dev/null
+    deepseek_complete=true
+  fi
+
+  if [ "$transition_complete" != true ]; then
+    log "resume: transition through active receipt and force-start captured Qwen"
+    CURRENT_PHASE="post-transition"
+    remote_service "--transition-qwen" | tee "$artifact/service-transition-receipt.json"
+    jq -e '.state == "qwen-running" and .qwen.restored == true' "$artifact/service-transition-receipt.json" >/dev/null
+    transition_complete=true
+  else
+    CURRENT_PHASE="post-transition"
+  fi
 
   log "resume: execute only missing Qwen attempts"
   runner --phase qwen --artifact-root "$artifact" | tee "$artifact/runner-qwen-resume.stdout.json"
