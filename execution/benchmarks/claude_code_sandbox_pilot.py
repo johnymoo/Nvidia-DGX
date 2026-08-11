@@ -53,6 +53,10 @@ class InfrastructureError(RuntimeError):
     """A broken benchmark contract, rather than a measured candidate result."""
 
 
+class JudgeExecutionError(InfrastructureError):
+    """A bounded retryable failure before a judge response is produced."""
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -421,11 +425,11 @@ def run_codex(prompt: str, artifact: Path, schema: dict[str, Any], timeout_secon
     try:
         result = subprocess.run(argv, cwd=artifact, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout_seconds, check=False)
     except subprocess.TimeoutExpired as exc:
-        raise InfrastructureError(f"Codex judge timed out after {timeout_seconds}s") from exc
+        raise JudgeExecutionError(f"Codex judge timed out after {timeout_seconds}s") from exc
     events_path.write_text(result.stdout, encoding="utf-8")
     stderr_path.write_text(result.stderr, encoding="utf-8")
     if result.returncode != 0:
-        raise InfrastructureError(f"Codex judge exited {result.returncode}")
+        raise JudgeExecutionError(f"Codex judge exited {result.returncode}")
     thread_id = codex_thread_id(events_path)
     codex_turn_completed(events_path)
     runtime = validate_codex_runtime(codex_runtime_context(thread_id))
@@ -811,13 +815,22 @@ def run_judge(task: dict[str, Any], choices: dict[str, str], artifact: Path, man
         payload = fake_judge_payload()
         write_json(artifact / "judge.json", payload)
         return {"payload": payload, "runtime": {"model": JUDGE_MODEL, "reasoning_effort": JUDGE_EFFORT, "approval_policy": "never", "sandbox": "read-only", "fallback_configured": False, "source": "fake"}}
-    for attempt_number in range(2):
+    execution_retries = 1
+    schema_retry = False
+    for attempt_number in range(3):
         attempt_root = artifact / f"attempt-{attempt_number + 1}"
-        text, runtime = run_codex(judge_prompt(task, choices, retry=attempt_number == 1), attempt_root, codex_schema("judge"), int(manifest["task_timeout_seconds"]))
+        try:
+            text, runtime = run_codex(judge_prompt(task, choices, retry=schema_retry), attempt_root, codex_schema("judge"), int(manifest["task_timeout_seconds"]))
+        except JudgeExecutionError:
+            if execution_retries > 0:
+                execution_retries -= 1
+                continue
+            raise
         try:
             payload = validate_judge_payload(parse_json_object(text))
         except InfrastructureError:
-            if attempt_number == 0:
+            if not schema_retry:
+                schema_retry = True
                 continue
             raise
         write_json(artifact / "judge.json", payload)

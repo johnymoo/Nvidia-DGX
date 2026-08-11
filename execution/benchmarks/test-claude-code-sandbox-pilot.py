@@ -73,6 +73,7 @@ done
 [ "$model" = "gpt-5.6-sol" ]
 [ "$effort" = 'model_reasoning_effort="xhigh"' ]
 [ "$approval" = 'approval_policy="never"' ]
+if [ -n "${FAKE_CODEX_FAIL_ONCE:-}" ] && [ ! -e "$FAKE_CODEX_FAIL_ONCE" ]; then touch "$FAKE_CODEX_FAIL_ONCE"; exit 1; fi
 thread="fake-codex-thread"
 mkdir -p "$CODEX_JUDGE_AUDIT_ROOT/2026/08/11"
 printf '{"type":"thread.started","thread_id":"%s"}\\n' "$thread"
@@ -178,6 +179,12 @@ def main() -> None:
         judged = pilot.run_judge(manifest["tasks"][0], {"A": "one", "B": "two", "C": "three"}, root / "judge", manifest)
         assert judged["payload"]["preference"] == "A"
         assert judged["runtime"]["fallback_configured"] is False
+
+        os.environ["FAKE_CODEX_FAIL_ONCE"] = str(root / "codex-failed-once")
+        retried = pilot.run_judge(manifest["tasks"][0], {"A": "one", "B": "two", "C": "three"}, root / "judge-retry", manifest)
+        assert retried["payload"]["preference"] == "A"
+        assert (root / "judge-retry" / "attempt-2" / "codex-runtime-receipt.json").is_file()
+        os.environ.pop("FAKE_CODEX_FAIL_ONCE")
 
         fake_root = root / "fake-run"
         result = pilot.run_fake_benchmark(fake_root)
