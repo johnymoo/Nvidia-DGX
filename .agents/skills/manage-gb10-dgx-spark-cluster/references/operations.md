@@ -16,3 +16,9 @@
   in an authorized window, `--run`; it always stops DeepSeek after acceptance.
 - Unsloth uses base Compose plus reasoning override; start worker RPC, head
   RPC, then one server profile.
+- Both hosts receive UTC artifact roots and snapshots. The head artifact owns
+  receipt/benchmark JSON and centralizes remotely captured worker runtime
+  logs/inspect/events.
+- Treat deployed project roots as possible synced releases, not Git worktrees;
+  verify identity through acceptance preflight image revision/fingerprint,
+  project-SHA evidence, and manifest.

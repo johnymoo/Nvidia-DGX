@@ -37,6 +37,11 @@ read-only with `free -h`, `swapon --show`, `nvidia-smi`, `docker ps/stats/inspec
 
 ## Evidence
 
-Write UTC artifacts on both hosts with config render, service states,
-logs/inspect/events, receipt, and benchmark JSON. Do not commit artifacts or
-real env files. Consult the core runbooks for acceptance and capacity facts.
+Create UTC artifact roots on both hosts and retain baseline, final, and
+post-restore snapshots. The head artifact centralizes head evidence plus
+remotely captured worker runtime logs/inspect/events and owns the receipt and
+benchmark JSON; do not claim full runtime logs live independently on worker.
+Deployed `/home/.../gb10-ds4` directories may be synced releases rather than
+Git worktrees: verify identity with acceptance preflight image
+revision/fingerprint, project-SHA evidence, and manifest, not `git rev-parse`.
+Do not commit artifacts or real env files.
