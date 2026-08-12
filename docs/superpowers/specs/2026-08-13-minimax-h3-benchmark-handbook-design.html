@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MiniMax H3 GB10 Benchmark Handbook Design</title>
+  <style>
+    /*
+     * BRAINSTORM COMPANION FRAME TEMPLATE
+     *
+     * This template provides a consistent frame with:
+     * - OS-aware light/dark theming
+     * - Fixed header and selection indicator bar
+     * - Scrollable main content area
+     * - CSS helpers for common UI patterns
+     *
+     * Content is injected via placeholder comment in #claude-content.
+     */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== FRAME STRUCTURE ===== */
+    .header {
+      background: var(--bg-secondary);
+      padding: 0.5rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+    .header .status { font-size: 0.7rem; color: var(--status-color, var(--success)); display: flex; align-items: center; gap: 0.4rem; }
+    .header .status::before { content: ''; width: 6px; height: 6px; background: var(--status-color, var(--success)); border-radius: 50%; }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .keepalive { display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; color: var(--text-secondary); cursor: pointer; user-select: none; }
+    .keepalive input { accent-color: var(--accent); width: 0.8rem; height: 0.8rem; margin: 0; cursor: pointer; }
+
+    .main { flex: 1; overflow-y: auto; }
+    #claude-content { padding: 2rem; min-height: 100%; }
+
+    .indicator-bar {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .indicator-bar span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .indicator-bar .selected-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 2rem; }
+    .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* ===== MARKDOWN DOCUMENTS ===== */
+    .markdown-screen { max-width: 980px; margin: 0 auto; }
+    .markdown-screen h1 { font-size: 2rem; line-height: 1.15; margin-bottom: 1rem; }
+    .markdown-screen h2 { margin-top: 1.75rem; }
+    .markdown-screen p, .markdown-screen ul, .markdown-screen table, .markdown-screen pre { margin-bottom: 1rem; }
+    .markdown-screen ul { margin-left: 1.35rem; }
+    .markdown-screen img { display: block; max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; }
+    .markdown-screen table { width: 100%; border-collapse: collapse; background: var(--bg-secondary); }
+    .markdown-screen th, .markdown-screen td { border: 1px solid var(--border); padding: 0.55rem 0.7rem; text-align: left; vertical-align: top; }
+    .markdown-screen th { background: var(--bg-tertiary); font-weight: 600; }
+    .markdown-screen code { background: var(--bg-tertiary); border-radius: 4px; padding: 0.05rem 0.25rem; }
+    .markdown-screen pre { overflow-x: auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .markdown-screen pre code { background: transparent; padding: 0; }
+
+    /* ===== OPTIONS (for A/B/C choices) ===== */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .option.selected .letter { background: var(--accent); color: white; }
+    .option .content { flex: 1; }
+    .option .content h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
+    /* ===== CARDS (for showing designs/mockups) ===== */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { background: var(--bg-tertiary); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
+
+    /* ===== MOCKUP CONTAINER ===== */
+    .mockup {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .mockup-header {
+      background: var(--bg-tertiary);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+
+    /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ===== PROS/CONS ===== */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
+    .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons h4 { color: var(--error); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* ===== PLACEHOLDER (for mockup areas) ===== */
+    .placeholder {
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== INLINE MOCKUP ELEMENTS ===== */
+    .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
+    .mock-content { padding: 1.5rem; flex: 1; }
+    .mock-button { background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+    .mock-input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; width: 100%; }
+  </style>
+<style>.header .status, .indicator-bar { display: none; }</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Visual Companion</h1>
+    <div class="header-right">
+      <label class="keepalive" title="Disable the idle timeout so this session stays open">
+        <input type="checkbox" id="keepalive-toggle">
+        <span>Keep alive</span>
+      </label>
+      <div class="status">Connected</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="claude-content">
+      <article class="markdown-screen">
+<h1>MiniMax H3 GB10 Benchmark Handbook Design</h1>
+<p>Date: 2026-08-13</p>
+<p>Status: proposed for final approval</p>
+<h2>Approval And Baseline</h2>
+<p>Baseline revision: <code>minimax-h3-benchmark-r1</code>.</p>
+<p>Authoritative sources:</p>
+<p>videos, publish a benchmark-report-style handbook on <code>0.0.0.0</code>, and target <code>gb10-2</code>.</p>
+<p>evaluation/operations audiences.</p>
+<p><code>planning/03-core/07-gitee-minimax-h3-preparation.md</code>.</p>
+<ul>
+<li>User request in the current task: run several tests, generate images and</li>
+<li>User choice <code>3</code>: serve both external demonstration and technical</li>
+<li>Baseline approval: the user explicitly replied <code>批准</code> on 2026-08-13.</li>
+<li>Existing deployment contract and evidence:</li>
+</ul>
+<h3>Approved Stories</h3>
+<p>representative images, videos, and key measured conclusions generated on <code>gb10-2</code>, so that I can see MiniMax H3&#39;s real output.</p>
+<p>containing each test&#39;s prompt, parameters, elapsed time, resource evidence, output hash, runtime evidence, limitations, and reproduction steps.</p>
+<p>report through an independent <code>0.0.0.0</code> service without affecting ComfyUI on port 8188 or <code>lexdata-ai</code>.</p>
+<ul>
+<li><code>US-H3-B01</code>: As a visitor, I can use the landing page to quickly inspect</li>
+<li><code>US-H3-B02</code>: As a technical evaluator or operator, I can open a detail page</li>
+<li><code>US-H3-B03</code>: As an operator, I can access, inspect, restart, and stop the</li>
+</ul>
+<table>
+<thead><tr><th>Story</th><th>Given</th><th>When</th><th>Then</th></tr></thead>
+<tbody>
+<tr><td><code>US-H3-B01</code></td><td>Completed, verified H3 benchmark artifacts</td><td>A visitor opens the landing page</td><td>Real representative frames and playable videos appear with measured headline results</td></tr>
+<tr><td><code>US-H3-B02</code></td><td>The same immutable benchmark artifacts and receipts</td><td>An evaluator opens the evidence page</td><td>Every published claim links to prompts, parameters, timing, hashes, runtime facts, limits, and reproduction commands</td></tr>
+<tr><td><code>US-H3-B03</code></td><td>ComfyUI remains on <code>:8188</code> and the protected container remains healthy</td><td>The report service is started, checked, restarted, or stopped</td><td>Only the report-owned PID and unused report port change; protected identities remain equal</td></tr>
+</tbody></table>
+<p>Constraints: use one <code>gb10-2</code>; publish only real generated media; adapt to desktop and mobile; preserve ComfyUI and <code>lexdata-ai</code>; do not alter firewall, routes, RoCE, swap, Compose, credentials, or unrelated workloads.</p>
+<p>Non-goals: cross-model comparison, claims of industry leadership or statistical superiority, model-quality judging by an external model, modifying the H3 deployment, authentication/TLS, internet exposure, or a boot-time system service.</p>
+<h2>Considered Approaches</h2>
+<h3>A. Generated Static Two-Page Handbook (selected)</h3>
+<p>One benchmark runner produces immutable media, per-case receipts, and a normalized <code>benchmark.json</code>. A deterministic renderer creates <code>index.html</code> for visual scanning and <code>evidence.html</code> for technical audit. A task-owned Python static server binds an unused <code>0.0.0.0</code> port.</p>
+<p>This keeps the serving process small, makes all claims traceable to one data file, avoids a frontend build toolchain on the GB10, and permits complete offline review. It is the best fit for both approved audiences.</p>
+<h3>B. One Long Static Page</h3>
+<p>This has the smallest implementation, but media and full receipts compete for attention, mobile navigation becomes cumbersome, and external viewers must download and scan technical evidence they do not need.</p>
+<h3>C. Dynamic Dashboard With An API</h3>
+<p>This could add filtering and live telemetry, but creates an unnecessary server application, runtime dependencies, mutable measurements, and a larger operational surface. The approved stories require an auditable report, not a monitoring product.</p>
+<h2>Benchmark Contract</h2>
+<p>The benchmark is a bounded single-host capability report, not a comparative leaderboard. It runs after a fresh status check and records the exact ComfyUI process identity, deployment subject, Gitee and ComfyUI revisions, host facts, and protected container identity.</p>
+<p>The runner executes these cases serially through the ComfyUI API:</p>
+<table>
+<thead><tr><th>Case</th><th>Purpose</th><th>Prompt class</th><th>Required artifact</th></tr></thead>
+<tbody>
+<tr><td><code>object-motion</code></td><td>Basic composition and motion</td><td>Product-like object, static camera</td><td>MP4 plus ComfyUI-saved generated PNG frame</td></tr>
+<tr><td><code>human-motion</code></td><td>Character, clothing, and body motion</td><td>Full-body subject with bounded camera direction</td><td>MP4 plus ComfyUI-saved generated PNG frame</td></tr>
+<tr><td><code>environment-motion</code></td><td>Scene depth and environmental dynamics</td><td>Landscape or architectural scene</td><td>MP4 plus ComfyUI-saved generated PNG frame</td></tr>
+<tr><td><code>stylized-motion</code></td><td>Non-photographic visual range</td><td>Graphic or stop-motion-like scene</td><td>MP4 plus ComfyUI-saved generated PNG frame</td></tr>
+<tr><td><code>determinism-a/b</code></td><td>Same-workflow repeatability</td><td>Identical prompt, seed, and parameters</td><td>Two MP4 files, bitstream hashes, and decoded-frame hashes</td></tr>
+<tr><td><code>sequential-stability-1..3</code></td><td>Bounded repeat operation</td><td>Three serial prompts</td><td>Three successful histories and post-run health evidence</td></tr>
+</tbody></table>
+<p>All quality showcase cases use one pinned, resource-bounded workflow selected from the deployed Gitee recipe. Before submission, the runner requires both <code>queue_running</code> and <code>queue_pending</code> from <code>/queue</code> to be empty. It captures that state, uses benchmark-prefixed <code>client_id</code>, filename prefix, prompt IDs, and output directories, never cancels or deletes queue/history entries, and stops submitting if any foreign work appears. The pre-run ComfyUI PID, start ticks, boot ID, exact argv, and exclusive listener ownership must equal the post-run identity.</p>
+<p>The runner tests a finite profile ladder during canary only: <code>showcase</code> (512x320, 33 frames, 6 steps), then <code>bounded</code> (384x240, 17 frames, 4 steps), then the accepted deployment <code>minimum</code> (320x192, 5 frames, 1 step). It records every attempted profile and failure. The first successful profile is frozen for every formal case; if <code>minimum</code> fails, the suite stops without publishing a successful benchmark. Formal cases never silently retry with changed parameters. Failed cases remain in <code>benchmark.json</code> and on the evidence page.</p>
+<p>Each formal workflow adds native ComfyUI frame selection and <code>SaveImage</code> nodes after H3 video decoding, saving one PNG from the generated frame tensor in the same prompt that saves the MP4. These are real generated image artifacts, not FFmpeg screenshots, but they remain frames from the H3 video generation path; the site does not claim an independent text-to-image capability. The pinned FFmpeg independently decodes the MP4 and validates that its corresponding frame pixel hash equals the ComfyUI-saved PNG pixel hash.</p>
+<p>For every attempt, capture wall and monotonic timestamps at local submission, API acceptance, ComfyUI <code>execution_start</code>, and terminal history observation. Report queue/acceptance delay separately from execution elapsed time; if the history lacks an authoritative execution event, label execution time unknown and retain wall time. Also capture prompt/workflow JSON, output bytes and SHA-256, FFprobe media metadata, selected-frame file SHA-256 and normalized decoded RGB pixel SHA-256, and status. Sample host memory and GPU utilization before, during, and after generation when observable; label polling samples rather than claiming exact peaks.</p>
+<p>Before the canary, record the active ComfyUI log byte offset and a kernel journal cursor/timestamp. After the final terminal history, wait 10 seconds, then scan only the bounded log suffix and kernel interval for CUDA, OOM, Xid, traceback, and worker-loss failures. An unreadable or rotated boundary is reported as <code>unknown</code>, never <code>passed</code>.</p>
+<p>Reported metrics are success count, queue delay, execution or bounded wall time per case, output duration/resolution/frame rate/size, MP4 bitstream reproducibility, decoded RGB frame-sequence reproducibility, bounded sequential success, sampled memory/utilization, and fatal-scan result. MP4 inequality is not interpreted as generation nondeterminism when decoded frame sequences are equal. Visual quality is presented as inspectable output, without an invented scalar score.</p>
+<h2>Artifact And Data Flow</h2>
+<p>Project-owned scripts live under <code>execution/minimax-h3-benchmark/</code>. Runtime artifacts live under <code>/home/admin/minimax-h3-benchmark/</code> and do not enter Git.</p>
+<pre><code class="language-text">deployed workflow + frozen case manifest
+        -&gt; ComfyUI :8188
+        -&gt; prompt/history/media receipts
+        -&gt; FFmpeg frame extraction + FFprobe metadata
+        -&gt; normalized benchmark.json
+        -&gt; deterministic static renderer
+        -&gt; site/index.html + site/evidence.html + site/assets/*
+        -&gt; task-owned static server on 0.0.0.0:&lt;unused-port&gt;</code></pre>
+<p>The normalized JSON is the only source for page claims. Media paths are relative, hashes use SHA-256, timestamps use UTC ISO 8601, and missing metrics remain <code>null</code> with a reason rather than being estimated.</p>
+<h2>Website Design</h2>
+<p>The visual language is quiet and technical: white and near-black surfaces, neutral gray structure, red as a small MiniMax accent, and green/amber only for measured state. Letter spacing remains zero. Cards are reserved for repeated media cases; report sections are unframed full-width bands.</p>
+<p><code>index.html</code> opens directly on the benchmark, not a marketing landing page. Its first viewport shows the literal title <code>MiniMax H3 on NVIDIA GB10</code>, immutable run status with its UTC timestamp, host/model identity, headline metrics, and a large real video with an extracted frame poster. A compact sticky navigation links to Results, Gallery, Method, Limits, and Evidence. The next content band remains visible at the fold. The gallery uses stable 16:9 media dimensions, native video controls, case status, prompt summary, and measured timing. No autoplay with sound is used.</p>
+<p><code>evidence.html</code> provides a dense test matrix, expandable per-case prompt and workflow facts, artifact hashes, environment identity, resource samples, failure scans, known limitations, exact reproduction commands, and report start/status/stop/restart commands. It links back to the corresponding media case and landing page.</p>
+<p>At widths below 720px, navigation becomes horizontally scrollable, summary metrics use two columns, galleries use one column, tables move into labeled row layouts or bounded horizontal scroll, and all code blocks scroll within their own width. Media remains 16:9 and text cannot overlay controls.</p>
+<h2>Operations And Isolation</h2>
+<p>The report uses a currently unused port chosen at deployment time, with <code>8890</code> preferred if still free. Start writes an identity receipt containing PID, <code>/proc</code> start ticks, boot ID, exact argv, root, port, and start time. Status validates all fields, listener ownership, HTTP 200, and protected service identity. Stop signals only that exact matching PID and fails closed on any identity mismatch. Restart is exact stop followed by start.</p>
+<p>The server binds <code>0.0.0.0</code> for trusted-LAN access with its document root fixed to the generated <code>site/</code> directory. Packaging rejects symlinks and any resolved asset path outside that root. Normalization allows only the whitelisted public benchmark fields and never copies request headers, environment variables, credentials, tokens, cookies, or proxy values. It does not change firewall or authentication policy. Recovery preserves benchmark artifacts, stops only the validated report process, and leaves ComfyUI running. The runbook records all four lifecycle commands and the LAN URL.</p>
+<h2>Error Handling</h2>
+<p>missing; the renderer shows the failure rather than a placeholder.</p>
+<p>prevents report acceptance.</p>
+<p>commands.</p>
+<ul>
+<li>A rejected ComfyUI prompt records the API response and fails that case.</li>
+<li>A timeout preserves queue/history/log evidence and does not kill ComfyUI.</li>
+<li>A missing or undecodable output fails the case and prevents a success claim.</li>
+<li>A frame extraction failure leaves the video available but marks the still</li>
+<li>Any protected-service mismatch stops further benchmark submissions and</li>
+<li>A report PID/listener mismatch is never resolved using broad process-kill</li>
+</ul>
+<h2>Verification</h2>
+<p>Focused script tests validate manifest schema, receipt normalization, safe media paths, deterministic rendering, PID identity matching, and fail-closed stop behavior. Final acceptance requires:</p>
+<p>1. Each successful case has a success history, decodable MP4, ComfyUI-saved PNG, matching byte count, file and normalized pixel SHA-256, and FFprobe metadata. 2. Bitstream and decoded-frame reproducibility report exact equality or inequality honestly; sequential tests all complete or retain their failures. 3. Bounded runtime and kernel fatal scans pass, ComfyUI retains the exact pre-run process/listener identity and HTTP 200 on <code>:8188</code>, and <code>lexdata-ai</code> retains its container ID, health, and restart count. 4. <code>benchmark.json</code> validates and every visible claim is derivable from it. 5. Both pages return HTTP 200 from the chosen <code>0.0.0.0</code> listener; all local links and media load with no console errors. 6. Browser checks at 1440x900 and 390x844 show nonblank real media, no body overflow, no incoherent overlap, readable navigation, and usable video controls. A canvas/pixel check confirms screenshots are not blank. 7. Start, status, stop, restart, recovery, and exact LAN URL are added to <code>planning/03-core</code>.</p>
+<h2>Design Playback</h2>
+<table>
+<thead><tr><th>Story</th><th>Design evidence</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>US-H3-B01</code></td><td>Benchmark contract plus <code>index.html</code> first viewport and real-media gallery</td><td>Covered</td></tr>
+<tr><td><code>US-H3-B02</code></td><td>Normalized evidence contract and <code>evidence.html</code> audit surface</td><td>Covered</td></tr>
+<tr><td><code>US-H3-B03</code></td><td>Exact-identity report controls, unused port, preservation checks, and recovery path</td><td>Covered</td></tr>
+</tbody></table>
+<p>Corrections: none. Drift score: <code>0</code>. Gate: <code>DESIGN_ALIGNED</code>.</p>
+</article>
+    </div>
+  </div>
+
+  <div class="indicator-bar">
+    <span id="indicator-text">Click an option above, then return to the terminal</span>
+  </div>
+
+</body>
+</html>
