@@ -1,0 +1,10 @@
+{
+  "incident_id": "INC-409",
+  "database_max_connections": 48,
+  "pool_max_connections": 40,
+  "pool_waiters": 19,
+  "p95_acquire_ms": 1840,
+  "p95_query_ms": 2140,
+  "previous_pool_max_connections": 16,
+  "config_path": "./config/pool.json"
+}

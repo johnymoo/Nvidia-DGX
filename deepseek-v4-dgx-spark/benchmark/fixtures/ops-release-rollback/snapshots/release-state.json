@@ -1,0 +1,7 @@
+{
+  "incident_id": "INC-410",
+  "current": "./releases/2026.08.12.1",
+  "rollback_target": "./releases/2026.08.11.2",
+  "marker": ".release-ok",
+  "audit_path": "./runtime/rollback-audit.json"
+}

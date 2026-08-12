@@ -1,0 +1,4 @@
+[Service]
+ExecStart=worker
+MemoryMax=4G
+Restart=always

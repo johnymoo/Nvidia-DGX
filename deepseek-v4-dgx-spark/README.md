@@ -44,6 +44,16 @@ Worker DGX Spark
 | `tests/test_verify_thinking.py` | 标准库单元测试 |
 | `BENCHMARK-RESULTS.md` | 五题聚焦评测方法与结论 |
 | `benchmark-results-20260812.json` | 脱敏后的机器可读结果 |
+| `benchmark/` | 可复用的 47 题 Claude Code benchmark、沙盒 fixture、grader、runner 和报告生成器 |
+| `docs/` | 双 GB10 拓扑、工作流、参数说明、模型下载和上游引用 |
+
+## 深入文档
+
+- [双 GB10 集群拓扑](docs/cluster-topology.md)
+- [部署、恢复与 benchmark 工作流](docs/workflows.md)
+- [vLLM、NCCL、MLA、MTP 与 thinking 参数说明](docs/parameters.md)
+- [模型下载与上游 GitHub/reference](docs/references.md)
+- [可复用 benchmark 使用说明](benchmark/README.md)
 
 ## 依赖
 
@@ -153,7 +163,12 @@ docker compose --env-file .env \
 ```bash
 python3 -m unittest discover -s tests -v
 python3 -m py_compile scripts/verify_thinking.py tests/test_verify_thinking.py
+benchmark/run.sh test
 ```
+
+完整三模型复测通过 `benchmark/run.sh run` 一次执行。它包含 47 道冻结题目：7 道
+先导题，以及终端、服务器运维、中英文写作、Python/TypeScript 编程各 10 道扩展题。
+模型服务地址和切换命令只通过环境变量传入，不写入仓库。
 
 若本机安装了 Docker Compose，可使用 `.env.example` 的文档地址渲染配置；实际启动前
 必须改为真实的 fabric 参数和可用镜像。
@@ -170,4 +185,5 @@ python3 -m py_compile scripts/verify_thinking.py tests/test_verify_thinking.py
 ## 贡献
 
 本项目遵循仓库根目录 [README.md](../README.md) 的贡献规则。相关 Issue：
-[#19](https://github.com/johnymoo/Nvidia-DGX/issues/19)。
+[#19](https://github.com/johnymoo/Nvidia-DGX/issues/19)、
+[#21](https://github.com/johnymoo/Nvidia-DGX/issues/21)。
