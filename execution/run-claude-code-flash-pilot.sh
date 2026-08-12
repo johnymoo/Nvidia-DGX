@@ -172,7 +172,7 @@ run_formal() {
   package_receipt="$artifact/phase-package-receipt.json"
   jq -e --argjson tasks "$task_count" --argjson attempts "$total_count" --argjson human "$human_count" '.status == "completed" and .task_count == $tasks and .attempt_count == $attempts and .human_task_count == $human and .human_review_required == false and .judge_count == $tasks and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == $tasks' "$package_receipt" >/dev/null
   python3 "$REPORTER" --project-root "$PROJECT_ROOT" --artifact-root "$artifact" --output "$(jq -r '.review_root' "$package_receipt")/public/index.html" | tee "$artifact/report-render.stdout.json"
-  jq -e '.status == "rendered" and .bytes > 0 and (.sha256 | length == 64)' "$artifact/report-render.stdout.json" >/dev/null
+  jq -e '.status == "rendered" and .bytes > 0 and (.sha256 | length == 64) and .details_bytes > 0 and (.details_sha256 | length == 64)' "$artifact/report-render.stdout.json" >/dev/null
   review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
 
   log "run: verify DeepSeek remains stopped and Qwen is healthy"
@@ -186,7 +186,8 @@ run_formal() {
     --arg deepseek "$artifact/phase-deepseek-receipt.json" --arg qwen "$artifact/phase-qwen-receipt.json" \
     --arg package "$package_receipt" --arg final "$final_status" --arg ended "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg report "$(jq -r '.output' "$artifact/report-render.stdout.json")" --arg report_sha "$(jq -r '.sha256' "$artifact/report-render.stdout.json")" \
-    '{schema_version:2,status:"completed",baseline_revision:"claude-ds-pilot-r3",run_id:$run_id,ended_at:$ended,artifact:$artifact,report_url:$url,report_path:$report,report_sha256:$report_sha,
+    --arg details "$(jq -r '.details_output' "$artifact/report-render.stdout.json")" --arg details_sha "$(jq -r '.details_sha256' "$artifact/report-render.stdout.json")" \
+    '{schema_version:2,status:"completed",baseline_revision:"claude-ds-pilot-r3",run_id:$run_id,ended_at:$ended,artifact:$artifact,report_url:$url,report_path:$report,report_sha256:$report_sha,details_path:$details,details_sha256:$details_sha,
       phases:{deepseek_service:$service,deepseek_attempts:$deepseek,transition:$transition,qwen_attempts:$qwen,package:$package,final_service:$final},
       final_state:{deepseek:"stopped",qwen:"healthy"},note:"Baseline results and report are complete; optional human writing review does not alter ranking. No statistical superiority claim."}' \
     >"$artifact/receipt.json"
@@ -273,7 +274,7 @@ resume_formal() {
   package_receipt="$artifact/phase-package-receipt.json"
   jq -e --argjson tasks "$task_count" --argjson attempts "$total_count" --argjson human "$human_count" '.status == "completed" and .task_count == $tasks and .attempt_count == $attempts and .human_task_count == $human and .human_review_required == false and .judge_count == $tasks and .judge_runtime_contract.model == "gpt-5.6-sol" and .judge_runtime_contract.reasoning_effort == "xhigh" and .judge_runtime_contract.fallback_configured == false and .judge_runtime_contract.validated_calls == $tasks' "$package_receipt" >/dev/null
   python3 "$REPORTER" --project-root "$PROJECT_ROOT" --artifact-root "$artifact" --output "$(jq -r '.review_root' "$package_receipt")/public/index.html" | tee "$artifact/report-render.stdout.json"
-  jq -e '.status == "rendered" and .bytes > 0 and (.sha256 | length == 64)' "$artifact/report-render.stdout.json" >/dev/null
+  jq -e '.status == "rendered" and .bytes > 0 and (.sha256 | length == 64) and .details_bytes > 0 and (.details_sha256 | length == 64)' "$artifact/report-render.stdout.json" >/dev/null
   review_url="$(start_review_server "$(jq -r '.review_root' "$package_receipt")")"
 
   remote_service "--status" >"$artifact/service-final-status.json"
@@ -285,7 +286,8 @@ resume_formal() {
     --arg deepseek "$artifact/phase-deepseek-receipt.json" --arg qwen "$artifact/phase-qwen-receipt.json" \
     --arg package "$package_receipt" --arg final "$final_status" --arg ended "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg report "$(jq -r '.output' "$artifact/report-render.stdout.json")" --arg report_sha "$(jq -r '.sha256' "$artifact/report-render.stdout.json")" \
-    '{schema_version:2,status:"completed",baseline_revision:"claude-ds-pilot-r3",run_id:$run_id,ended_at:$ended,artifact:$artifact,report_url:$url,report_path:$report,report_sha256:$report_sha,resumed:true,
+    --arg details "$(jq -r '.details_output' "$artifact/report-render.stdout.json")" --arg details_sha "$(jq -r '.details_sha256' "$artifact/report-render.stdout.json")" \
+    '{schema_version:2,status:"completed",baseline_revision:"claude-ds-pilot-r3",run_id:$run_id,ended_at:$ended,artifact:$artifact,report_url:$url,report_path:$report,report_sha256:$report_sha,details_path:$details,details_sha256:$details_sha,resumed:true,
       phases:{deepseek_service:$service,deepseek_attempts:$deepseek,transition:$transition,qwen_attempts:$qwen,package:$package,final_service:$final},
       final_state:{deepseek:"stopped",qwen:"healthy"},note:"Baseline results and report are complete; optional human writing review does not alter ranking. No statistical superiority claim."}' \
     >"$artifact/receipt.json"

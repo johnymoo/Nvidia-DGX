@@ -235,11 +235,15 @@ def main() -> None:
         assert len(baseline["tasks"]) == task_count
         assert all(value["quality_mean"] == 3 for value in baseline["aggregates"].values())
         report_path = review_root / "public" / "final-report.html"
-        reporter.render_report(pilot.PROJECT_ROOT, fake_root, report_path)
-        report = report_path.read_text(encoding="utf-8")
-        assert report.count('<section class="task"') == task_count
-        assert report.count('<article class="answer') == task_count * len(pilot.TREATMENTS)
-        assert report.count("<blockquote>") == task_count
+        outputs = reporter.render_report(pilot.PROJECT_ROOT, fake_root, report_path)
+        summary_report = report_path.read_text(encoding="utf-8")
+        detail_report = outputs["details"].read_text(encoding="utf-8")
+        assert summary_report.count('class="domain-commentary"') == len(reporter.DOMAIN_ORDER) * len(pilot.TREATMENTS)
+        assert '<section class="task"' not in summary_report and 'href="details.html"' in summary_report
+        assert detail_report.count('<section class="task"') == task_count
+        assert detail_report.count('<article class="answer') == task_count * len(pilot.TREATMENTS)
+        assert detail_report.count("<blockquote>") == task_count
+        assert 'href="index.html"' in detail_report
 
         server = pilot.ThreadingHTTPServer(("127.0.0.1", 0), pilot.make_review_handler(review_root))
         thread = threading.Thread(target=server.serve_forever, daemon=True)

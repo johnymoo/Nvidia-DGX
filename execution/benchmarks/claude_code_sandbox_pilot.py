@@ -1138,8 +1138,8 @@ def make_review_handler(review_root: Path):
 
         def do_GET(self) -> None:
             path = urlparse(self.path).path
-            if path in {"/", "/index.html", "/human-review.html"}:
-                name = "human-review.html" if path == "/human-review.html" else "index.html"
+            if path in {"/", "/index.html", "/details.html", "/human-review.html"}:
+                name = path.lstrip("/") if path != "/" else "index.html"
                 content = (review_root / "public" / name).read_bytes()
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
