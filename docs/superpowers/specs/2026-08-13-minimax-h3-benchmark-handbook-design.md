@@ -111,9 +111,10 @@ Each formal workflow adds native ComfyUI frame selection and `SaveImage` nodes
 after H3 video decoding, saving one PNG from the generated frame tensor in the
 same prompt that saves the MP4. These are real generated image artifacts, not
 FFmpeg screenshots, but they remain frames from the H3 video generation path;
-the site does not claim an independent text-to-image capability. The pinned
-FFmpeg independently decodes the MP4 and validates that its corresponding
-frame pixel hash equals the ComfyUI-saved PNG pixel hash.
+the site does not claim an independent text-to-image capability. The receipt
+binds both output nodes to the same `VAEDecode` tensor and records the PNG and
+decoded MP4 frame pixel hashes separately. Pixel equality is not required
+because H.264 encoding is lossy.
 
 For every attempt, capture wall and monotonic timestamps at local submission,
 API acceptance, ComfyUI `execution_start`, and terminal history observation.
