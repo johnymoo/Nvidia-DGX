@@ -189,6 +189,9 @@ def main() -> None:
             pass
         else:
             raise AssertionError("identity speculation did not fail")
+        sanitized = pilot.blind_review_artifact("qwen_local used TOOL_CALLS; content stays intact")
+        assert sanitized == "[redacted internal identifier] used [redacted internal identifier]; content stays intact"
+        assert pilot.blind_review_artifact("No internal identifiers here.") == "No internal identifiers here."
 
         probe = pilot.run_codex_probe(root / "judge-probe")
         assert probe["runtime"]["model"] == "gpt-5.6-sol"

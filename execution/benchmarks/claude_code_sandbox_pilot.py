@@ -49,6 +49,10 @@ JUDGE_EFFORT = "xhigh"
 FORBIDDEN_BLIND_TERMS = (
     "online_ds", "offline_ds", "qwen_local", "claude_ds", "claude_local",
 )
+PUBLIC_REDACTIONS = (
+    "online_ds", "offline_ds", "qwen_local", "hidden_grader",
+    "elapsed_seconds", "cost_usd", "tool_calls",
+)
 
 
 class InfrastructureError(RuntimeError):
@@ -835,6 +839,13 @@ def validate_judge_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def blind_review_artifact(artifact: str) -> str:
+    sanitized = artifact
+    for term in PUBLIC_REDACTIONS:
+        sanitized = re.sub(re.escape(term), "[redacted internal identifier]", sanitized, flags=re.IGNORECASE)
+    return sanitized
+
+
 def fake_judge_payload() -> dict[str, Any]:
     return {"candidates": {letter: {criterion: 3 for criterion in CRITERIA} for letter in LETTERS}, "preference": "tie", "rationale": "All candidates are evaluated only on the supplied content."}
 
@@ -1012,7 +1023,10 @@ def build_package(cache: Path, artifact_root: Path, toolchain: Path, fake_judge:
         task_id = task["task_id"]
         human_mapping = package_state["tasks"][task_id]["human"]
         judge_mapping = package_state["tasks"][task_id]["judge"]
-        human_candidates = {label: by_key[attempt_key(task_id, treatment)]["review_artifact"] for label, treatment in human_mapping.items()}
+        human_candidates = {
+            label: blind_review_artifact(by_key[attempt_key(task_id, treatment)]["review_artifact"])
+            for label, treatment in human_mapping.items()
+        }
         judge_candidates = {label: by_key[attempt_key(task_id, treatment)]["review_artifact"] for label, treatment in judge_mapping.items()}
         judge_root = review_root / "private" / "judge" / task_id
         if (judge_root / "judge.json").is_file() and (judge_root / "judge-runtime.json").is_file():
@@ -1033,7 +1047,7 @@ def build_package(cache: Path, artifact_root: Path, toolchain: Path, fake_judge:
         judge_runtime[task_id] = judge_result["runtime"]
     public = {"schema_version": 1, "baseline_revision": manifest["baseline_revision"], "benchmark_task_count": len(manifest["tasks"]), "human_task_count": len(public_tasks), "tasks": public_tasks, "score_levels": {"1": "Materially incorrect, incomplete, or unclear", "2": "Acceptable with limited errors or weaknesses", "3": "Correct, complete, and clear"}, "completed_task_ids": []}
     forbidden_public = json.dumps(public, ensure_ascii=False).lower()
-    if any(term in forbidden_public for term in ("online_ds", "offline_ds", "qwen_local", "hidden_grader", "elapsed_seconds", "cost_usd", "tool_calls")):
+    if any(term in forbidden_public for term in PUBLIC_REDACTIONS):
         raise InfrastructureError("public review package leaks treatment telemetry")
     sealed = {"schema_version": 2, "tasks": sealed_tasks, "deterministic": deterministic, "judges": judges, "judge_runtime": judge_runtime, "attempts_sha256": attempts_sha256}
     write_json(sealed_root / "mappings.json", sealed)
