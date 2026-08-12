@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-402",
+  "primary_cause": "restart_loop_missing_dependency_and_readiness",
+  "evidence": ["EV-402-missing-env", "EV-402-restart-loop", "EV-402-ready-file"],
+  "bounded_changes": ["order configuration readiness", "load task-local environment", "restart only on failure", "add restart backoff", "check local readiness marker"],
+  "certainty": "evidence_limited",
+  "scope": "sandbox_snapshot_only"
+}

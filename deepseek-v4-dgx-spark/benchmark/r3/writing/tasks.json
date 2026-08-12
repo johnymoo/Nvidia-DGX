@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "domain": "writing",
+  "tasks": [
+    {
+      "task_id": "writing-zh-incident",
+      "title": "撰写缓存池事故复盘",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-incident",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-incident",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "在 answer.md 中为工程和支持团队写一份 260-420 个汉字的中文事故复盘，语气清晰、客观且不推责。必须用 Markdown 的 `## 事件摘要`、`## 影响`、`## 已完成`、`## 后续行动` 四个小节。事实包：事件 INC-2026-0810 发生于 2026-08-10；09:12 CST 起订单 API 的 p95 为 4.8 秒；发布 rel-20260810.3 后上游连接池耗尽；09:31 回退，09:37 p95 降至 180 毫秒；共影响 1,842 个请求；后续项为 CR-142 负载测试和 CR-143 回退告警。不要虚构数据丢失、额外客户影响、责任归属或未提供的修复承诺。",
+      "grading": {
+        "language": "zh",
+        "min_length": 260,
+        "max_length": 420,
+        "required_headings": ["事件摘要", "影响", "已完成", "后续行动"],
+        "required_facts": [
+          {"id": "incident_id", "aliases": ["INC-2026-0810", "INC 2026 0810"]},
+          {"id": "date", "aliases": ["2026-08-10", "2026/08/10", "2026年8月10日"]},
+          {"id": "start_time", "aliases": ["09:12 CST", "09:12 中国标准时间"]},
+          {"id": "trigger_release", "aliases": ["rel-20260810.3"]},
+          {"id": "root_cause", "aliases": ["上游连接池耗尽", "upstream connection pool exhausted"]},
+          {"id": "rollback_time", "aliases": ["09:31", "9:31"]},
+          {"id": "recovery_metric", "aliases": ["09:37 p95 降至 180 毫秒", "09:37 p95降至180毫秒", "09:37 p95 180ms"]},
+          {"id": "affected_requests", "aliases": ["1,842 个请求", "1842 个请求", "1，842 个请求"]},
+          {"id": "load_test_action", "aliases": ["CR-142"]},
+          {"id": "rollback_alert_action", "aliases": ["CR-143"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-zh-change",
+      "title": "撰写账单服务变更审批备忘录",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-change",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-change",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["offline_ds", "online_ds"],
+      "instruction": "在 answer.md 中为变更咨询委员会写一份 230-360 个汉字的中文变更审批备忘录，语气审慎、可执行。必须用 Markdown 的 `## 变更范围`、`## 风险与控制`、`## 执行与回退`、`## 审批请求` 四个小节。事实包：变更单 CHG-4821 计划于 2026-08-16 02:00-02:30 CST 执行，将 billing-api 的 3 个副本从 v2.8.4 升至 v2.8.5；先灰度 1 个副本 10 分钟；成功条件是错误率低于 0.5% 且 p95 不高于 350 毫秒；回退版本为 v2.8.4；申请 Mei Lin 批准。不要把本备忘录写成已获批准或已执行的结果，也不要承诺未提供的可用性目标。",
+      "grading": {
+        "language": "zh",
+        "min_length": 230,
+        "max_length": 360,
+        "required_headings": ["变更范围", "风险与控制", "执行与回退", "审批请求"],
+        "required_facts": [
+          {"id": "change_id", "aliases": ["CHG-4821", "CHG 4821"]},
+          {"id": "date", "aliases": ["2026-08-16", "2026/08/16", "2026年8月16日"]},
+          {"id": "window", "aliases": ["02:00-02:30", "02:00 至 02:30", "2:00-2:30"]},
+          {"id": "service", "aliases": ["billing-api", "billing api"]},
+          {"id": "replicas", "aliases": ["3 个副本", "3个副本", "三个副本"]},
+          {"id": "target_version", "aliases": ["v2.8.5"]},
+          {"id": "canary", "aliases": ["1 个副本 10 分钟", "1个副本10分钟", "一个副本十分钟"]},
+          {"id": "success_threshold", "aliases": ["错误率低于 0.5%", "错误率<0.5%", "p95 不高于 350 毫秒", "p95≤350毫秒", "p95 <= 350ms"]},
+          {"id": "rollback_version", "aliases": ["v2.8.4"]},
+          {"id": "approver", "aliases": ["Mei Lin"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-zh-customer",
+      "title": "撰写客户可见的导出故障通知",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small",
+      "task_kind": "brief",
+      "fixture": "writing-zh-customer",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-customer",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "在 answer.md 中面向客户写一份 180-280 个汉字的中文故障通知，使用平实、同理但不猜测的语气。必须用 Markdown 的 `## 当前情况`、`## 影响范围`、`## 建议`、`## 后续更新` 四个小节。事实包：通知编号 NOT-20260809-A；2026-08-09 14:05-14:27 UTC 期间，欧洲区域仪表板导出间歇不可用；CSV 导出和计划导出受影响；已成功提交的报表请求仍被保存，没有数据丢失；服务已恢复，客户可稍后重试；下一次更新不晚于 15:00 UTC。不要猜测故障原因、承诺补偿或声称未列出的功能未受影响。",
+      "grading": {
+        "language": "zh",
+        "min_length": 180,
+        "max_length": 280,
+        "required_headings": ["当前情况", "影响范围", "建议", "后续更新"],
+        "required_facts": [
+          {"id": "notice_id", "aliases": ["NOT-20260809-A", "NOT 20260809 A"]},
+          {"id": "date", "aliases": ["2026-08-09", "2026/08/09", "2026年8月9日"]},
+          {"id": "window", "aliases": ["14:05-14:27 UTC", "14:05 至 14:27 UTC"]},
+          {"id": "region_and_surface", "aliases": ["欧洲区域仪表板导出", "欧洲仪表板导出"]},
+          {"id": "affected_exports", "aliases": ["CSV 导出和计划导出", "CSV导出和计划导出"]},
+          {"id": "data_preservation", "aliases": ["已成功提交的报表请求仍被保存", "成功提交的报表请求仍被保存"]},
+          {"id": "no_data_loss", "aliases": ["没有数据丢失", "无数据丢失"]},
+          {"id": "next_update", "aliases": ["15:00 UTC", "15:00UTC"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-zh-runbook",
+      "title": "撰写工作队列积压处置手册",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-runbook",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-runbook",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["offline_ds", "online_ds"],
+      "instruction": "在 answer.md 中为值班工程师写一份 220-340 个汉字的中文操作手册，语气简洁、按顺序、可审计。必须用 Markdown 的 `## 触发条件`、`## 操作步骤`、`## 验证与升级` 三个小节，并在操作步骤中写出编号步骤。事实包：手册 RBK-17 处理 worker-queue 积压；当 queue_depth 连续 10 分钟超过 20,000 条消息时触发；先记录 request ID，并检查 queue_depth、active_workers 和 error_rate；只能每次增加 2 个 worker，最长观察 15 分钟；不得删除或重放消息；未恢复则创建 SEV-2 事件并通知 OPS-ONCALL。不要加入真实主机命令、破坏性操作或未经授权的扩容。",
+      "grading": {
+        "language": "zh",
+        "min_length": 220,
+        "max_length": 340,
+        "required_headings": ["触发条件", "操作步骤", "验证与升级"],
+        "required_facts": [
+          {"id": "runbook_id", "aliases": ["RBK-17", "RBK 17"]},
+          {"id": "queue_name", "aliases": ["worker-queue", "worker queue"]},
+          {"id": "trigger", "aliases": ["连续 10 分钟超过 20,000 条消息", "连续10分钟超过20000条消息", "10分钟超过20,000条消息"]},
+          {"id": "request_id", "aliases": ["request ID", "请求 ID", "请求ID"]},
+          {"id": "metrics", "aliases": ["queue_depth、active_workers 和 error_rate", "queue_depth active_workers error_rate"]},
+          {"id": "scale_limit", "aliases": ["每次增加 2 个 worker", "每次增加2个worker"]},
+          {"id": "observation_limit", "aliases": ["最长观察 15 分钟", "最长观察15分钟"]},
+          {"id": "escalation", "aliases": ["SEV-2", "SEV 2"]},
+          {"id": "on_call", "aliases": ["OPS-ONCALL", "OPS ONCALL"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-zh-policy",
+      "title": "撰写数据保留政策摘要",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-zh-policy",
+      "grader": "r3_writing.py",
+      "solution": "writing-zh-policy",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "在 answer.md 中为非技术同事写一份 240-380 个汉字的中文数据保留政策摘要，语气通俗、准确。必须用 Markdown 的 `## 适用内容`、`## 保存期限`、`## 例外与联系` 三个小节。事实包：政策编号 POL-07；支持聊天记录保存 180 天；已解决工单附件保存 365 天；账单发票保存 7 年；合法保全会暂停删除；问题请通过 PRIVACY-DESK 联系隐私团队。不要给出法律意见、承诺某个个人请求一定获批，或加入未提供的数据类别和期限。",
+      "grading": {
+        "language": "zh",
+        "min_length": 240,
+        "max_length": 380,
+        "required_headings": ["适用内容", "保存期限", "例外与联系"],
+        "required_facts": [
+          {"id": "policy_id", "aliases": ["POL-07", "POL 07"]},
+          {"id": "chat_retention", "aliases": ["支持聊天记录保存 180 天", "支持聊天记录保存180天"]},
+          {"id": "attachment_retention", "aliases": ["已解决工单附件保存 365 天", "已解决工单附件保存365天"]},
+          {"id": "invoice_retention", "aliases": ["账单发票保存 7 年", "账单发票保存7年", "账单发票保存七年"]},
+          {"id": "legal_hold", "aliases": ["合法保全会暂停删除", "法律保全会暂停删除"]},
+          {"id": "contact", "aliases": ["PRIVACY-DESK", "PRIVACY DESK"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-en-incident",
+      "title": "Write a catalog API incident status update",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-incident",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-incident",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["offline_ds", "online_ds"],
+      "instruction": "Write a 170-250 word English incident status update in answer.md for internal engineering and support readers. Use a factual, calm tone and the Markdown headings `## Summary`, `## Impact`, `## Current status`, and `## Next steps`. Fact packet: incident INC-API-204 ran on 2026-08-11 from 13:20-13:46 UTC; catalog-api returned a 7.2% 503 rate; the supplied cause is an upstream connection pool capped at 40; mitigation raised the cap to 80 and recycled affected workers; RCA-204 is tracked; a load test is due by 2026-08-15. Do not invent data loss, customer counts, a permanent fix, or an unprovided root cause.",
+      "grading": {
+        "language": "en",
+        "min_length": 170,
+        "max_length": 250,
+        "required_headings": ["Summary", "Impact", "Current status", "Next steps"],
+        "required_facts": [
+          {"id": "incident_id", "aliases": ["INC-API-204", "INC API 204"]},
+          {"id": "date", "aliases": ["2026-08-11", "2026/08/11", "August 11, 2026"]},
+          {"id": "window", "aliases": ["13:20-13:46 UTC", "13:20 to 13:46 UTC"]},
+          {"id": "service", "aliases": ["catalog-api", "catalog api"]},
+          {"id": "error_rate", "aliases": ["7.2% 503 rate", "7.2% rate of 503"]},
+          {"id": "pool_cap", "aliases": ["connection pool capped at 40", "connection pool cap of 40"]},
+          {"id": "mitigation", "aliases": ["raised the cap to 80", "raised to 80"]},
+          {"id": "rca", "aliases": ["RCA-204", "RCA 204"]},
+          {"id": "load_test_due", "aliases": ["2026-08-15", "August 15, 2026"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-en-release",
+      "title": "Write ExportJob release notes",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-release",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-release",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "Write 180-260 word English release notes in answer.md for API integrators. Use precise, practical language and the Markdown headings `## What changed`, `## Compatibility`, and `## Upgrade`. Fact packet: REL-3.4.0 releases on 2026-08-18; it adds the ExportJob webhook event `export.completed`; this event requires API version `2026-06-01`; the `legacy_export` endpoint remains available now but is removed in 4.0.0; CSV output format is unchanged; integrators should update the version header and test in staging. Do not claim automatic migration, backward compatibility beyond these facts, or an unprovided delivery date for 4.0.0.",
+      "grading": {
+        "language": "en",
+        "min_length": 180,
+        "max_length": 260,
+        "required_headings": ["What changed", "Compatibility", "Upgrade"],
+        "required_facts": [
+          {"id": "release_id", "aliases": ["REL-3.4.0", "REL 3.4.0"]},
+          {"id": "release_date", "aliases": ["2026-08-18", "2026/08/18", "August 18, 2026"]},
+          {"id": "event", "aliases": ["ExportJob", "export.completed"]},
+          {"id": "api_version", "aliases": ["2026-06-01", "2026/06/01"]},
+          {"id": "legacy_endpoint", "aliases": ["legacy_export"]},
+          {"id": "removal_version", "aliases": ["4.0.0"]},
+          {"id": "csv_stability", "aliases": ["CSV output format is unchanged", "CSV format is unchanged"]},
+          {"id": "upgrade_actions", "aliases": ["update the version header", "test in staging"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-en-proposal",
+      "title": "Write a cache design proposal",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-proposal",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-proposal",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["offline_ds", "online_ds"],
+      "instruction": "Write a 200-300 word English technical proposal in answer.md for an architecture review. Compare trade-offs without overclaiming and use the Markdown headings `## Decision`, `## Options`, and `## Recommendation and safeguards`. Fact packet: proposal PROP-77 compares a file cache with 12 ms latency, 15-minute invalidation, and $90/month cost against a Redis cache with 4 ms latency, 60-second invalidation, and $310/month cost; recommend a bounded 14-day Redis trial. Do not state that either option has already been approved, claim measured business benefit, or add unprovided availability or security properties.",
+      "grading": {
+        "language": "en",
+        "min_length": 200,
+        "max_length": 300,
+        "required_headings": ["Decision", "Options", "Recommendation and safeguards"],
+        "required_facts": [
+          {"id": "proposal_id", "aliases": ["PROP-77", "PROP 77"]},
+          {"id": "file_latency", "aliases": ["12 ms", "12ms"]},
+          {"id": "file_invalidation", "aliases": ["15-minute invalidation", "15 minute invalidation"]},
+          {"id": "file_cost", "aliases": ["$90/month", "$90 per month"]},
+          {"id": "redis_latency", "aliases": ["4 ms", "4ms"]},
+          {"id": "redis_invalidation", "aliases": ["60-second invalidation", "60 second invalidation"]},
+          {"id": "redis_cost", "aliases": ["$310/month", "$310 per month"]},
+          {"id": "trial", "aliases": ["14-day Redis trial", "14 day Redis trial"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-en-support",
+      "title": "Write an MFA reset support response",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small",
+      "task_kind": "brief",
+      "fixture": "writing-en-support",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-support",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["online_ds", "offline_ds"],
+      "instruction": "Write a 150-220 word English customer-support response in answer.md. Be helpful and privacy-conscious, with Markdown headings `## What we found`, `## What to try`, and `## If it still fails`. Fact packet: ticket SUP-5182 concerns an MFA reset after a device change; the reset email was delivered at 10:14 UTC; its link expires after 30 minutes; the account is not locked; advise using the newest reset email, checking device time, or using a recovery code; support cannot view MFA codes or passwords; escalate after 2 failed attempts with the timestamp and browser version. Do not ask the customer to share a password, MFA code, or recovery code, and do not promise immediate resolution.",
+      "grading": {
+        "language": "en",
+        "min_length": 150,
+        "max_length": 220,
+        "required_headings": ["What we found", "What to try", "If it still fails"],
+        "required_facts": [
+          {"id": "ticket_id", "aliases": ["SUP-5182", "SUP 5182"]},
+          {"id": "delivery_time", "aliases": ["10:14 UTC", "10:14UTC"]},
+          {"id": "expiry", "aliases": ["30 minutes", "30-minute"]},
+          {"id": "account_state", "aliases": ["account is not locked", "not locked"]},
+          {"id": "newest_email", "aliases": ["newest reset email", "most recent reset email"]},
+          {"id": "device_time", "aliases": ["device time"]},
+          {"id": "recovery_code", "aliases": ["recovery code"]},
+          {"id": "privacy_boundary", "aliases": ["cannot view MFA codes or passwords", "cannot see MFA codes or passwords"]},
+          {"id": "escalation", "aliases": ["2 failed attempts", "two failed attempts"]},
+          {"id": "browser_version", "aliases": ["browser version"]}
+        ]
+      }
+    },
+    {
+      "task_id": "writing-en-executive",
+      "title": "Write a dashboard vendor decision brief",
+      "category": "writing",
+      "r3_domain": "writing",
+      "difficulty": "small-medium",
+      "task_kind": "brief",
+      "fixture": "writing-en-executive",
+      "grader": "r3_writing.py",
+      "solution": "writing-en-executive",
+      "visible_test_command": ["{python}", "-c", "from pathlib import Path; assert Path('README.md').is_file()"],
+      "treatment_order": ["offline_ds", "online_ds"],
+      "instruction": "Write a 170-240 word English executive decision brief in answer.md. Keep it concise, decision-oriented, and bounded by the evidence. Use the Markdown headings `## Decision requested`, `## Evidence`, and `## Guardrails and next step`. Fact packet: DEC-31 requests approval of a $48,000 annual dashboard-vendor contract; analysts currently spend 18 hours/week on the manual process, whose measured error rate is 3.1%; vendor processing must remain in us-east-1; no customer PII is included, only aggregated usage; run a 30-day pilot; the decision is needed by 2026-09-05. Do not describe the pilot as approved, claim savings have already occurred, or add a security certification or legal conclusion not in the packet.",
+      "grading": {
+        "language": "en",
+        "min_length": 170,
+        "max_length": 240,
+        "required_headings": ["Decision requested", "Evidence", "Guardrails and next step"],
+        "required_facts": [
+          {"id": "decision_id", "aliases": ["DEC-31", "DEC 31"]},
+          {"id": "contract_cost", "aliases": ["$48,000 annual", "$48000 annual"]},
+          {"id": "analyst_time", "aliases": ["18 hours/week", "18 hours per week"]},
+          {"id": "error_rate", "aliases": ["3.1%"]},
+          {"id": "region", "aliases": ["us-east-1"]},
+          {"id": "data_scope", "aliases": ["no customer PII", "no customer personally identifiable information"]},
+          {"id": "aggregate_scope", "aliases": ["aggregated usage"]},
+          {"id": "pilot", "aliases": ["30-day pilot", "30 day pilot"]},
+          {"id": "decision_date", "aliases": ["2026-09-05", "2026/09/05", "September 5, 2026"]}
+        ]
+      }
+    }
+  ]
+}

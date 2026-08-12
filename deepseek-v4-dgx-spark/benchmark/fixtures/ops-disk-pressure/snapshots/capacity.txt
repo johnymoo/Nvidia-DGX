@@ -1,0 +1,6 @@
+data-volume blocks_used_percent=95
+data-volume inodes_used_percent=97
+deleted-open-file bytes=3221225472 owner=ledger-worker
+largest-reclaimable ./data/cache
+next-reclaimable ./data/tmp
+protected ./data/current

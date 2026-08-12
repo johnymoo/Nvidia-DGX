@@ -1,0 +1,15 @@
+[Unit]
+After=network-online.target config-ready.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=./config/ledger.env
+ExecStart=./bin/ledger-api --config ./config/ledger.toml
+ExecStartPost=./bin/check-ready --probe-file ./runtime/ready.json
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-410",
+  "target_release": "./releases/2026.08.11.2",
+  "expected_current": "./releases/2026.08.12.1",
+  "prechecks": ["target_directory", "release_marker", "current_target"],
+  "audit_path": "./runtime/rollback-audit.json",
+  "certainty": "evidence_limited"
+}

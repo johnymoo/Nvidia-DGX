@@ -1,0 +1,5 @@
+account,team,amount_cents,status
+a-1,Platform,120,approved
+a-2,"North, East",80,approved
+a-3,Platform,30,rejected
+a-4,Platform,20,approved

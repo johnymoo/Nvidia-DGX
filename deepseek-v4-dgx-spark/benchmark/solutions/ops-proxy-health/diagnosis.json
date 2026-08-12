@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-408",
+  "primary_cause": "health_check_and_timeout_misconfiguration",
+  "evidence": ["EV-408-stale-member", "EV-408-connect-timeout", "EV-408-missing-request-id"],
+  "bounded_changes": ["restore both members", "add bounded health checks", "set timeouts", "forward correlation headers"],
+  "certainty": "evidence_limited",
+  "scope": "sandbox_snapshot_only"
+}

@@ -1,0 +1,18 @@
+{
+  "incident_id": "INC-409",
+  "pool": {
+    "max_connections": 24,
+    "min_idle": 4,
+    "acquire_timeout_ms": 1500,
+    "idle_timeout_ms": 600000
+  },
+  "database": {
+    "statement_timeout_ms": 2000
+  },
+  "guardrails": {
+    "max_pool": 32,
+    "observe_minutes": 15,
+    "success_conditions": ["p95 acquire time decreases", "pool waiters decrease"]
+  },
+  "certainty": "evidence_limited"
+}
