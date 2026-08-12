@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Render the completed Claude Code benchmark as a self-contained HTML report."""
 
 from __future__ import annotations
