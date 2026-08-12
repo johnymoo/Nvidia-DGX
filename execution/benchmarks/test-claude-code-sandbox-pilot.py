@@ -192,6 +192,14 @@ def main() -> None:
         sanitized = pilot.blind_review_artifact("qwen_local used TOOL_CALLS; content stays intact")
         assert sanitized == "[redacted internal identifier] used [redacted internal identifier]; content stays intact"
         assert pilot.blind_review_artifact("No internal identifiers here.") == "No internal identifiers here."
+        chained = {"preflight_key": "new", "preflight_migrations": [{"old_preflight_key": "old", "new_preflight_key": "new", "new_runner_sha256": "runner-new"}]}
+        assert pilot.validate_preflight_chain(chained, "old") == "runner-new"
+        try:
+            pilot.validate_preflight_chain(chained, "unrelated")
+        except pilot.InfrastructureError:
+            pass
+        else:
+            raise AssertionError("invalid preflight migration chain did not fail")
 
         probe = pilot.run_codex_probe(root / "judge-probe")
         assert probe["runtime"]["model"] == "gpt-5.6-sol"

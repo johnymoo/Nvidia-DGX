@@ -694,14 +694,28 @@ def validate_resume_attempts(state: dict[str, Any], manifest: dict[str, Any]) ->
             raise InfrastructureError(f"resume attempt artifact missing: {key}")
 
 
+def validate_preflight_chain(state: dict[str, Any], source_key: str) -> str | None:
+    owned_key = source_key
+    owned_runner: str | None = None
+    for migration in state.get("preflight_migrations", []):
+        if migration.get("old_preflight_key") != owned_key or not migration.get("new_preflight_key"):
+            raise InfrastructureError("resume preflight migration chain is invalid")
+        owned_key = migration["new_preflight_key"]
+        owned_runner = migration.get("new_runner_sha256")
+    if state.get("preflight_key") != owned_key:
+        raise InfrastructureError("resume source preflight does not own the benchmark state")
+    return owned_runner
+
+
 def rebind_preflight(cache: Path, artifact_root: Path, toolchain: Path, old_preflight_path: Path) -> dict[str, Any]:
     manifest = load_manifest()
     real_claude = find_real_claude(manifest["claude_code_version"])
     current = require_fresh_preflight(cache, manifest, toolchain, real_claude)
     old = read_json(old_preflight_path)
     state = read_json(state_path(artifact_root))
-    if old.get("status") != "passed" or state.get("preflight_key") != old.get("preflight_key"):
+    if old.get("status") != "passed" or not old.get("preflight_key"):
         raise InfrastructureError("resume source preflight does not own the benchmark state")
+    prior_runner = validate_preflight_chain(state, old["preflight_key"]) or old.get("runner_sha256")
     stable_fields = ("baseline_revision", "manifest_sha256", "toolchain", "claude_real_sha256", "claude_code_version", "task_ids", "treatment_contracts")
     if any(old.get(field) != current.get(field) for field in stable_fields):
         raise InfrastructureError("resume preflight changed a frozen benchmark contract")
@@ -714,7 +728,7 @@ def rebind_preflight(cache: Path, artifact_root: Path, toolchain: Path, old_pref
         if runtime.get("model") != JUDGE_MODEL or runtime.get("reasoning_effort") != JUDGE_EFFORT or judge.get("fallback_configured") is not False:
             raise InfrastructureError("resume preflight judge identity is invalid")
     validate_resume_attempts(state, manifest)
-    migration = {"at": utc_now(), "reason": "runner-only benchmark recovery fix", "old_preflight_key": old["preflight_key"], "new_preflight_key": current["preflight_key"], "old_runner_sha256": old.get("runner_sha256"), "new_runner_sha256": current.get("runner_sha256"), "validated_attempts": len(state.get("attempts") or [])}
+    migration = {"at": utc_now(), "reason": "runner-only benchmark recovery fix", "old_preflight_key": state["preflight_key"], "new_preflight_key": current["preflight_key"], "old_runner_sha256": prior_runner, "new_runner_sha256": current.get("runner_sha256"), "validated_attempts": len(state.get("attempts") or [])}
     state["preflight_key"] = current["preflight_key"]
     state.setdefault("preflight_migrations", []).append(migration)
     write_json(state_path(artifact_root), state)
