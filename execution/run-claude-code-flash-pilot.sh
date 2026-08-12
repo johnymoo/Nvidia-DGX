@@ -108,13 +108,17 @@ recover_on_exit() {
 
 start_review_server() {
   local review_root="$1" output="$CURRENT_ARTIFACT/review-server.json" deadline review_url
-  runner --serve-review --review-root "$review_root" --artifact-root "$CURRENT_ARTIFACT" >"$output" 2>"$CURRENT_ARTIFACT/review-server.stderr.log" &
+  nohup python3 "$RUNNER" --cache "$CACHE_ROOT" --toolchain "$TOOLCHAIN" --serve-review \
+    --review-root "$review_root" --artifact-root "$CURRENT_ARTIFACT" \
+    </dev/null >"$output" 2>"$CURRENT_ARTIFACT/review-server.stderr.log" &
   REVIEW_PID="$!"
+  printf '%s\n' "$REVIEW_PID" >"$CURRENT_ARTIFACT/review-server.pid"
   deadline=$((SECONDS + 15))
   while [ "$SECONDS" -lt "$deadline" ]; do
     if [ -s "$output" ]; then
       review_url="$(jq -r '.url // empty' "$output" 2>/dev/null || true)"
       if [ -n "$review_url" ]; then
+        disown "$REVIEW_PID" 2>/dev/null || true
         printf '%s\n' "$review_url"
         return 0
       fi

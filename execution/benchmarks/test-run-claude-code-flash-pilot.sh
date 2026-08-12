@@ -58,4 +58,13 @@ grep -Fxq -- '--status' "$TMP/actions.log"
 grep -Fxq -- '--transition-qwen' "$TMP/actions.log"
 test -s "$TMP/qwen-recovery-receipt.json"
 
-printf '{"status":"passed","tests":3}\n'
+mkdir -p "$TMP/review/public" "$TMP/review/sealed"
+printf '{}\n' >"$TMP/review/public/review.json"
+printf '{}\n' >"$TMP/review/sealed/mappings.json"
+printf '<!doctype html><title>test</title>\n' >"$TMP/review/public/index.html"
+server_url="$(start_review_server "$TMP/review")"
+curl -fsS --max-time 3 "$server_url" | grep -Fq '<title>test</title>'
+server_pid="$(cat "$TMP/review-server.pid")"
+kill "$server_pid"
+
+printf '{"status":"passed","tests":4}\n'
