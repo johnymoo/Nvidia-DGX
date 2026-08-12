@@ -697,7 +697,9 @@ def validate_resume_attempts(state: dict[str, Any], manifest: dict[str, Any]) ->
 def validate_preflight_chain(state: dict[str, Any], source_key: str) -> str | None:
     owned_key = source_key
     owned_runner: str | None = None
-    for migration in state.get("preflight_migrations", []):
+    migrations = state.get("preflight_migrations", [])
+    start = next((index for index, migration in enumerate(migrations) if migration.get("old_preflight_key") == source_key), len(migrations))
+    for migration in migrations[start:]:
         if migration.get("old_preflight_key") != owned_key or not migration.get("new_preflight_key"):
             raise InfrastructureError("resume preflight migration chain is invalid")
         owned_key = migration["new_preflight_key"]
