@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.downloads/
+artifacts/
+models/
+output/
+input/
+user/
+logs/
+run/
+site/
+*.mp4
+*.png
+*.safetensors
+*.pth
+protected-baseline.json
