@@ -1,9 +1,7 @@
 {
   "schema_version": 1,
   "profiles": [
-    {"id": "showcase", "width": 512, "height": 320, "frames": 33, "steps": 6},
-    {"id": "bounded", "width": 384, "height": 240, "frames": 17, "steps": 4},
-    {"id": "minimum", "width": 320, "height": 192, "frames": 5, "steps": 1}
+    {"id": "trained-max-15s", "width": 512, "height": 320, "frames": 362, "steps": 6}
   ],
   "cases": [
     {

@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 python3 -m py_compile "$SCRIPT_DIR/benchmark.py"
-jq -e '(.profiles | length) == 3 and (.cases | length) == 9' "$SCRIPT_DIR/cases.json" >/dev/null
+jq -e '(.profiles | length) == 1 and .profiles[0].frames == 362 and (.cases | length) == 9' "$SCRIPT_DIR/cases.json" >/dev/null
 mkdir -p "$tmp/source" "$tmp/site"
 printf 'fake-video' > "$tmp/source/a.mp4"
 printf 'fake-image' > "$tmp/source/a.png"

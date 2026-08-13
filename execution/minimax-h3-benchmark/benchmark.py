@@ -53,6 +53,15 @@ def api_json(base, endpoint, payload=None, timeout=30):
         return json.load(response)
 
 
+def api_post(base, endpoint, payload, timeout=30):
+    request = urllib.request.Request(
+        base + endpoint, data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        if response.status != 200:
+            raise RuntimeError(f"POST {endpoint} returned {response.status}")
+
+
 def command_json(command):
     return json.loads(subprocess.check_output(command, text=True))
 
@@ -179,21 +188,28 @@ def resource_sample(pid):
                 rss_kb = int(line.split()[1])
     except FileNotFoundError:
         pass
-    gpu = None
+    gpu = temperature = power_watts = None
     try:
-        gpu = int(subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
-            text=True, stderr=subprocess.DEVNULL).strip().splitlines()[0])
+        row = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,temperature.gpu,power.draw",
+             "--format=csv,noheader,nounits"], text=True,
+            stderr=subprocess.DEVNULL).strip().splitlines()[0].split(",")
+        values = [item.strip() for item in row]
+        gpu = int(values[0]) if values[0] not in ("N/A", "[N/A]") else None
+        temperature = int(values[1]) if values[1] not in ("N/A", "[N/A]") else None
+        power_watts = float(values[2]) if values[2] not in ("N/A", "[N/A]") else None
     except (OSError, subprocess.SubprocessError, ValueError, IndexError):
         pass
     return {"at": utc_now(), "available_memory_kib": meminfo.get("MemAvailable"),
-            "comfyui_rss_kib": rss_kb, "gpu_utilization_percent": gpu}
+            "comfyui_rss_kib": rss_kb, "gpu_utilization_percent": gpu,
+            "gpu_temperature_celsius": temperature,
+            "gpu_power_draw_watts": power_watts}
 
 
 def sample_until(stop_event, pid, target):
     while not stop_event.is_set():
         target.append(resource_sample(pid))
-        stop_event.wait(2)
+        stop_event.wait(1)
 
 
 def event_times(history, prompt_id):
@@ -204,10 +220,24 @@ def event_times(history, prompt_id):
             event = row[0]
             if event in ("execution_start", "execution_success", "execution_error"):
                 result[event] = row[1].get("timestamp")
+            elif event == "execution_cached":
+                result["execution_cached_nodes"] = row[1].get("nodes", [])
     return result
 
 
+def event_duration_seconds(events):
+    start = events.get("execution_start")
+    success = events.get("execution_success")
+    if not isinstance(start, (int, float)) or not isinstance(success, (int, float)):
+        return None
+    # ComfyUI event timestamps are milliseconds since Unix epoch.
+    return round((success - start) / 1000, 3)
+
+
 def run_case(base, root, template, case, profile, run_id, artifacts, ffmpeg, canary=False):
+    assert_idle(base)
+    api_post(base, "/free", {"free_memory": True})
+    time.sleep(2)
     assert_idle(base)
     prefix = f"benchmark/{run_id}/{'canary-' if canary else ''}{profile['id']}"
     prompt = build_prompt(template, case, profile, prefix)
@@ -239,10 +269,11 @@ def run_case(base, root, template, case, profile, run_id, artifacts, ffmpeg, can
             time.sleep(2)
         else:
             raise TimeoutError("prompt did not complete within 3600 seconds")
+        observed_wall, observed_mono = utc_now(), time.monotonic()
+        time.sleep(10)
     finally:
         stop_event.set()
         sampler.join(5)
-    observed_wall, observed_mono = utc_now(), time.monotonic()
     write_json(case_dir / "history.json", history)
     write_json(case_dir / "resources.json", samples)
     outputs = extract_outputs(history, prompt_id, root)
@@ -253,6 +284,11 @@ def run_case(base, root, template, case, profile, run_id, artifacts, ffmpeg, can
     image_pixel_hash = pixel_hash_image(outputs["image"], ffmpeg)
     video_first_pixel_hash = pixel_hash_image(outputs["video"], ffmpeg)
     timing = event_times(history, prompt_id)
+    cached_nodes = timing.get("execution_cached_nodes", [])
+    critical_nodes = {"104", "15", "9", "14", "10", "91", "92", "200", "201"}
+    if critical_nodes.intersection(cached_nodes):
+        raise RuntimeError(
+            "critical generation nodes were cached after execution cache reset")
     result = {
         "id": case["id"], "title": case["title"], "category": case["category"],
         "prompt": case["prompt"], "seed": case["seed"], "profile": profile,
@@ -261,6 +297,8 @@ def run_case(base, root, template, case, profile, run_id, artifacts, ffmpeg, can
                    "completed_observed_at": observed_wall,
                    "acceptance_delay_seconds": round(accepted_mono - submitted_mono, 3),
                    "bounded_wall_seconds": round(observed_mono - accepted_mono, 3),
+                   "comfyui_execution_seconds": event_duration_seconds(timing),
+                   "critical_generation_nodes_cached": False,
                    "comfyui_events": timing},
         "video": {"source_path": str(outputs["video"]), "bytes": outputs["video"].stat().st_size,
                   "sha256": video_hash, "decoded_rgb_sequence_sha256": sequence_hash,
@@ -432,8 +470,13 @@ def render(args):
             cards.append(f'''<article class="case"><div class="case-body"><div class="status">Failed</div><h3>{html.escape(case['title'])}</h3><p>{html.escape(case.get('error','Unknown failure'))}</p></div></article>''')
     summary = data.get("summary", {})
     repro = data.get("reproducibility") or {}
+    generation_times = [case.get("timing", {}).get("comfyui_execution_seconds")
+                        for case in ok]
+    generation_times = [value for value in generation_times if value is not None]
+    generation_range = (f"{min(generation_times):.1f}-{max(generation_times):.1f}s"
+                        if generation_times else "unknown")
     featured_html = "" if not featured else f'''<video controls preload="metadata" poster="{featured['image']['site_path']}"><source src="{featured['video']['site_path']}" type="video/mp4"></video>'''
-    index = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MiniMax H3 on NVIDIA GB10</title><link rel="stylesheet" href="style.css"></head><body><nav><div><span class="brand">H3 <span class="accent">/</span> GB10</span><a href="#results">Results</a><a href="#gallery">Gallery</a><a href="#limits">Limits</a><a href="evidence.html">Evidence</a></div></nav><header class="hero"><div><div class="eyebrow">Single-host capability report</div><h1>MiniMax H3<br>on NVIDIA GB10</h1><p class="lede">Real video generations and native saved frames from one DGX Spark. Every result is linked to its prompt, timing, hash, and runtime evidence.</p><div class="metrics"><div class="metric"><b>{summary.get('successful',0)}/{summary.get('total',0)}</b><span>successful formal runs</span></div><div class="metric"><b>{data.get('selected_profile',{}).get('id','unknown')}</b><span>frozen profile</span></div><div class="metric"><b>{'Yes' if repro.get('decoded_frames_equal') else 'No'}</b><span>decoded-frame repeatability</span></div><div class="metric"><b>{data['status'].upper()}</b><span>run status · {data.get('completed_at','')}</span></div></div></div>{featured_html}</header><main><section class="band" id="results"><div class="kicker">Measured outcome</div><h2>A bounded, inspectable run</h2><p class="intro">This report measures one deployed configuration. It records success, timing, media structure, exact hashes, serial stability, and fatal scans; it does not assign a subjective quality score.</p></section><section class="band" id="gallery"><div class="kicker">Generated artifacts</div><h2>Videos and native frames</h2><p class="intro">Poster images were saved from the generated frame tensor by ComfyUI in the same prompt as each video.</p><div class="gallery">{''.join(cards)}</div></section><section class="band" id="limits"><div class="kicker">Interpretation</div><h2>What this run does not prove</h2><div class="limit"><div><h3>No cross-model ranking</h3><p>This is a capability report for one pinned H3 deployment.</p></div><div><h3>No subjective score</h3><p>Visual output is presented for direct inspection without invented quality numbers.</p></div><div><h3>No exact hardware peak</h3><p>Resource values are polling samples, not continuous peak instrumentation.</p></div></div></section></main><footer>Run <span class="hash">{data['run_id']}</span> · <a href="evidence.html">Open full evidence handbook</a></footer></body></html>'''
+    index = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MiniMax H3 on NVIDIA GB10</title><link rel="stylesheet" href="style.css"></head><body><nav><div><span class="brand">H3 <span class="accent">/</span> GB10</span><a href="#results">Results</a><a href="#gallery">Gallery</a><a href="#limits">Limits</a><a href="evidence.html">Evidence</a></div></nav><header class="hero"><div><div class="eyebrow">Single-host capability report</div><h1>MiniMax H3<br>on NVIDIA GB10</h1><p class="lede">Real video generations and native saved frames from one DGX Spark. Every result is linked to its prompt, timing, hash, and runtime evidence.</p><div class="metrics"><div class="metric"><b>{summary.get('successful',0)}/{summary.get('total',0)}</b><span>successful formal runs</span></div><div class="metric"><b>{data.get('selected_profile',{}).get('frames','?')} frames</b><span>trained-range duration profile</span></div><div class="metric"><b>{generation_range}</b><span>ComfyUI execution time range</span></div><div class="metric"><b>{'Yes' if repro.get('decoded_frames_equal') else 'No'}</b><span>decoded-frame repeatability</span></div><div class="metric"><b>{data.get('selected_profile',{}).get('id','unknown')}</b><span>frozen profile</span></div><div class="metric"><b>{data['status'].upper()}</b><span>run status · {data.get('completed_at','')}</span></div></div></div>{featured_html}</header><main><section class="band" id="results"><div class="kicker">Measured outcome</div><h2>A bounded, inspectable run</h2><p class="intro">This report measures one deployed configuration. It records success, timing, media structure, exact hashes, serial stability, and fatal scans; it does not assign a subjective quality score.</p></section><section class="band" id="gallery"><div class="kicker">Generated artifacts</div><h2>Videos and native frames</h2><p class="intro">Poster images were saved from the generated frame tensor by ComfyUI in the same prompt as each video.</p><div class="gallery">{''.join(cards)}</div></section><section class="band" id="limits"><div class="kicker">Interpretation</div><h2>What this run does not prove</h2><div class="limit"><div><h3>No cross-model ranking</h3><p>This is a capability report for one pinned H3 deployment.</p></div><div><h3>No subjective score</h3><p>Visual output is presented for direct inspection without invented quality numbers.</p></div><div><h3>No exact hardware peak</h3><p>Resource values are polling samples, not continuous peak instrumentation.</p></div></div></section></main><footer>Run <span class="hash">{data['run_id']}</span> · <a href="evidence.html">Open full evidence handbook</a></footer></body></html>'''
     rows, details = [], []
     for case in cases:
         timing = case.get("timing", {})
@@ -444,11 +487,17 @@ def render(args):
                if row.get("comfyui_rss_kib") is not None]
         gpu = [row.get("gpu_utilization_percent") for row in samples
                if row.get("gpu_utilization_percent") is not None]
+        temperature = [row.get("gpu_temperature_celsius") for row in samples
+                       if row.get("gpu_temperature_celsius") is not None]
+        power = [row.get("gpu_power_draw_watts") for row in samples
+                 if row.get("gpu_power_draw_watts") is not None]
         resource_summary = {
             "polling_samples": len(samples),
             "minimum_available_memory_gib": round(min(available) / 1048576, 2) if available else None,
             "maximum_comfyui_rss_gib": round(max(rss) / 1048576, 2) if rss else None,
             "maximum_sampled_gpu_utilization_percent": max(gpu) if gpu else None,
+            "maximum_sampled_gpu_temperature_celsius": max(temperature) if temperature else None,
+            "maximum_sampled_gpu_power_draw_watts": max(power) if power else None,
             "interpretation": "bounded polling samples, not exact continuous peaks",
         }
         rows.append(f"<tr><td><a href='#{case['id']}'>{html.escape(case['id'])}</a></td><td>{case['status']}</td><td>{timing.get('bounded_wall_seconds','—')}</td><td>{media_info(case) if case['status']=='success' else '—'}</td></tr>")

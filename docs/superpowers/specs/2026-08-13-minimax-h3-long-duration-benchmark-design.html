@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MiniMax H3 Long-Duration Benchmark Amendment</title>
+  <style>
+    /*
+     * BRAINSTORM COMPANION FRAME TEMPLATE
+     *
+     * This template provides a consistent frame with:
+     * - OS-aware light/dark theming
+     * - Fixed header and selection indicator bar
+     * - Scrollable main content area
+     * - CSS helpers for common UI patterns
+     *
+     * Content is injected via placeholder comment in #claude-content.
+     */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== FRAME STRUCTURE ===== */
+    .header {
+      background: var(--bg-secondary);
+      padding: 0.5rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+    .header .status { font-size: 0.7rem; color: var(--status-color, var(--success)); display: flex; align-items: center; gap: 0.4rem; }
+    .header .status::before { content: ''; width: 6px; height: 6px; background: var(--status-color, var(--success)); border-radius: 50%; }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .keepalive { display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; color: var(--text-secondary); cursor: pointer; user-select: none; }
+    .keepalive input { accent-color: var(--accent); width: 0.8rem; height: 0.8rem; margin: 0; cursor: pointer; }
+
+    .main { flex: 1; overflow-y: auto; }
+    #claude-content { padding: 2rem; min-height: 100%; }
+
+    .indicator-bar {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .indicator-bar span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .indicator-bar .selected-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 2rem; }
+    .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* ===== MARKDOWN DOCUMENTS ===== */
+    .markdown-screen { max-width: 980px; margin: 0 auto; }
+    .markdown-screen h1 { font-size: 2rem; line-height: 1.15; margin-bottom: 1rem; }
+    .markdown-screen h2 { margin-top: 1.75rem; }
+    .markdown-screen p, .markdown-screen ul, .markdown-screen table, .markdown-screen pre { margin-bottom: 1rem; }
+    .markdown-screen ul { margin-left: 1.35rem; }
+    .markdown-screen img { display: block; max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; }
+    .markdown-screen table { width: 100%; border-collapse: collapse; background: var(--bg-secondary); }
+    .markdown-screen th, .markdown-screen td { border: 1px solid var(--border); padding: 0.55rem 0.7rem; text-align: left; vertical-align: top; }
+    .markdown-screen th { background: var(--bg-tertiary); font-weight: 600; }
+    .markdown-screen code { background: var(--bg-tertiary); border-radius: 4px; padding: 0.05rem 0.25rem; }
+    .markdown-screen pre { overflow-x: auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .markdown-screen pre code { background: transparent; padding: 0; }
+
+    /* ===== OPTIONS (for A/B/C choices) ===== */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .option.selected .letter { background: var(--accent); color: white; }
+    .option .content { flex: 1; }
+    .option .content h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
+    /* ===== CARDS (for showing designs/mockups) ===== */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { background: var(--bg-tertiary); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
+
+    /* ===== MOCKUP CONTAINER ===== */
+    .mockup {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .mockup-header {
+      background: var(--bg-tertiary);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+
+    /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ===== PROS/CONS ===== */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
+    .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons h4 { color: var(--error); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* ===== PLACEHOLDER (for mockup areas) ===== */
+    .placeholder {
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== INLINE MOCKUP ELEMENTS ===== */
+    .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
+    .mock-content { padding: 1.5rem; flex: 1; }
+    .mock-button { background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+    .mock-input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; width: 100%; }
+  </style>
+<style>.header .status, .indicator-bar { display: none; }</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Visual Companion</h1>
+    <div class="header-right">
+      <label class="keepalive" title="Disable the idle timeout so this session stays open">
+        <input type="checkbox" id="keepalive-toggle">
+        <span>Keep alive</span>
+      </label>
+      <div class="status">Connected</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="claude-content">
+      <article class="markdown-screen">
+<h1>MiniMax H3 Long-Duration Benchmark Amendment</h1>
+<p>Date: 2026-08-13</p>
+<p>Status: proposed for final approval</p>
+<p>Parent design: <code>docs/superpowers/specs/2026-08-13-minimax-h3-benchmark-handbook-design.md</code></p>
+<h2>Intent And Baseline</h2>
+<p>The user requested that the published short videos be regenerated at the supported upper duration and that resource use and generation time be recorded. This amendment preserves baseline <code>minimax-h3-benchmark-r1</code> and refines:</p>
+<p>ceiling rather than the prior 33-frame showcase profile.</p>
+<p>unchanged.</p>
+<ul>
+<li><code>US-H3-B01</code>: published representative videos must use the supported duration</li>
+<li><code>US-H3-B02</code>: each case must expose generation timing and resource samples.</li>
+<li><code>US-H3-B03</code>: ComfyUI, the report service, and <code>lexdata-ai</code> isolation remain</li>
+</ul>
+<p>Given the deployed node metadata, <code>length</code> accepts up to 3600 frames but states that the trained range ends at approximately 362 frames and longer generation is untested. This design defines &quot;supported upper duration&quot; as 362 model frames, approximately 15.1 seconds at 24 fps. It does not represent the 3600-frame API validation ceiling as a supported model capability.</p>
+<h2>Selected Change</h2>
+<p>Regenerate the same nine formal cases serially at one frozen profile:</p>
+<ul>
+<li>512x320;</li>
+<li>362 model frames;</li>
+<li>six sampling steps;</li>
+<li>24 fps;</li>
+<li>unchanged prompts and seeds.</li>
+</ul>
+<p>The old run remains immutable failure/comparison evidence. The new run is published only if all nine cases produce a decodable MP4 and native PNG frame, the queue remains owned and isolated, fatal scans pass, and the exact pre-run ComfyUI/protected-service identities remain equal afterward.</p>
+<p>Two alternatives are rejected. Using 3600 frames would test an explicitly untrained range and materially increase OOM and runtime risk. Regenerating only the four visual cases would make the site&#39;s success, reproducibility, and stability summary refer to mixed duration profiles.</p>
+<h2>Timing And Resources</h2>
+<p>Capture wall-clock and monotonic timestamps at submission, API acceptance, ComfyUI execution start/success events, and terminal history observation. Publish API acceptance delay, model execution time when both ComfyUI event timestamps exist, and bounded end-to-end time. Missing event timestamps remain unknown rather than inferred.</p>
+<p>Poll once per second from before submission through ten seconds after terminal history:</p>
+<ul>
+<li>host available memory;</li>
+<li>ComfyUI RSS;</li>
+<li>GPU utilization and temperature;</li>
+<li>GPU power draw when the driver exposes it.</li>
+</ul>
+<p>For each case publish sample count, minimum available memory, maximum ComfyUI RSS, maximum sampled GPU utilization/temperature/power, and the raw time series. These are polling extrema, not exact continuous peaks. The homepage shows the run duration profile and generation-time range; detailed values remain on the evidence page and in <code>benchmark.json</code>.</p>
+<h2>Verification</h2>
+<p>All prior media, hash, queue, fatal-scan, process-identity, report lifecycle, desktop, and mobile checks remain required. Additional acceptance requires all nine published videos to report approximately 15 seconds duration, 362 frozen model frames in every receipt, nonempty resource series, and visible per-case timing/resource summaries.</p>
+<p>Design playback: <code>US-H3-B01</code>, <code>US-H3-B02</code>, and <code>US-H3-B03</code> Covered; drift score <code>0</code>; gate <code>DESIGN_ALIGNED</code>.</p>
+</article>
+    </div>
+  </div>
+
+  <div class="indicator-bar">
+    <span id="indicator-text">Click an option above, then return to the terminal</span>
+  </div>
+
+</body>
+</html>
