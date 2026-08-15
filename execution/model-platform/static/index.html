@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model Platform</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">GB10 control plane</p>
+      <h1>Model Platform</h1>
+    </div>
+    <div class="header-actions">
+      <span id="sync-state" class="sync-state">Connecting</span>
+      <button id="refresh" class="icon-button" title="Refresh" aria-label="Refresh">↻</button>
+    </div>
+  </header>
+  <nav aria-label="Views">
+    <button class="tab active" data-view="models">Models</button>
+    <button class="tab" data-view="ports">Ports</button>
+    <button class="tab" data-view="unmanaged">Unmanaged</button>
+  </nav>
+  <main>
+    <section id="models-view" class="view active">
+      <div id="summary" class="summary"></div>
+      <div id="models" class="table-wrap"></div>
+    </section>
+    <section id="ports-view" class="view">
+      <div class="toolbar">
+        <label for="host-filter">Host</label>
+        <select id="host-filter"><option value="">All hosts</option><option value="gb10">gb10</option><option value="gb10-2">gb10-2</option></select>
+      </div>
+      <div id="ports" class="table-wrap"></div>
+    </section>
+    <section id="unmanaged-view" class="view">
+      <div id="unmanaged" class="table-wrap"></div>
+    </section>
+    <section id="operation-state" class="operation-state" hidden aria-live="polite">
+      <div class="operation-heading">
+        <div><p class="eyebrow">Latest operation</p><h2 id="receipt-title">Operation</h2></div>
+        <span id="receipt-status" class="receipt-status"></span>
+      </div>
+      <code id="receipt-id"></code>
+      <pre id="receipt-detail"></pre>
+    </section>
+  </main>
+  <dialog id="operation-dialog">
+    <form method="dialog">
+      <div class="dialog-head">
+        <div><p class="eyebrow">Operation preview</p><h2 id="dialog-title">Model action</h2></div>
+        <button value="cancel" class="icon-button" aria-label="Close">×</button>
+      </div>
+      <div id="operation-preview"></div>
+      <label id="confirmation-label" for="confirmation">Confirm model ID</label>
+      <input id="confirmation" autocomplete="off" spellcheck="false">
+      <label id="protected-row" class="protected-row" hidden><input id="allow-protected" type="checkbox"> Allow protected operation</label>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">Cancel</button>
+        <button id="execute" value="default">Execute</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

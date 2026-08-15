@@ -1,0 +1,69 @@
+name: gb10-qwen38-nvfp4
+
+services:
+  server:
+    image: ${QWEN38_VLLM_IMAGE:?set QWEN38_VLLM_IMAGE}
+    network_mode: host
+    restart: "${RESTART_POLICY:-no}"
+    gpus: all
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 16gb
+    tmpfs:
+      - /tmp:rw,nosuid,size=4g
+      - /run:rw,nosuid,size=16m
+
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
+    volumes:
+      - ${QWEN38_MODEL_DIR:?set QWEN38_MODEL_DIR}:/models/qwen38:ro
+      - ${QWEN38_CACHE_DIR:?set QWEN38_CACHE_DIR}:/root/.cache:rw
+
+    environment:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      VLLM_LOGGING_LEVEL: "${VLLM_LOGGING_LEVEL:-INFO}"
+
+    command:
+      - vllm
+      - serve
+      - /models/qwen38
+      - --served-model-name
+      - ${QWEN38_SERVED_MODEL:?set QWEN38_SERVED_MODEL}
+      - --host
+      - ${QWEN38_HOST:-0.0.0.0}
+      - --port
+      - "${QWEN38_PORT:-8892}"
+      - --max-model-len
+      - "${QWEN38_CONTEXT_SIZE:-262144}"
+      - --tensor-parallel-size
+      - "1"
+      - --max-num-seqs
+      - "${QWEN38_MAX_NUM_SEQS:-4}"
+      - --gpu-memory-utilization
+      - "${QWEN38_GPU_MEMORY_UTILIZATION:-0.85}"
+      - --enable-prefix-caching
+      - --enable-chunked-prefill
+      - --speculative-config
+      - '{"method":"mtp","num_speculative_tokens":2}'
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://127.0.0.1:8892/v1/models
+      interval: 15s
+      timeout: 5s
+      retries: 120
+      start_period: 60s
+
+    labels:
+      io.shili.model-platform.model: unsloth-Qwen3.8-27B-NVFP4
+      io.shili.model-platform.revision: 16b6615af3548b88e2d8e382457bc705b00479cf
+      io.shili.model-platform.quantization: nvfp4
+      io.shili.model-platform.multimodal: text,image,video

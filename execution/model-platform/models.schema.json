@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shili.local/model-platform/models.schema.json",
+  "title": "GB10 model platform registry",
+  "type": "object",
+  "required": ["version", "api_version", "hosts", "models"],
+  "properties": {
+    "version": {"const": 1},
+    "api_version": {"const": "model-platform/v1"},
+    "hosts": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9-]{0,62}$": {
+          "type": "object",
+          "required": ["management_ip"],
+          "properties": {
+            "management_ip": {"type": "string", "format": "ipv4"},
+            "fabric_ip": {"type": "string", "format": "ipv4"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "models": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9._-]{0,127}$": {"$ref": "#/$defs/model"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "model": {
+      "type": "object",
+      "required": ["display_name", "deployments", "adapter", "endpoints", "resources"],
+      "properties": {
+        "display_name": {"type": "string", "minLength": 1},
+        "identity": {"type": "object"},
+        "deployments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["host", "project", "services"],
+            "properties": {
+              "host": {"type": "string"},
+              "role": {"type": "string"},
+              "project": {"type": "string", "minLength": 1},
+              "services": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+            },
+            "additionalProperties": false
+          }
+        },
+        "adapter": {
+          "oneOf": [
+            {"$ref": "#/$defs/controller"},
+            {"$ref": "#/$defs/compose"},
+            {"type": "object", "required": ["type"], "properties": {"type": {"const": "none"}}, "additionalProperties": false}
+          ]
+        },
+        "availability": {
+          "type": "object",
+          "required": ["mutable"],
+          "properties": {
+            "mutable": {"type": "boolean"},
+            "reason": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        "status_probe": {"$ref": "#/$defs/status_probe"},
+        "endpoints": {"type": "array", "items": {"$ref": "#/$defs/endpoint"}},
+        "resources": {
+          "type": "object",
+          "properties": {
+            "exclusive_hosts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+            "gpu_hosts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+            "claims": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+          },
+          "additionalProperties": false
+        },
+        "conflicts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "protected": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+    },
+    "controller": {
+      "type": "object",
+      "required": ["type", "host", "working_dir", "commands"],
+      "properties": {
+        "type": {"const": "controller"},
+        "host": {"type": "string"},
+        "working_dir": {"type": "string", "pattern": "^/"},
+        "commands": {
+          "type": "object",
+          "required": ["check", "start", "status", "stop"],
+          "properties": {
+            "check": {"$ref": "#/$defs/steps"},
+            "start": {"$ref": "#/$defs/steps"},
+            "status": {"$ref": "#/$defs/steps"},
+            "stop": {"$ref": "#/$defs/steps"},
+            "restart": {"$ref": "#/$defs/steps"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "compose": {
+      "type": "object",
+      "required": ["type", "host", "working_dir", "files"],
+      "properties": {
+        "type": {"const": "compose"},
+        "host": {"type": "string"},
+        "working_dir": {"type": "string", "pattern": "^/"},
+        "files": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "env_files": {"type": "array", "items": {"type": "string"}},
+        "profiles": {"type": "array", "items": {"type": "string"}},
+        "services": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "status_probe": {
+      "type": "object",
+      "required": ["type", "host", "working_dir", "command"],
+      "properties": {
+        "type": {"const": "controller_json"},
+        "host": {"type": "string"},
+        "working_dir": {"type": "string", "pattern": "^/"},
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "state_field": {"type": "string", "minLength": 1},
+        "running_value": {"type": ["string", "boolean"]},
+        "model_field": {"type": "string", "minLength": 1},
+        "revision_field": {"type": "string", "minLength": 1},
+        "run_id_field": {"type": "string", "minLength": 1},
+        "rank_fields": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "verified_hosts": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "endpoint": {
+      "type": "object",
+      "required": ["host", "bind", "port", "protocol"],
+      "properties": {
+        "host": {"type": "string"},
+        "bind": {"type": "string"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "protocol": {"enum": ["tcp", "udp"]},
+        "scope": {"enum": ["management", "worker", "loopback", "fabric-only"]},
+        "health": {"type": "string", "format": "uri"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "api_version": "model-platform/v1",
+  "hosts": {
+    "gb10": {"management_ip": "192.168.88.181", "fabric_ip": "192.168.192.181"},
+    "gb10-2": {"management_ip": "192.168.88.198", "fabric_ip": "192.168.192.198"}
+  },
+  "models": {
+    "deepseek-v4-flash-0731": {
+      "display_name": "DeepSeek V4 Flash 0731",
+      "identity": {"served_model": "deepseek-v4-flash-0731", "revision": "f277b3dfa718a5962bed64e69e7e640a5384ec2f"},
+      "deployments": [
+        {"host": "gb10", "role": "head", "project": "gb10-deepseek-v4", "services": ["vllm-dspark"]},
+        {"host": "gb10-2", "role": "worker", "project": "gb10-deepseek-v4", "services": ["vllm-dspark"]}
+      ],
+      "adapter": {
+        "type": "controller",
+        "host": "gb10",
+        "working_dir": "/home/chriswang/gb10-ds4",
+        "commands": {
+          "check": [["execution/run-private-ds-production.sh", "--check"]],
+          "start": [["execution/run-private-ds-production.sh", "--start"]],
+          "status": [["execution/run-private-ds-production.sh", "--status"]],
+          "stop": [["execution/run-private-ds-production.sh", "--stop", "--restore-qwen"]]
+        }
+      },
+      "status_probe": {
+        "type": "controller_json",
+        "host": "gb10",
+        "working_dir": "/home/chriswang/gb10-ds4",
+        "command": ["execution/run-private-ds-production.sh", "--status"],
+        "state_field": "state",
+        "running_value": "running",
+        "model_field": "model",
+        "run_id_field": "run_id",
+        "rank_fields": ["head_running", "worker_running", "model_ok"],
+        "verified_hosts": ["gb10", "gb10-2"]
+      },
+      "endpoints": [
+        {"host": "gb10", "bind": "0.0.0.0", "port": 8890, "protocol": "tcp", "scope": "management", "health": "http://127.0.0.1:8890/v1/models"},
+        {"host": "gb10-2", "bind": "0.0.0.0", "port": 8890, "protocol": "tcp", "scope": "worker"}
+      ],
+      "resources": {"exclusive_hosts": ["gb10", "gb10-2"], "gpu_hosts": ["gb10", "gb10-2"], "claims": ["gb10-fabric-pair"]},
+      "conflicts": ["qwen36-local-rollback", "unsloth-ab", "minimax-h3", "qwen38-nvfp4"],
+      "protected": true
+    },
+    "qwen36-proxy": {
+      "display_name": "Qwen 3.6 Proxy",
+      "identity": {"served_model": "qwen3.6-35b-fp8", "upstream": "x570"},
+      "deployments": [{"host": "gb10", "role": "proxy", "project": "qwen36-8004-proxy", "services": ["proxy"]}],
+      "adapter": {"type": "compose", "host": "gb10", "working_dir": "/home/chriswang/gb10-qwen-proxy", "files": ["compose.yml"], "services": ["proxy"]},
+      "endpoints": [{"host": "gb10", "bind": "0.0.0.0", "port": 8004, "protocol": "tcp", "scope": "management", "health": "http://127.0.0.1:8004/v1/models"}],
+      "resources": {"exclusive_hosts": [], "gpu_hosts": [], "claims": []},
+      "conflicts": ["qwen36-local-rollback"],
+      "protected": true
+    },
+    "qwen36-local-rollback": {
+      "display_name": "Qwen 3.6 GB10 Rollback",
+      "identity": {"served_model": "qwen3.6-35b-fp8", "role": "rollback"},
+      "deployments": [{"host": "gb10", "role": "server", "project": "qwen36-35b-rollback", "services": ["vllm-qwen36-35b-nvfp4"]}],
+      "adapter": {"type": "compose", "host": "gb10", "working_dir": "/home/chriswang/.hermes/profiles/capital-avatar/deployments/qwen36-35b-nvfp4", "files": ["compose.yml"], "services": ["vllm-qwen36-35b-nvfp4"]},
+      "endpoints": [{"host": "gb10", "bind": "0.0.0.0", "port": 8004, "protocol": "tcp", "scope": "management", "health": "http://127.0.0.1:8004/v1/models"}],
+      "resources": {"exclusive_hosts": ["gb10"], "gpu_hosts": ["gb10"], "claims": []},
+      "conflicts": ["deepseek-v4-flash-0731", "qwen36-proxy", "unsloth-ab"],
+      "protected": true
+    },
+    "unsloth-ab": {
+      "display_name": "Unsloth DeepSeek A/B",
+      "identity": {"served_model": "DeepSeek-V4-Flash-0731-GGUF", "runtime": "llama.cpp-rpc"},
+      "deployments": [
+        {"host": "gb10", "role": "head", "project": "gb10-unsloth-ab", "services": ["rpc", "server-target"]},
+        {"host": "gb10-2", "role": "worker", "project": "gb10-unsloth-ab", "services": ["rpc"]}
+      ],
+      "adapter": {"type": "none"},
+      "availability": {"mutable": false, "reason": "visibility-only: no accepted Unsloth A/B controller is installed"},
+      "endpoints": [
+        {"host": "gb10", "bind": "0.0.0.0", "port": 8891, "protocol": "tcp", "scope": "management", "health": "http://127.0.0.1:8891/v1/models"},
+        {"host": "gb10", "bind": "127.0.0.1", "port": 50053, "protocol": "tcp", "scope": "loopback"},
+        {"host": "gb10-2", "bind": "192.168.192.198", "port": 50052, "protocol": "tcp", "scope": "fabric-only"}
+      ],
+      "resources": {"exclusive_hosts": ["gb10", "gb10-2"], "gpu_hosts": ["gb10", "gb10-2"], "claims": ["gb10-fabric-pair"]},
+      "conflicts": ["deepseek-v4-flash-0731", "qwen36-local-rollback", "minimax-h3", "qwen38-nvfp4"],
+      "protected": false
+    },
+    "minimax-h3": {
+      "display_name": "MiniMax H3 ComfyUI",
+      "identity": {"type": "video-generation", "runtime": "ComfyUI"},
+      "deployments": [{"host": "gb10-2", "role": "server", "project": "minimax-h3-native", "services": []}],
+      "adapter": {"type": "none"},
+      "availability": {"mutable": false, "reason": "visibility-only: the registered preflight controller is not installed"},
+      "status_probe": {
+        "type": "controller_json",
+        "host": "gb10-2",
+        "working_dir": "/home/admin/minimax-h3",
+        "command": ["execution/minimax-h3/status-comfyui.sh", "--root", "/home/admin/minimax-h3"],
+        "state_field": "running",
+        "running_value": true,
+        "rank_fields": ["identity_match", "listener_match"],
+        "verified_hosts": ["gb10-2"]
+      },
+      "endpoints": [{"host": "gb10-2", "bind": "0.0.0.0", "port": 8188, "protocol": "tcp", "scope": "management", "health": "http://127.0.0.1:8188/system_stats"}],
+      "resources": {"exclusive_hosts": ["gb10-2"], "gpu_hosts": ["gb10-2"], "claims": []},
+      "conflicts": ["deepseek-v4-flash-0731", "unsloth-ab", "qwen38-nvfp4"],
+      "protected": false
+    },
+    "qwen38-nvfp4": {
+      "display_name": "Qwen3.8 27B NVFP4",
+      "identity": {
+        "repository": "unsloth/Qwen3.8-27B-NVFP4",
+        "revision": "16b6615af3548b88e2d8e382457bc705b00479cf",
+        "served_model": "qwen3.8-27b-nvfp4",
+        "quantization": "nvfp4",
+        "modalities": ["text", "image", "video"],
+        "context_length": 262144,
+        "mtp_tokens": 2,
+        "model_manifest_sha256": "6d979221939858d8f98c7e615028e1e468cffb3ff2d501f943646c1e12ef2cdc",
+        "runtime_base_arm64_digest": "sha256:7531d90bcbe0e43e1f7363029c7e145ce90eebeb494a7b4695fdba0329d7c3c3"
+      },
+      "deployments": [
+        {"host": "gb10-2", "role": "server", "project": "gb10-qwen38-nvfp4", "services": ["server"]}
+      ],
+      "adapter": {
+        "type": "controller",
+        "host": "gb10-2",
+        "working_dir": "/home/admin/gb10-model-platform/qwen38/current",
+        "commands": {
+          "check": [["./controller.sh", "check"]],
+          "start": [["./controller.sh", "start"]],
+          "status": [["./controller.sh", "status"]],
+          "stop": [["./controller.sh", "stop"]],
+          "restart": [["./controller.sh", "stop"], ["./controller.sh", "start"]]
+        }
+      },
+      "availability": {"mutable": false, "reason": "prepared only: remote release and immutable runtime image identity are not installed"},
+      "endpoints": [
+        {"host": "gb10-2", "bind": "0.0.0.0", "port": 8892, "protocol": "tcp", "scope": "management", "health": "http://127.0.0.1:8892/v1/models"}
+      ],
+      "resources": {"exclusive_hosts": ["gb10-2"], "gpu_hosts": ["gb10-2"], "claims": ["gb10-worker-gpu"]},
+      "conflicts": ["deepseek-v4-flash-0731", "unsloth-ab", "minimax-h3"],
+      "protected": false
+    },
+    "tradingagents": {
+      "display_name": "TradingAgents AShare",
+      "deployments": [{"host": "gb10", "role": "service", "project": "tradingagents-ashare", "services": ["app"]}],
+      "adapter": {"type": "none"},
+      "endpoints": [],
+      "resources": {"exclusive_hosts": [], "gpu_hosts": [], "claims": []},
+      "conflicts": [],
+      "protected": true
+    },
+    "lexdata": {
+      "display_name": "Lexdata AI",
+      "deployments": [{"host": "gb10-2", "role": "service", "project": "lexdata-ai", "services": ["lexdata-ai"]}],
+      "adapter": {"type": "none"},
+      "endpoints": [],
+      "resources": {"exclusive_hosts": [], "gpu_hosts": [], "claims": []},
+      "conflicts": [],
+      "protected": true
+    },
+    "pdf2md": {
+      "display_name": "PDF2MD",
+      "deployments": [{"host": "gb10", "role": "service", "project": "pdf2md", "services": ["pdf2md"]}],
+      "adapter": {"type": "none"},
+      "endpoints": [],
+      "resources": {"exclusive_hosts": [], "gpu_hosts": [], "claims": []},
+      "conflicts": [],
+      "protected": true
+    }
+  }
+}
