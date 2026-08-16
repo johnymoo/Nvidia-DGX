@@ -1,7 +1,7 @@
 # Qwen 与 DeepSeek 三模型评测
 
 本项目发布 Qwen3.6-35B-A3B、Qwen3.8-27B 与
-DeepSeek-V4-Flash-0731 的可复现评测数据、原始回答和 HTML 报告生成器。
+DeepSeek-V4-Flash-0731 的可复现评测数据、原始回答、冻结 HTML 报告和报告生成器。
 评测完成于 2026-08-16，对应 [Issue #28](https://github.com/johnymoo/Nvidia-DGX/issues/28)。
 
 ## 目的与上下文
@@ -67,8 +67,11 @@ performance JSON ---------------------------+
 | `data/performance-comparison.json` | 两个 Qwen 配置的同机性能比较 |
 | `data/deepseek-performance.json` | DeepSeek 双 GB10 性能结果 |
 | `data/quality-comparison.json` | 从三份质量 JSON 重建的汇总 |
+| [`report/index.html`](./report/index.html) | 2026-08-16 已完成评测的冻结 HTML 基线报告 |
+| [`report/README.md`](./report/README.md) | 报告哈希、输入身份和可直接复用条件 |
 
-生成的 `report/` 目录由 `.gitignore` 排除，不提交可生成文件。
+`report/index.html` 是为后续同题集直接参考而保留的冻结证据快照；普通重新
+生成的文件写入 `report/generated/`，该目录由 `.gitignore` 排除。
 
 ## 安装与依赖
 
@@ -101,7 +104,7 @@ python3 scripts/compare_quality.py \
   --deepseek data/deepseek-quality.json \
   --output data/quality-comparison.json
 
-mkdir -p report
+mkdir -p report/generated
 python3 scripts/generate_html_report.py \
   --performance data/performance-comparison.json \
   --deepseek-performance data/deepseek-performance.json \
@@ -111,12 +114,13 @@ python3 scripts/generate_html_report.py \
   --quality-comparison data/quality-comparison.json \
   --deepseek-endpoint-label http://localhost:8890/v1 \
   --final-model Qwen3.6 \
-  --output report/index.html
+  --output report/generated/index.html
 
-python3 -m http.server 8766 --bind 0.0.0.0 --directory report
+python3 -m http.server 8766 --bind 0.0.0.0 --directory report/generated
 ```
 
-浏览器打开 `http://localhost:8766/`。
+浏览器打开 `http://localhost:8766/`。不重新生成时，也可以直接查看已提交的
+[`report/index.html`](./report/index.html)。
 
 ## 验证
 

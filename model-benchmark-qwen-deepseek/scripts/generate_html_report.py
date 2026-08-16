@@ -223,6 +223,7 @@ def main() -> int:
 <p class="note">图片、编程、数学按确定答案或隐藏测试计分；写作只衡量长度、结构和指定要点。DeepSeek 的宏平均只覆盖编程、写作和数学三类，不能与 Qwen 的四类宏平均直接等同。DeepSeek 的 <code>risk_memo</code> 未返回 final content，因此实际为 20 份 final 回答加 1 份明确标记的空回答。</p></section>
 {case_sections(q36, q38, deepseek)}
 </main><script>const b=document.getElementById('toggle');let open=false;b.addEventListener('click',()=>{{open=!open;document.querySelectorAll('details.case').forEach(d=>d.open=open);b.textContent=open?'收起全部题目':'展开全部题目';}});</script></body></html>"""
+    document = "\n".join(line.rstrip() for line in document.splitlines()) + "\n"
     args.output.write_text(document)
     print(args.output)
     return 0
