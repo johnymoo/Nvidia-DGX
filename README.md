@@ -16,6 +16,7 @@ NVIDIA DGX 相关项目集合，包括 DGX Spark (GB10) 部署指南、模型推
 | [`xiaoyuzhou-podcast-asr/`](./xiaoyuzhou-podcast-asr/) | Xiaoyuzhou 播客 GPU ASR、Qwen 总结和静态网站发布流水线 |
 | [`memory-vector-db/`](./memory-vector-db/) | 多用户记忆向量数据库服务，支持语义搜索和用户数据隔离 |
 | [`model-benchmark-qwen-deepseek/`](./model-benchmark-qwen-deepseek/) | Qwen3.6、Qwen3.8 与 DeepSeek-V4-Flash-0731 的可复现性能和质量对比 |
+| [`qwen38-rtx3090/`](./qwen38-rtx3090/) | Qwen3.8-27B 在 RTX 3090 上的 ModelScope 下载、llama.cpp 部署与验收收据 |
 
 ---
 

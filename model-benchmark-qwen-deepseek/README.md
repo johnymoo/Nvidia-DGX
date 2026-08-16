@@ -34,7 +34,8 @@ DeepSeek 共执行 21 个非视觉请求，其中 20 个返回 final content。
 Qwen3.8 评测端点为兼容既有客户端而继续暴露旧的公共 model alias，因此
 `data/qwen38-quality.json` 的 `model` 字段与 Qwen3.6 相同；`tag=qwen38`
 标识本次 treatment。Qwen3.8 的实际权重和运行配置通过部署 receipt 独立
-校验，报告不把公共 alias 当作权重身份。
+校验，报告不把公共 alias 当作权重身份。完整 RTX 3090 安装/部署方案见
+[`../qwen38-rtx3090/`](../qwen38-rtx3090/)。
 
 ## 架构
 
@@ -143,7 +144,8 @@ cmp data/quality-comparison.json /tmp/quality-comparison.json
 - 写作分数只衡量客观约束遵循。
 - 三模型量化、硬件和并行配置不同；只有两个 Qwen 的性能属于同机 A/B。
 - Qwen3.8 的兼容 model alias 不能单独证明底层权重身份，复现实验时应另存
-  模型清单或部署 receipt。
+  模型清单或引用
+  [`../qwen38-rtx3090/receipts/deployment-20260815T144804Z.json`](../qwen38-rtx3090/receipts/deployment-20260815T144804Z.json)。
 - 原始 JSON 包含模型输出和 reasoning，文件体积会随新增题目增长。
 - 公开版性能 JSON 保留采集结果的原始小数精度，最多六位且不补零；完整精度的
   原始 receipt 不进入公开仓库。

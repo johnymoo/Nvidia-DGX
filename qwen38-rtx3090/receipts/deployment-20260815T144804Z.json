@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "receipt_id": "candidate-20260815T144804Z",
+  "observed_at": "2026-08-15T14:48:04Z",
+  "status": "passed",
+  "scope": "Candidate acceptance of Qwen3.8-27B Q3_K_S on one RTX 3090",
+  "hardware": {
+    "environment_inventory_observed_at": "2026-08-16T00:00:00Z",
+    "platform_class": "X570 workstation",
+    "os": "Ubuntu 22.04",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_memory_mib": 24576,
+    "driver_version": "590.48.01",
+    "docker_version": "29.2.1"
+  },
+  "artifacts": {
+    "repository": "unsloth/Qwen3.8-27B-GGUF",
+    "revision": "f1bfb127c64f7072bdd2cad55f258b9c8b2910fe",
+    "download_source": "ModelScope master; byte identity verified by frozen SHA-256",
+    "model_file": "Qwen3.8-27B-Q3_K_S.gguf",
+    "model_bytes": 12574489568,
+    "model_sha256": "0fc041075efd255732ce6de77617ac31520b35a8dbffc06ef56cb80e5c8762ca",
+    "mmproj_file": "mmproj-F16.gguf",
+    "mmproj_bytes": 927607488,
+    "mmproj_sha256": "cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e",
+    "image_ref": "ghcr.io/ggml-org/llama.cpp@sha256:a50b12bb92de0253d2737824ca1887f410e07b4dd3e3028f74a5a0a67c789e4b",
+    "image_id": "sha256:f4bfd3527d66faabb4ddea1c7d14e04f6961bb1545dd35048401d575127a0589"
+  },
+  "runtime": {
+    "n_params": 27320697856,
+    "quantization": "Q3_K_S",
+    "ctx_size": 131072,
+    "parallel": 2,
+    "context_per_slot": 65536,
+    "gpu_layers": 999,
+    "flash_attention": true,
+    "kv_cache": {
+      "key": "q4_0",
+      "value": "q4_0"
+    },
+    "thinking": false,
+    "candidate_bind": "127.0.0.1",
+    "candidate_port": 18002
+  },
+  "acceptance": {
+    "status": "passed",
+    "cases": {
+      "identity": {
+        "status": "passed",
+        "n_params": 27320697856
+      },
+      "text": {
+        "status": "passed",
+        "deterministic": true
+      },
+      "vision": {
+        "status": "passed",
+        "fixture": "generated blue PNG"
+      },
+      "structured": {
+        "status": "passed",
+        "format": "json_object"
+      },
+      "tool": {
+        "status": "passed",
+        "forced_function_call": true
+      },
+      "concurrency_4": {
+        "status": "passed",
+        "requests": 4,
+        "seconds": 1.755
+      },
+      "concurrency_8": {
+        "status": "passed",
+        "requests": 8,
+        "seconds": 3.663
+      },
+      "long_context": {
+        "status": "passed",
+        "prompt_tokens": 48024,
+        "seconds": 50.057
+      },
+      "soak": {
+        "status": "passed",
+        "concurrency": 4,
+        "seconds": 181.056,
+        "requests": 324
+      }
+    }
+  },
+  "safety": {
+    "required_free_gpu_mib": 3072,
+    "minimum_free_gpu_mib": 3455,
+    "fatal_log_patterns_found": false,
+    "candidate_stopped_after_acceptance": true,
+    "displaced_model_automatically_restored": false
+  },
+  "source_evidence": {
+    "raw_receipt_sha256": "0ecc0c859de010e44d4777a4e9b5ae5f008c48cc539e28c506e427a1c3c85602",
+    "acceptance_sha256": "f4075cf287395f80d6668060ce6c11c9294823b8cbabdf6115f93a22089355c7",
+    "operations_manifest_sha256": "395dcdf7480fc27fbd7b4caf442e4c0905d343c2d9ea855857445af239a06aa7"
+  },
+  "current_state_claim": "None. This historical candidate was stopped after acceptance.",
+  "reuse_conditions": [
+    "The model and projector SHA-256 values are unchanged.",
+    "The container image digest and runtime arguments are unchanged.",
+    "The hardware remains one 24 GiB RTX 3090 with at least 3072 MiB free headroom during acceptance.",
+    "Any public model alias difference is treated as routing metadata, not weight identity."
+  ],
+  "invalidated_by": [
+    "Changing quantization, projector, image digest, context, parallel slots, KV cache type, or thinking mode.",
+    "Using the receipt as proof that the service is currently running.",
+    "Using performance results from a different host or runtime profile as if they came from this receipt."
+  ]
+}
