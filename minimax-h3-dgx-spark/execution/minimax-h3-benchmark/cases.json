@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {"id": "trained-max-15s", "width": 512, "height": 320, "frames": 362, "steps": 6}
+  ],
+  "cases": [
+    {
+      "id": "object-motion",
+      "title": "Precision in motion",
+      "category": "Object",
+      "seed": 2026081301,
+      "prompt": "A polished red espresso machine on a clean stainless steel counter, a white ceramic cup centered beneath the spout, warm morning window light. Steam curls upward and one clear drop falls into the cup. Camera: locked medium close-up, single continuous shot. Audio: quiet cafe room tone and a soft steam hiss."
+    },
+    {
+      "id": "human-motion",
+      "title": "Human movement",
+      "category": "Character",
+      "seed": 2026081302,
+      "prompt": "A documentary-style full-body shot of an adult woman in a bright yellow raincoat walking across a wet city crosswalk at dusk, natural stride, coat moving in the breeze, reflections on the pavement. Camera: slow lateral tracking, single continuous shot. Audio: light rain, distant traffic, footsteps on wet pavement."
+    },
+    {
+      "id": "environment-motion",
+      "title": "Depth and atmosphere",
+      "category": "Environment",
+      "seed": 2026081303,
+      "prompt": "A wide alpine lake at sunrise with dark pine trees in the foreground and snow peaks in the distance, low mist drifting across the water and subtle ripples reflecting pink clouds. Camera: very slow forward glide, single continuous shot. Audio: gentle water, morning birds, distant wind."
+    },
+    {
+      "id": "stylized-motion",
+      "title": "Graphic range",
+      "category": "Stylized",
+      "seed": 2026081304,
+      "prompt": "A handcrafted stop-motion paper city at night, small red tram moving along a curved street while square windows light up one by one, visible paper texture and crisp layered shadows. Camera: fixed high three-quarter view, single continuous shot. Audio: soft mechanical tram bell and quiet paper rustle."
+    },
+    {
+      "id": "repro-a",
+      "title": "Reproducibility A",
+      "category": "Reproducibility",
+      "seed": 2026081310,
+      "prompt": "A cobalt blue glass sphere rolling slowly from left to right across a matte white surface, soft studio light, clean shadow. Camera: locked close-up, single continuous shot. Audio: silence."
+    },
+    {
+      "id": "repro-b",
+      "title": "Reproducibility B",
+      "category": "Reproducibility",
+      "seed": 2026081310,
+      "prompt": "A cobalt blue glass sphere rolling slowly from left to right across a matte white surface, soft studio light, clean shadow. Camera: locked close-up, single continuous shot. Audio: silence."
+    },
+    {
+      "id": "stability-1",
+      "title": "Sequential run 1",
+      "category": "Stability",
+      "seed": 2026081321,
+      "prompt": "A small green leaf turning gently on a plain gray background, soft even light. Camera: locked close-up. Audio: silence."
+    },
+    {
+      "id": "stability-2",
+      "title": "Sequential run 2",
+      "category": "Stability",
+      "seed": 2026081322,
+      "prompt": "A single orange candle flame flickering against a dark neutral background, wax still and sharply detailed. Camera: locked close-up. Audio: silence."
+    },
+    {
+      "id": "stability-3",
+      "title": "Sequential run 3",
+      "category": "Stability",
+      "seed": 2026081323,
+      "prompt": "A silver toy windmill rotating slowly on a plain pale blue background, clean studio lighting. Camera: locked close-up. Audio: silence."
+    }
+  ]
+}
