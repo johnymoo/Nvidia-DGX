@@ -1,0 +1,48 @@
+{
+  "status": "passed",
+  "harness_id": "x570-qwen-quality-v2",
+  "qwen36_macro": 0.8775,
+  "qwen38_macro": 0.835833,
+  "macro_delta": -0.041667,
+  "deepseek_macro": 0.866667,
+  "categories": {
+    "image_recognition": {
+      "qwen36": 1.0,
+      "qwen38": 1.0,
+      "qwen38_delta": 0.0,
+      "total_cases": 6,
+      "deepseek": null,
+      "deepseek_delta": null
+    },
+    "programming": {
+      "qwen36": 1.0,
+      "qwen38": 1.0,
+      "qwen38_delta": 0.0,
+      "total_cases": 5,
+      "deepseek": 1.0,
+      "deepseek_delta": 0.0
+    },
+    "article_writing": {
+      "qwen36": 0.76,
+      "qwen38": 0.76,
+      "qwen38_delta": 0.0,
+      "total_cases": 4,
+      "deepseek": 0.6,
+      "deepseek_delta": -0.16
+    },
+    "mathematical_reasoning": {
+      "qwen36": 0.75,
+      "qwen38": 0.583333,
+      "qwen38_delta": -0.166667,
+      "total_cases": 12,
+      "deepseek": 1.0,
+      "deepseek_delta": 0.25
+    }
+  },
+  "input_sha256": {
+    "qwen36-quality.json": "2e839d786705b43bc7f7fccdfc78924d44f9fed90543ecfc17740df7147fce61",
+    "qwen38-quality.json": "9cb77dd85ab1b65f6407d15cd7932e804ac1bab06f8aa8d642999fbf3952104a",
+    "deepseek-quality.json": "4b044f6860184dbb797a6db5d42acc4194d9132673213ded16fb8aa3e1aace1d"
+  },
+  "scoring_note": "Vision, programming, and math are exact/binary; writing is objective constraint fulfillment, not subjective literary quality."
+}

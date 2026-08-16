@@ -1,0 +1,75 @@
+{
+  "status": "passed",
+  "qwen36": {
+    "single_stream": {
+      "count300": 134.035,
+      "mult12": 134.087,
+      "json60": 133.458,
+      "bst": 132.89,
+      "story": 131.459
+    },
+    "concurrency": {
+      "1": 130.788,
+      "2": 101.031,
+      "4": 265.166,
+      "6": 244.054
+    },
+    "prefill": {
+      "0": 101.468,
+      "32000": 2822.217
+    }
+  },
+  "qwen38": {
+    "single_stream": {
+      "count300": 30.424,
+      "mult12": 30.336,
+      "json60": 30.302,
+      "bst": 29.592,
+      "story": 29.962
+    },
+    "concurrency": {
+      "1": 29.861,
+      "2": 49.8,
+      "4": 50.504,
+      "6": 50.768
+    },
+    "prefill": {
+      "0": 97.832,
+      "32000": 993.119
+    }
+  },
+  "qwen38_over_qwen36": {
+    "single_stream": {
+      "count300": 0.227,
+      "mult12": 0.226,
+      "json60": 0.227,
+      "bst": 0.223,
+      "story": 0.228
+    },
+    "concurrency": {
+      "1": 0.228,
+      "2": 0.493,
+      "4": 0.19,
+      "6": 0.208
+    },
+    "prefill": {
+      "0": 0.964,
+      "32000": 0.352
+    }
+  },
+  "common_context_exclusion": {
+    "target_tokens": 100000,
+    "reason": "outside the approximately 65K per-slot context of both frozen profiles",
+    "observed_result": "HTTPError: HTTP Error 400: Bad Request"
+  },
+  "correctness": {
+    "qwen36": {
+      "cases": 6,
+      "concurrency": 3
+    },
+    "qwen38": {
+      "cases": 6,
+      "concurrency": 3
+    }
+  }
+}

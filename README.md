@@ -15,6 +15,7 @@ NVIDIA DGX 相关项目集合，包括 DGX Spark (GB10) 部署指南、模型推
 | [`minimax-h3-dgx-spark/`](./minimax-h3-dgx-spark/) | MiniMax H3 单台 DGX Spark 部署、15 秒视频评测与静态报告 |
 | [`xiaoyuzhou-podcast-asr/`](./xiaoyuzhou-podcast-asr/) | Xiaoyuzhou 播客 GPU ASR、Qwen 总结和静态网站发布流水线 |
 | [`memory-vector-db/`](./memory-vector-db/) | 多用户记忆向量数据库服务，支持语义搜索和用户数据隔离 |
+| [`model-benchmark-qwen-deepseek/`](./model-benchmark-qwen-deepseek/) | Qwen3.6、Qwen3.8 与 DeepSeek-V4-Flash-0731 的可复现性能和质量对比 |
 
 ---
 
