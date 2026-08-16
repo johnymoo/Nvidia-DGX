@@ -39,3 +39,20 @@
 
 任一条件变化时，应重新生成质量 JSON、比较结果和 HTML，并使用新的报告
 哈希，不要覆盖本文件后继续沿用旧身份。
+
+## 湖仓 Thinking 报告
+
+[`lakehouse-thinking.html`](./lakehouse-thinking.html) 是 2026-08-17 在同一张 48 GiB
+RTX 4090 上完成的 Qwen3.6-35B-A3B-FP8 与 Qwen3.8-27B-FP8 四组对比。
+
+- Report SHA-256：`1fb18620fabc46c6b1f810a991eb6663f8cbcdbb1ca48612a2e8c54564696a37`
+- Harness：`lakehouse-thinking-v1`
+- 题目：18（SQL/Python/故障分析各 6）
+- 固定条件：vLLM 0.19.0、CPU offload 0、seed 42、最大 4,096 输出 tokens
+
+| 输入 | SHA-256 |
+|---|---|
+| `data/lakehouse-qwen36-off.json` | `456901238786a434063db9635094e0ee4f481bfce4289db15acde19c5948558f` |
+| `data/lakehouse-qwen36-thinking.json` | `be89ec7cee056bc4e5dff8862dcacc25b515abea84ed18220cc4526cb5e09a85` |
+| `data/lakehouse-qwen38-off.json` | `67b45703b979ecd9dd9e9ad947c0107296a21de0fbe9fe0df6e6c836bd48b78c` |
+| `data/lakehouse-qwen38-thinking-low.json` | `5f29e5dbcd8eb16c15701dc0041b30b3c0405f580997e2a2e604aa7def60a137` |

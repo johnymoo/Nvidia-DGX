@@ -5,6 +5,9 @@ DeepSeek-V4-Flash-0731 的可复现评测数据、原始回答、冻结 HTML 报
 评测完成于 2026-08-16，对应 [Issue #28](https://github.com/johnymoo/Nvidia-DGX/issues/28)。
 报告现补充 48 GiB RTX 4090 上 Qwen3.8-27B-FP8 / vLLM 的同题质量、性能与
 thinking-low 核验结果，部署方案见 [`../qwen38-rtx4090-vllm/`](../qwen38-rtx4090-vllm/)。
+2026-08-17 又在同一 RTX 4090 上完成 Qwen3.6-35B-A3B-FP8 与 Qwen3.8-27B-FP8
+面向复杂 SQL、Python 和故障分析的四组对比，研究依据见
+[`RESEARCH-QWEN36-QWEN38.md`](RESEARCH-QWEN36-QWEN38.md)。
 
 ## 目的与上下文
 
@@ -59,6 +62,19 @@ performance JSON ---------------------------+
 内存、进程数和 capabilities。写作只评分题目明确声明的长度、结构和关键词
 约束，不代表主观文学质量。
 
+## 湖仓 Thinking 对比
+
+| 模型与模式 | SQL | Python | 故障分析 | 宏平均 | 总耗时 | 截断/空 final |
+|---|---:|---:|---:|---:|---:|---:|
+| Qwen3.6 non-thinking | 33.3% | 66.7% | 83.3% | 61.1% | 54.7s | 0 / 0 |
+| Qwen3.6 thinking | 33.3% | 33.3% | 91.7% | 52.8% | 485.9s | 8 / 8 |
+| Qwen3.8 non-thinking | 66.7% | 66.7% | 91.7% | 75.0% | 254.1s | 0 / 0 |
+| Qwen3.8 thinking-low | 83.3% | 83.3% | 100.0% | 88.9% | 797.7s | 0 / 0 |
+
+默认推理选择 Qwen3.8-27B-FP8。普通请求保持 non-thinking；复杂 SQL、Python 和
+故障分析按请求开启 `reasoning_effort=low`。完整逐题报告见
+[`report/lakehouse-thinking.html`](report/lakehouse-thinking.html)。
+
 ## 文件清单
 
 | 路径 | 用途 |
@@ -66,11 +82,14 @@ performance JSON ---------------------------+
 | `scripts/quality_benchmark.py` | 运行图片、编程、写作与数学质量题；支持排除图片类别 |
 | `scripts/compare_quality.py` | 校验题目身份并计算三模型类别分数和宏平均 |
 | `scripts/generate_html_report.py` | 生成包含配置、图表、题目和原始回答的单文件 HTML |
+| `scripts/lakehouse_thinking_benchmark.py` | 运行可执行 SQL、隐藏测试 Python 和编码化故障分析 |
+| `scripts/generate_lakehouse_report.py` | 生成四组逐题对比 HTML |
 | `data/*-quality.json` | 三个模型的逐题原始输出和客观验证结果 |
 | `data/performance-comparison.json` | 两个 Qwen 配置的同机性能比较 |
 | `data/deepseek-performance.json` | DeepSeek 双 GB10 性能结果 |
 | `data/quality-comparison.json` | 从三份质量 JSON 重建的汇总 |
 | [`report/index.html`](./report/index.html) | 2026-08-16 已完成评测的冻结 HTML 基线报告 |
+| [`report/lakehouse-thinking.html`](./report/lakehouse-thinking.html) | 2026-08-17 Qwen3.6/Qwen3.8 同机 thinking 对比 |
 | [`report/README.md`](./report/README.md) | 报告哈希、输入身份和可直接复用条件 |
 
 `report/index.html` 是为后续同题集直接参考而保留的冻结证据快照；普通重新
@@ -123,6 +142,18 @@ python3 scripts/generate_html_report.py \
   --output report/generated/index.html
 
 python3 -m http.server 8766 --bind 0.0.0.0 --directory report/generated
+```
+
+重新生成湖仓 thinking 报告：
+
+```bash
+python3 scripts/generate_lakehouse_report.py \
+  --q36-off data/lakehouse-qwen36-off.json \
+  --q36-thinking data/lakehouse-qwen36-thinking.json \
+  --q38-off data/lakehouse-qwen38-off.json \
+  --q38-thinking data/lakehouse-qwen38-thinking-low.json \
+  --recommendation '默认 Qwen3.8；复杂请求按需开启 reasoning_effort=low。' \
+  --output report/generated/lakehouse-thinking.html
 ```
 
 浏览器打开 `http://<服务器地址>:8766/`。不重新生成时，也可以直接查看已提交的

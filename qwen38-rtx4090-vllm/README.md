@@ -91,6 +91,12 @@ vLLM 日志提示 RTX 4090 对该 FP8 block shape 没有专用 kernel 配置，�
 W8A8 block FP8 kernel；这是单流生成低于 PR #29 RTX 3090 Q3_K_S/llama.cpp
 约 30 tok/s 的重要解释。两套硬件、量化和运行时不同，不是严格同机 A/B。
 
+2026-08-17 又与 Qwen3.6-35B-A3B-FP8 完成同机湖仓对比。Qwen3.8 non-thinking
+宏平均为 75.0%，高于 Qwen3.6 的 61.1%；Qwen3.8 thinking-low 为 88.9%，高于
+Qwen3.6 thinking 的 52.8%，并且没有截断或空 final。因此默认模型维持 Qwen3.8，
+复杂 SQL、Python 和故障分析按请求启用 low thinking。完整结果见
+[`../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html`](../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html)。
+
 运行已扩展的质量测试：
 
 ```bash
