@@ -17,6 +17,7 @@ NVIDIA DGX 相关项目集合，包括 DGX Spark (GB10) 部署指南、模型推
 | [`memory-vector-db/`](./memory-vector-db/) | 多用户记忆向量数据库服务，支持语义搜索和用户数据隔离 |
 | [`model-benchmark-qwen-deepseek/`](./model-benchmark-qwen-deepseek/) | Qwen3.6、Qwen3.8 与 DeepSeek-V4-Flash-0731 的可复现性能和质量对比 |
 | [`qwen38-rtx3090/`](./qwen38-rtx3090/) | Qwen3.8-27B 在 RTX 3090 上的 ModelScope 下载、llama.cpp 部署与验收收据 |
+| [`qwen38-rtx4090-vllm/`](./qwen38-rtx4090-vllm/) | Qwen3.8-27B-FP8 在 48 GiB RTX 4090 上的 ModelScope、vLLM 部署与 benchmark |
 
 ---
 

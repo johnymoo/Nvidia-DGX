@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "timestamp": "2026-08-16T15:18:38.892965+00:00",
+  "model": "qwen3.8-27b-fp8",
+  "endpoint": "http://localhost:8005/v1",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "vram_mib": 49140
+  },
+  "runtime": {
+    "name": "vLLM",
+    "version": "0.19.0",
+    "image": "vllm/vllm-openai@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504",
+    "quantization": "FP8",
+    "max_model_len": 65536,
+    "cpu_offload_gb": 0
+  },
+  "performance": {
+    "summaries": [
+      {
+        "name": "decode_256",
+        "runs": 3,
+        "prompt_tokens_mean": 24,
+        "completion_tokens_mean": 256,
+        "ttft_ms_mean": 92.76429466747989,
+        "wall_seconds_mean": 12.928512473668283,
+        "decode_tokens_per_second_mean": 19.944299365695038
+      },
+      {
+        "name": "code_256",
+        "runs": 3,
+        "prompt_tokens_mean": 27,
+        "completion_tokens_mean": 256,
+        "ttft_ms_mean": 83.91664567170665,
+        "wall_seconds_mean": 12.915651734995967,
+        "decode_tokens_per_second_mean": 19.950537712927265
+      },
+      {
+        "name": "prefill_1k",
+        "runs": 3,
+        "prompt_tokens_mean": 1164,
+        "completion_tokens_mean": 2,
+        "ttft_ms_mean": 371.55828564815846,
+        "wall_seconds_mean": 0.4219809309967483,
+        "decode_tokens_per_second_mean": 39.6679005577665
+      },
+      {
+        "name": "prefill_8k",
+        "runs": 3,
+        "prompt_tokens_mean": 8864,
+        "completion_tokens_mean": 2,
+        "ttft_ms_mean": 2181.965947985494,
+        "wall_seconds_mean": 2.2306203589929887,
+        "decode_tokens_per_second_mean": 41.10813509810248
+      },
+      {
+        "name": "prefill_32k",
+        "runs": 3,
+        "prompt_tokens_mean": 33065,
+        "completion_tokens_mean": 2,
+        "ttft_ms_mean": 9131.854076986201,
+        "wall_seconds_mean": 9.175931020989083,
+        "decode_tokens_per_second_mean": 45.409456678445785
+      }
+    ],
+    "runs": {
+      "decode_256": [
+        {
+          "content": "Apache Iceberg is a table format designed for large-scale analytical workloads. It achieves high concurrency and consistency through two key mechanisms: **Snapshot Isolation** and **Optimistic Concurrency Control (OCC)**.\n\nHere’s a detailed explanation of both concepts in the context of Iceberg.\n\n---\n\n### 1. Snapshot Isolation\n\n**Snapshot Isolation** ensures that readers see a consistent, point-in-time view of the table, even while writers are modifying it. This is critical for analytical workloads where long-running queries must not be blocked by short writes.\n\n#### How It Works in Iceberg:\n- **Immutable Snapshots**: Every commit to an Iceberg table creates a new **snapshot**. A snapshot is an immutable reference to a specific state of the table, including:\n  - The list of data files.\n  - The list of delete files (for row-level deletes).\n  - The schema.\n  - The partition spec.\n  - The sort order.\n- **Atomic Commits**: When a writer commits changes, it creates a new snapshot. The old snapshot remains valid and accessible.\n- **Readers Use a Specific Snapshot**: When a query starts, it acquires a reference to the current snapshot.",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 24,
+            "total_tokens": 280,
+            "completion_tokens": 256
+          },
+          "ttft_seconds": 0.10747514496324584,
+          "wall_seconds": 12.945566074980889,
+          "decode_tokens_per_second": 19.940659510475065
+        },
+        {
+          "content": "Apache Iceberg is a table format designed for large-scale analytical workloads. It achieves high concurrency and consistency through two key mechanisms: **Snapshot Isolation** and **Optimistic Concurrency Control (OCC)**.\n\nHere’s a detailed explanation of both concepts in the context of Iceberg.\n\n---\n\n### 1. Snapshot Isolation\n\n**Snapshot Isolation** ensures that readers see a consistent, point-in-time view of the table, even while writers are modifying it. This is critical for analytical workloads where long-running queries must not be blocked by short writes.\n\n#### How It Works in Iceberg:\n- **Immutable Snapshots**: Every commit to an Iceberg table creates a new **snapshot**. A snapshot is an immutable reference to a specific state of the table, including:\n  - The list of data files.\n  - The list of delete files (for row-level deletes).\n  - The schema.\n  - The partition spec.\n  - The sort order.\n- **Atomic Commits**: When a writer commits changes, it creates a new snapshot. The old snapshot remains valid and accessible.\n- **Readers Use a Specific Snapshot**: When a query starts, it acquires a reference to the current snapshot.",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 24,
+            "total_tokens": 280,
+            "completion_tokens": 256
+          },
+          "ttft_seconds": 0.08736329403473064,
+          "wall_seconds": 12.921971623029094,
+          "decode_tokens_per_second": 19.94607029975947
+        },
+        {
+          "content": "Apache Iceberg is a table format designed for large-scale analytical workloads. It achieves high concurrency and consistency through two key mechanisms: **Snapshot Isolation** and **Optimistic Concurrency Control (OCC)**.\n\nHere’s a detailed explanation of both concepts in the context of Iceberg.\n\n---\n\n### 1. Snapshot Isolation\n\n**Snapshot Isolation** ensures that readers see a consistent, point-in-time view of the table, even while writers are modifying it. This is critical for analytical workloads where long-running queries must not be blocked by short writes.\n\n#### How It Works in Iceberg:\n- **Immutable Snapshots**: Every commit to an Iceberg table creates a new **snapshot**. A snapshot is an immutable reference to a specific state of the table, including:\n  - The list of data files.\n  - The list of delete files (for row-level deletes).\n  - The schema.\n  - The partition spec.\n  - The sort order.\n- **Atomic Commits**: When a writer commits changes, it creates a new snapshot. The old snapshot remains valid and accessible.\n- **Readers Use a Specific Snapshot**: When a query starts, it acquires a reference to the current snapshot.",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 24,
+            "total_tokens": 280,
+            "completion_tokens": 256
+          },
+          "ttft_seconds": 0.0834544450044632,
+          "wall_seconds": 12.917999722994864,
+          "decode_tokens_per_second": 19.94616828685058
+        }
+      ],
+      "code_256": [
+        {
+          "content": "```python\nfrom pyspark.sql import SparkSession\nfrom pyspark.sql.functions import row_number, col\nfrom pyspark.sql.window import Window\n\nspark = SparkSession.builder.appName(\"CDC Dedup\").getOrCreate()\n\n# Sample CDC data: (id, event_time, value, op)\ndata = [\n    (1, \"2024-01-01 10:00:00\", \"A\", \"I\"),\n    (1, \"2024-01-01 10:00:05\", \"B\", \"U\"),\n    (1, \"2024-01-01 10:00:10\", \"C\", \"U\"),\n    (2, \"2024-01-01 10:00:00\", \"X\", \"I\"),\n    (2, \"2024-01-01 10:00:02\", \"Y\", \"U\"),\n]\ndf = spark.createDataFrame(data, [\"id\", \"event_time\", \"value\", \"op\"])\n\n# Deduplicate: keep the latest",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 27,
+            "total_tokens": 283,
+            "completion_tokens": 256
+          },
+          "ttft_seconds": 0.08396773796994239,
+          "wall_seconds": 12.92006631498225,
+          "decode_tokens_per_second": 19.943754596779186
+        },
+        {
+          "content": "```python\nfrom pyspark.sql import SparkSession\nfrom pyspark.sql.functions import row_number, col\nfrom pyspark.sql.window import Window\n\nspark = SparkSession.builder.appName(\"CDC Dedup\").getOrCreate()\n\n# Sample CDC data: (id, event_time, value, op)\ndata = [\n    (1, \"2024-01-01 10:00:00\", \"A\", \"I\"),\n    (1, \"2024-01-01 10:00:05\", \"B\", \"U\"),\n    (1, \"2024-01-01 10:00:10\", \"C\", \"U\"),\n    (2, \"2024-01-01 10:00:00\", \"X\", \"I\"),\n    (2, \"2024-01-01 10:00:02\", \"Y\", \"U\"),\n]\ndf = spark.createDataFrame(data, [\"id\", \"event_time\", \"value\", \"op\"])\n\n# Deduplicate: keep the latest",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 27,
+            "total_tokens": 283,
+            "completion_tokens": 256
+          },
+          "ttft_seconds": 0.08286219002911821,
+          "wall_seconds": 12.912563933001366,
+          "decode_tokens_per_second": 19.953698466936665
+        },
+        {
+          "content": "```python\nfrom pyspark.sql import SparkSession\nfrom pyspark.sql.functions import row_number, col\nfrom pyspark.sql.window import Window\n\nspark = SparkSession.builder.appName(\"CDC Dedup\").getOrCreate()\n\n# Sample CDC data: (id, event_time, value, op)\ndata = [\n    (1, \"2024-01-01 10:00:00\", \"A\", \"I\"),\n    (1, \"2024-01-01 10:00:05\", \"B\", \"U\"),\n    (1, \"2024-01-01 10:00:10\", \"C\", \"U\"),\n    (2, \"2024-01-01 10:00:00\", \"X\", \"I\"),\n    (2, \"2024-01-01 10:00:02\", \"Y\", \"U\"),\n]\ndf = spark.createDataFrame(data, [\"id\", \"event_time\", \"value\", \"op\"])\n\n# Deduplicate: keep the latest",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 27,
+            "total_tokens": 283,
+            "completion_tokens": 256
+          },
+          "ttft_seconds": 0.08492000901605934,
+          "wall_seconds": 12.914324957004283,
+          "decode_tokens_per_second": 19.95416007506594
+        }
+      ],
+      "prefill_1k": [
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 1164,
+            "total_tokens": 1166,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 0.4752118460019119,
+          "wall_seconds": 0.5259378980263136,
+          "decode_tokens_per_second": 39.427472081562776
+        },
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 1164,
+            "total_tokens": 1166,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 0.3205147209810093,
+          "wall_seconds": 0.371270450996235,
+          "decode_tokens_per_second": 39.4044179721194
+        },
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 1164,
+            "total_tokens": 1166,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 0.3189482899615541,
+          "wall_seconds": 0.3687344439676963,
+          "decode_tokens_per_second": 40.17181161961733
+        }
+      ],
+      "prefill_8k": [
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 8864,
+            "total_tokens": 8866,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 2.1775754030095413,
+          "wall_seconds": 2.2265556040219963,
+          "decode_tokens_per_second": 40.83282548169678
+        },
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 8864,
+            "total_tokens": 8866,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 2.1818298589787446,
+          "wall_seconds": 2.2306100499699824,
+          "decode_tokens_per_second": 41.00024947338263
+        },
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 8864,
+            "total_tokens": 8866,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 2.1864925819681957,
+          "wall_seconds": 2.234695422986988,
+          "decode_tokens_per_second": 41.491330339228035
+        }
+      ],
+      "prefill_32k": [
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 33065,
+            "total_tokens": 33067,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 9.124621867958922,
+          "wall_seconds": 9.168084176955745,
+          "decode_tokens_per_second": 46.01688327571851
+        },
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 33065,
+            "total_tokens": 33067,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 9.133279439993203,
+          "wall_seconds": 9.179061327013187,
+          "decode_tokens_per_second": 43.685398968525966
+        },
+        {
+          "content": "ACK",
+          "reasoning": "",
+          "usage": {
+            "prompt_tokens": 33065,
+            "total_tokens": 33067,
+            "completion_tokens": 2
+          },
+          "ttft_seconds": 9.137660923006479,
+          "wall_seconds": 9.180647558998317,
+          "decode_tokens_per_second": 46.526087791092884
+        }
+      ]
+    }
+  },
+  "capabilities": {
+    "coding": [
+      {
+        "name": "merge_cdc",
+        "passed": true,
+        "wall_seconds": 10.078839261026587,
+        "response": "```python\ndef merge_cdc(rows: list[dict]) -> list[dict]:\n    \"\"\"Keep the latest row for each integer id, ordered by (event_ts, ingest_seq).\n    Remove ids whose latest row has op='D'. Return remaining rows sorted by id.\"\"\"\n    latest: dict[int, dict] = {}\n    for row in rows:\n        rid = row[\"id\"]\n        key = (row[\"event_ts\"], row[\"ingest_seq\"])\n        if rid not in latest:\n            latest[rid] = row\n        else:\n            prev_key = (latest[rid][\"event_ts\"], latest[rid][\"ingest_seq\"])\n            if key >= prev_key:\n                latest[rid] = row\n    result = [row for rid, row in latest.items() if row[\"op\"] != \"D\"]\n    result.sort(key=lambda r: r[\"id\"])\n    return result\n```",
+        "test_detail": "844ca551f0dc419f9d3f177f25f2bb4cPASS"
+      },
+      {
+        "name": "weighted_average",
+        "passed": true,
+        "wall_seconds": 6.684738403011579,
+        "response": "```python\ndef weighted_average(rows: list[tuple[float | None, float | None]]) -> float | None:\n    \"\"\"Ignore rows with a null value or weight. Return None when usable weight sums to zero.\"\"\"\n    total_weight = 0.0\n    total_weighted_value = 0.0\n    for value, weight in rows:\n        if value is None or weight is None:\n            continue\n        total_weight += weight\n        total_weighted_value += value * weight\n    if total_weight == 0.0:\n        return None\n    return total_weighted_value / total_weight\n```",
+        "test_detail": "b24233007cc4453183093e2bed1f2488PASS"
+      },
+      {
+        "name": "dependency_order",
+        "passed": true,
+        "wall_seconds": 19.62751446699258,
+        "response": "```python\ndef dependency_order(graph: dict[str, list[str]]) -> list[str]:\n    \"\"\"Return a topological order where every dependency precedes its node.\n    Include dependency-only nodes and raise ValueError on a cycle.\"\"\"\n    # Build the full set of nodes: all keys and all values in the lists\n    nodes = set(graph.keys())\n    for deps in graph.values():\n        nodes.update(deps)\n\n    # Build adjacency: for each node, its dependencies (edges dep -> node)\n    # We want topological order where dependencies come first.\n    # So we treat edges as dep -> node, and do a topological sort.\n    # In-degree for each node = number of its dependencies.\n    in_degree = {node: 0 for node in nodes}\n    # adjacency: dep -> list of nodes that depend on it\n    adjacency = {node: [] for node in nodes}\n\n    for node, deps in graph.items():\n        for dep in deps:\n            adjacency[dep].append(node)\n            in_degree[node] += 1\n\n    # Kahn's algorithm\n    from collections import deque\n    queue = deque()\n    for node in nodes:\n        if in_degree[node] == 0:\n            queue.append(node)\n\n    order = []\n    while queue:\n        # For deterministic output, we could sort, but the problem doesn't specify.\n        # Let's just pop from the left.\n        node = queue.popleft()\n        order.append(node)\n        for neighbor in adjacency[node]:\n            in_degree[neighbor] -= 1\n            if in_degree[neighbor] == 0:\n                queue.append(neighbor)\n\n    if len(order) != len(nodes):\n        raise ValueError(\"Cycle detected in dependency graph\")\n\n    return order\n```",
+        "test_detail": "4fd3c5cc448041dbbea23b87ec5b0338PASS"
+      }
+    ],
+    "reasoning": [
+      {
+        "name": "weighted_margin",
+        "passed": true,
+        "expected": "31%",
+        "answer": "31%",
+        "wall_seconds": 16.846809081034735,
+        "response": "\n\nFINAL: 31%",
+        "reasoning": "We need answer user's math. Need compute portfolio gross margin weighted by revenue. Data: Revenue and gross margin are (120, 25%), (80, 40%), and (0, undefined). Weighted by revenue. If revenue zero, margin undefined but contribution zero? Portfolio gross margin weighted by revenue = sum(revenue_i * margin_i) / sum(revenue_i), with 0 * undefined? Mathematically undefined product problematic but in business context if revenue zero, no contribution, gross profit = 0? Usually portfolio gross margin = total gross profit / total revenue. Given margins and revenues, gross profit for first = 120*0.25=30; second=80*0.40=32; third revenue 0, undefined margin but gross profit likely 0 (no revenue). Total revenue=200; total gross profit=62; margin=31%. Need end exactly FINAL: <percent>. Need likely FINAL: 31%. Need ensure format maybe 31.0%? The request says End with exactly FINAL: <percent>. Could be FINAL: 31%. Need no extra? final only? We can just output FINAL: 31%. Check if weighted by revenue: weights 120/200=0.6, 80/200=0.4; 0.6*25+0.4*40=15+16=31. Third weight 0. So final.\n"
+      },
+      {
+        "name": "incremental_volume",
+        "passed": true,
+        "expected": "63",
+        "answer": "63",
+        "wall_seconds": 23.79391951597063,
+        "response": "\n\nFINAL: 63",
+        "reasoning": "We need answer a math word problem. Need compute: fact table 2.4 billion rows. Daily CDC is 0.75% of table, and compaction rewrites 2.5 times the changed rows. How many million rows are written per day including CDC and compaction output? End with exactly FINAL: <number>.\n\nNeed parse carefully. Daily CDC = 0.75% of table. Changed rows? CDC rows are changed? \"including CDC and compaction output\" likely total writes = CDC writes + compaction output. CDC writes = 0.75% of 2.4B. Compaction rewrites 2.5 times the changed rows. If changed rows = CDC changed rows? Then compaction output = 2.5 * CDC rows. Total = CDC + 2.5*CDC = 3.5*CDC. CDC = 0.0075 * 2.4e9 = 18,000,000? 2.4e9 * .0075 = 18,000,000 (18 million). Total = 3.5*18M = 63M. Need number in million rows: 63. End FINAL: 63.\n\nCheck if \"compaction rewrites 2.5 times the changed rows\" might mean compaction rewrites (in addition to CDC) equal to 2.5 times changed rows. Yes. Could also total written per day including CDC and compaction output = CDC input? CDC writes changed rows, compaction output rewrites 2.5 times changed rows. Total 63 million. If compaction rewrites 2.5 times table? No, changed rows.\n\nNeed final exactly with FINAL: <number>. Could include explanation? User asks end with exactly FINAL: <number>. To be safe only final? They might want exact ending. I can output concise maybe calculation then FINAL. But \"End with exactly FINAL: <number>.\" likely final line must be that. If include explanation, ensure last line exact. But maybe safest output only FINAL: 63. Need no punctuation extra. final.\n"
+      },
+      {
+        "name": "probability",
+        "passed": true,
+        "expected": "4/13",
+        "answer": "4/13",
+        "wall_seconds": 9.539850331959315,
+        "response": "\n\nFINAL: 4/13",
+        "reasoning": "We need answer simple probability. Need compute probability two sampled without replacement from total 13? Batch contains 6 schema errors, 4 null-key errors, 3 duplicates. Total 6+4+3=13. Sample 2 without replacement. Probability same type = (C(6,2)+C(4,2)+C(3,2))/C(13,2). Compute C6,2=15, C4,2=6, C3,2=3 sum=24. C13,2=78. 24/78 reduce divide 6 =4/13. Need final exactly FINAL: <fraction>. Ensure no extra? User says End with exactly FINAL: <fraction>. Could output just that? Need maybe minimal. final: FINAL: 4/13.\n"
+      }
+    ],
+    "summary": {
+      "coding_passed": 3,
+      "coding_total": 3,
+      "reasoning_passed": 3,
+      "reasoning_total": 3
+    }
+  },
+  "vision": {
+    "expected": {
+      "q1_revenue": 120,
+      "q2_revenue": 180,
+      "q3_revenue": 150,
+      "highest_quarter": "Q2"
+    },
+    "runs": [
+      {
+        "run": 1,
+        "correct": true,
+        "answer": {
+          "q1_revenue": 120,
+          "q2_revenue": 180,
+          "q3_revenue": 150,
+          "highest_quarter": "Q2"
+        },
+        "response": "```json\n{\"q1_revenue\": 120, \"q2_revenue\": 180, \"q3_revenue\": 150, \"highest_quarter\": \"Q2\"}\n```",
+        "wall_seconds": 2.5037618740461767
+      },
+      {
+        "run": 2,
+        "correct": true,
+        "answer": {
+          "q1_revenue": 120,
+          "q2_revenue": 180,
+          "q3_revenue": 150,
+          "highest_quarter": "Q2"
+        },
+        "response": "```json\n{\"q1_revenue\": 120, \"q2_revenue\": 180, \"q3_revenue\": 150, \"highest_quarter\": \"Q2\"}\n```",
+        "wall_seconds": 2.516288782993797
+      },
+      {
+        "run": 3,
+        "correct": true,
+        "answer": {
+          "q1_revenue": 120,
+          "q2_revenue": 180,
+          "q3_revenue": 150,
+          "highest_quarter": "Q2"
+        },
+        "response": "```json\n{\"q1_revenue\": 120, \"q2_revenue\": 180, \"q3_revenue\": 150, \"highest_quarter\": \"Q2\"}\n```",
+        "wall_seconds": 2.514975929982029
+      }
+    ],
+    "correct_runs": 3
+  },
+  "resource_snapshots": {
+    "before": {
+      "gpu": "NVIDIA GeForce RTX 4090, 49140, 43437, 5063, 0, 74.72",
+      "memory": "total        used        free      shared  buff/cache   available\nMem:     32844038144  9015668736  2943713280   158343168 21509967872 23828369408\nSwap:     8589930496  2445684736  6144245760"
+    },
+    "after": {
+      "gpu": "NVIDIA GeForce RTX 4090, 49140, 46165, 2335, 100, 310.91",
+      "memory": "total        used        free      shared  buff/cache   available\nMem:     32844038144  9059635200  2878959616   158347264 21530775552 23784402944\nSwap:     8589930496  2445672448  6144258048"
+    }
+  }
+}

@@ -3,6 +3,8 @@
 本项目发布 Qwen3.6-35B-A3B、Qwen3.8-27B 与
 DeepSeek-V4-Flash-0731 的可复现评测数据、原始回答、冻结 HTML 报告和报告生成器。
 评测完成于 2026-08-16，对应 [Issue #28](https://github.com/johnymoo/Nvidia-DGX/issues/28)。
+报告现补充 48 GiB RTX 4090 上 Qwen3.8-27B-FP8 / vLLM 的同题质量、性能与
+thinking-low 核验结果，部署方案见 [`../qwen38-rtx4090-vllm/`](../qwen38-rtx4090-vllm/)。
 
 ## 目的与上下文
 
@@ -113,14 +115,17 @@ python3 scripts/generate_html_report.py \
   --qwen38-quality data/qwen38-quality.json \
   --deepseek-quality data/deepseek-quality.json \
   --quality-comparison data/quality-comparison.json \
+  --qwen38-4090-quality ../qwen38-rtx4090-vllm/receipts/quality-instruct-20260816.json \
+  --qwen38-4090-performance ../qwen38-rtx4090-vllm/receipts/benchmark-20260816.json \
+  --qwen38-4090-thinking-quality ../qwen38-rtx4090-vllm/receipts/quality-thinking-low-20260816.json \
   --deepseek-endpoint-label http://localhost:8890/v1 \
   --final-model Qwen3.6 \
   --output report/generated/index.html
 
-python3 -m http.server 8766 --bind 127.0.0.1 --directory report/generated
+python3 -m http.server 8766 --bind 0.0.0.0 --directory report/generated
 ```
 
-浏览器打开 `http://localhost:8766/`。不重新生成时，也可以直接查看已提交的
+浏览器打开 `http://<服务器地址>:8766/`。不重新生成时，也可以直接查看已提交的
 [`report/index.html`](./report/index.html)。
 
 若缺少 DeepSeek 性能输入，可省略 `--deepseek-performance`；报告会将缺失指标和

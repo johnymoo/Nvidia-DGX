@@ -1,0 +1,6 @@
+config/qwen38.env
+receipts/generated/
+__pycache__/
+*.pyc
+*.log
+
