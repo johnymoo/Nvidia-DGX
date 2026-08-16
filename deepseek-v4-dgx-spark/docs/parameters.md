@@ -30,6 +30,7 @@ or causing a socket fallback.
 | `--enable-chunked-prefill` | on | Splits long prefills so they share scheduling with decode traffic. |
 | `--async-scheduling` | on | Reduces CPU scheduling overhead; preserve with the validated runtime. |
 | `--enable-prefix-caching` | on | Reuses matching prompt prefixes; useful for agent/system prompts but consumes cache metadata. |
+| `--enable-prompt-tokens-details` | on | Reports `usage.prompt_tokens_details.cached_tokens`. The Patch4 server gates this field behind the flag (default off), so without it clients see no cache-read numbers and compute a 0% cache-hit rate even while `vllm:prefix_cache_hits_total` confirms hits server-side. Cold prompts legitimately report `null`. |
 
 These settings are coupled. Do not raise context, sequence count and memory
 utilization independently. The accepted `0.78` leaves headroom for allocations
