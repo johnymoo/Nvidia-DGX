@@ -21,6 +21,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 docker inspect "${CONTAINER_NAME}" >"${receipt_dir}/container-inspect.json"
+inspect_sha=$(sha256sum "${receipt_dir}/container-inspect.json" | awk '{print $1}')
 nvidia-smi --query-gpu=timestamp,name,driver_version,memory.total,memory.used,memory.free --format=csv,noheader,nounits >"${receipt_dir}/gpu-before.csv"
 (
   while true; do
@@ -50,10 +51,10 @@ gpu_memory=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits |
 jq -n \
   --arg id "acceptance-${run_id}" --arg gpu "${gpu_name}" --argjson gpu_memory "${gpu_memory}" \
   --arg model_sha "${MODEL_SHA256}" --arg mmproj_sha "${MMPROJ_SHA256}" \
-  --arg image "${LLAMA_IMAGE}" --arg image_id "${image_id}" --arg acceptance_sha "${acceptance_sha}" \
+  --arg image "${LLAMA_IMAGE}" --arg image_id "${image_id}" --arg acceptance_sha "${acceptance_sha}" --arg inspect_sha "${inspect_sha}" \
   --argjson ctx "${CTX_SIZE}" --argjson parallel "${PARALLEL}" --argjson min_free "${min_free}" --argjson floor "${GPU_HEADROOM_MIB}" \
   --slurpfile acceptance "${receipt_dir}/acceptance.json" \
-  '{schema_version:1,receipt_id:$id,status:"passed",hardware:{gpu:$gpu,gpu_memory_mib:$gpu_memory},artifacts:{model_sha256:$model_sha,mmproj_sha256:$mmproj_sha,image_ref:$image,image_id:$image_id},runtime:{ctx_size:$ctx,parallel:$parallel,flash_attention:true,kv_cache:{key:"q4_0",value:"q4_0"}},acceptance:$acceptance[0],safety:{minimum_free_gpu_mib:$min_free,required_free_gpu_mib:$floor,fatal_log_patterns_found:false},source_evidence:{acceptance_sha256:$acceptance_sha},current_state_claim:"service remained running after this acceptance"}' \
+  '{schema_version:1,receipt_id:$id,status:"passed",hardware:{gpu:$gpu,gpu_memory_mib:$gpu_memory},artifacts:{model_sha256:$model_sha,mmproj_sha256:$mmproj_sha,image_ref:$image,image_id:$image_id},runtime:{ctx_size:$ctx,parallel:$parallel,flash_attention:true,kv_cache:{key:"q4_0",value:"q4_0"}},acceptance:$acceptance[0],safety:{minimum_free_gpu_mib:$min_free,required_free_gpu_mib:$floor,fatal_log_patterns_found:false},source_evidence:{acceptance_sha256:$acceptance_sha,container_inspect_sha256:$inspect_sha},current_state_claim:"service remained running after this acceptance"}' \
   >"${receipt_dir}/deployment-receipt.json"
 
 python3 "${SCRIPT_DIR}/validate_receipt.py" "${receipt_dir}/deployment-receipt.json"

@@ -92,7 +92,7 @@ SHA-256 同时匹配才会从 `.partial` 原子改名为正式文件。已存在
 ModelScope 的 `master` 只是传输来源；部署身份由固定对象哈希建立，而不是依赖可变分支名。
 
 若当前用户不能写 `/mnt/LLM/Qwen`，由管理员一次性创建目录并授予合适的组权限；
-不要用 root 运行模型容器，也不要把凭据写进配置文件。
+不要用 root 运行这些主机脚本，也不要把凭据写进配置文件。
 
 ## 启动与验证
 
@@ -105,8 +105,9 @@ curl -fsS http://127.0.0.1:18002/v1/chat/completions \
   -d '{"model":"qwen3.8-27b-q3-k-s","temperature":0,"max_tokens":32,"messages":[{"role":"user","content":"Reply exactly READY"}]}' | jq
 ```
 
-启动脚本会拒绝占用端口或同名容器，重新校验两个模型文件，确认 RTX 3090，拉取
-固定 digest 镜像，并等待容器 healthcheck。模型目录以只读方式挂载。
+启动脚本会拒绝占用端口或同名容器，重新校验两个模型文件，确认主机只暴露一张
+24 GiB RTX 3090，仅把 GPU 0 交给容器，拉取固定 digest 镜像，并等待容器
+healthcheck。模型目录以只读方式挂载。
 
 完整验收约需数分钟，其中包括 180 秒并发 soak：
 
@@ -129,8 +130,10 @@ docker logs --tail 200 qwen38-rtx3090
 ./scripts/stop.sh
 ```
 
-`stop.sh` 先保存最后一份容器日志，再删除容器并确认端口释放；模型权重和 receipts
-不会删除。恢复到本部署只需再次运行 `start.sh` 和 `status.sh`。
+`status.sh`、`accept.sh` 和 `stop.sh` 都会先核对容器 ownership label、镜像、完整
+运行参数、GPU、端口和挂载。`stop.sh` 只在身份匹配后保存日志并删除容器，再确认
+端口释放；模型权重和 receipts 不会删除。恢复到本部署只需再次运行 `start.sh` 和
+`status.sh`。
 
 如果要替换现有模型服务，必须先保存旧服务的容器 inspect、启动配置和健康结果，
 使用 loopback 候选完成 `accept.sh`，再在维护窗口中停止旧服务并修改本项目端口。
@@ -171,4 +174,6 @@ python3 -m unittest discover -s tests -v
   IQ3_S；模型选择应同时参考 benchmark 的质量与吞吐结果。
 - 两个并行 slot 共享总 context，单请求可用上限约 65K；100K 请求不在此 profile 内。
 - 历史 receipt 的公开版本已移除私有主机路径和网络地址；原始文件哈希仍保留。
+- 原始 acceptance、inspect 和 GPU 监控包含私有环境信息，未提交到公开仓库；公开
+  receipt 是可校验内部一致性的脱敏维护者记录，只有持有原件者能核对其 source hashes。
 - 脚本不配置 TLS、认证、防火墙、反向代理或系统级自动启动。
