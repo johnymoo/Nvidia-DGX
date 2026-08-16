@@ -1,0 +1,221 @@
+{
+  "cases": [
+    {
+      "bounded_wall_seconds": 130.261,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "83f0fdb57c294b84c4e3861467bd0682caa74cd6de2fe648653ec574181f1dc9",
+      "execution_seconds": 129.903,
+      "id": "object-motion",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "0c286c9918a4d0b441badda0384a87926e51eadde9ca2b2e0b1702a8bc2bbc8d",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.007,
+        "maximum_gpu_power_draw_watts": 90.61,
+        "maximum_gpu_temperature_celsius": 84,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 30.151,
+        "samples": 135
+      },
+      "status": "success",
+      "video_sha256": "1b392f581b0ff98e5c785afc63800417ae9f338b4ae8743a45e0244fdeb9f283"
+    },
+    {
+      "bounded_wall_seconds": 130.243,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "42276744621b1b47730942b7626e91efd9646ece84faa7e144e3337a131df858",
+      "execution_seconds": 129.798,
+      "id": "human-motion",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "9464b01f9f04deda68245465c48e24ec12ffdc7c1a42cb9e2367115af75b4349",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.021,
+        "maximum_gpu_power_draw_watts": 90.3,
+        "maximum_gpu_temperature_celsius": 84,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 30.037,
+        "samples": 136
+      },
+      "status": "success",
+      "video_sha256": "e7c3d5fc2d7d863b8ffef9742f095888608b6392820e0566fa65cf91335bf96c"
+    },
+    {
+      "bounded_wall_seconds": 132.268,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "62d66cae50149ab314683ea455f40676618d2c7b7bbe4eaf298c02a9cb7ac0f7",
+      "execution_seconds": 130.222,
+      "id": "environment-motion",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "5424eb590bf2d7a4cb05a78008c1e2c83e22f0bf0fce629b27c4689b8f256ece",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.025,
+        "maximum_gpu_power_draw_watts": 90.31,
+        "maximum_gpu_temperature_celsius": 85,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 30.113,
+        "samples": 137
+      },
+      "status": "success",
+      "video_sha256": "1aa03fb44b0397d4739a727cd87839e553eba458cd5f72ec7a5c533711deba94"
+    },
+    {
+      "bounded_wall_seconds": 130.237,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "7a6a8ff4743da86f4116a83c2c1380ffe2a8747a64f5c0460d9cdcac178e3289",
+      "execution_seconds": 129.458,
+      "id": "stylized-motion",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "f1b091cd28224ed8076a09cb875eb37d1b42969137d7d51cc46b788fa982b310",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.025,
+        "maximum_gpu_power_draw_watts": 89.19,
+        "maximum_gpu_temperature_celsius": 85,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 30.619,
+        "samples": 135
+      },
+      "status": "success",
+      "video_sha256": "78d5d59bc28f4157b1517e2c5d0f404a8f64b63b96c4378dd1a275194211d11e"
+    },
+    {
+      "bounded_wall_seconds": 130.21,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "ee17bea20def9a6db78ce42dc81fa41a1f679b32a99e682e983c3fab1fab3a5b",
+      "execution_seconds": 129.155,
+      "id": "repro-a",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "968fe89a869a2f1c2cddec23ff683575bcea084e9344942dede4ab1973bd860c",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.034,
+        "maximum_gpu_power_draw_watts": 89.38,
+        "maximum_gpu_temperature_celsius": 85,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 29.977,
+        "samples": 135
+      },
+      "status": "success",
+      "video_sha256": "6dbf2024506e82c0b3e8ef39bfea0d47b1a7051a75bdd248ddc3afbe630bd1af"
+    },
+    {
+      "bounded_wall_seconds": 130.272,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "ee17bea20def9a6db78ce42dc81fa41a1f679b32a99e682e983c3fab1fab3a5b",
+      "execution_seconds": 129.552,
+      "id": "repro-b",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "a7d345000065dad81668c787d7c2566fdc8278e080cd554ace851c802a902ff4",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.037,
+        "maximum_gpu_power_draw_watts": 90.04,
+        "maximum_gpu_temperature_celsius": 85,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 29.936,
+        "samples": 135
+      },
+      "status": "success",
+      "video_sha256": "853b053216e5a7b377b6f3293ceb1da73df35e19346d3356f9d5526f56d5a2a6"
+    },
+    {
+      "bounded_wall_seconds": 130.611,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "cb2f7df3258a14f5f1b93850c6228ed3435b6b70cb59eae04cd9c27c00540f9f",
+      "execution_seconds": 130.054,
+      "id": "stability-1",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "1d68e41001a9ee8ba83947c717114f52f08b12aaa78cc805ebfb354c5a2b4c8c",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.039,
+        "maximum_gpu_power_draw_watts": 90.28,
+        "maximum_gpu_temperature_celsius": 86,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 30.075,
+        "samples": 136
+      },
+      "status": "success",
+      "video_sha256": "519b35e10ba512e99b9cd2a00ae3b811999990e8546c676dcb3ae1d82db654b4"
+    },
+    {
+      "bounded_wall_seconds": 130.231,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "3b12adb5a31d2e9cece9e94dcd7fa7a383fa123a2d5682d9c5bc4e882d349847",
+      "execution_seconds": 128.845,
+      "id": "stability-2",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "652350f77a4739f4fa4870e751965284cbd6db9990ea5158890cc369bbe34d2a",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.022,
+        "maximum_gpu_power_draw_watts": 90.15,
+        "maximum_gpu_temperature_celsius": 85,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 30.071,
+        "samples": 135
+      },
+      "status": "success",
+      "video_sha256": "74ddb380b757709dd8bd3ddfccfc3200ee4cbc279d1b2605ffc39a8327783ec1"
+    },
+    {
+      "bounded_wall_seconds": 130.236,
+      "critical_generation_nodes_cached": false,
+      "decoded_rgb_sequence_sha256": "0997dee853e5ff23527db2e4da03f080e16d13cea39d856c0f09d64609f90422",
+      "execution_seconds": 129.513,
+      "id": "stability-3",
+      "media_duration_seconds": 15.08,
+      "png_sha256": "0651ea96a41272b7e1a66bf81db193ffd2132db122507c43886e6d256d77a883",
+      "resources": {
+        "maximum_comfyui_rss_gib": 45.029,
+        "maximum_gpu_power_draw_watts": 89.3,
+        "maximum_gpu_temperature_celsius": 85,
+        "maximum_gpu_utilization_percent": 96,
+        "minimum_available_memory_gib": 29.949,
+        "samples": 135
+      },
+      "status": "success",
+      "video_sha256": "e4f702ee365a18ab24b63735882dcba31e66418ffdc40c6e83b7181f35d69256"
+    }
+  ],
+  "interpretation": {
+    "excluded": [
+      "generated media",
+      "raw logs and resource time series",
+      "private host paths and network identities",
+      "process and container identities"
+    ],
+    "resources": "one-second polling extrema, not exact continuous peaks"
+  },
+  "profile": {
+    "frames": 362,
+    "height": 320,
+    "id": "trained-max-15s",
+    "steps": 6,
+    "width": 512
+  },
+  "provenance": {
+    "completed_at": "2026-08-13T00:01:16.676Z",
+    "raw_receipt_committed": false,
+    "raw_receipt_sha256": "8974fa3d6f8c2b024c1e2721c61d66b2add498db8b07d66ce056f86fe83a85da",
+    "run_id": "20260812T233711Z",
+    "started_at": "2026-08-12T23:37:11.895Z"
+  },
+  "schema_version": 1,
+  "status": "passed",
+  "subject": {
+    "comfyui_revision": "0764232429b8cfb10b79b6f186c8cb23e0b22897",
+    "deployment_subject_sha256": "ccd071f6fa36a9b3e55964c7798f4ad2cbd35b9d96b2708808cd04cf56452fd7",
+    "gitee_recipe_revision": "9f9eca9589d4b4c0a01a8081c8c4add279e18868",
+    "hardware": "NVIDIA DGX Spark / GB10, 128 GB unified memory",
+    "weight_bytes": 176195310067,
+    "weight_files": 11
+  },
+  "summary": {
+    "fatal_scans": {
+      "comfyui": "passed",
+      "kernel": "passed"
+    },
+    "reproducibility": {
+      "bitstream_equal": false,
+      "decoded_frames_equal": true
+    },
+    "sequential_success": true,
+    "successful": 9,
+    "total": 9
+  }
+}

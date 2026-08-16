@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-403",
+  "primary_cause": "unsafe_rotation_ownership_and_retention",
+  "evidence": ["EV-403-world-readable", "EV-403-unbounded-retention", "EV-403-reload-failed"],
+  "bounded_changes": ["restrict rotated-file ownership", "set fourteen weekly rotations", "compress after a delay", "propagate local reload failure"],
+  "certainty": "evidence_limited",
+  "scope": "sandbox_snapshot_only"
+}

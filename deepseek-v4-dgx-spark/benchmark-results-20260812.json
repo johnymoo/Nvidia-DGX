@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "run_date": "2026-08-12",
+  "environment": {
+    "hardware": "2 x NVIDIA DGX Spark (GB10)",
+    "candidate_runtime": "Claude Code 2.1.207",
+    "private_route": "claude_local",
+    "private_model": "deepseek-v4-flash-0731",
+    "online_route": "claude_ds",
+    "online_model": "deepseek-v4-flash",
+    "judge_model": "gpt-5.6-sol",
+    "judge_reasoning_effort": "xhigh",
+    "judge_fallback_configured": false
+  },
+  "method": {
+    "selection": "Five representative tasks where the original Private DS quality score was below Online DS, one from each requested capability area.",
+    "candidate_execution": "Only Private DS thinking-on was rerun. Original Private DS and Online DS artifacts were reused.",
+    "sandbox": "One isolated Git worktree per Claude Code attempt with local tools only and no network.",
+    "quality_formula": "mean(deterministic_tier, gpt_judge_layer)",
+    "score_precision": 3,
+    "score_range": [1, 3]
+  },
+  "thinking_evidence": {
+    "stream_count": 5,
+    "thinking_block_count": 25,
+    "thinking_token_event_count": 2611
+  },
+  "aggregates": {
+    "private_thinking_off_original": 1.967,
+    "private_thinking_on_rerun": 2.2,
+    "online_ds_original": 2.767
+  },
+  "tasks": [
+    {
+      "task_id": "ndjson-stream-decoder",
+      "category": "SWE / debug",
+      "title": "Debug incremental NDJSON decoding",
+      "quality": {
+        "private_thinking_off_original": 2.5,
+        "private_thinking_on_rerun": 2.833,
+        "online_ds_original": 3.0
+      },
+      "deterministic": {
+        "private_thinking_off_original": {"passed": 8, "total": 8},
+        "private_thinking_on_rerun": {"passed": 8, "total": 8},
+        "online_ds_original": {"passed": 8, "total": 8}
+      },
+      "thinking": {"blocks": 6, "token_events": 770},
+      "judge_preference": "online_ds_original",
+      "judge_rationale": "Online DS correctly implemented all requested behaviors and had the strongest focused regression coverage. The thinking-on Private DS implementation was correct but omitted several incremental edge cases in its tests."
+    },
+    {
+      "task_id": "terminal-log-frequency",
+      "category": "terminal",
+      "title": "Rank normalized rotated-log errors",
+      "quality": {
+        "private_thinking_off_original": 2.0,
+        "private_thinking_on_rerun": 2.667,
+        "online_ds_original": 3.0
+      },
+      "deterministic": {
+        "private_thinking_off_original": {"passed": 1, "total": 1},
+        "private_thinking_on_rerun": {"passed": 1, "total": 1},
+        "online_ds_original": {"passed": 1, "total": 1}
+      },
+      "thinking": {"blocks": 4, "token_events": 956},
+      "judge_preference": "online_ds_original",
+      "judge_rationale": "Online DS provided the most complete executable and deterministic implementation. Thinking-on Private DS was broadly functional but had normalization, locale, and JSON escaping weaknesses."
+    },
+    {
+      "task_id": "ops-oom-cgroup",
+      "category": "server operations",
+      "title": "Bound a synthetic cgroup OOM incident",
+      "quality": {
+        "private_thinking_off_original": 1.833,
+        "private_thinking_on_rerun": 2.167,
+        "online_ds_original": 2.5
+      },
+      "deterministic": {
+        "private_thinking_off_original": {"passed": 15, "total": 27},
+        "private_thinking_on_rerun": {"passed": 16, "total": 27},
+        "online_ds_original": {"passed": 14, "total": 27}
+      },
+      "thinking": {"blocks": 4, "token_events": 657},
+      "judge_preference": "online_ds_original",
+      "judge_rationale": "Online DS best satisfied the requested controls while separating observations from uncertain causes. Thinking-on Private DS was cautious but retained an overly loose memory limit and misplaced restart-limit directives."
+    },
+    {
+      "task_id": "writing-zh-incident",
+      "category": "Chinese writing",
+      "title": "Write a cache-pool incident review",
+      "quality": {
+        "private_thinking_off_original": 1.833,
+        "private_thinking_on_rerun": 1.667,
+        "online_ds_original": 2.667
+      },
+      "deterministic": {
+        "private_thinking_off_original": {"passed": 2, "total": 4},
+        "private_thinking_on_rerun": {"passed": 3, "total": 4},
+        "online_ds_original": {"passed": 4, "total": 4}
+      },
+      "thinking": {"blocks": 5, "token_events": 86},
+      "judge_preference": "online_ds_original",
+      "judge_rationale": "Online DS had the best structure and factual coverage, although it still added an unsupported no-data-loss statement. The two Private DS answers introduced more unsupported claims or omitted required facts."
+    },
+    {
+      "task_id": "typescript-lru-ttl",
+      "category": "TypeScript programming",
+      "title": "Implement an LRU cache with TTL",
+      "quality": {
+        "private_thinking_off_original": 1.667,
+        "private_thinking_on_rerun": 1.667,
+        "online_ds_original": 2.667
+      },
+      "deterministic": {
+        "private_thinking_off_original": {"passed": 0, "total": 1},
+        "private_thinking_on_rerun": {"passed": 0, "total": 1},
+        "online_ds_original": {"passed": 1, "total": 1}
+      },
+      "thinking": {"blocks": 6, "token_events": 142},
+      "judge_preference": "online_ds_original",
+      "judge_rationale": "Online DS maintained explicit constant-time recency state and handled expiration most consistently. Both Private DS variants retained observable TTL or deletion edge-case defects."
+    }
+  ],
+  "final_cluster_state": {
+    "private_deepseek": "stopped",
+    "restored_service": "healthy"
+  },
+  "limitations": [
+    "Each treatment has one sample per task, so the result is directional rather than statistically significant.",
+    "Original Private DS and Online DS outputs were reused while only Private DS thinking-on was rerun.",
+    "The Patch4 runtime image and model weights are not distributed in this repository."
+  ]
+}

@@ -1,0 +1,12 @@
+.env
+!benchmark/fixtures/**/.env
+*.log
+!benchmark/fixtures/**/*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+artifacts/
+streams/
+benchmark/.env
+benchmark/artifacts/

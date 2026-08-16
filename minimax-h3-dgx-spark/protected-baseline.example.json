@@ -1,0 +1,6 @@
+{
+  "name": "existing-service",
+  "container_id": "replace-with-full-container-id",
+  "health": "healthy",
+  "restart_count": 0
+}

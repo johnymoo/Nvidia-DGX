@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-407",
+  "primary_cause": "cgroup_memory_limit_exceeded",
+  "evidence": ["EV-407-oom-kill", "EV-407-memory-current", "EV-407-restart"],
+  "bounded_changes": ["set MemoryHigh", "set MemoryMax", "disable swap", "add restart backoff"],
+  "certainty": "evidence_limited",
+  "scope": "sandbox_snapshot_only"
+}

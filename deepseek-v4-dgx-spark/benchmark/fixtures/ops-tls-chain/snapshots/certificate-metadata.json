@@ -1,0 +1,8 @@
+{
+  "incident_id": "INC-405",
+  "hostname": "api.example.test",
+  "leaf": {"file": "./certs/edge-leaf.pem", "serial": "LEAF-0731", "issuer": "Example Issuing CA"},
+  "issuing_intermediate": {"file": "./certs/edge-intermediate.pem", "subject": "Example Issuing CA"},
+  "root": {"file": "./certs/example-root.pem", "subject": "Example Root CA"},
+  "private_key": "./secrets/edge.key"
+}
