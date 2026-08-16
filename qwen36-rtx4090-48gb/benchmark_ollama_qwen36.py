@@ -115,8 +115,23 @@ def post_stream(url, payload, timeout):
     }
 
 
+def is_numeric(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def numeric_value(record, key, default=None):
+    value = record.get(key)
+    return value if is_numeric(value) else default
+
+
 def duration_seconds(event, name):
-    return event.get(name, 0) / 1_000_000_000
+    duration = numeric_value(event, name)
+    return duration / 1_000_000_000 if duration is not None else None
+
+
+def format_metric(value, precision=1, width=None):
+    formatted = f"{value:.{precision}f}" if is_numeric(value) else "N/A"
+    return f"{formatted:>{width}}" if width is not None else formatted
 
 
 def prompt_for_run(scenario, run_id):
@@ -136,8 +151,8 @@ def measure(url, model, scenario, run_id, timeout):
     }
     streamed = post_stream(url, payload, timeout)
     event = streamed["final_event"]
-    prompt_tokens = event.get("prompt_eval_count", 0)
-    completion_tokens = event.get("eval_count", 0)
+    prompt_tokens = numeric_value(event, "prompt_eval_count", 0)
+    completion_tokens = numeric_value(event, "eval_count", 0)
     prompt_eval_s = duration_seconds(event, "prompt_eval_duration")
     eval_s = duration_seconds(event, "eval_duration")
     total_s = duration_seconds(event, "total_duration")
@@ -153,7 +168,9 @@ def measure(url, model, scenario, run_id, timeout):
         "client_wall_s": streamed["client_wall_s"],
         "prompt_tok_s": prompt_tokens / prompt_eval_s if prompt_eval_s else None,
         "decode_tok_s": completion_tokens / eval_s if eval_s else None,
-        "end_to_end_tok_s": completion_tokens / streamed["client_wall_s"],
+        "end_to_end_tok_s": (
+            completion_tokens / streamed["client_wall_s"] if streamed["client_wall_s"] else None
+        ),
         "done_reason": event.get("done_reason"),
         "prompt_cache_mode": "fresh-prefix" if scenario.get("fresh_prefix") else "normal",
         "thinking": scenario["think"],
@@ -161,8 +178,21 @@ def measure(url, model, scenario, run_id, timeout):
 
 
 def mean_metric(runs, key):
-    values = [run[key] for run in runs if run.get(key) is not None]
+    values = [numeric_value(run, key) for run in runs]
+    values = [value for value in values if value is not None]
     return statistics.mean(values) if values else None
+
+
+def stdev_metric(runs, key):
+    values = [numeric_value(run, key) for run in runs]
+    values = [value for value in values if value is not None]
+    if len(values) > 1:
+        return statistics.stdev(values)
+    return 0 if values else None
+
+
+def milliseconds(value):
+    return value * 1000 if is_numeric(value) else None
 
 
 def summary(name, runs, scenario):
@@ -173,14 +203,12 @@ def summary(name, runs, scenario):
         "runs": len(runs),
         "prompt_tokens_mean": mean_metric(runs, "prompt_tokens"),
         "completion_tokens_mean": mean_metric(runs, "completion_tokens"),
-        "client_ttft_ms_mean": mean_metric(runs, "client_ttft_s") * 1000,
-        "client_wall_ms_mean": mean_metric(runs, "client_wall_s") * 1000,
+        "client_ttft_ms_mean": milliseconds(mean_metric(runs, "client_ttft_s")),
+        "client_wall_ms_mean": milliseconds(mean_metric(runs, "client_wall_s")),
         "prompt_tok_s_mean": mean_metric(runs, "prompt_tok_s"),
         "decode_tok_s_mean": mean_metric(runs, "decode_tok_s"),
         "end_to_end_tok_s_mean": mean_metric(runs, "end_to_end_tok_s"),
-        "decode_tok_s_std": (
-            statistics.stdev([run["decode_tok_s"] for run in runs]) if len(runs) > 1 else 0
-        ),
+        "decode_tok_s_std": stdev_metric(runs, "decode_tok_s"),
     }
 
 
@@ -247,10 +275,10 @@ def main():
             result = measure(args.url, args.model, scenario, run_id, args.timeout)
             runs.append(result)
             print(
-                f"  run {index + 1}: ttft={result['client_ttft_s'] * 1000:.0f} ms "
-                f"prefill={result['prompt_tok_s']:.1f} tok/s "
-                f"decode={result['decode_tok_s']:.1f} tok/s "
-                f"e2e={result['end_to_end_tok_s']:.1f} tok/s"
+                f"  run {index + 1}: ttft={format_metric(milliseconds(result['client_ttft_s']), 0)} ms "
+                f"prefill={format_metric(result['prompt_tok_s'])} tok/s "
+                f"decode={format_metric(result['decode_tok_s'])} tok/s "
+                f"e2e={format_metric(result['end_to_end_tok_s'])} tok/s"
             )
         all_runs[name] = runs
         summaries.append(summary(name, runs, scenario))
@@ -284,9 +312,10 @@ def main():
     print("scenario       ttft(ms)  prefill tok/s  decode tok/s  e2e tok/s")
     for item in summaries:
         print(
-            f"{item['name']:<14} {item['client_ttft_ms_mean']:>8.0f} "
-            f"{item['prompt_tok_s_mean']:>14.1f} {item['decode_tok_s_mean']:>13.1f} "
-            f"{item['end_to_end_tok_s_mean']:>10.1f}"
+            f"{item['name']:<14} {format_metric(item['client_ttft_ms_mean'], 0, 8)} "
+            f"{format_metric(item['prompt_tok_s_mean'], 1, 14)} "
+            f"{format_metric(item['decode_tok_s_mean'], 1, 13)} "
+            f"{format_metric(item['end_to_end_tok_s_mean'], 1, 10)}"
         )
     print(f"\nSaved: {output}")
 

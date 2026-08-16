@@ -6,7 +6,7 @@ services:
     container_name: qwen36-rtx4090-ollama
     restart: unless-stopped
     ports:
-      - "0.0.0.0:8004:11434"
+      - "127.0.0.1:8004:11434"
     environment:
       OLLAMA_HOST: 0.0.0.0:11434
       OLLAMA_CONTEXT_LENGTH: "131072"

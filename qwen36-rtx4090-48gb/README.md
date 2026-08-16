@@ -22,7 +22,7 @@ method are different.
 | Quantization package | Official Ollama Q4_K_M (27B: 17 GB download; 35B-A3B: 23 GB download) |
 | Loaded model footprint | 27B: 32.4 GB reported by Ollama; 35B-A3B: 30 GB reported by Ollama, including a 4.0 GiB GPU KV cache allocation |
 | Context length | 131,072 tokens |
-| Service address | `0.0.0.0:8004` |
+| Service address | `127.0.0.1:8004` (default) |
 | Concurrency | One request (`OLLAMA_NUM_PARALLEL=1`) |
 
 The host was provided as a "4090D 48G" configuration. `nvidia-smi` reported
@@ -31,7 +31,7 @@ this reference.
 
 ## Architecture
 
-`client -> 0.0.0.0:8004 -> Ollama 0.20.2 -> Qwen3.6 Q4_K_M -> RTX 4090 GPU`
+`client -> 127.0.0.1:8004 -> Ollama 0.20.2 -> Qwen3.6 Q4_K_M -> RTX 4090 GPU`
 
 The Compose deployment keeps the model in a Docker named volume. Its bootstrap
 service pulls the model once, and the API service is then available through the
@@ -49,9 +49,10 @@ docker-compose -f compose.yaml ps
 curl http://127.0.0.1:8004/api/tags
 ```
 
-The compose file intentionally binds an unauthenticated API to all interfaces.
-Use a firewall or an authenticated reverse proxy before allowing untrusted
-network access to TCP port 8004.
+The compose file binds the unauthenticated API to host loopback by default. To
+allow remote access, explicitly change the port mapping to
+`0.0.0.0:8004:11434` and protect TCP port 8004 with a firewall or an
+authenticated reverse proxy.
 
 ## Method
 

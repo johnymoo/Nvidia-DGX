@@ -4,7 +4,6 @@
 import argparse
 import base64
 import json
-import math
 import statistics
 import struct
 import time
@@ -97,8 +96,28 @@ def stream_request(url, payload, timeout):
     return final_event, "".join(content), (first_token_at or completed) - started, completed - started
 
 
+def is_numeric(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def numeric_value(record, key, default=None):
+    value = record.get(key)
+    return value if is_numeric(value) else default
+
+
 def seconds(event, key):
-    return event.get(key, 0) / 1_000_000_000
+    duration = numeric_value(event, key)
+    return duration / 1_000_000_000 if duration is not None else None
+
+
+def mean_metric(runs, key):
+    values = [numeric_value(run, key) for run in runs]
+    values = [value for value in values if value is not None]
+    return statistics.mean(values) if values else None
+
+
+def format_metric(value, precision=1):
+    return f"{value:.{precision}f}" if is_numeric(value) else "N/A"
 
 
 def parse_answer(text):
@@ -157,15 +176,16 @@ def main():
             "response": content,
             "client_ttft_ms": ttft_s * 1000,
             "client_wall_ms": wall_s * 1000,
-            "prompt_tokens": event.get("prompt_eval_count", 0),
-            "completion_tokens": event.get("eval_count", 0),
-            "prompt_tok_s": event.get("prompt_eval_count", 0) / prompt_s if prompt_s else None,
-            "decode_tok_s": event.get("eval_count", 0) / eval_s if eval_s else None,
+            "prompt_tokens": numeric_value(event, "prompt_eval_count", 0),
+            "completion_tokens": numeric_value(event, "eval_count", 0),
+            "prompt_tok_s": numeric_value(event, "prompt_eval_count", 0) / prompt_s if prompt_s else None,
+            "decode_tok_s": numeric_value(event, "eval_count", 0) / eval_s if eval_s else None,
         }
         runs.append(result)
         print(
-            f"run {index + 1}: correct={result['correct']} ttft={result['client_ttft_ms']:.0f} ms "
-            f"prefill={result['prompt_tok_s']:.1f} tok/s decode={result['decode_tok_s']:.1f} tok/s"
+            f"run {index + 1}: correct={result['correct']} ttft={format_metric(result['client_ttft_ms'], 0)} ms "
+            f"prefill={format_metric(result['prompt_tok_s'])} tok/s "
+            f"decode={format_metric(result['decode_tok_s'])} tok/s"
         )
 
     result = {
@@ -178,9 +198,9 @@ def main():
         "summary": {
             "runs": len(runs),
             "correct_runs": sum(run["correct"] for run in runs),
-            "client_ttft_ms_mean": statistics.mean(run["client_ttft_ms"] for run in runs),
-            "prompt_tok_s_mean": statistics.mean(run["prompt_tok_s"] for run in runs),
-            "decode_tok_s_mean": statistics.mean(run["decode_tok_s"] for run in runs),
+            "client_ttft_ms_mean": mean_metric(runs, "client_ttft_ms"),
+            "prompt_tok_s_mean": mean_metric(runs, "prompt_tok_s"),
+            "decode_tok_s_mean": mean_metric(runs, "decode_tok_s"),
         },
     }
     output = args.output or Path(
