@@ -22,7 +22,7 @@
 | `data/performance-comparison.json` | `3531abdd96ae774edab0043d123a38fa60f218f29e7754638471a435e3b5bbca` |
 | `data/deepseek-performance.json` | `563002573d6fe9c51132c392fc11ae1f461eed77171387f494f5aee358a1bd44` |
 | `data/quality-comparison.json` | `d7c2809392019eaa55f09ad017b2a247813409f9627dc49bac2566b56f71804e` |
-| `scripts/generate_html_report.py` | `c7bee92d3d6713ce35f08b428824443ca4188ade522281433063028f5c05dd98` |
+| `scripts/generate_html_report.py` | `1de598756e2ba96ffe035374b00f6c16002fdccd00b2d0e1b7aa9217d9b440ed` |
 
 ## 复用条件
 

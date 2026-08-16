@@ -116,11 +116,14 @@ python3 scripts/generate_html_report.py \
   --final-model Qwen3.6 \
   --output report/generated/index.html
 
-python3 -m http.server 8766 --bind 0.0.0.0 --directory report/generated
+python3 -m http.server 8766 --bind 127.0.0.1 --directory report/generated
 ```
 
 浏览器打开 `http://localhost:8766/`。不重新生成时，也可以直接查看已提交的
 [`report/index.html`](./report/index.html)。
+
+若缺少 DeepSeek 性能输入，可省略 `--deepseek-performance`；报告会将缺失指标和
+相关比率显示为 N/A。
 
 ## 验证
 
@@ -142,6 +145,6 @@ cmp data/quality-comparison.json /tmp/quality-comparison.json
 - Qwen3.8 的兼容 model alias 不能单独证明底层权重身份，复现实验时应另存
   模型清单或部署 receipt。
 - 原始 JSON 包含模型输出和 reasoning，文件体积会随新增题目增长。
-- 公开版性能 JSON 将浮点计时和速率保留到小数点后六位；完整精度的原始
-  receipt 不进入公开仓库。
+- 公开版性能 JSON 保留采集结果的原始小数精度，最多六位且不补零；完整精度的
+  原始 receipt 不进入公开仓库。
 - 服务状态描述是评测时快照，不应代替当前部署健康检查。

@@ -120,22 +120,57 @@ def quality_bars(comparison: dict) -> str:
     return "".join(rows)
 
 
-def summarize_deepseek_performance(raw: dict) -> dict:
-    return {
-        "single_stream": {row["label"]: row["best"]["tokens_per_second"] for row in raw["single_stream"]},
-        "concurrency": {str(row["concurrency"]): row["aggregate_tokens_per_second"] for row in raw["concurrency"]},
-        "prefill": {str(row["target_tokens"]): row["prefill_tokens_per_second"] for row in raw["prefill"]},
-    }
+def optional_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def metric(value: object) -> str:
+    value = optional_number(value)
+    return "N/A" if value is None else f"{value:,.1f}"
+
+
+def ratio(numerator: object, denominator: object) -> str:
+    numerator = optional_number(numerator)
+    denominator = optional_number(denominator)
+    if numerator is None or denominator in (None, 0):
+        return "N/A"
+    return pct(numerator / denominator)
+
+
+def mean_metric(values: object) -> float | None:
+    values = [value for item in values for value in [optional_number(item)] if value is not None]
+    return statistics.fmean(values) if values else None
+
+
+def summarize_deepseek_performance(raw: dict | None) -> dict:
+    summary = {"single_stream": {}, "concurrency": {}, "prefill": {}}
+    raw = raw or {}
+    sections = (
+        ("single_stream", "label", "best", "tokens_per_second"),
+        ("concurrency", "concurrency", None, "aggregate_tokens_per_second"),
+        ("prefill", "target_tokens", None, "prefill_tokens_per_second"),
+    )
+    for section, label_key, nested_key, value_key in sections:
+        for row in raw.get(section) or []:
+            if not isinstance(row, dict) or row.get(label_key) is None:
+                continue
+            source = row.get(nested_key) if nested_key else row
+            value = source.get(value_key) if isinstance(source, dict) else None
+            summary[section][str(row[label_key])] = optional_number(value)
+    return summary
 
 
 def performance_rows(perf: dict, ds_perf: dict, section: str) -> str:
     rows = []
+    ds_section = ds_perf.get(section) if isinstance(ds_perf.get(section), dict) else {}
     for key, q36_value in perf["qwen36"][section].items():
         q38_value = perf["qwen38"][section][key]
-        ds_value = ds_perf[section].get(key)
+        ds_value = ds_section.get(key)
         rows.append(
-            f"<tr><td>{esc(key)}</td><td>{q36_value:,.1f}</td><td>{q38_value:,.1f}</td>"
-            f"<td>{ds_value:,.1f}</td><td>{pct(q38_value / q36_value)}</td><td>{pct(ds_value / q36_value)}</td></tr>"
+            f"<tr><td>{esc(key)}</td><td>{metric(q36_value)}</td><td>{metric(q38_value)}</td>"
+            f"<td>{metric(ds_value)}</td><td>{ratio(q38_value, q36_value)}</td><td>{ratio(ds_value, q36_value)}</td></tr>"
         )
     return "".join(rows)
 
@@ -153,7 +188,7 @@ def quality_rows(quality: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--performance", type=Path, required=True)
-    parser.add_argument("--deepseek-performance", type=Path, required=True)
+    parser.add_argument("--deepseek-performance", type=Path)
     parser.add_argument("--qwen36-quality", type=Path, required=True)
     parser.add_argument("--qwen38-quality", type=Path, required=True)
     parser.add_argument("--deepseek-quality", type=Path, required=True)
@@ -167,18 +202,28 @@ def main() -> int:
     parser.add_argument("--final-model", default="Qwen3.6")
     args = parser.parse_args()
     perf = json.loads(args.performance.read_text())
-    ds_perf_raw = json.loads(args.deepseek_performance.read_text())
+    ds_perf_raw = json.loads(args.deepseek_performance.read_text()) if args.deepseek_performance else None
     q36 = json.loads(args.qwen36_quality.read_text())
     q38 = json.loads(args.qwen38_quality.read_text())
     deepseek = json.loads(args.deepseek_quality.read_text())
     quality = json.loads(args.quality_comparison.read_text())
     ds_perf = summarize_deepseek_performance(ds_perf_raw)
-    q36_single = statistics.fmean(perf["qwen36"]["single_stream"].values())
-    q38_single = statistics.fmean(perf["qwen38"]["single_stream"].values())
-    ds_single = statistics.fmean(ds_perf["single_stream"].values())
+    q36_single = mean_metric(perf["qwen36"]["single_stream"].values())
+    q38_single = mean_metric(perf["qwen38"]["single_stream"].values())
+    ds_single = mean_metric(ds_perf["single_stream"].values())
     ds_cases = [case for category in deepseek["categories"].values() for case in category["cases"]]
     ds_final_answers = sum(bool(answer(case)) for case in ds_cases)
     ds_missing_final = len(ds_cases) - ds_final_answers
+    ds_performance_source = (
+        "DeepSeek 性能来自双 GB10 官方验收中的同一 <code>bench_full.py</code>。"
+        if args.deepseek_performance
+        else "未提供 DeepSeek 性能证据，相关性能指标显示 N/A。"
+    )
+    ds_performance_receipt = (
+        f"DeepSeek 性能 receipt：<code>{esc(args.deepseek_performance_receipt)}</code>（SHA-256 <code>670e0ac4…beb65</code>）。"
+        if args.deepseek_performance
+        else "DeepSeek 性能 receipt：N/A（未提供）。"
+    )
 
     document = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -194,9 +239,9 @@ def main() -> int:
   <div class="stat"><span>质量宏平均（4 类）</span><strong>{pct(quality['qwen36_macro'])}</strong><small>Qwen3.6</small></div>
   <div class="stat"><span>质量宏平均（4 类）</span><strong>{pct(quality['qwen38_macro'])}</strong><small>Qwen3.8</small></div>
   <div class="stat"><span>质量宏平均（3 类）</span><strong>{pct(quality['deepseek_macro'])}</strong><small>DeepSeek，排除图片</small></div>
-  <div class="stat"><span>单流生成均值</span><strong>{q36_single:.1f} tok/s</strong><small>Qwen3.6 · X570</small></div>
-  <div class="stat"><span>单流生成均值</span><strong>{q38_single:.1f} tok/s</strong><small>Qwen3.8 · X570</small></div>
-  <div class="stat"><span>单流生成均值</span><strong>{ds_single:.1f} tok/s</strong><small>DeepSeek · 双 GB10</small></div>
+  <div class="stat"><span>单流生成均值</span><strong>{metric(q36_single)}{' tok/s' if q36_single is not None else ''}</strong><small>Qwen3.6 · X570</small></div>
+  <div class="stat"><span>单流生成均值</span><strong>{metric(q38_single)}{' tok/s' if q38_single is not None else ''}</strong><small>Qwen3.8 · X570</small></div>
+  <div class="stat"><span>单流生成均值</span><strong>{metric(ds_single)}{' tok/s' if ds_single is not None else ''}</strong><small>DeepSeek · 双 GB10</small></div>
 </section>
 <section id="config" class="report-section"><h2>模型与运行配置</h2><div class="config-grid">
   <article class="config"><h3>Qwen3.6-35B-A3B</h3><table><tr><td>权重</td><td>UD-IQ3_S GGUF</td></tr><tr><td>结构</td><td>35B A3B MoE</td></tr><tr><td>硬件</td><td>X570 / RTX 3090</td></tr><tr><td>总 context</td><td>262,144</td></tr><tr><td>并行槽</td><td>4</td></tr><tr><td>每槽 context</td><td>65,536</td></tr></table></article>
@@ -204,13 +249,13 @@ def main() -> int:
   <article class="config"><h3>DeepSeek-V4-Flash-0731</h3><table><tr><td>运行时</td><td>vLLM f277b3d</td></tr><tr><td>硬件</td><td>2 × NVIDIA GB10</td></tr><tr><td>并行</td><td>TP=2</td></tr><tr><td>最大 context</td><td>1,048,576</td></tr><tr><td>KV cache</td><td>NVFP4 MLA</td></tr><tr><td>MTP</td><td>5</td></tr></table></article>
 </div></section>
 <section id="setup" class="report-section setup"><h2>Setup 与证据</h2><ol>
-  <li>Qwen3.6 与 Qwen3.8 性能结果来自同一 X570 / RTX 3090 上串行运行的同一 harness；DeepSeek 性能来自双 GB10 官方验收中的同一 <code>bench_full.py</code>。</li>
+  <li>Qwen3.6 与 Qwen3.8 性能结果来自同一 X570 / RTX 3090 上串行运行的同一 harness；{ds_performance_source}</li>
   <li>DeepSeek 实时模型身份为 <code>deepseek-v4-flash-0731</code>，OpenAI API 为 <code>{esc(args.deepseek_endpoint_label)}</code>；评测未重启或修改服务。</li>
   <li>质量 harness 对三个模型使用相同的 5 道编程隐藏测试、4 道写作 rubric 和 12 道数学题。仅两个 Qwen 运行 6 道图片题，DeepSeek 显示 N/A。</li>
   <li>DeepSeek 共完成 21 次非视觉请求，保留 {ds_final_answers} 份 final content；{ds_missing_final} 份请求未返回 final content，报告按失败计分并单独标记，同时保留其 reasoning 字段。</li>
   <li>最终只读检查发现 X570 OPF <code>:8765</code> 未监听，原因未知；本次评测没有停止、启动、重启或修改 OPF，因此该状态不影响 DeepSeek <code>:8890</code>、Qwen <code>:8004</code> 与报告结果。</li>
   <li>编程代码在无网络、只读、128 MiB、非 root 的固定 digest Docker 沙箱执行。写作只评分题目明确声明的客观约束。</li>
-  <li>Qwen 性能 receipt：<code>{esc(args.performance_receipt)}</code>；DeepSeek 性能 receipt：<code>{esc(args.deepseek_performance_receipt)}</code>（SHA-256 <code>670e0ac4…beb65</code>）。</li>
+  <li>Qwen 性能 receipt：<code>{esc(args.performance_receipt)}</code>；{ds_performance_receipt}</li>
   <li>Qwen 质量 receipt：<code>{esc(args.quality_receipt)}</code>；DeepSeek 质量 receipt：<code>{esc(args.deepseek_quality_receipt)}</code>。</li>
 </ol></section>
 <section id="performance" class="report-section"><h2>性能汇总</h2><div class="legend"><span><i class="q36"></i>Qwen3.6 / X570</span><span><i class="q38"></i>Qwen3.8 / X570</span><span><i class="ds"></i>DeepSeek / 双 GB10</span></div>
