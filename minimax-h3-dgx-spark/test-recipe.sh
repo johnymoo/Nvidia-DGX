@@ -40,6 +40,10 @@ grep -q "if 'pkill -f' in text or '/tmp/keys-heretic-tmp' in text" \
   "$DEPLOY/install-upstream-recipe.sh"
 grep -q 'cleanup_unreceipted' "$DEPLOY/start-comfyui.sh"
 python3 "$ROOT/test-start-cleanup.py"
+python3 "$ROOT/test-sanitize-results.py"
+python3 "$ROOT/test-runtime-health.py"
+"$ROOT/test-start-report.sh"
+"$ROOT/test-start-comfyui-port.sh"
 
 fixture="$ROOT/benchmark-results.json"
 python3 - "$ROOT/sanitize-results.py" "$fixture" <<'PY'

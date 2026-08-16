@@ -12,7 +12,12 @@ def extrema(case):
     samples = case.get("resources", [])
 
     def values(key):
-        return [row[key] for row in samples if row.get(key) is not None]
+        observed = [row[key] for row in samples if row.get(key) is not None]
+        if not observed:
+            raise RuntimeError(
+                f"resource samples are incomplete for case {case.get('id', 'unknown')}: "
+                f"no {key} values")
+        return observed
 
     available = values("available_memory_kib")
     rss = values("comfyui_rss_kib")

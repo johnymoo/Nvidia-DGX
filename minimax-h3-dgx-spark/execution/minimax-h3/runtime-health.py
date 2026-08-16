@@ -36,12 +36,16 @@ def database_checks(path: Path) -> dict:
 
 
 def scan(path: Path, pattern: re.Pattern) -> dict:
-    matches = []
+    matching_lines = []
     for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
         if pattern.search(line):
-            matches.append({"line": number, "text": line})
-    if matches:
-        raise RuntimeError(f"fatal pattern found in {path}: {matches[:5]}")
+            matching_lines.append(number)
+    if matching_lines:
+        reported_lines = ", ".join(map(str, matching_lines[:5]))
+        truncated = "..." if len(matching_lines) > 5 else ""
+        raise RuntimeError(
+            f"fatal pattern found: {len(matching_lines)} matching line(s) "
+            f"at {reported_lines}{truncated}")
     return {"path": str(path), "fatal_matches": 0}
 
 

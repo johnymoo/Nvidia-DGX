@@ -5,6 +5,11 @@ source "$SCRIPT_DIR/report-lib.sh"
 ROOT="${H3_BENCH_ROOT:-$HOME/minimax-h3-benchmark}"
 PORT="${H3_REPORT_PORT:-8890}"
 PYTHON="${H3_REPORT_PYTHON:-python3}"
+python_path="$(command -v "$PYTHON" 2>/dev/null || true)"
+[[ -n "$python_path" && -x "$python_path" ]] || {
+  printf 'H3_REPORT_PYTHON must resolve to an executable: %s\n' "$PYTHON" >&2
+  exit 1
+}
 mkdir -p "$ROOT/run" "$ROOT/logs"
 [[ -f "$ROOT/site/index.html" && -f "$ROOT/site/evidence.html" ]] || { echo 'site is not rendered' >&2; exit 1; }
 if [[ -f "$ROOT/run/report-process.json" ]]; then
@@ -13,7 +18,6 @@ if [[ -f "$ROOT/run/report-process.json" ]]; then
   jq -e '.running' <<<"$state" >/dev/null && { echo 'existing report identity mismatch' >&2; exit 1; }
 fi
 ss -H -ltn "sport = :$PORT" | grep -q . && { echo "port $PORT is already in use" >&2; exit 1; }
-python_path="$(command -v "$PYTHON")"
 nohup "$python_path" -m http.server "$PORT" --bind 0.0.0.0 --directory "$ROOT/site" \
   >> "$ROOT/logs/report.log" 2>&1 &
 pid=$!

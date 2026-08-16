@@ -65,7 +65,7 @@ if [[ ! -f "$root/run/comfyui-process.json" && "$legacy_pid" =~ ^[0-9]+$ ]]; the
   fi
 fi
 
-if ss -ltn "sport = :$port" | tail -n +2 | grep -q .; then
+if "$H3_SS_BIN" -ltn "sport = :$port" | tail -n +2 | grep -q .; then
   printf 'port %s is already occupied by a non-matching process\n' "$port" >&2
   exit 1
 fi
