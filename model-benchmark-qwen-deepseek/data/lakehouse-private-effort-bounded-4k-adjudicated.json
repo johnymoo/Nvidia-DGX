@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "source_harness": "lakehouse-thinking-v2",
+  "adjudication": {
+    "reason": "Raw Python scores were invalid because the pinned sandbox image was unavailable during generation; saved final responses were re-executed without model calls.",
+    "executor_image": {
+      "requested": "public.ecr.aws/docker/library/python@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de",
+      "id": "sha256:944a73bd27d7b5fad206369e77bb7a6da51e073236b9dece9ff387df433de7bb",
+      "repo_digests": [
+        "public.ecr.aws/docker/library/python@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de"
+      ],
+      "architecture": "arm64"
+    }
+  },
+  "runs": [
+    {
+      "tag": "private-bounded-high-4k-r1",
+      "source_file": "private-high-4k-r1.json",
+      "source_sha256": "c2ba089094399589396f35f83ee9e5122c8ada20107589d88f35013bb86338d1",
+      "original_macro_score": 0.888889,
+      "macro_score": 0.888889,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 39.585833,
+          "completion_tokens": 4717,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 0.833333,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 78.376167,
+          "completion_tokens": 8900,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.833333,
+          "passed": 4,
+          "total": 6,
+          "mean_seconds": 16.661667,
+          "completion_tokens": 1815,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "de46b6e2b33d478b8292548d4a9031b4[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "73a37f2194634f3caa5d824e5df98c0e[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "b78e13477e634b8e8d0f6e2a29534158[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "474908f74f7f4b1683b65291bfc8cb69[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "18e864818dc5465082da46d3ccdad1b1[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "46a018b86f2242dfa66b67ac5f05eba5[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "private-bounded-high-4k-r2",
+      "source_file": "private-high-4k-r2.json",
+      "source_sha256": "14370f715cd406b9f23a669a704a7f1ffa67db7eb869b4812890cb2c6b48100a",
+      "original_macro_score": 0.972222,
+      "macro_score": 0.972222,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 39.16,
+          "completion_tokens": 4534,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 72.9695,
+          "completion_tokens": 8338,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.916667,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 14.535833,
+          "completion_tokens": 1823,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "6ea5fa4f5c2349a89d29e8a681fea0a8[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "1f0082af76404e8dae09f52d14e82c84[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "4481c9180b964f2797dbb5f9a9a3c202[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "999a8d01015f495b8f759f6c1fc9c417[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "8df3ea1550c24a9b85739fb3cc422f01[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,1,\"x\"],[2,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "13f1b7e7509f44e4a11b647fc4b4f507[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "private-bounded-max-4k-r1",
+      "source_file": "private-max-4k-r1.json",
+      "source_sha256": "2d06f91bd2cb25e26c0c3523f8d2c225271f99f7093c23ab2ce1f3049f35613a",
+      "original_macro_score": 0.611111,
+      "macro_score": 0.611111,
+      "categories": {
+        "sql": {
+          "score": 0.666667,
+          "passed": 4,
+          "total": 6,
+          "mean_seconds": 108.831833,
+          "completion_tokens": 10712,
+          "length_truncations": 2,
+          "empty_finals": 2,
+          "errors": 0
+        },
+        "python": {
+          "score": 0.333333,
+          "passed": 2,
+          "total": 6,
+          "mean_seconds": 196.38,
+          "completion_tokens": 18592,
+          "length_truncations": 4,
+          "empty_finals": 4,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.833333,
+          "passed": 4,
+          "total": 6,
+          "mean_seconds": 28.073,
+          "completion_tokens": 2517,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "b2f5226f35014e948843d60f525650c1[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'stable_toposort' is not defined\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'schema_drift' is not defined\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'bounded_batches' is not defined\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'merge_payload_ranges' is not defined\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "f945a85e4422479382c1f377c1a192f9[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "private-bounded-max-4k-r2",
+      "source_file": "private-max-4k-r2.json",
+      "source_sha256": "db139268ecc68f59fc966b3c01c648bb782ac7372b05118972bf8b002344e385",
+      "original_macro_score": 0.777778,
+      "macro_score": 0.777778,
+      "categories": {
+        "sql": {
+          "score": 0.833333,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 75.691167,
+          "completion_tokens": 7877,
+          "length_truncations": 1,
+          "empty_finals": 1,
+          "errors": 0
+        },
+        "python": {
+          "score": 0.5,
+          "passed": 3,
+          "total": 6,
+          "mean_seconds": 172.5755,
+          "completion_tokens": 15772,
+          "length_truncations": 3,
+          "empty_finals": 3,
+          "errors": 0
+        },
+        "incident": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 39.200667,
+          "completion_tokens": 3522,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "768ccaf500284a14b8950de22f851474[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'stable_toposort' is not defined\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'schema_drift' is not defined\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "981d183c7d804a1da1cbbd99d0340ec0[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'merge_payload_ranges' is not defined\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "56664041b5974804b92d6243fe29d46d[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    }
+  ]
+}

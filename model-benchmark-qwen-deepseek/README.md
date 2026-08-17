@@ -103,15 +103,23 @@ set -a
 set +a
 python3 scripts/lakehouse_thinking_benchmark.py \
   --base-url "$OPENAI_BASE_URL" \
+  --endpoint-label private-llm-portal \
   --model "$MODEL" \
   --tag deepseek-v4-flash-0731-thinking \
   --mode deepseek-thinking \
   --api-key-env OPENAI_API_KEY \
+  --deepseek-effort high \
+  --force-reasoning-effort-passthrough \
   --max-tokens 4096 \
+  --concurrency 3 \
   --output /tmp/lakehouse-deepseek-thinking.json
 ```
 
 `--api-key-env` 只读取进程环境；不要将 endpoint 或 token 写入 JSON、HTML 或 Git。
+通过 LiteLLM/LLM Portal 调用 generic OpenAI-compatible deployment 时，必须显式加入
+`--force-reasoning-effort-passthrough`，否则 `drop_params=true` 可能静默丢弃 `reasoning_effort`。
+`--concurrency` 只并行模型请求，grader 仍按固定题序执行；多个 runner 的并发总和不得超过
+服务端 `max-num-seqs`。
 
 重跑 online DS thinking treatment：
 

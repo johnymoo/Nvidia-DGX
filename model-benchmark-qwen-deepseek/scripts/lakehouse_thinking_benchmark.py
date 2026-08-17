@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -334,6 +335,7 @@ def main() -> int:
     parser.add_argument("--deepseek-sampling", choices=["historical", "official-api", "official-local-general", "official-local-agent"], default="historical")
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--expected-runs", type=int, default=1)
+    parser.add_argument("--concurrency", type=int, default=1, help="Maximum concurrent model requests")
     parser.add_argument("--treatment", help="Stable treatment label used when aggregating matrix results")
     parser.add_argument("--endpoint-label", help="Safe endpoint identifier recorded in output instead of --base-url")
     parser.add_argument("--max-response-chars", type=int, default=0, help="Store a prefix of final content; zero stores all content")
@@ -348,6 +350,8 @@ def main() -> int:
         parser.error("--repeat must be at least 1")
     if args.expected_runs < 1:
         parser.error("--expected-runs must be at least 1")
+    if args.concurrency < 1:
+        parser.error("--concurrency must be at least 1")
     if args.max_response_chars < 0 or args.max_reasoning_chars < 0:
         parser.error("evidence character limits cannot be negative")
     if args.mode != "deepseek-thinking" and args.deepseek_effort:
@@ -356,25 +360,75 @@ def main() -> int:
     if args.api_key_env and not api_key:
         parser.error(f"environment variable {args.api_key_env} is empty")
 
+    request_specs = [
+        ("sql", case["id"], case["prompt"], case)
+        for case in SQL_CASES
+    ]
+    request_specs.extend(
+        ("python", case_id, prompt, (case_id, checks))
+        for case_id, prompt, checks in PYTHON_CASES
+    )
+    request_specs.extend(
+        ("incident", case["id"], incident_prompt(case), case)
+        for case in INCIDENT_CASES
+    )
+
+    def run_model_request(spec: tuple[str, str, str, object]) -> dict:
+        return request(
+            args.base_url,
+            args.model,
+            spec[2],
+            args.mode,
+            args.max_tokens,
+            api_key,
+            deepseek_contract=args.deepseek_contract,
+            deepseek_effort=args.deepseek_effort,
+            deepseek_sampling=args.deepseek_sampling,
+            force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough,
+            request_timeout=args.request_timeout,
+            stream=args.stream,
+        )
+
+    responses: list[dict | None] = [None] * len(request_specs)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as executor:
+        futures = {
+            executor.submit(run_model_request, spec): index
+            for index, spec in enumerate(request_specs)
+        }
+        for future in concurrent.futures.as_completed(futures):
+            index = futures[future]
+            responses[index] = future.result()
+            print(
+                json.dumps({
+                    "id": request_specs[index][1],
+                    "request_complete": True,
+                    "seconds": responses[index]["seconds"],
+                    "finish_reason": responses[index]["finish_reason"],
+                }),
+                flush=True,
+            )
+
     rows = []
-    for case in SQL_CASES:
-        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough, request_timeout=args.request_timeout, stream=args.stream)
-        passed, detail = execute_sql(case, row["response"])
-        rows.append(compact_row({"id": case["id"], "category": "sql", "prompt": case["prompt"], "expected": case["expected"], "score": float(passed), "passed": passed, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
-        print(json.dumps({"id": case["id"], "score": float(passed), "seconds": row["seconds"]}), flush=True)
-
-    for case_id, prompt, checks in PYTHON_CASES:
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough, request_timeout=args.request_timeout, stream=args.stream)
-        passed, executor_tail = execute_python(case_id, row["response"], checks)
-        rows.append(compact_row({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row}, args.max_response_chars, args.max_reasoning_chars))
-        print(json.dumps({"id": case_id, "score": float(passed), "seconds": row["seconds"]}), flush=True)
-
-    for case in INCIDENT_CASES:
-        prompt = incident_prompt(case)
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough, request_timeout=args.request_timeout, stream=args.stream)
-        score, detail = score_incident(case, row["response"])
-        rows.append(compact_row({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
-        print(json.dumps({"id": case["id"], "score": score, "seconds": row["seconds"]}), flush=True)
+    for spec, response in zip(request_specs, responses):
+        category, case_id, prompt, source = spec
+        if response is None:
+            raise RuntimeError(f"request result missing for {case_id}")
+        row = response
+        if category == "sql":
+            case = source
+            passed, detail = execute_sql(case, row["response"])
+            rows.append(compact_row({"id": case["id"], "category": "sql", "prompt": case["prompt"], "expected": case["expected"], "score": float(passed), "passed": passed, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
+            score = float(passed)
+        elif category == "python":
+            _case_id, checks = source
+            passed, executor_tail = execute_python(case_id, row["response"], checks)
+            rows.append(compact_row({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row}, args.max_response_chars, args.max_reasoning_chars))
+            score = float(passed)
+        else:
+            case = source
+            score, detail = score_incident(case, row["response"])
+            rows.append(compact_row({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
+        print(json.dumps({"id": case_id, "score": score, "seconds": row["seconds"]}), flush=True)
 
     categories = {name: summarize(rows, name) for name in ("sql", "python", "incident")}
     result = {
@@ -389,6 +443,7 @@ def main() -> int:
         "seed": 42,
         "repeat": args.repeat,
         "expected_runs": args.expected_runs,
+        "concurrency": args.concurrency,
         "max_tokens": args.max_tokens,
         "sampling": (
             f"DeepSeek {args.deepseek_contract}; {args.deepseek_sampling}; effort={args.deepseek_effort or 'default'}"
@@ -405,6 +460,7 @@ def main() -> int:
             "max_response_chars": args.max_response_chars,
             "max_reasoning_chars": args.max_reasoning_chars,
             "request_timeout_seconds": args.request_timeout,
+            "concurrency": args.concurrency,
             "stream": args.stream,
         },
         "categories": categories,

@@ -1,0 +1,902 @@
+{
+  "schema_version": 2,
+  "harness_id": "lakehouse-thinking-v2",
+  "status": "passed",
+  "tag": "private-bounded-max-4k-r2",
+  "treatment": "private DS verified / max / bounded 4K",
+  "model": "deepseek-v4-flash-0731",
+  "base_url": "private-llm-portal",
+  "mode": "deepseek-thinking",
+  "seed": 42,
+  "repeat": 2,
+  "expected_runs": 2,
+  "concurrency": 3,
+  "max_tokens": 4096,
+  "sampling": "DeepSeek private-vllm; official-local-general; effort=max",
+  "request_config": {
+    "deepseek_contract": "private-vllm",
+    "deepseek_effort": "max",
+    "deepseek_sampling": "official-local-general",
+    "force_reasoning_effort_passthrough": true,
+    "max_response_chars": 32768,
+    "max_reasoning_chars": 32768,
+    "request_timeout_seconds": 900,
+    "concurrency": 3,
+    "stream": false
+  },
+  "categories": {
+    "sql": {
+      "score": 0.8333333333333334,
+      "passed": 5,
+      "total": 6,
+      "mean_seconds": 75.69116666666666,
+      "completion_tokens": 7877,
+      "length_truncations": 1,
+      "empty_finals": 1,
+      "errors": 0
+    },
+    "python": {
+      "score": 0.5,
+      "passed": 3,
+      "total": 6,
+      "mean_seconds": 172.5755,
+      "completion_tokens": 15772,
+      "length_truncations": 3,
+      "empty_finals": 3,
+      "errors": 0
+    },
+    "incident": {
+      "score": 1.0,
+      "passed": 6,
+      "total": 6,
+      "mean_seconds": 39.20066666666667,
+      "completion_tokens": 3522,
+      "length_truncations": 0,
+      "empty_finals": 0,
+      "errors": 0
+    }
+  },
+  "macro_score": 0.7777777777777778,
+  "total_seconds": 1724.8039999999999,
+  "cases": [
+    {
+      "id": "cdc_latest_live",
+      "category": "sql",
+      "prompt": "SQLite table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT) contains change events. op uses I for insert, U for update, and D for delete. Return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          "new"
+        ],
+        [
+          "c",
+          "v2"
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            "new"
+          ],
+          [
+            "c",
+            "v2"
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT id, value\nFROM (\n  SELECT id, value, op,\n         ROW_NUMBER() OVER (\n           PARTITION BY id\n           ORDER BY event_time DESC, seq DESC\n         ) AS rn\n  FROM cdc\n) t\nWHERE rn = 1\n  AND op <> 'D'\nORDER BY id;\n```",
+      "reasoning": "We need answer SQL. Need think. We have table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT). Need latest non-deleted current row for every id as (id,value), ordered by id. A delete effective only when it is latest event. Break equal event_time ties by larger seq.\n\nNeed produce one SQL code block only. Need interpret \"latest non-deleted current row\" means for each id, consider latest event by event_time desc, seq desc. If op='D', then no current row for that id (deleted). If op I/U, return that row's value. Need if latest is D exclude id. If latest not D return latest event's value.\n\nNeed SQL. Options: use window functions.\n\nSELECT id, value FROM (\n  SELECT id, value, op,\n    ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) rn\n  FROM cdc\n) t WHERE rn=1 AND op <> 'D'\nORDER BY id;\n\nNeed perhaps include if op maybe lowercase? not needed.\n\nNeed produce one SQL code block only. But issue \"latest non-deleted current row for every id\" Could there be \"latest non-deleted\" meaning latest event that is not delete? \"A delete is effective only when it is the latest event.\" So if delete is latest, no row. If not latest, ignore delete. So above. Need maybe if multiple events same id and tie event_time, seq larger.\n\nNeed return only code block.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 395,
+        "prompt_tokens": 172,
+        "total_tokens": 567
+      },
+      "seconds": 19.954,
+      "response_evidence": {
+        "chars": 234,
+        "sha256": "c2cc5ca03883c773982b92d424b7067814159727da3dd46608d1a6c6801c8b47",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1282,
+        "sha256": "e665de18cb21a41e5c9a92193617ca1329ff05a50c4c9bc8f75b8034480cb51d",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "scd2_intervals",
+      "category": "sql",
+      "prompt": "SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT) contains SCD changes. Return (customer_id,status,valid_from,valid_to), where valid_to is the next effective_at for that customer or NULL, ordered by customer_id, valid_from. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          "new",
+          "2026-01-01",
+          "2026-02-10"
+        ],
+        [
+          "a",
+          "active",
+          "2026-02-10",
+          "2026-03-01"
+        ],
+        [
+          "a",
+          "paused",
+          "2026-03-01",
+          null
+        ],
+        [
+          "b",
+          "new",
+          "2026-01-05",
+          "2026-01-20"
+        ],
+        [
+          "b",
+          "active",
+          "2026-01-20",
+          null
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            "new",
+            "2026-01-01",
+            "2026-02-10"
+          ],
+          [
+            "a",
+            "active",
+            "2026-02-10",
+            "2026-03-01"
+          ],
+          [
+            "a",
+            "paused",
+            "2026-03-01",
+            null
+          ],
+          [
+            "b",
+            "new",
+            "2026-01-05",
+            "2026-01-20"
+          ],
+          [
+            "b",
+            "active",
+            "2026-01-20",
+            null
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT\n    customer_id,\n    status,\n    effective_at AS valid_from,\n    LEAD(effective_at) OVER (\n        PARTITION BY customer_id\n        ORDER BY effective_at\n    ) AS valid_to\nFROM changes\nORDER BY customer_id, valid_from;\n```",
+      "reasoning": "We need answer SQL. Need think. User asks: SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT) contains SCD changes. Return (customer_id,status,valid_from,valid_to), where valid_to is the next effective_at for that customer or NULL, ordered by customer_id, valid_from. Return one SQL code block only.\n\nNeed produce SQLite query. Need infer valid_from = effective_at. valid_to = next effective_at for same customer ordered by effective_at. Need maybe include status. Need handle ties? Probably effective_at unique per customer? Not specified. Use LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to. SELECT customer_id, status, effective_at AS valid_from, LEAD(effective_at) OVER (...) AS valid_to FROM changes ORDER BY customer_id, valid_from. But if same effective_at multiple rows, need status maybe SCD changes, likely no tie. If ties, lead ordered by effective_at only ambiguous. Could add row_number? But requested one SQL code block. Maybe use window function.\n\nNeed ensure valid_to is next effective_at for that customer not including current row. LEAD. But if there are multiple status changes same timestamp? Then valid_from same. Could result weird. Could use \"effective_at AS valid_from\" and \"LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at, status)\"? If same timestamp, next effective_at same. Then valid_to same as valid_from. That indicates zero-length interval. Is that acceptable? Maybe SCD type 2 changes at same effective_at? Usually no. Could include ORDER BY effective_at, rowid? SQLite rowid accessible. But if table no rowid? user no. Use ORDER BY effective_at, status maybe. But \"next effective_at\" means same effective_at not next. We should not order by status because that doesn't represent time. However, to ensure deterministic, use ORDER BY effective_at, rowid. But cannot assume rowid? Most SQLite tables have rowid unless WITHOUT ROWID. Table definition doesn't say. Safer: ORDER BY effective_at, status? No. Could use ORDER BY effective_at, customer_id? customer_id partition same. Since effective_at text maybe ISO. We can use LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) only.\n\nNeed return one SQL code block. Probably:\n\nSELECT\n    customer_id,\n    status,\n    effective_at AS valid_from,\n    LEAD(effective_at) OVER (\n        PARTITION BY customer_id\n        ORDER BY effective_at\n    ) AS valid_to\nFROM changes\nORDER BY customer_id, valid_from;\n\nNeed maybe \"next effective_at\" valid_to for the last is NULL. The LEAD implicitly returns NULL.\n\nNeed perhaps if table contains SCD changes, maybe each row represents validity interval starting at effective_at until next change. Query exactly.\n\nNeed final answer code block only. No explanation.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 676,
+        "prompt_tokens": 146,
+        "total_tokens": 822
+      },
+      "seconds": 38.749,
+      "response_evidence": {
+        "chars": 236,
+        "sha256": "3b7d7c5aefd78e7e9420432048a45c455d3a5cb235a6985bf91488804f3fbb31",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2781,
+        "sha256": "3c8fa009f4ffe13a41d527400fa36b1884c317a3979f43d6be533362e0e039a5",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "sessionize_events",
+      "category": "sql",
+      "prompt": "SQLite table events(user_id TEXT, minute INT) contains event timestamps in minutes. A new session starts when the gap from the previous event is greater than 30 minutes. Return (user_id,session_no,start_minute,end_minute,event_count), with session_no starting at 1 per user, ordered by user_id, session_no. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          1,
+          0,
+          40,
+          3
+        ],
+        [
+          "a",
+          2,
+          71,
+          75,
+          2
+        ],
+        [
+          "b",
+          1,
+          5,
+          5,
+          1
+        ],
+        [
+          "b",
+          2,
+          36,
+          36,
+          1
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            1,
+            0,
+            40,
+            3
+          ],
+          [
+            "a",
+            2,
+            71,
+            75,
+            2
+          ],
+          [
+            "b",
+            1,
+            5,
+            5,
+            1
+          ],
+          [
+            "b",
+            2,
+            36,
+            36,
+            1
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nWITH events_with_prev AS (\n  SELECT\n    user_id,\n    minute,\n    LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) AS prev_minute\n  FROM events\n),\nsessioned AS (\n  SELECT\n    user_id,\n    minute,\n    SUM(\n      CASE\n        WHEN prev_minute IS NULL OR minute - prev_minute > 30 THEN 1\n        ELSE 0\n      END\n    ) OVER (PARTITION BY user_id ORDER BY minute) AS session_no\n  FROM events_with_prev\n)\nSELECT\n  user_id,\n  session_no,\n  MIN(minute) AS start_minute,\n  MAX(minute) AS end_minute,\n  COUNT(*) AS event_count\nFROM sessioned\nGROUP BY user_id, session_no\nORDER BY user_id, session_no;\n```",
+      "reasoning": "We need answer SQL query for SQLite. Need think carefully. Need produce one SQL code block only. Need write query.\n\nWe need parse: table events(user_id TEXT, minute INT). Event timestamps in minutes. New session starts when gap from previous event >30. Need return user_id, session_no, start_minute, end_minute, event_count. session_no starting at 1 per user, ordered by user_id, session_no.\n\nNeed use SQLite. Need handle grouping by user after sorting by minute. We need assign session number. Use LAG to find new session flag if minute - prev_minute > 30 or previous null. Then cumulative sum over partition user_id ordered by minute. Then aggregate min, max, count. Need include ordering. Potential issue if multiple events same user same minute? Need define previous event? If same minute gap 0 not >30, no new session. The order by minute alone not deterministic for ties, but same minute same user no new session among ties. For cumulative sum ordering, need include minute and maybe rowid? If ties, all same flag? Need maybe use ROW_NUMBER() to maintain. But if same minute, new session flag only first if previous event null? Actually if same user has multiple events at same minute, they should be same session. With LAG( minute) OVER (PARTITION BY user_id ORDER BY minute), for tie rows, prev minute = same minute (depending rows), gap 0, no new. Fine. But order by minute, might compare to another same minute, okay. Need cumulative sum ordered by minute; if same minute, flags zero, so okay. But SQLite window ordering can include rowid to deterministic. Not necessary.\n\nNeed \"new session starts when the gap from the previous event is greater than 30 minutes.\" Need previous event per user, sorted by minute. So for each user, if diff >30 or first event, new session. Then session_no = count of new starts up to current row. Then aggregate.\n\nNeed return only one SQL code block. Could include WITH.\n\nNeed be mindful: table \"events\", column \"minute\" maybe reserved? minute is not reserved in SQLite maybe. Fine.\n\nPotential challenge: SQLite supports LAG and SUM window functions? Modern SQLite 3.25+. Use.\n\nLet's build query:\n\nWITH flagged AS (\n  SELECT user_id, minute,\n    CASE WHEN minute - LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) > 30\n              OR LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) IS NULL\n         THEN 1 ELSE 0 END AS new_session\n  FROM events\n),\nsessioned AS (\n  SELECT user_id, minute,\n    SUM(new_session) OVER (PARTITION BY user_id ORDER BY minute) AS session_no\n  FROM flagged\n)\nSELECT user_id, session_no, MIN(minute) AS start_minute, MAX(minute) AS end_minute, COUNT(*) AS event_count\nFROM sessioned\nGROUP BY user_id, session_no\nORDER BY user_id, session_no;\n\nNeed maybe avoid repeated LAG by using subquery. Use LAG once with prev_minute then compare. More efficient.\n\nNeed \"Return one SQL code block only.\" So final with code block. No explanation.\n\nBut let's consider if event timestamps can duplicate minutes? If duplicate, GROUP BY user_id, session_no will aggregate all. But what if due to LAG with same minute, new_session flag for first row? Let's simulate user with events at minute 5,5,6. Lag order by minute: row1 lag null -> new; row2 lag 5 -> diff0; row3 lag 5 diff1. session_no all 1. OK. If user has events at 5, 40,40. row1 session1, row2 new session2 diff35, row3 lag 40 diff0. session_no 2. OK.\n\nBut ordering by minute alone with duplicates could make LAG over same minute where lag is other row? In SQL window, ORDER BY minute with ties, LAG uses rows in unspecified order. Could row2's lag be row3? Actually LAG returns previous row in window ordering. If equal minute, order is not deterministic, but row2 might see lag = minute 40? Wait there is no row with later because all tie. SQL may order arbitrary. But for ties, any row's \"previous\" could be another row with same minute; diff 0, so no new; if first row could see null. The first row gets new. That's okay. However, if unique not. But with duplicate minute all same.\n\nPotential issue if \"event timestamps in minutes\" could include negative? no.\n\nNeed session_no starting at 1 per user. SUM over partition user_id order by minute ensures. But if multiple new sessions at same minute? Not possible for same user? Could happen? If there are multiple events with same minute but gap from previous >30? If previous row different minute? Suppose events 1, 40, 40. Both 40 rows have same minute, prev diff for first 40 is 39 >30 new; second 40 lag 40 diff0 no new. If there are 40, 100, 100? fine. If events at 100, 100 for user with previous 50? First 100 diff50 >30 new, second diff0. Good.\n\nNeed \"end_minute\" for session maybe max minute. Yes.\n\nNeed \"event_count\" count rows. Yes.\n\nBut maybe \"new session starts when the gap from the previous event is greater than 30 minutes\" could mean gap in minutes from prior event's timestamp; if event is exactly 30, not new. We used >30. Good.\n\nNeed consider \"session_no\" per user based on chronological order. Yes.\n\nPotential alternative: Use window functions with CASE:\n\nWITH t AS (\n SELECT user_id, minute,\n        LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) AS prev_minute\n FROM events\n),\ns AS (\n SELECT user_id, minute,\n        SUM(CASE WHEN prev_minute IS NULL OR minute - prev_minute > 30 THEN 1 ELSE 0 END)\n           OVER (PARTITION BY user_id ORDER BY minute) AS session_no\n FROM t\n)\nSELECT ...\n\nThis is clean. Need include ORDER BY. Could also use ROW_NUMBER to make sorting deterministic. Not necessary.\n\nNeed check: SQLite does not allow window functions in GROUP BY without subquery. Our CTE approach good.\n\nNeed produce final as one SQL code block. Could include semicolon. Good.\n\nLet's think if there are edge cases: user with no events? none. Empty table returns empty. Good.\n\nPotential issue in LAG usage: prev_minute IS NULL only for each user's first row. Since partition by user, yes. If table empty no.\n\nNeed maybe use \"CAST(minute AS INT)\" not needed.\n\nNeed maybe ensure ordering by user_id and session_no. user_id TEXT ordering default. Good.\n\nLet's maybe include \"sql\" code block. Need no text outside.\n\nLet's test manually:\n\nevents:\nuser1 1\nuser1 2\nuser1 35\nuser1 70\nuser1 72\nuser2 100\n\nQuery:\nt: prev null,1,2,35,70; etc.\ns flags: 1,0,1 (2->35 diff33),1 (35->70 diff35),0\nsession_no: 1,1,2,3,3\nAggregate: session1 start1 end2 count2; session2 start35 end35 count1; session3 start70 end72 count2.\n\nGood.\n\nNeed perhaps if gap exactly 31? new. Good.\n\nLet's ensure \"minute - prev_minute > 30\" no ABS because prev <= current since order by minute. Good.\n\nNeed not filter to minutes? no.\n\nLet's maybe include \"WITH sessions AS (...)\" maybe no.\n\nNeed only one SQL code block. Done.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 1865,
+        "prompt_tokens": 162,
+        "total_tokens": 2027
+      },
+      "seconds": 120.127,
+      "response_evidence": {
+        "chars": 608,
+        "sha256": "87689062ce7824cded8d91588d8ad7800c0c107d23fd3b1f2b6866e6e24e2375",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 6697,
+        "sha256": "8dce3e77cff12b85b83f1484251ab48c94cd74c66ba3ecdf69c9809867affeea",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "rolling_revenue",
+      "category": "sql",
+      "prompt": "SQLite table daily(day TEXT, revenue INT) has one row for each calendar day. Return each day and the inclusive three-row rolling revenue (current day and two preceding days), ordered by day. Return one SQL code block only.",
+      "expected": [
+        [
+          "2026-01-01",
+          10
+        ],
+        [
+          "2026-01-02",
+          30
+        ],
+        [
+          "2026-01-03",
+          60
+        ],
+        [
+          "2026-01-04",
+          90
+        ],
+        [
+          "2026-01-05",
+          120
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "2026-01-01",
+            10
+          ],
+          [
+            "2026-01-02",
+            30
+          ],
+          [
+            "2026-01-03",
+            60
+          ],
+          [
+            "2026-01-04",
+            90
+          ],
+          [
+            "2026-01-05",
+            120
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT day,\n       SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue\nFROM daily\nORDER BY day;\n```",
+      "reasoning": "We need answer SQL. Need think. User asks: SQLite table daily(day TEXT, revenue INT) has one row for each calendar day. Return each day and inclusive three-row rolling revenue (current day and two preceding days), ordered by day. Return one SQL code block only.\n\nNeed write SQLite query. Need handle preceding days by calendar day, not rows? \"one row for each calendar day\" so preceding days are previous two dates. Need include current day and two preceding days. Need rolling revenue (sum). Ordered by day. We can use window function ROWS BETWEEN 2 PRECEDING AND CURRENT ROW if ordered by day, but if table has one row per calendar day and contiguous, OK. But \"preceding days\" maybe previous calendar days. Need include current day and two preceding days. For early days, sum available rows. Need output day and rolling_revenue. SQLite supports window functions since 3.25. Should use:\n\nSELECT day, SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue\nFROM daily\nORDER BY day;\n\nNeed maybe if day stored as TEXT 'YYYY-MM-DD', order by day lexicographic works. If \"calendar day\" text maybe order by day. But if not contiguous? It says one row each calendar day. OK.\n\nNeed final only one SQL code block, no explanation. Need ensure code block.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 343,
+        "prompt_tokens": 131,
+        "total_tokens": 474
+      },
+      "seconds": 17.934,
+      "response_evidence": {
+        "chars": 147,
+        "sha256": "df1bf8370fbd2034b51e19c51702f9c9c3e876c4601bfcfe6084aaeaacf4d303",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1282,
+        "sha256": "b3b4872d334d2d53315402f7d953d42d966f3a76aa367d69760971076d001210",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "recursive_hierarchy",
+      "category": "sql",
+      "prompt": "SQLite table nodes(id TEXT,parent_id TEXT,amount INT) is a forest. Return (root_id,total_amount) for each root, including all descendant amounts, ordered by root_id. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          100
+        ],
+        [
+          "x",
+          12
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            100
+          ],
+          [
+            "x",
+            12
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nWITH RECURSIVE tree(root_id, id, amount) AS (\n  SELECT id, id, amount\n  FROM nodes\n  WHERE parent_id IS NULL\n\n  UNION ALL\n\n  SELECT t.root_id, n.id, n.amount\n  FROM nodes n\n  JOIN tree t ON n.parent_id = t.id\n)\nSELECT root_id, SUM(amount) AS total_amount\nFROM tree\nGROUP BY root_id\nORDER BY root_id;\n```",
+      "reasoning": "We need answer SQL query. Need think. We have SQLite table nodes(id TEXT,parent_id TEXT,amount INT) is a forest. Need return root_id,total_amount for each root, including all descendant amounts, ordered by root_id. Need one SQL code block only. Need likely recursive CTE. Need define root_id as node whose parent_id is NULL? Forest maybe parent_id references id, roots have parent_id NULL. Need include all descendant amounts. Need sum amount for root and all descendants. Need handle cycles? Forest no cycles. Need compute closure from root to descendants.\n\nNeed produce SQL code block only. Maybe with WITH RECURSIVE.\n\nNeed consider SQLite recursive CTE: \nWITH RECURSIVE descendants(root_id, id, amount) AS (\n  SELECT id, id, amount FROM nodes WHERE parent_id IS NULL\n  UNION ALL\n  SELECT d.root_id, n.id, n.amount\n  FROM nodes n JOIN descendants d ON n.parent_id = d.id\n)\nSELECT root_id, SUM(amount) AS total_amount\nFROM descendants\nGROUP BY root_id\nORDER BY root_id;\n\nPotential issue if roots have parent_id ''? Use parent_id IS NULL per forest. Good.\n\nNeed include \"including all descendant amounts\": if descendants include roots? yes.\n\nNeed maybe \"root_id\" for each root: If a node's parent is not in table? In forest, roots have no parent. But if parent_id missing? Could be orphan? Forest means trees, so okay. But if using `parent_id IS NULL` as root. \n\nNeed single SQL code block only. No explanation.\n\nNeed maybe include CTE name \"recursive\" maybe.\n\nLet's ensure SQLite syntax: WITH RECURSIVE cte(root_id, id, amount) AS (...). Then select. Good.\n\nNeed maybe \"amount\" might be NULL? It says amount INT, likely not null. SUM ignores null. Fine.\n\nLet's craft final with code block.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 502,
+        "prompt_tokens": 130,
+        "total_tokens": 632
+      },
+      "seconds": 26.185,
+      "response_evidence": {
+        "chars": 310,
+        "sha256": "a786db61253125b841728b2a7e9c6cf8fcb58a8b40d7b106c4ccdc703e9b7047",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1690,
+        "sha256": "cc3721c79d59d92ef1142c06f0285d245c77f4af88588e1dc47f1e9782fdb9b6",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "funnel_first_order",
+      "category": "sql",
+      "prompt": "SQLite tables users(user_id TEXT,signup_day TEXT) and orders(user_id TEXT,order_day TEXT) are given. Return one row (users_total,converted_7d). A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order. Return one SQL code block only.",
+      "expected": [
+        [
+          4,
+          2
+        ]
+      ],
+      "score": 0.0,
+      "passed": false,
+      "detail": {
+        "actual": [],
+        "error": null
+      },
+      "response": "",
+      "reasoning": "We need answer SQL. Need think. Need produce SQL code block only likely. Need solve.\n\nWe have tables users(user_id TEXT, signup_day TEXT), orders(user_id TEXT, order_day TEXT). Need users_total, converted_7d. \"A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\"\n\nNeed interpret: For each user, first order? \"first order is on or after signup_day and no more than 7 days later.\" Since orders before signup do not count, if user has order before signup and then first order after signup within 7 days, converted? Wording: A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order. Need parse carefully. If orders before signup do not count, then \"first order\" among orders on/after signup maybe? The phrase \"first order is on or after signup_day...\" If first order before signup, then not converted, even if later order after signup within 7 days? But \"Orders before signup do not count\" suggests we should ignore orders before signup when determining first order. \"later orders cannot replace an earlier valid post-signup order\" means if first order after signup is within 7 days, converted; later order can't replace? Need examine.\n\nMaybe original problem: \"A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\" This could mean use earliest order date per user. Converted if earliest order date is between signup and signup+7. Orders before signup do not count? If earliest order is before signup, then later order cannot replace it, so not converted. But \"Orders before signup do not count\" contradicts this; maybe it means \"when considering first order, ignore orders before signup\"? Let's parse.\n\nLet's define \"first order\" normally among all orders. If user orders before signup, their first order is before signup, so doesn't convert. Later orders cannot replace an earlier valid post-signup order? \"later orders cannot replace an earlier valid post-signup order\" maybe means if a user's first post-signup order is within 7 days, they convert; later orders don't matter. If they have an order before signup, it does not count, so the first satisfying order after signup counts. But \"later orders cannot replace an earlier valid post-signup order\" specifically addresses if there are multiple post-signup orders: use earliest post-signup order. It doesn't mention orders before signup. The phrase \"Orders before signup do not count\" in user conversion context probably explicitly says we don't consider them for conversion. So then first order? Let's formulate:\n\nNeed compute converted_7d = count users where MIN(order_day) after? Let's test with examples.\n\nPotential queries:\n1. Simple with MIN(order_day) and condition:\nSELECT COUNT(DISTINCT u.user_id) AS users_total,\n       COUNT(DISTINCT CASE WHEN o.first_order BETWEEN u.signup_day AND DATE(u.signup_day, '+7 days') THEN u.user_id END) AS converted_7d\nFROM users u\nLEFT JOIN (\n  SELECT user_id, MIN(order_day) AS first_order\n  FROM orders\n  GROUP BY user_id\n) o ON o.user_id = u.user_id\nGROUP BY? no group.\nThis treats first order all-time. If first order before signup, not converted, even if later within 7. This aligns \"first order\" literal. But \"Orders before signup do not count\" not used (they do count as first order and disqualify). Hmm.\n\n2. Use MIN(order_day) where order_day >= signup_day:\nSELECT COUNT(*) users_total,\n       COUNT(CASE WHEN first_post_signup_order <= DATE(signup_day,'+7 days') THEN 1 END) converted_7d\nFROM users u\nLEFT JOIN (\n  SELECT o.user_id, MIN(o.order_day) first_order\n  FROM orders o\n  JOIN users u2 ON o.user_id=u2.user_id AND o.order_day >= u2.signup_day\n  GROUP BY o.user_id\n) ...\nThis ignores orders before signup. If user has only before signup, no post-signup order => not converted. If user has order before signup and then after signup within 7, converted. This satisfies \"Orders before signup do not count\" and \"first order\" on/after signup. But \"later orders cannot replace an earlier valid post-signup order\" (use min after signup). This likely intended.\n\nNeed understand \"A user converts when their first order is on or after signup_day and no more than 7 days later.\" If \"first order\" could be first order ever. \"Orders before signup do not count\" would mean in computing first order? Let's search memory? This seems like a common interview SQL problem \"User signup & order conversion within 7 days\". Usually: \"Find conversion rate where first order date is within 7 days of signup.\" They often need avoid counting pre-signup orders? Hmm.\n\nLet's examine wording closely: \"SQLite tables users(user_id TEXT,signup_day TEXT) and orders(user_id TEXT,order_day TEXT) are given. Return one row (users_total,converted_7d). A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order. Return one SQL code block only.\"\n\nMaybe they want code block only, no explanation. Need choose.\n\n\"Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\" This sentence perhaps describes edge cases: Orders before signup do not count (so ignore them), and later orders cannot replace an earlier valid post-signup order (so choose the earliest order after signup, not any order). Yes that means if first order after signup is invalid (e.g., day 10), a later order on day 5 cannot be valid because day 5 is earlier? Actually later order \"cannot replace an earlier valid\" means if earlier valid exists, use it. \"later orders cannot replace an earlier valid post-signup order\" means when computing \"first order\", choose earliest post-signup order. If earlier post-signup order is valid, converted. If earlier post-signup order is invalid (>7 days), a later order can't be used to convert? Wait if earlier post-signup order is after 7 days, later order would be even later so cannot be valid anyway. The phrase \"earlier valid post-signup order\" implies earlier order is valid within 7 days. If earlier post-signup order was outside 7 days, not valid. Later cannot replace because later is even later. So simple min.\n\nBut \"later orders cannot replace an earlier valid post-signup order\" maybe means if user has first order exactly day 7 (valid), then later order maybe day 0? No, \"earlier valid\" maybe post-signup earlier. So min.\n\nNeed decide final query.\n\nNeed handle dates as TEXT. SQLite date arithmetic: date(signup_day, '+7 days'). Need compare order_day as TEXT? Dates in ISO format YYYY-MM-DD. If text, lexicographic works. But if signup_day and order_day are TEXT, date() function returns TEXT. We can use date(signup_day, '+7 days') to get YYYY-MM-DD. Need include users_total all users. converted_7d count of users meeting criteria. Could use LEFT JOIN to include users with no orders.\n\nPotential query:\n\nSELECT \n  COUNT(u.user_id) AS users_total,\n  COUNT(CASE WHEN o.order_day IS NOT NULL AND o.order_day BETWEEN u.signup_day AND date(u.signup_day, '+7 days') THEN 1 END) AS converted_7d\nFROM users u\nLEFT JOIN (\n  SELECT o.user_id, MIN(o.order_day) AS order_day\n  FROM orders o\n  JOIN users u2 ON o.user_id = u2.user_id AND o.order_day >= u2.signup_day\n  GROUP BY o.user_id\n) o ON o.user_id = u.user_id;\n\nBut this subquery join users filters orders before signup. Then outer count. However if order_day text compare with signup_day works for ISO. Use date(u.signup_day, '+7 days') with order_day maybe not canonical? order_day text YYYY-MM-DD. We can also compute upper = date(u.signup_day, '+7 days').\n\nNeed ensure converted count includes users whose first post-signup order is after signup and <= +7 days. If earliest post-signup order is before signup? impossible because >= signup. If user has no orders, no row, left join.\n\nAlternative:\nSELECT \n (SELECT COUNT(*) FROM users) AS users_total,\n (SELECT COUNT(*) FROM users u WHERE EXISTS (\n   SELECT 1 FROM orders o \n   WHERE o.user_id = u.user_id \n     AND o.order_day >= u.signup_day \n     AND o.order_day <= date(u.signup_day, '+7 days')\n     AND o.order_day = (SELECT MIN(order_day) FROM orders o2 WHERE o2.user_id = u.user_id AND o2.order_day >= u.signup_day)\n )) AS converted_7d;\n\nThis explicitly uses first post-signup order. But if order_day text with dates maybe date function.\n\nNeed think if a user could convert with first order before signup? No. \"Orders before signup do not count\" maybe could mean that if user has no order before signup? Need maybe count \"first order on or after signup_day\" not \"first order overall\". The subquery join users and min order_day >= signup_day exactly.\n\nBut what about \"later orders cannot replace an earlier valid post-signup order\" maybe if there is an earlier post-signup order that is valid, and a later order also exists, the user converts. If there is an earlier post-signup order that is not valid (more than 7 days later), and a later order somehow? A later order cannot be less than earlier within time window anyway, so no issue. If \"later orders cannot replace an earlier valid\" could address if using MAX? We use MIN.\n\nNeed maybe use DISTINCT? Orders table could have multiple orders same user/day. Min doesn't matter. users_total count should count all users, not distinct? user_id primary? likely unique. We can count(user_id). No need distinct. If duplicates in users maybe count all rows? Typically user_id unique. To be safe COUNT(*). If users has duplicate user_id, join duplicates in subquery would duplicate. But user_id is ID, unique. Use COUNT(DISTINCT users.user_id) for users_total? They ask users_total, likely count of rows in users. Use COUNT(*) if no duplicates. Since user_id is key, no issue.\n\nNeed produce one SQL code block only. Need maybe no explanation. Need ensure valid SQLite.\n\nLet's consider possible issue: If order_day is TEXT and signup_day is TEXT, using `BETWEEN u.signup_day AND date(u.signup_day, '+7 days')` is fine if date(signup_day, '+7 days') returns TEXT. But if signup_day not in ISO or with time, date() normalizes? If date string includes time \"2021-01-01 12:00\", date(signup_day, '+7 days') returns \"2021-01-08\", and order_day maybe \"2021-01-08 00:00\"? But described as day, likely date only.\n\nNeed maybe use `MIN(o.order_day) AS first_order` from subquery with WHERE order_day >= signup_day. Then outer condition `o.first_order <= date(u.signup_day, '+7 days')`. That is simpler and avoids joining users in subquery? Let's construct:\n\nSELECT\n  (SELECT COUNT(*) FROM users) AS users_total,\n  (SELECT COUNT(*) FROM users u\n   WHERE EXISTS (\n     SELECT 1\n     FROM orders o\n     WHERE o.user_id = u.user_id\n       AND o.order_day >= u.signup_day\n       AND o.order_day <= date(u.signup_day, '+7 days')\n       AND o.order_day = (\n         SELECT MIN(o2.order_day)\n         FROM orders o2\n         WHERE o2.user_id = u.user_id\n           AND o2.order_day >= u.signup_day\n       )\n   )\n  ) AS converted_7d;\n\nThis counts user if earliest post-signup order is <= signup+7. Since min >= signup by subquery. Equivalent to EXISTS with `o.order_day = min`. Could simplify with `NOT EXISTS` for earlier order? Another way:\n- There exists an order o with o.order_day >= signup and <= signup+7 AND no earlier post-signup order (no order o2 where o2.user_id = u.user_id AND o2.order_day >= u.signup_day AND o2.order_day < o.order_day). This exactly \"first order after signup\". But if there is an order before signup, ignored. This is robust.\n```\nAND NOT EXISTS (\n  SELECT 1 FROM orders o2\n  WHERE o2.user_id = o.user_id\n    AND o2.order_day >= u.signup_day\n    AND o2.order_day < o.order_day\n)\n```\nThis ensures o is earliest post-signup order. Then o within 7 days. That's accurate. But subquery with MIN is simpler.\n\nNeed consider if multiple orders on same earliest day. MIN returns day, exists if any order on that day. Fine.\n\nNeed maybe use `date(o.order_day) BETWEEN date(u.signup_day) AND date(u.signup_day,'+7 days')` to be safe. If dates are TEXT in YYYY-MM-DD, no need. But if order_day and signup_day are TEXT, direct comparison works only if format is comparable. Since TEXT format \"YYYY-MM-DD\" is comparable. If using date() to parse, could be safe. But date() returns NULL for invalid. Fine.\n\nLet's understand phrase \"first order is on or after signup_day and no more than 7 days later\" Maybe \"on or after signup_day\" means order_day >= signup_day. \"no more than 7 days later\" means order_day <= signup_day + 7 days. Good.\n\nPotential issue with \"Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\" Suppose user has first order before signup (day -1) and second order after signup within 7 days. Does user convert? Let's evaluate two interpretations.\n\nInterpretation A: \"first order\" among orders on/after signup (before don't count). Then convert yes. \"later orders cannot replace an earlier valid post-signup order\" no issue.\n\nInterpretation B: Need earliest order overall; if before signup, first order is before signup, doesn't convert; later order can't replace earlier order. This is a common \"first order after signup?\" Actually phrase \"Orders before signup do not count\" would be false if they prevent conversion. It says \"Orders before signup do not count\" meaning you should ignore them. So yes A.\n\nBut let's search memory in my mind: There is an SQL question maybe from StrataScratch? \"Users\" and \"Orders\" tables. \"A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\" Hmm perhaps from \"SQLite: user conversion\" from interview query. They often require \"first order date\" computed as MIN(order_date) after signup, not all. The phrase \"Orders before signup do not count\" indicates filtering before min. \"later orders cannot replace an earlier valid post-signup order\" indicates if there is an earlier post-signup order that satisfies window, don't use any other order. So yes.\n\nNeed write one SQL code block.\n\nLet's think of edge cases: user signed up Jan 1, orders: Dec 30, Jan 5. Min all-time = Dec30; not converted under B. Under A: first post-signup order Jan5 -> converted. Which would be expected? The text: \"Orders before signup do not count\" explicitly says Dec30 does not count, so Jan5 is first counted order; converted. So A.\n\nUser signed up Jan 1, orders: Jan 10, Jan 5? Actually order days cannot be out of chronological? a user can't have order Jan5 and Jan10; \"later orders cannot replace an earlier valid post-signup order\" means if Jan5 valid, converted. If \"orders before signup do not count\" and \"later orders cannot replace an earlier valid\" maybe if user order Jan5 (valid) and Jan10 (later), min Jan5 converts. Good.\n\nNeed maybe produce query using NOT EXISTS to avoid join and count duplicates. Let's design final query elegantly and robust.\n\nOption final:\n\n```sql\nSELECT\n  (SELECT COUNT(*) FROM users) AS users_total,\n  (SELECT COUNT(*)\n   FROM users u\n   WHERE EXISTS (\n     SELECT 1\n     FROM orders o\n     WHERE o.user_id = u.user_id\n       AND o.order_day >= u.signup_day\n       AND o.order_day <= date(u.signup_day, '+7 days')\n       AND NOT EXISTS (\n         SELECT 1\n         FROM orders o2\n         WHERE o2.user_id = o.user_id\n           AND o2.order_day >= u.signup_day\n           AND o2.order_day < o.order_day\n       )\n   )) AS converted_7d;\n```\n\nThis counts converted user if there exists an order within signup to +7 and no earlier post-signup order. Is that equivalent to \"first order is within window\"? Yes. What if there is an order before signup and no before signup? ignored. Good. If there is an order before signup on day -1 and an order on day +1, no post-signup order earlier than +1, so converts. Good.\n\nBut wait: The outer condition `o.order_day <= date(u.signup_day, '+7 days')` ensures the third? Actually existence of order within window. NOT EXISTS ensures no post-signup order earlier than o. But what if there is an earlier post-signup order outside window? e.g., signup Jan1, order Jan10, order Jan5? Then o Jan5 within window; no earlier post-signup, converts. Good. If there is earlier post-signup order Jan10? Can't be earlier than Jan5. If o is Jan20, EXISTS condition o <= Jan8 false, so not counted. If there is earlier post-signup order Jan2 outside window? Jan2 is within window. If earlier order outside window? Since outside window means > Jan8, cannot be earlier than an order that is within window (<= Jan8). Good. If o is Jan",
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 4096,
+        "prompt_tokens": 172,
+        "total_tokens": 4268
+      },
+      "seconds": 231.198,
+      "response_evidence": {
+        "chars": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 16860,
+        "sha256": "085673bcdc0d76dec97f9047c83832cd6ceb30857d18406cd47e3d75616435a4",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "cdc_deduplicate",
+      "category": "python",
+      "prompt": "Implement def current_rows(events). Each event is a dict with id, event_time, seq, op, value. Keep the latest by (event_time,seq), omit ids whose latest op is D, and return surviving dicts with only id and value ordered by id. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "d29fc012211946e4a7b8d531fd81adbd[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+      },
+      "response": "```python\ndef current_rows(events):\n    latest = {}\n\n    for event in events:\n        event_id = event[\"id\"]\n        key = (event[\"event_time\"], event[\"seq\"])\n\n        if event_id not in latest or key >= latest[event_id][0]:\n            latest[event_id] = (key, event[\"op\"], event[\"value\"])\n\n    result = []\n    for event_id in sorted(latest):\n        _, op, value = latest[event_id]\n        if op != \"D\":\n            result.append({\"id\": event_id, \"value\": value})\n\n    return result\n```",
+      "reasoning": "We need answer code only. Need implement function. Need understand requirements. \"current_rows(events)\" Each event dict with id, event_time, seq, op, value. Keep latest by (event_time,seq), omit ids whose latest op is D, return surviving dicts with only id and value ordered by id. Need write Python code. Need maybe handle events list. Implementation: For each event, determine latest per id by tuple (event_time, seq) max. Then if op != 'D', include {'id': id, 'value': value}. Sort by id. Need duplicate event_time/seq? \"Keep latest by (event_time,seq)\" if same event_time and seq maybe duplicates; perhaps need last? Need define latest by (event_time, seq), maybe max tuple. If same tuple, tie unspecified? Could use maybe last seen? We can just update max tuple and value/op when tuple > current, or if equals? \"latest by (event_time,seq)\" means compare tuples. For equal event_time,seq, perhaps ambiguous; can use later in list? We need choose. If equal key, maybe \"latest\" event among duplicates? Could use sequence? Actually seq is sequence within time. If same event_time and seq duplicate, probably not occur. We can handle by >= to update with later occurrence. Need code only, no explanation.\n\nNeed ensure ordering by id; ids could be int or str? sort works if comparable. Return list of dicts.\n\nLet's produce clean code.\n\nPotential hidden tests: op may be \"D\" or \"d\"? Problem says op D. Use op == 'D'.\n\nImplementation:\n\ndef current_rows(events):\n    latest = {}\n    for e in events:\n        key = e['id']\n        t = e['event_time'], e['seq']\n        if key not in latest or t >= latest[key][0]:\n            latest[key] = (t, e['op'], e['value'])\n    result = []\n    for key in sorted(latest):\n        _, op, value = latest[key]\n        if op != 'D':\n            result.append({'id': key, 'value': value})\n    return result\n\nNeed possibly if equal t and later event with op D should override? With >= yes later in list wins. But if equal t but original order maybe \"latest by (event_time,seq)\" not list order, equal key not determinable. Could prefer D? Hmm.\n\nMaybe \"keep latest by (event_time,seq)\" means sort by event_time and seq desc, then take first event for each id; if same exact event_time+seq? Could use group? Maybe no duplicates. Code okay.\n\nNeed only Python code.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 684,
+        "prompt_tokens": 144,
+        "total_tokens": 828
+      },
+      "seconds": 41.386,
+      "response_evidence": {
+        "chars": 488,
+        "sha256": "1d2d66bc22a847a170081369f21d2eae75532e3e1e9991fe3c62cc94745a9744",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2289,
+        "sha256": "e57ad6f54bdb1f68672a7819e907b1463648bc54385ef25a0b8b1b7bd694399b",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "stable_toposort",
+      "category": "python",
+      "prompt": "Implement def stable_toposort(graph). graph maps a node to its dependencies. Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for a missing dependency or cycle. Do not mutate the input. Return Python code only.",
+      "score": 0.0,
+      "passed": false,
+      "detail": {
+        "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'stable_toposort' is not defined\n"
+      },
+      "response": "",
+      "reasoning": "We need answer code implementing stable_toposort. Need think carefully. Need produce Python code only. We are told graph maps node to dependencies. Return dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for missing dependency or cycle. Do not mutate input.\n\nNeed implement robust. Interpret: graph dict: node -> iterable of dependencies? Need stable topological sort. \"dependency-first order\": dependencies before dependents. Using original dict insertion order whenever multiple nodes are ready. Need decide algorithm.\n\nNeed handle missing dependency: If a dependency is not in graph (not key?), raise ValueError. Node keys? \"graph maps a node to its dependencies.\" So dependencies may include nodes not in graph? Missing dependency means dependency not in graph keys? Raise ValueError. Need perhaps nodes with no deps included. What about nodes with deps not in graph keys: missing dependency. Yes.\n\nNeed cycle detection. Need not mutate input.\n\nNeed stable: \"using original dict insertion order whenever multiple nodes are ready.\" This is Kahn's algorithm with ready min-heap? Actually original dict insertion order. Need process nodes in insertion order when ready. But also dependencies first. Since graph dict insertion order may put dependent before dependency. Need algorithm.\n\nOption 1: Kahn: indegree count? We need ready nodes initially: nodes with no deps. But if we iterate original order, pick first ready. Then after processing, decrement successors? We don't have reverse adjacency. Could build reverse_map. Need maintain ready queue preserving insertion order among ready nodes. Kahn with queue: start with ready nodes in original dict order. Then while queue: pop first. For each dependent of node, decrement pending deps. When dependent's pending count becomes zero, append to queue. Does this yield original insertion order whenever multiple nodes ready? Need verify. Since ready queue starts with satisfying insertion order. When multiple become ready due to processing, they are appended in the order that their last dependency was processed? Not necessarily original insertion order? We need define \"using original dict insertion order whenever multiple nodes are ready.\" If at a step multiple nodes are ready, choose one earliest in dict insertion order. In Kahn, if we append as they become ready in iteration order of node's dependents (reverse adjacency built from graph insertion order), the queue order might not match original dict insertion order among newly ready. But perhaps if we ensure dependency order and process in insertion order? Need examine.\n\nSimpler robust: Could generate all valid topological orders? Maybe not.\n\nAlternative: DFS-based with postorder plus tie-breaking? Need carefully implement stable order.\n\nWe need understand \"using original dict insertion order whenever multiple nodes are ready\" means at each step, among nodes whose dependencies have all been placed, choose the one that appears earliest in original dict insertion order. This is Kahn where at each step choose ready node of minimum insertion index. Ready set dynamic. Need implement efficiently with heap by insertion index.\n\nBut need also detect missing dependency/cycle. Do not mutate input. We need return list.\n\nNeed design.\n\nGraph maps node to its dependencies. Node values hashable? likely yes. Need preserve insertion order.\n\nAlgorithm Kahn with min-heap by original insertion index:\n\n- Build indices: node -> position (enumerate graph.items()). If graph is ordinary dict insertion order. If Python 3.7+.\n- For each node, dependencies = list(graph[node])? But if dependency appears multiple times? Dependencies are probably unique? Could handle duplicates but count? A node's dependencies might be iterable (set/list). Need decide if duplicates should count multiple? Dependencies likely unique. We can treat as set to avoid double counting; but order of dependencies not relevant. Need missing check.\n\n- Build \"dependents\" or reverse adjacency. For each node x, for each dep d in graph[x]:\n   if d not in graph: raise ValueError(f\"missing dependency: {d}\")? Need avoid duplicate check.\n   Add x to dependents[d].\n   indegree[x]++? Actually indegree = number of dependencies. Need if duplicate dependencies, count duplicates? Use set or count duplicates. To avoid issues, use list then maybe duplicate count as dependencies repeated? Topological sorting with duplicates if set unique. Stable should perhaps treat duplicates once. But if graph says a depends on b twice, one b is enough? Typically dependency set. We can count duplicates? Not relevant. Use set conversion? Need maintain original? We can produce unique set. But if duplicate missing inside, if first occurrence missing then raise. If duplicates in dependency list \"missing\" repeated no issue. For indegree, if duplicate, counting duplicates would require processing b twice to unlock? Better to convert to set for dependency graph semantics. However order of dependencies not specified. But if duplicate deps, set fine. Need no mutation so we can just for each dep in graph[node] add. But if duplicate, indegree increments twice, then when processing dep, if decrement twice, after first pending not zero until second, impossible if dep processed once. So duplicate would cause cycle-like. Better to use set or count unique dependencies. Is a duplicate considered malformed? Not specified. We should handle dependencies as a collection: duplicates don't change semantics. Use unique deps.\n\nNeed:\n\nfor node in graph:\n    deps = graph[node]\n    try:\n        unique_deps = set(deps)\n    except TypeError: maybe deps can be string? If string, set of chars. But dependencies likely list/set. If a string node, graph maps node to string? Could string be a node and dependencies as a string? Not likely. But if node is hashable and dependency can be iterable. If a single node dep given as string, set would treat chars as deps. But graph maps node to dependencies: dependency collection. If a single dependency as string ambiguous. Usually pass list/tuple/set. We can use if dep is str? Hmm. Could avoid set conversion by using list and checking duplicates? Not necessary.\n\nNeed missing dep check: if d not in graph: raise ValueError(\"missing dependency: d\").\n\nBuild indegree dictionary for every node initialized 0.\nBuild dependents dict: dep -> list of nodes that depend on it. Need dependents list in some order. Does dependents order matter? If we use heap for ready, no, because after processing dep, we decrement indegree of all dependents; if becoming zero, push into heap. But if multiple dependents become ready simultaneously due to the same dep being processed, their heap positions determine order. Good.\n\nBut need update indegree efficiently. Use indegree = {node: len(unique_deps)} maybe need count. Build dependents first and indegree inc.\n\nThen ready heap = [ (idx[node], node) for node in graph if indegree[node] == 0 ] where idx is insertion order. heapify.\n\nThen while heap:\n    _, node = heappop(heap)\n    result.append(node)\n    for dependent in dependents.get(node, []):\n        indegree[dependent] -= 1\n        if indegree[dependent] == 0:\n            heappush(heap, (idx[dependent], dependent))\n\nAt end, if len(result) != len(graph): cycle. Need ensure only nodes in graph. What about nodes in graph but indegree maybe >0 due to cycle.\n\nWill this guarantee original insertion order whenever multiple nodes are ready? Suppose node A inserted before B. A depends on C, B depends on D. Initially C,D ready maybe C inserted after D? Heap picks by idx among ready. Suppose C ready but idx=5, D idx=2, so D processed before C. After D processed, B ready. A still not ready until C. Then C processed, A ready. Result D,B,C,A. At each ready set: initially {D,C}? Actually if C and D ready, picks D because idx=2; after D, B ready, ready set {C,B}; picks B? Wait B index maybe 1, C 5, so pick B. But A (index maybe 0) not ready because C not processed. But is B ready? B depends on D, so yes. Although B insertion before A? B index 1, A index 0? If A before B, then if both ready at some step? They aren't. At initial ready {C,D}, D idx2, C idx5 -> pick D. Then B ready, ready {B,C} -> pick B if B idx1, C idx5. Then C ready -> A ready. Result D,B,C,A. Is that valid? B before A even though A appears earlier in original dict but not ready. That's okay.\n\nBut consider a situation where two nodes become ready simultaneously due to processing the same predecessor; heap picks by original insertion. Good. What about a node that was ready but blocked? Actually ready only if indegree=0. If it was ready and in heap earlier but not popped, it remains. When other nodes become ready, heap picks min index among all ready. Great.\n\nCould also use sorted by index. Need no mutation.\n\nNeed cycle detection: If graph has cycle, result less than len(graph), raise ValueError. Need message: \"cycle detected\" maybe. Problem says Raise ValueError for missing dependency or cycle. We can simply raise ValueError(\"cycle detected\") or ValueError(\"graph contains a cycle\"). Good.\n\nNeed consider missing dependency that is a node with no outgoing? If missing but dependency in graph? We check d in graph. If node itself is a dependency of itself? It is in graph so no missing; cycle detected. Good.\n\nNeed handle dependency not in graph and not ready? Missing.\n\nNeed \"Return Python code only\": final should be code block? They said Return Python code only. We can output code block maybe? Usually answer with code block. Need maybe just code text. \"Python code only\" maybe no explanation. I'll return code block? They asked implement def, probably code. To be safe provide just the function in plain text? But \"Return Python code only\" means no markdown? Actually \"Return Python code only\" means they want the code, not prose. I can include code block, but that's not \"code only\"? Code block is markdown. Usually acceptable? But they explicitly says \"Return Python code only\" maybe should not include explanations. Hmm. final can be just code in a python code block? To avoid extraneous, I'll output code block? Let's decide. Since \"Python code only\", I can output the raw code without markdown. But final answer likely interpreted by human. Better to output only code. No markdown. However if they expect code block maybe not. \"Return Python code only\" suggests plain code. I'll provide raw code.\n\nNeed consider graph could be a custom mapping preserving insertion order? \"original dict insertion order\" implies a dict. Use graph.items order.\n\nPotential issue: If graph values are lists, graph[node] maybe a list; using set(deps) will consume if deps is generator? Graph maps node to dependencies: could be list/tuple/set. If dependencies is a generator, set(generator) consumes. That's okay. But if it's a string, set(string) letters. Hmm.\n\nNeed perhaps preserve \"original dict insertion order whenever multiple nodes are ready\" more directly via recursive DFS? Let's deeply test algorithm with examples and verify against definition.\n\nDefinition: \"Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready.\" Could mean: You have nodes in original dict order. When choosing among ready nodes at any point, pick earliest original insertion. Our Kahn heap does that. Need prove. At each while iteration, before popping, heap contains exactly ready nodes (indegree=0) that have not been output; min index is earliest ready. Pop that. Thus yes.\n\nNeed ensure initial heap contains all nodes with indegree=0. We build indegree by counting unique dependencies. Suppose a node with dependency list empty, indegree=0. heap includes it. Good.\n\nNeed missing dependency: Suppose d is in graph but as a dependency string? Check d not in graph. If d not in graph, raise. But what if graph contains dependency d as a defaultdict? use `d not in graph` uses __contains__, okay. If graph is dict.\n\nPotential issue: If dependency repeats, set(deps) removes duplicate, but if missing dependency duplicates and first missing raise. If d appears as key as well. Fine.\n\nPotential issue: If a node depends on itself, indegree counts self. Dependents[d] includes node. Processing? It won't be ready initially because indegree>0; cycle. Good.\n\nPotential issue: If there are nodes in graph not reachable from any? All processed maybe.\n\nPotential issue: If dependency list includes \"unhashable\" elements? Dependencies likely hashable because keys. No.\n\nNeed maybe not mutate graph, and not mutate dependency lists. We don't.\n\nNeed decide if we need use original insertion order for \"ready\" but heap tie by index. If two nodes same index impossible.\n\nNeed maybe if graph is empty: return [].\n\nNeed maybe if dependency collection is a set, original insertion order of dependencies not relevant. Good.\n\nNeed maybe if graph isn't ordered? We assume dict.\n\nLet's craft final code:\n\nimport heapq\n\ndef stable_toposort(graph):\n    index = {node: i for i, node in enumerate(graph)}\n    indegree = {node: 0 for node in graph}\n    dependents = {node: [] for node in graph}\n\n    for node, deps in graph.items():\n        seen = set()\n        for dep in deps:\n            if dep in seen:\n                continue\n            seen.add(dep)\n            if dep not in graph:\n                raise ValueError(f\"missing dependency: {dep!r}\")\n            dependents[dep].append(node)\n            indegree[node] += 1\n\n    heap = [(index[node], node) for node in graph if indegree[node] == 0]\n    heapq.heapify(heap)\n    order = []\n    while heap:\n        _, node = heapq.heappop(heap)\n        order.append(node)\n        for dependent in dependents[node]:\n            indegree[dependent] -= 1\n            if indegree[dependent] == 0:\n                heapq.heappush(heap, (index[dependent], dependent))\n\n    if len(order) != len(graph):\n        raise ValueError(\"cycle detected\")\n    return order\n\nNeed maybe there is missing dependency but dep could be an unhashable list? not.\n\nCould simplify missing dependency in comprehension? no.\n\nNeed perhaps not use heapq because importing okay. Code only.\n\nNeed maybe use `for dep in set(deps):` but set loses iteration order and if dep unhashable. no.\n\nPotential issue: `dependents = {node: [] for node in graph}` and then `dependents[dep].append(node)` for dep in graph but what if dep is node not initialized? We already `if dep not in graph` check. So okay.\n\nPotential issue: suppose graph mapping has duplicate keys impossible.\n\nPotential issue with empty dependency list: `for dep in deps` no mutation.\n\nPotential issue: If dependency is a string and node keys characters, `dep in graph` works; okay.\n\nPotential issue: If dependency appears as list but its elements are strings and node keys are strings, likely dep is one string. But if graph maps node \"a\" to \"b\" (b dependency), `for dep in \"b\"` yields \"b\" only because single char. Works. But if dependency name \"bc\", `for dep in \"bc\"` yields \"b\",\"c\": wrong. But dependencies should be list of dependencies, not string. If someone passes a single dependency as a string, ambiguous. We could handle by checking if deps is str or not iterable? But not needed. To robust, define dependencies = graph[node]; if isinstance(deps, (str, bytes)): deps = [deps]. But problem says graph maps a node to its dependencies, likely iterable of nodes. Should not add.\n\nNeed maybe if dependency collection is a generator, using `seen` and loop consumes. Good.\n\nNeed consider \"stable_toposort(graph)\" perhaps they expect an implementation from \"Request for Python code only\", maybe they want exact answer. If using heap, stable.\n\nNeed think about alternative algorithms and whether heap is necessary. Could use list as queue with stable order if we sort initial ready by insertion and when adding dependents, insert them sorted by original insertion. But heap simpler.\n\nLet's test some examples:\n\n```\ngraph = {\n 'a': ['b','c'],\n 'b': ['c'],\n 'c': []\n}\n```\nindex a0,b1,c2; indegree a2,b1,c0; dependents c:[a,b], b:[a]; heap [(2,c)]; pop c; dependent a indeg1, b indeg0 push (1,b); heap popped b; a indeg0; result c,b,a. Is this stable? Original insertion order a,b,c. Ready initially only c. After c, ready b only. After b, a. Yes.\n\n```\ngraph = {\n 'a': ['c'],\n 'b': ['c'],\n 'c': []\n}\n```\nidx a0,b1,c2; indegree a1,b1,c0; heap [c]; pop c; a,b both indeg0; push (0,a),(1,b); pop a then b. result c,a,b. Original order a,b,c. Dependencies first c; ready after c: a,b; choose a because earlier. Good.\n\n```\ngraph = {\n 'a': [],\n 'b': ['c'],\n 'c': [],\n}\n```\ninitial ready a idx0,c idx2; heap pop a, order a; b not ready. Then c, b. result a,c,b. Original order a,b,c. When ready initially: a,c; choose a. After a not b. After c, ready b. Good. What if b was inserted before c? graph order: a,b,c? c is dependency of b but inserted after; initial ready a,c; b blocked. Same.\n\nNeed maybe dependency-first order: if a node is ready, do we have to process dependencies before it even if dependency appears after in original insertion order? Yes. Initial ready includes nodes with no deps only. For c in second example, c appears after a,b but processed first due dependency. Fine.\n\nNow, possible problem: \"using original dict insertion order whenever multiple nodes are ready\" could be interpreted as we should consider original order of nodes, but if a node's dependencies include nodes after it, those dependencies still come first. We do.\n\nNeed maybe raise ValueError for \"missing dependency\" before cycle? Suppose dependency missing and cycle present; our missing check will raise during build before cycle. That's okay.\n\nNeed maybe if dep not in graph but it is a key in graph? contradiction. no.\n\nNeed perhaps use `graph.get(node, ())`? no.\n\nPotential issue: If graph values are sets of node names; iterating over set loses order but we don't use order. Good.\n\nPotential issue: \"Do not mutate the input.\" We don't. But we do build set(deps) no mutation. Good.\n\nPotential issue: If graph has values as view of input? no.\n\nNeed maybe include type hints? Not necessary. Could avoid.\n\nNow final. But before final, think if there is any hidden expectation from \"stable_toposort\" in a coding challenge. They might expect not using heap but preserving original insertion order. Our algorithm okay.\n\nLet's consider if using heap with `index` from `enumerate(graph)` handles duplicates? dict keys unique",
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 4096,
+        "prompt_tokens": 136,
+        "total_tokens": 4232
+      },
+      "seconds": 291.75,
+      "response_evidence": {
+        "chars": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 18414,
+        "sha256": "52b93bdba6d2cf934faea8ec963db75d14dce60bc225925991c97a37ad549869",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "schema_drift",
+      "category": "python",
+      "prompt": "Implement def schema_drift(expected, actual). Inputs are nested dicts whose leaves are type strings. Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths. Return Python code only.",
+      "score": 0.0,
+      "passed": false,
+      "detail": {
+        "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'schema_drift' is not defined\n"
+      },
+      "response": "",
+      "reasoning": "We need answer code implementing function. Need understand problem. Need return sorted dotted paths for missing fields, extra fields, or fields whose type differs. Inputs nested dicts leaves are type strings. Need compare schemas? \"expected, actual\" likely expected schema vs actual data? Need detect missing fields: fields in expected not in actual. Extra fields: fields in actual not in expected. Type differs: leaf type string different. A missing/extra nested object reports its leaf paths. Need clarify: If expected has nested object at path but actual missing entire object, should report leaf paths under expected object? \"A missing/extra nested object reports its leaf paths.\" Need maybe if expected[\"a\"] is dict, actual[\"a\"] absent -> path \"a.b\", \"a.c\" etc rather than \"a\"? Since missing leaf paths. If actual has extra nested object at path not expected, report leaf paths under actual object. If expected leaf type differs actual dict? Type differs? Need compare only if both present and both dicts? Need handle leaves are type strings. Need return sorted dotted paths for missing fields, extra fields, or type differs. Need implement schema_drift(expected, actual). Need only code.\n\nLet's parse wording carefully: \"Implement def schema_drift(expected, actual). Inputs are nested dicts whose leaves are type strings. Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths. Return Python code only.\"\n\nNeed infer expected behavior. Maybe from coding challenge. Need implement function that takes two nested dicts representing schemas, compares. At each path:\n- If both values are dicts: recurse.\n- If one is dict and other is not? Since leaves are type strings, compare type string vs dict? Maybe if expected leaf type string e.g. \"string\" and actual has dict at same path -> type differs? But \"missing/extra nested object reports its leaf paths\" suggests if a field is expected as object but actual is missing, you report leaves. If an actual object is extra relative to expected, report its leaves. If expected object but actual leaf? That's type differs at that path? Need decide.\n- If both values are strings: if equal no report; if different type strings report path.\n- If both present but one dict and one not? \"missing fields, extra fields, or fields whose type differs\" A field whose type differs could include expected leaf vs actual object? Since leaves are type strings, an object is not a type string. Maybe schemas are nested dicts where leaf values are strings (type names), objects are dicts. So if one side has dict and other has string, it's a type difference at that field maybe report path. But \"missing/extra nested object reports its leaf paths\" maybe only for absent/present entirely, not type mismatch? Need robust.\n\nNeed maybe implement exactly requested. Let's consider examples.\n\nExpected: {\"a\": {\"b\": \"string\", \"c\": \"int\"}}\nActual: {\"a\": {\"b\": \"string\"}}\nMissing field \"a.c\" -> return [\"a.c\"]. Good.\n\nExpected: {\"a\": {\"b\": \"string\"}}\nActual: {\"a\": {\"b\": \"string\", \"c\": \"int\"}}\nExtra field \"a.c\" -> return [\"a.c\"].\n\nExpected: {\"a\": \"string\"}\nActual: {\"a\": \"int\"}\nType differs \"a\" -> return [\"a\"].\n\nExpected: {\"a\": {\"b\": \"string\"}}\nActual: {}\nMissing nested object reports its leaf paths -> [\"a.b\"] not [\"a\"]. Good.\n\nExpected: {}\nActual: {\"a\": {\"b\": \"string\"}}\nExtra nested object reports leaf paths -> [\"a.b\"].\n\nExpected: {\"a\": {\"b\": \"string\"}, \"x\": \"int\"}\nActual: {\"a\": \"string\", \"x\": \"bool\"}\nAt a: expected dict, actual leaf string -> type differs? Should report \"a\"? Or report \"a.b\"? Since actual is not nested object, leaf path \"a.b\" doesn't exist. \"A missing/extra nested object reports its leaf paths\" not applicable; type differs at a. So return \"a\" and \"x\".\n\nExpected: {\"a\": \"string\"}\nActual: {\"a\": {\"b\": \"int\"}}\nExpected leaf vs actual object -> type differs at \"a\"? Or \"a.b\" extra? But \"field whose type differs\" likely \"a\": expected string, actual object. So report \"a\". Not \"a.b\" because expected has leaf at a, not object. Need implement.\n\nExpected: {\"a\": {\"b\": \"string\"}}\nActual: {\"a\": {}}\nExtra/missing nested? Expected a.b missing in actual, but actual a object exists empty. Should report \"a.b\" (missing leaf). Good.\n\nExpected: {\"a\": {}}\nActual: {\"a\": {\"b\": \"string\"}}\nShould report \"a.b\" extra leaf. Good.\n\nWhat if expected: {\"a\": {\"b\": \"string\"}}, actual: {\"a\": None}? Leaves are type strings, so None invalid. Ignore? Probably not.\n\nNeed return sorted dotted paths. Need produce Python code only. Could include import? No need. Use recursive helper.\n\nNeed think about \"A missing/extra nested object reports its leaf paths.\" Means when a nested object is entirely missing/extra, we need to recurse into the object from the side it exists, generating all leaf paths. For missing expected object, actual absent: recurse expected object with empty actual? But if actual absent, comparing expected dict with actual dict? Need helper with expected/actual maybe None? Need define.\n\nPotential approach:\n\ndef schema_drift(expected, actual):\n    def diff(e, a, path):\n        # If both dict-like: compare keys union\n        if isinstance(e, dict) and isinstance(a, dict):\n            for key in sorted(set(e) | set(a)):\n                p = f\"{path}.{key}\" if path else key\n                if key not in e:\n                    # extra field in actual; if actual[key] is dict, report its leaf paths\n                    collect_extra(a[key], p)\n                elif key not in a:\n                    collect_missing(e[key], p)\n                else:\n                    diff(e[key], a[key], p)\n        # If one dict and other not? report path as type difference only if values differ? Need decide.\n        elif e != a:\n            # report path as type differs\n            res.append(path)\n        # If both not dict and e == a no diff.\n    Need helpers to collect all leaf paths in nested dict:\n    def collect_extra(node, path):\n        if isinstance(node, dict):\n            for k in sorted(node):\n                collect_extra(node[k], f\"{path}.{k}\" if path else k)\n        else:\n            res.append(path)\n    def collect_missing(node, path): same because leaves type strings, just append leaves.\n    But wait if a[key] is dict but expected key absent, collect extra leaf paths. If a[key] is leaf, append path. That's good.\n    If e[key] is dict and a[key] absent, collect missing leaf paths. Good.\n    But what if e[key] is dict and a[key] is a leaf? Then in diff, one dict and other not -> append path if e != a (dict != string) -> type differs. Good, no collect missing leaves because actual object missing? But actual has something at that path, type differs. Is that desired? likely.\n    But what if e[key] is leaf and a[key] is dict? append path. Good.\nWhat if both are dict but one has empty dict? diff with empty will handle keys. If expected empty dict and actual empty dict, no diff. If expected empty dict and actual absent, collect_missing(empty dict, path) -> no leaves, so no report. But if a field is an empty object in expected and missing in actual, \"missing nested object reports its leaf paths\" but no leaf paths, so nothing? That might be a subtle issue. If schemas include empty object, missing object with no leaves can't be represented by leaf paths. Should we report the object path itself? The prompt specifically says \"A missing/extra nested object reports its leaf paths.\" For empty object, there are no leaf paths. But maybe should report path? Need think. It says return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing nested object is a missing field? But \"reports its leaf paths\" indicates for nested object, not path itself. If empty object, no leaf paths; maybe no report. Is that okay? Usually schema comparison might treat empty dict as \"any object\" or \"object with no required fields\"? Hmm.\n\nNeed maybe define \"leaves are type strings\" means nested dicts can be empty? If empty dict is object with no leaves. Missing empty object means no leaf paths to report, so perhaps ignore. Extra empty object also no leaf paths. But if an expected empty dict and actual has something? If actual dict has extra fields, expected dict empty means all actual fields are extra -> report leaf paths? Let's check our diff when both are dict: if expected empty dict and actual {\"b\":\"string\"}, key b in actual not in expected -> collect_extra leaf \"b\". Good. If expected {\"b\":\"string\"} and actual empty dict, missing \"b\". Good. If expected empty dict and actual missing -> no report. If expected missing and actual empty dict -> no report. Is that okay? \"A missing/extra nested object reports its leaf paths\" likely yes, no leaves = no report.\n\nNeed maybe consider path root itself if both root dict? Fine.\n\nNeed return sorted dotted paths. Using `res` list and final `return sorted(res)`. Need ensure no duplicates? There can be duplicate if same path appears via multiple? Maybe not. But if type differs for an object path and leaf descendants? Need avoid duplicates. In our diff, for one dict one leaf we append path and don't recurse, so no descendants. For missing/extra nested object collect leaves only. No duplicates. But could duplicate if path appears as extra object leaf and also type difference elsewhere? No.\n\nNeed think about \"fields whose type differs\" with leaf type strings. If both values are strings and equal, no drift. If both strings and different, report path. If both dicts, recurse. If one dict and one string, path type differs. Good.\n\nNeed maybe include type comparison where if both are dict but one is empty? It's dict, recurse. Fine.\n\nNeed perhaps handle non-dict values that are type strings. Need not import Mapping, use dict.\n\nNeed consider \"expected, actual\" maybe actual can be not dict? Inputs are nested dicts, root dict. Fine.\n\nNeed maybe define helpers inside function to avoid modifying external. Use `res = []`.\n\nPseudo:\n\ndef schema_drift(expected, actual):\n    res = []\n\n    def leaf_paths(node, path, missing=True):\n        if isinstance(node, dict):\n            for k in sorted(node):\n                new_path = f\"{path}.{k}\" if path else k\n                leaf_paths(node[k], new_path, missing)\n        else:\n            res.append(path)\n\n    def compare(e, a, path):\n        if isinstance(e, dict) and isinstance(a, dict):\n            for key in sorted(set(e) | set(a)):\n                new_path = f\"{path}.{key}\" if path else key\n                if key not in e:\n                    leaf_paths(a[key], new_path)\n                elif key not in a:\n                    leaf_paths(e[key], new_path)\n                else:\n                    compare(e[key], a[key], new_path)\n        elif e != a:\n            res.append(path)\n\n    compare(expected, actual, \"\")\n    return sorted(res)\n\nNeed ensure for root non-dict? compare handles e != a -> append \"\"? If root dicts are nested dicts, root always dict. If root not dict, path \"\" appended. Not relevant. But if expected and actual both dict, fine.\n\nNeed think of \"missing/extra nested object reports its leaf paths\" and our `leaf_paths` includes all leaves under that object. But what if node is not dict (leaf) and path is empty? append empty; okay.\n\nNeed maybe use different helper for missing and extra? same.\n\nPotential issue: If a missing field is expected to be dict and actual absent, leaf_paths(e[key], path) collects all leaf paths under expected dict. Good. But if expected dict contains nested object with leaf paths, collect recursively. Good. If expected dict is empty, no report. If expected dict contains nested dict empty and leaf, leaf_paths will descend into empty dict and skip, append leaf. Good.\n\nPotential issue: If actual extra field is dict, leaf_paths(a[key], path) collects extra leaf paths. Good. If extra dict is empty, no report.\n\nPotential issue: If both expected and actual have key, but expected is dict and actual is dict, compare recursively. If inside, expected has key \"b\": {\"c\":\"string\"}, actual has key \"b\": {} -> missing \"b.c\" via missing key. Good.\n\nPotential issue: If expected key has dict and actual key has dict but with an expected leaf missing and an extra leaf, collect both. Good.\n\nPotential issue: If expected key has leaf and actual key has same leaf but actual also has nested dict? Wait actual key is leaf, cannot have nested dict because value is string. If actual value is string, no. If actual value is dict, different type.\n\nNeed maybe include \"type differs\" for leaf strings with same string? no.\n\nLet's search memory: This might be a popular problem from \"schema-diff\" or \"Drift detection\" where input nested dictionaries with values as type strings. Need return sorted \"field names\" (dot-separated) that are \"missing\", \"extra\", or \"type mismatch\". The implementation often:\n\ndef schema_drift(expected, actual):\n    def walk(e, a, path=\"\"):\n        for key in sorted(set(e) | set(a)):\n            p = f\"{path}.{key}\" if path else key\n            if key not in e:\n                res.extend(paths(actual[key], p))\n            elif key not in a:\n                res.extend(paths(expected[key], p))\n            elif isinstance(e[key], dict) and isinstance(a[key], dict):\n                walk(e[key], a[key], p)\n            elif e[key] != a[key]:\n                res.append(p)\n    return sorted(res)\n\ndef paths(obj, base):\n    if isinstance(obj, dict):\n        out=[]\n        for k in sorted(obj):\n            out.extend(paths(obj[k], f\"{base}.{k}\"))\n        return out\n    return [base]\n\nThis matches.\n\nNeed maybe decide if extra/missing object \"reports its leaf paths\" in sorted order. Our final sorted.\n\nNeed maybe include code only, no explanation. Need perhaps no markdown? The instruction \"Return Python code only.\" So final should be code block? Usually \"Python code only\" means output code no explanation. I can use code fence? Might be considered not Python code. Better output raw code without markdown? The final answer in these tasks often accepted with code block? \"Return Python code only.\" I should provide code only, no markdown.\n\nNeed ensure code indentation and no extra text.\n\nLet's think of edge cases:\n\n- Compare expected {\"a\":{\"b\":\"string\"}}, actual {\"a\":{\"b\":\"string\",\"c\":\"int\"}}. compare root both dict. key a both -> compare e[\"a\"], a[\"a\"], path \"a\". Inside key b both -> compare \"string\",\"string\". key c only actual -> leaf_paths(\"int\",\"a.c\") -> append \"a.c\". return sorted [\"a.c\"]. Good.\n\n- Compare expected {\"a\":\"string\"}, actual {\"a\":{\"b\":\"int\"}}. root both. key a both. compare(\"string\", {\"b\":\"int\"}, \"a\"). Since e not dict or a not dict? Actually e is str, a dict. `isinstance(e, dict) and isinstance(a, dict)` false. `e != a` true -> append \"a\". Good. It doesn't collect extra b because root at a is same field but type differs. Good.\n\n- Compare expected {\"a\":{\"b\":\"string\"}}, actual {\"a\":\"string\"}. compare e dict, a str -> append \"a\". Good.\n\n- Compare expected {\"a\":{}}, actual {}. root both. key a expected only but e[\"a\"] = {} leaf_paths({}, \"a\") returns no res. So no drift. Is that correct? The field \"a\" missing in actual? It's an empty object. The prompt says \"A missing/extra nested object reports its leaf paths.\" Since no leaf paths, perhaps no report. But \"missing fields\" says missing fields should be returned; field \"a\" is missing. However \"A missing/extra nested object reports its leaf paths\" could be read as: if a nested object is missing, you should report its leaf paths, not the object path. If no leaves, no paths. But that means an empty nested object missing isn't reported. Is that intended? Need evaluate.\n\nAlternative interpretation: \"A missing/extra nested object reports its leaf paths\" could mean for each leaf under missing/extra object, report that dotted path. If no leaf, maybe report object path? But wording says \"reports its leaf paths\" not \"reports path\". Many schema diff algorithms flatten schemas to leaf paths only; empty objects cannot be represented. So likely no report. But \"missing fields\" includes fields regardless of type? Let's inspect: \"Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths.\" This might mean if an object is missing/extra, we list all leaf paths under it (rather than just the object path). For empty object, list nothing. That's okay. The \"field\" is not a leaf? They call \"missing fields\" but nested object not leaf. So empty object missing no leaf.\n\nNeed maybe include handling for type strings with dots? Leaf values are type strings, not keys. Keys can contain dots? Dotted paths use dots as separators. If keys contain dots, ambiguity; likely no dots in keys. Could maybe ignore.\n\nNeed maybe include typing? Not necessary.\n\nPotential issue: If a missing field expected leaf, leaf_paths(leaf, path) appends path. Good.\n\nPotential issue: If actual extra field is also type differs? Not relevant.\n\nPotential issue: If expected and actual both dict but one value at key is None? We treat as non-dict, and e != a -> path. If both None -> no diff. But leaves are type strings, no None. Fine.\n\nPotential issue: If both values are dict but different? We don't compare dict as type; we recurse. Good.\n\nPotential issue: Sorting final with `sorted(res)`. Need deduplicate? Could use set? But sorted list with duplicates? Are duplicates possible? Let's see. Suppose expected {\"a\": {\"b\": \"string\"}}, actual {\"a\": {\"b\": \"int\"}} -> diff returns \"a.b\" only. No duplicates. Suppose expected {\"a\": {\"b\": \"string\"}}, actual {\"a\": {\"b\": \"int\"}, \"a.b\": \"string\"} but keys with dots can produce same dotted path \"a.b\" for both? If actual has key \"",
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 4096,
+        "prompt_tokens": 137,
+        "total_tokens": 4233
+      },
+      "seconds": 250.631,
+      "response_evidence": {
+        "chars": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 17669,
+        "sha256": "53b5dcac23c036531bfee18d01f7b87c7f23644c7ccf91aa5a8afa15f0c1e93a",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "bounded_batches",
+      "category": "python",
+      "prompt": "Implement def bounded_batches(items, max_rows). items is an iterable of (partition,row_count). Preserve order and return a list of batches, each a list of items, whose total rows does not exceed max_rows. An item larger than max_rows must be alone. Reject max_rows <= 0. Consume the iterable once. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "9aa4bf5e0cab4cd9b5fc38189506d75b[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+      },
+      "response": "def bounded_batches(items, max_rows):\n    if max_rows <= 0:\n        raise ValueError(\"max_rows must be positive\")\n\n    batches = []\n    current = []\n    current_rows = 0\n\n    for partition, row_count in items:\n        if row_count > max_rows:\n            if current:\n                batches.append(current)\n                current = []\n                current_rows = 0\n            batches.append([(partition, row_count)])\n        else:\n            if current_rows + row_count > max_rows:\n                batches.append(current)\n                current = []\n                current_rows = 0\n            current.append((partition, row_count))\n            current_rows += row_count\n\n    if current:\n        batches.append(current)\n\n    return batches",
+      "reasoning": "We need answer code implementing function. Need be careful. Need produce final with Python code only likely. Need implement bounded_batches(items, max_rows). Items iterable of (partition,row_count). Preserve order and return list of batches, each a list of items, whose total rows <= max_rows. An item larger than max_rows must be alone. Reject max_rows <= 0. Consume iterable once. Need code.\n\nNeed think edge cases. \"bounded_batches\" perhaps greedy packing preserving order: accumulate batch until adding next would exceed max_rows, then start new batch. But if item larger than max_rows must be alone. Also if current batch nonempty and item would exceed, flush, then if item itself > max_rows, place alone (don't combine with future? It says an item larger than max_rows must be alone. \"alone\" in its own batch, so no other items before/after in same batch. Greedy with future might start new batch after item. Need ensure if item > max_rows, not combined with next. If batch has only large item, begin new bach after. Implementation: iterate. If row_count > max_rows: if current batch not empty, append current batch and reset. Then append [item] as batch (alone), reset current = [] and current_rows=0. But what about current batch was empty and then large item: append alone. What about if current batch has items and next is large: flush current, then alone. Good. If row_count <= max_rows: if current_rows + row_count > max_rows: flush current; then add item. If ==? fine; next item can start new batch. Need perhaps if 0 row_count? An item with 0 rows can be in any batch. If large > max_rows with row_count maybe > max. Alone. If row_count maybe max_rows +? yes.\n\nNeed reject max_rows <= 0. Should probably raise ValueError. \"Reject\" maybe raise ValueError. Need code only.\n\nNeed consider \"Consume the iterable once.\" Use for loop.\n\nNeed maybe preserve order of items inside batches and batch order. Yes.\n\nPotential nuance: \"bounded_batches(items, max_rows)\" maybe from programming challenge? Could use dynamic? But preserve order, each batch list items total rows <= max_rows, minimize number batches maybe with item order? \"An item larger than max_rows must be alone.\" Greedy yields maximum? It preserves order and no reordering. Need maybe if item larger than max_rows, alone; if current batch empty and item exactly? If large alone. But what about if current batch nonempty with large item alone, and next item normal? After append alone, current empty, so normal will start current. Good.\n\nNeed maybe support \"batches, each a list of items\" where item is tuple (partition, row_count). If item > max_rows alone means list [item]. Good.\n\nNeed perhaps name function exact. Return list.\n\nLet's test:\nbounded_batches([(a,3),(b,4),(c,5)], 10) -> current rows 3 add b 7 add c would exceed => flush [a,b], current [c] at end return [[a,b],[c]].\nWith large: items [(a,12),(b,1),(c,12)] max 10 -> current empty, row_count > max: append [[a,12]], current b -> [b], c large > max: flush [b], append [c]; return [[a,12],[b],[c]].\nIf current nonempty and large: [(a,4),(b,12),(c,3)] max10 -> current [a], next b large -> flush [a], append [b], current empty, next c append; return [[a],[b],[c]].\nIf large after some in current but current_rows + large >, flush then alone. Good.\nNeed maybe when item > max_rows and current batch empty, append alone; no need set current_rows? set 0.\n\nNeed perhaps validate max_rows at top:\nif max_rows <= 0: raise ValueError(\"max_rows must be positive\")\nReturn type list. \n\nNeed code only final.\n\nBut let's think if \"an item larger than max_rows must be alone\" might mean if any row_count > max_rows, we cannot put in a batch with other items, but a batch can contain multiple large items? No \"alone\" singular. So [large1, large2] invalid. Need flush after each large item. Good.\n\nWhat about item row_count = max_rows+? no.\n\nWhat about if row_count maybe negative? Not specified; assume nonnegative. Could if negative weird. Not treat. Could include item with row_count less or equal.\n\nNeed maybe return \"list of batches, each a list of items\" and \"Consume iterable once\" maybe generator? Return list.\n\nNeed maybe \"each a list of items\" not tuple? yes.\n\nPotential issue: If we flush current before large, and if current batch has rows 0? If items with row_count=0, current_rows might be 0 but batch nonempty. If next large > max, current batch nonempty should flush all zero-row items. Good. If current batch empty but contains? no.\n\nWe can optimize not necessary.\n\nLet's craft final:\n\ndef bounded_batches(items, max_rows):\n    if max_rows <= 0:\n        raise ValueError(...)\n    batches = []\n    current = []\n    current_rows = 0\n    for partition, row_count in items:\n        if row_count > max_rows:\n            if current:\n                batches.append(current)\n                current = []\n                current_rows = 0\n            batches.append([(partition, row_count)])\n        else:\n            if current_rows + row_count > max_rows:\n                batches.append(current)\n                current = []\n                current_rows = 0\n            current.append((partition, row_count))\n            current_rows += row_count\n    if current:\n        batches.append(current)\n    return batches\n\nNeed \"items is iterable of (partition,row_count)\" so unpack works. If iterable yields list? okay. But if items is generator of pairs. yes.\n\nCould maybe use row_count directly. Need \"max_rows\" int.\n\nNeed maybe \"row_count larger than max_rows must be alone\" means if row_count > max_rows, no other items in same batch. But our code could append large item and then if next item row_count 0, it starts new current. Good. What about before large item, current flushed. That means no other item before in same batch. Good.\n\nPotential subtle: If large item encountered while current has items, we flush current, then large alone. If current had items that total rows <= max_rows; fine. But what if current_rows + row_count > max_rows but row_count > max_rows? flush first anyway. If current empty and row_count > max_rows, append alone. Good.\n\nNeed maybe \"An item larger than max_rows must be alone\" but \"total rows does not exceed max_rows\" means if an item > max_rows cannot be in batch with total <=max due to alone. Fine.\n\nLet's consider variants: Some implementations might \"if row_count > max_rows: if current: flush; current=[item]; else current=[item]\" thus doesn't flush after large until next normal; then current batch has large plus 1 normal if item appended? No, code would flush when adding next if rows exceed? But if row_count maybe large and next row_count 0, adding zero row maybe same batch, violating alone. Need explicitly flush before/after. We do that.\n\nNeed maybe \"An item larger than max_rows must be alone.\" If next row_count negative, row_count > max_rows? no. But ignore.\n\nNeed final code only. Since user requested \"Implement def bounded_batches...\" likely just code. We'll output code block? \"Return Python code only.\" Might mean no explanation. We can include code in markdown? They asked Python code only; likely final should be code block maybe okay. \"Return Python code only.\" We can output only code block or plain code. To be safe, plain code no markdown? But final answer can be code block. \"Python code only\" maybe no prose. I'll output code inside ```python ...```? That includes syntax not code if copied? Usually accepted. Better plain code. But answer expected maybe exact text. I'll provide code only, no markdown? The instructions \"Return Python code only\" strongly means no explanation. I'll output the function code without markdown. Ensure no trailing explanation.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 1931,
+        "prompt_tokens": 160,
+        "total_tokens": 2091
+      },
+      "seconds": 129.768,
+      "response_evidence": {
+        "chars": 747,
+        "sha256": "54e9a4142c0c9b4f424961ff698acc6a39829afd09f00707d157f06da922d363",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 7647,
+        "sha256": "aa0f92256000eac7ac52009f2aa9a3fa728836ecb9e9a98a4ec2ff98da8353d4",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "merge_intervals_payload",
+      "category": "python",
+      "prompt": "Implement def merge_payload_ranges(items). Each item is (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start > end. Do not mutate input. Return Python code only.",
+      "score": 0.0,
+      "passed": false,
+      "detail": {
+        "executor_tail": "Traceback (most recent call last):\n  File \"<string>\", line 4, in <module>\n  File \"<string>\", line 1, in <module>\nNameError: name 'merge_payload_ranges' is not defined\n"
+      },
+      "response": "",
+      "reasoning": "We need answer code only. Need implement merge_payload_ranges(items). Need likely function. Need consider requirements. Need understand exact. Each item tuple/list? (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start > end. Do not mutate input.\n\nNeed produce Python code only. Need decide semantics. Need sort by start/end. Merge overlapping or touching ranges only when payload equal. Since sorted by start then end. For each item, validate start <= end else reject maybe raise ValueError? \"Reject start > end\" likely raise ValueError. Need not mutate. Return new list of lists.\n\nNeed handling payloads equality? payload may be unhashable? We can compare with !=? Need decide. Use current_payload is not None? But payload can be None. We can use sentinel. Need if overlapping/touching: Since sorted by start, merge with previous if payload equal and item.start <= prev_end + 1? \"overlapping or touching\" means intervals [start,end] inclusive? start <= prev_end + 1. Need include if adjacent integers. If using continuous intervals, touching if start <= end? Actually intervals [start,end] likely integer? \"touching\" means end + 1 == next start. We'll use <= prev_end + 1 to merge. If equal payload. If item starts before current end? sorted.\n\nNeed consider if after merge, next item's start might be <= merged_end, but sorted by start. Need compare payload. Need produce merged [start,end,payload]. Should keep original start min and end max.\n\nNeed validate start > end for each item. If invalid raise ValueError. Also perhaps reject non? Not specified.\n\nNeed \"Sort by start/end.\" If same start sort by end. Need stable maybe. We'll sort key lambda x: (x[0], x[1]). But list items can be tuples. Need not mutate.\n\nNeed payload equality. If payloads equal. Could use `==`, but arrays issue. Usually simple.\n\nPotential edge cases:\n- items empty -> []\n- item start/end maybe not int? no matter.\n- If separate ranges with same payload but gap >1 -> no merge.\n- If overlapping with different payload -> cannot merge. But what if current interval overlaps multiple previous? sorted. Need just compare with current merged range, not last original? Suppose prev merged range payload P; current item payload Q different; current start <= merged_end+1. We cannot merge current with previous. Should we maybe produce current as separate. But if there are future items with payload P that overlap current? Wait intervals with different payload can overlap. Need think carefully.\n\nThe instruction \"Merge overlapping or touching ranges only when payloads are equal.\" We want merge all ranges with same payload if they overlap/touch. But if intervals of different payloads overlap, cannot merge them. If we simply maintain merged list sorted and compare current to last merged range, if different payload but overlapping, we cannot merge. But current item might overlap earlier merged intervals? Since sorted by start and if current start <= last.merged_end, current overlaps last different payload. But current may also overlap a prior interval with same payload? Need consider. Sorting and merging only adjacent by start may not handle crossing intervals with different payloads? We need design robust.\n\nLet's model ranges intervals with payload. We need merge clusters of intervals that have same payload and overlap/touch, but overlapping different payloads don't merge. If a cluster of same payload may be split in output by intervening different payloads? Example:\nA: [0,10] payload X\nB: [5,6] payload Y\nC: [7,20] payload X\nSorted starts: A X [0,10], B Y [5,6] overlaps A diff -> output A, output B? C X [7,20] overlaps A X and also B. Should A and C merge? They are same payload X, overlap via A (since A [0,10] overlaps C [7,20]) even though B lies inside A. The merged output should likely include [0,20] X and [5,6] Y? But merging overlapping ranges \"only when payloads equal\" does not forbid merging A and C despite another payload overlapping B? We need consider if intervals with different payloads can overlap; if so, merging A and C would create X interval that overlaps B. That's okay: payload ranges can overlap with different payloads. But if output list sorted? If we merge A+C to [0,20] X, then sorted by start, B [5,6] Y lies inside. Need output order? \"Sort by start/end\" maybe final lists sorted by start/end. If B start 5. The merged range start 0 before B. Overlapping intervals can be output in start order: [0,20] X, [5,6] Y. But then [5,6] is subset of previous. Is that acceptable? Probably yes if different payloads not merged.\n\nHowever, typical interval merge algorithm with only one current merged interval cannot merge A+C after B if B prevents adjacent comparison. Let's simulate:\nsorted by start: A, B, C. sorted by end maybe A end10, B end6, C end20. We process:\nresult=[]\ncurrent=A\nB: start5 <= current.end10 and payload diff? no merge. Need push A and start B? But then current becomes B; C start7 > B.end6 no merge with B, push B. Then C as new. Result A [0,10], B[5,6], C[7,20]. But A and C should be merged? Need determine.\n\nMaybe the intended problem likely simpler: merge intervals after sorting with equal payload only, but they may not consider nested intervals of different payloads? It says \"overlapping or touching ranges only when payloads are equal\" means if two ranges overlap and payload equal, merge; otherwise keep separate. Not necessarily transitive through other payload? Need decide.\n\nMaybe more robust algorithm can merge all intervals with equal payload overlapping/touching, regardless of intermediate intervals? Need think.\n\nLet's define input as multiset of ranges with endpoints. Need output set of ranges each maximal union of connected components (under overlap/touch adjacency) of ranges with the same payload, but if intervals from different payloads overlap, output can include overlapping ranges with different payload. We need perform union per payload separately. But is that always intended? Example with same payload intervals not connected directly but connected through another same payload? Actually if A and C same payload and overlap directly, they are in same component. B irrelevant. So yes we could merge all same payload intervals independently; then sort. But if B between them doesn't matter. Is that \"merge overlapping/touching ranges only when payloads are equal\" maybe yes.\n\nBut is there possible issue: If we union per payload independently, then output may have ranges for different payloads that overlap/touch but are not merged because payload different. That's allowed. Good.\n\nNow, need implement perhaps efficient enough. Could group by payload? But if payload unhashable, tricky. Could sort by payload then start? But need preserve sort by start/end final. Could use `itertools.groupby` on sorted by payload, but payload not necessarily sortable? Usually payload maybe string/int. But \"Return Python code only\". Need no assumptions? Could process sorted by (start,end) with a more complex algorithm handling different payloads? Let's explore.\n\nThe problem statement likely from coding challenge? \"Implement def merge_payload_ranges(items). Each item is (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start > end. Do not mutate input. Return Python code only.\" There may be expected simple sweep.\n\nNeed infer from \"Sort by start/end\" — sort items by start then end, then iterate. \"Merge overlapping or touching ranges only when payloads are equal\" — typical:\ndef merge_payload_ranges(items):\n    if not items: return []\n    for start,end,payload in items:\n       if start > end: raise ValueError\n    items = sorted(items, key=lambda x: (x[0], x[1]))\n    merged=[]\n    for start,end,payload in items:\n        if merged and payload == merged[-1][2] and start <= merged[-1][1] + 1:\n             if end > merged[-1][1]: merged[-1][1] = end\n        else:\n             merged.append([start,end,payload])\n    return merged\nThis is likely expected. But as I noted fails for A-C separated by different payload. But maybe \"Sort by start/end. Merge overlapping or touching ranges only when payloads are equal\" in typical interval merge algorithm actually does fail if a different payload interrupt? Let's test:\nInput A=[0,10]X, B=[5,6]Y, C=[7,20]X sorted by start/end? Sorted by (start,end): A(0,10), B(5,6), C(7,20). Process A -> current, B no merge push A, current B, C no merge because payload diff for B, push B, current C. Final A,B,C. The final order [A[0,10], B[5,6], C[7,20]]. It did not merge A+C even though they overlap. Would that be considered wrong? The wording \"Merge overlapping or touching ranges only when payloads are equal\" not \"when adjacent after sort\"; likely they intended if consecutive sorted ranges overlap and same payload? But because B is \"inside\" A, consecutive sorted ranges A and B overlap but diff payload, B and C don't overlap. Does sorting by start/end and one-pass adjacent merging have hidden assumption that intervals are non-overlapping except for merging? Hmm.\n\nLet's parse: \"Sort by start/end. Merge overlapping or touching ranges only when payloads are equal.\" If sort by start/end, then one might compare each item with the last merged item. If overlapping/touching and payload equal, merge; else keep separate. That is common iteration. They may not be considering intervals nested with different payloads. But maybe in sorted by start, if current item starts before previous merged end, it overlaps the previous item in the original ordering (or the merged range). If payload equal, merge; else, keep as separate. But what about later same payload with previous merged? Imagine A and C same payload overlap but B diff in between. When processing C, previous is B (or merged range from B) not A. But maybe if B lies inside A and C starts before A end, should C have been considered in relation to A, but because B is separate? The previous merged range after processing B could be [0,10] X and [5,6] Y. Last is [5,6] Y, so C not compare to [0,10]. If algorithm instead at each step searches all previous output ranges for possible merge with same payload, it would merge A+C. But computationally more complex.\n\nNeed decide final answer likely expected simple interval merge. We can implement robustly maybe still simple and likely accepted? Need ensure output exactly merged same-payload connected components. If judge has cases like nested payloads, robust may pass, simple fails. But robust output may differ from simple expected? Which behavior is \"correct\"? Let's reason from set union semantics.\n\nGiven list of ranges with payload. \"Merge overlapping or touching ranges only when payloads are equal.\" Suppose A X [0,10], B Y [5,6], C X [7,20]. The ranges with payload X overlap, so should be merged to [0,20] X. Since payloads equal, yes. B has diff payload; remains [5,6] Y. So output [0,20]X [5,6]Y sorted by start. This is semantically robust.\n\nSuppose B [2,8] Y, C [7,20] X. A and C overlap? A end10, C start7 yes. So output [0,20] X, [2,8] Y.\n\nSuppose A [0,5] X, B [6,10] X (touching, no overlap), C [5,6] Y. Since A and B touch (end+1 = start) and same payload, merge to [0,10] X even though Y lies [5,6]? Actually A [0,5] and B [6,10] touch at boundary; there is no gap. But they \"touch\" via boundary 5/6. Y [5,6] exactly occupies boundary? [5,6] endpoints perhaps overlap at 6? Need if inclusive integer ranges: A includes 5, B includes 6. They touch, merge adjacent intervals. Y includes 5 and 6? Then Y overlaps both endpoints. Output X [0,10] and Y[5,6] okay.\n\nNeed maybe \"touching\" can mean start <= previous_end + 1. If endpoints are discrete. Could also mean start == previous_end (if continuous). But \"touching ranges\" in interval terminology often if end == start? For range [start,end], to merge if touch, use start <= end + 1? Let's examine. If range [1,3] and [4,6] touch at boundary if no gap, e.g. 3 and 4 adjacent integer endpoints. In discrete intervals, yes start <= prev_end + 1. In continuous intervals [1,3] and [3,6] overlap at point 3, so start <= prev_end. \"Touching\" might mean end == start (continuous closed intervals). We need infer. The challenge says \"start/end\" maybe coordinates. \"overlapping or touching\" often means next.start <= current.end (touching included). For integer intervals, \"touching\" commonly means start == prev_end + 1? Let's look at typical \"merge intervals\" where intervals [1,3] and [4,6] are not overlapping but they have no gap? In problem \"Merge Intervals\" (LeetCode) uses intervals [start,end] and merges if overlapping, not touching. If touching means start <= current.end? For [1,3] and [3,6], overlap at 3, so already overlapping if inclusive. Some define touching as end >= start. They may use nested.\n\nThe phrase \"overlapping or touching ranges\" often in computational geometry: touching if one ends exactly where the other begins, i.e., start == previous_end. That is \"touching\" as in adjacent no gap but no interior overlap. If intervals are [start, end] real numbers, [1,3] and [3,6] overlap at point 3, so \"touching\" at endpoint. If intervals are integer ranges [start,end] inclusive, [1,3] and [4,6] touch at gap? Actually values 1,2,3 and 4,5,6; there is no gap between 3 and 4 but x-coordinate distance 1. Some may call touching if end +1 = start. Need exact.\n\nThe instruction \"Sort by start/end\" maybe from \"ranges\" not intervals: start, end integers inclusive? \"touching ranges\" maybe \"next.start <= current.end + 1\" in time ranges? Hmm.\n\nNeed perhaps include both? Could merge if start <= prev_end + 1 to be safe for touching and overlapping. If intended only overlap including touching start <= end, using +1 might merge adjacent but non-overlap where payload equal. Would that be considered incorrect? Depending definition. The phrase \"overlapping or touching\" means touching counts, and adjacent with no gap might be touching. If ranges are integers [1,3] and [4,6], are they touching at boundary between 3 and 4? The intervals as sets of integers have no common point but no gap in the real line? There is a gap of measure zero? Actually [1,3] and [4,6] real intervals have gap (3,4). If only integer endpoints, [1,3] and [4,6] cover 1,2,3,4,5,6 with no missing integer. In many temporal interval representations, [start,end] inclusive, [1,3] and [4,6] are adjacent/touching. In LeetCode \"non-overlapping\" intervals [1,2] and [2,3] have overlap at 2; [1,2] and [3,4] non-overlapping but maybe adjacent. The term \"touching\" can include adjacency. The problem explicitly says overlapping or touching, so likely merge if start <= prev_end + 1? They likely want to merge adjacent ranges with same payload. Need maybe implement `if start <= merged[-1][1] + 1` to merge adjacent/touching. Since \"overlapping or touching\" includes both start <= end and start == end+1. Use +1.\n\nBut if real intervals, touching is start == prev_end, which also satisfies <= prev_end +1. If integer intervals, start == prev_end+1 is touching. So +1 covers both; maybe over-merges adjacent separated by distance 1 if not considered touching. But likely acceptable? Need maybe mention? User asked code only no explanation. Need avoid overthinking? We can perhaps design code to group by payload and merge per payload, and use +1 adjacency. But final sort? Let's explore robust grouping.\n\nImplementation options:\n\nOption 1 simple one-pass with payload compare:\n```\ndef merge_payload_ranges(items):\n    validated = []\n    for item in items:\n        start, end, payload = item\n        if start > end:\n            raise ValueError(\"start must be <= end\")\n        validated.append([start, end, payload])\n    validated.sort(key=lambda x: (x[0], x[1]))\n    merged = []\n    for start, end, payload in validated:\n        if merged and payload == merged[-1][2] and start <= merged[-1][1] + 1:\n            if end > merged[-1][1]:\n                merged[-1][1] = end\n        else:\n            merged.append([start, end, payload])\n    return merged\n```\nThis doesn't mutate items. If input items are lists, but we create new lists, so no mutation. If tuples, okay. If validation raises for invalid. This is simplest.\n\nNeed \"Sort by start/end\" maybe should sort by `(start, end, payload?)` to deterministic; if same start and end but different payload, stable. Use key=lambda x: (x[0], x[1]).\n\nNeed \"Return lists [start,end,payload]\" not tuples. Use list.\n\nIf validation loop uses `for start, end, payload in items`, if items elements maybe list/tuple. If item length > 3? Could ignore? Better maybe unpack exactly. Not specified. If invalid start>end, raise ValueError. Good.\n\nBut if we use grouping per payload and final sorting, code more complex. Let's examine expected outputs.\n\nExample:\nitems = [(1,5,'a'), (2,3,'b'), (4,8,'a')]\nSimple algorithm:\nsorted same. Process (1,5)a -> [[1,5,a]]\n(2,3)b",
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 4096,
+        "prompt_tokens": 143,
+        "total_tokens": 4239
+      },
+      "seconds": 267.646,
+      "response_evidence": {
+        "chars": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 16961,
+        "sha256": "19bac052af296dbf01e07b715f47b71aac980a3951446e1b63abcfd89f1325fa",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "watermark_commit",
+      "category": "python",
+      "prompt": "Implement def committable_windows(events, watermark). events is an iterable of dicts with window, event_time, value. Drop late events with event_time <= watermark. For remaining events, return a dict mapping window to values in input order, with window keys inserted in first-seen order. Consume the iterable once and do not mutate events. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "9e908fec8f534bf99151c9769605a505[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+      },
+      "response": "def committable_windows(events, watermark):\n    result = {}\n    for event in events:\n        if event[\"event_time\"] <= watermark:\n            continue\n        window = event[\"window\"]\n        if window not in result:\n            result[window] = []\n        result[window].append(event[\"value\"])\n    return result",
+      "reasoning": "We need answer code implementing function. Need understand requirements. Need produce Python code only likely. Need define committable_windows(events, watermark). events iterable dicts with window, event_time, value. Drop late events with event_time <= watermark. For remaining events, return dict mapping window to values in input order, with window keys inserted in first-seen order. Consume iterable once and do not mutate events. Return code only.\n\nNeed consider \"window keys inserted in first-seen order\" means dict preserves insertion order in Python 3.7+. For each remaining event in input order, if window not in result, insert key. Append value to list? Wording \"mapping window to values in input order\" likely list of values. Need ensure no mutation events. Need implement. Could do:\n\ndef committable_windows(events, watermark):\n    result = {}\n    for event in events:\n        if event[\"event_time\"] <= watermark:\n            continue\n        window = event[\"window\"]\n        if window not in result:\n            result[window] = []\n        result[window].append(event[\"value\"])\n    return result\n\nNeed possibly event keys might be missing? No. \"values in input order\" for each window, append in order encountered.\n\nNeed maybe use dict.setdefault? But if using setdefault, need assign empty list? setdefault evaluates [] each time, but okay. Need preserve first-seen order: result dict insertion order when first assigned. Using setdefault doesn't change order. But if we do result.setdefault(window, []).append(value). This works. However, for first-seen order, result keys inserted at first setdefault call. Yes.\n\nNeed think about \"window\" might be unhashable? likely string. Need no mutation events.\n\nNeed maybe define as function, no imports. Need \"Return Python code only\" so final should be code block? They said return Python code only. Usually answer with code only. We can provide just function. Need maybe include not extra text. Let's craft.\n\nPotential issue: \"Drop late events with event_time <= watermark.\" Use <=. Good.\n\nPotential issue: \"window keys inserted in first-seen order\" If same window appears after others, order preserved. Yes.\n\nPotential issue: \"dict mapping window to values in input order\" Could also mean dictionary mapping window to value (single value) if duplicate window? But says \"values\" plural. Could be maybe they want a mapping window to a list of values. Need infer. \"return a dict mapping window to values in input order\" likely values for each window in order. Yes.\n\nNeed maybe include docstring? \"Return Python code only\" could allow docstring. But simplest.\n\nNeed final with code block? They asked \"Return Python code only\" maybe no markdown? In these tasks, final should be just code. But \"Return Python code only\" likely means code block omitted? We can output code text. I'll output code only.\n\nNeed check if there are hidden tests? Maybe they expect a function named committable_windows. Let's consider if there is any nuance about \"Consume the iterable once and do not mutate events.\" Our loop does.\n\nNeed maybe use generator? no.\n\nLet's think of potential challenge: \"events is an iterable of dicts with window, event_time, value.\" Could event_time be string? likely comparable with watermark. We don't care.\n\nMaybe \"committable_windows\" term from Kafka streams? Could be \"drop late events with event_time <= watermark\" and \"remaining events\" maybe \"commit\" windows. Return dict mapping window to values in input order. Yes.\n\nNeed maybe if event_time <= watermark, skip entirely, including window insertion. That's what \"Drop late events\" means. Good.\n\nNeed maybe if there are no remaining events, return empty dict. Good.\n\nLet's final.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 869,
+        "prompt_tokens": 162,
+        "total_tokens": 1031
+      },
+      "seconds": 54.272,
+      "response_evidence": {
+        "chars": 312,
+        "sha256": "5cac4a1884b33e6c71e31deaafb1cc11b66df7217f971361ada6e0d5b48ba86c",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 3697,
+        "sha256": "872515810d5c9f1e60e23a34ba654cd078ec0b629931faab3fbc53fa2384f43b",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "cgroup_oom",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 kernel: Memory cgroup out of memory: Killed process worker; EV2 memory.current=1073741824 and memory.max=1073741824; EV3 service restarted 14 times; host MemAvailable=48 GiB.\nChoose root_cause from ['host_memory_exhaustion', 'cgroup_memory_limit', 'disk_pressure'] and exactly two highest-priority action_codes from ['memory_max', 'swap_zero', 'restart_backoff', 'delete_logs'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "cgroup_memory_limit",
+        "action_codes": [
+          "memory_max",
+          "restart_backoff"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "cgroup_memory_limit",
+          "action_codes": [
+            "memory_max",
+            "restart_backoff"
+          ],
+          "explanation": "Memory cgroup OOM occurred with memory.current equal to memory.max, indicating the cgroup hit its configured limit. Host has ample free memory, so this is not host-level exhaustion. Repeated restarts suggest the need to raise the limit and add restart backoff to prevent rapid crash loops."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"cgroup_memory_limit\",\"action_codes\":[\"memory_max\",\"restart_backoff\"],\"explanation\":\"Memory cgroup OOM occurred with memory.current equal to memory.max, indicating the cgroup hit its configured limit. Host has ample free memory, so this is not host-level exhaustion. Repeated restarts suggest the need to raise the limit and add restart backoff to prevent rapid crash loops.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 kernel memory cgroup OOM killed worker. EV2 memory.current=1073741824 and memory.max=1073741824. This indicates cgroup reached memory limit (1 GiB). EV3 restarted 14 times. host MemAvailable=48 GiB so not host memory exhaustion. Disk pressure not mentioned. Root cause cgroup_memory_limit. Action codes highest priority: memory_max (increase limit) and restart_backoff? Need exactly two. Also swap_zero? If cgroup memory limit, maybe adjust memory.max and ensure restart backoff to avoid rapid restarts. swap_zero not relevant unless swap. delete_logs not relevant. So action_codes: [\"memory_max\",\"restart_backoff\"]. Explanation brief.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 250,
+        "prompt_tokens": 223,
+        "total_tokens": 473
+      },
+      "seconds": 23.593,
+      "response_evidence": {
+        "chars": 390,
+        "sha256": "fd5a64592a0f6612794fdc9db86cb7c32c6c73913f41cc3e72a0a590d699dc94",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 698,
+        "sha256": "075d0da18a708827cbfd79aa703f9822d4ecd5543695c8d8a63ef0c64ca1f028",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "gpu_cpu_spill",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 inference log: insufficient GPU memory, moving 9.5 GiB layers to CPU; EV2 container RSS rose from 7 to 61 GiB; EV3 kernel invoked OOM killer; EV4 GPU had another process using 18 GiB.\nChoose root_cause from ['gpu_to_cpu_offload', 'model_corruption', 'network_loss'] and exactly two highest-priority action_codes from ['disable_cpu_offload', 'container_memory_limit', 'vram_guard', 'increase_swap'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "gpu_to_cpu_offload",
+        "action_codes": [
+          "disable_cpu_offload",
+          "vram_guard"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "gpu_to_cpu_offload",
+          "action_codes": [
+            "disable_cpu_offload",
+            "vram_guard"
+          ],
+          "explanation": "GPU memory insufficiency caused layer offload to CPU, which ballooned container RSS to 61 GiB and triggered the OOM killer. Disabling offload and guarding VRAM prevent recurrence."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"gpu_to_cpu_offload\",\"action_codes\":[\"disable_cpu_offload\",\"vram_guard\"],\"explanation\":\"GPU memory insufficiency caused layer offload to CPU, which ballooned container RSS to 61 GiB and triggered the OOM killer. Disabling offload and guarding VRAM prevent recurrence.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. Root cause: insufficient GPU memory, moving layers to CPU; EV2 container RSS rose to 61 GiB; EV3 OOM killer; EV4 GPU other process 18 GiB. Root cause likely gpu_to_cpu_offload? Actually moving layers to CPU due to insufficient GPU memory led to container memory spike and OOM. The action codes: disable_cpu_offload and container_memory_limit? Or vram_guard? Need choose exactly two highest-priority. Evidence: GPU had other process using 18 GiB, so vram_guard could prevent. But root cause is gpu_to_cpu_offload. Actions: disable_cpu_offload (stop offloading to CPU) and vram_guard (prevent GPU memory contention). Container_memory_limit would address OOM but not root cause? Need \"highest-priority\" action codes based on evidence. We need choose two. Let's reason.\n\nSynthetic evidence:\nEV1: insufficient GPU memory, moving 9.5 GiB layers to CPU\nEV2: container RSS rose from 7 to 61 GiB\nEV3: kernel invoked OOM killer\nEV4: GPU had another process using 18 GiB\n\nRoot cause: gpu_to_cpu_offload, because insufficient GPU memory triggered offload to CPU causing container memory balloon and OOM killer. The other process using GPU contributed to insufficiency but root cause is offload. Action codes: disable_cpu_offload (directly prevent offload) and vram_guard (ensure GPU memory available, avoiding offload trigger). container_memory_limit would just kill container, not solve. increase_swap would worsen? So two: disable_cpu_offload, vram_guard.\n\nNeed JSON only. Explanation brief.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 458,
+        "prompt_tokens": 232,
+        "total_tokens": 690
+      },
+      "seconds": 37.605,
+      "response_evidence": {
+        "chars": 283,
+        "sha256": "e9f9d179de109011eb274e1e6290431f01ab19b83c3cae119c0e13741d0ae2ea",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1540,
+        "sha256": "9914a4e4ddc6a69ce7f94ba60c59a0dd5f8a0d2762e876f7841c1c4dfa3116df",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "disk_inode_pressure",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.\nChoose root_cause from ['combined_disk_pressure', 'database_deadlock', 'cpu_throttle'] and exactly two highest-priority action_codes from ['bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "combined_disk_pressure",
+        "action_codes": [
+          "bounded_cache_cleanup",
+          "restart_file_owner"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "combined_disk_pressure",
+          "action_codes": [
+            "bounded_cache_cleanup",
+            "restart_file_owner"
+          ],
+          "explanation": "Filesystem blocks at 95% and inodes at 97% indicate combined space and inode pressure, while 3221225472 bytes of deleted-but-open files are holding disk space. Restarting the file owner releases those open-deleted files, and cleaning bounded caches helps reclaim additional capacity without destructive deletion."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"combined_disk_pressure\",\"action_codes\":[\"bounded_cache_cleanup\",\"restart_file_owner\"],\"explanation\":\"Filesystem blocks at 95% and inodes at 97% indicate combined space and inode pressure, while 3221225472 bytes of deleted-but-open files are holding disk space. Restarting the file owner releases those open-deleted files, and cleaning bounded caches helps reclaim additional capacity without destructive deletion.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes (3 GiB); EV4 application reports ENOSPC. Root cause likely combined_disk_pressure? Actually ENOSPC due to space and inode exhaustion, deleted-but-open files consuming space. Need choose root_cause from ['combined_disk_pressure', 'database_deadlock', 'cpu_throttle']. Combined disk pressure fits (filesystem blocks and inodes both high, plus deleted open files). Action codes exactly two highest priority from ['bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root']. Need choose two. Deleted-but-open files: need restart file owner to release space. Also protect current data? ENOSPC risk, need protect current data? But action codes: bounded_cache_cleanup could free cache? Combined disk pressure due to blocks/inodes. The highest priority actions: restart_file_owner (to release deleted open files) and bounded_cache_cleanup? Hmm \"protect_current_data\" likely important during ENOSPC to avoid data loss. But question says exactly two highest-priority action_codes. Need infer from evidence: EV3 deleted-but-open files total 3,221,225,472 bytes = 3GB. Restarting file owner will release these. EV2 inodes 97% used suggests inode exhaustion, need clean up files maybe bounded_cache_cleanup? But cache cleanup might reduce disk blocks? \"bounded_cache_cleanup\" could free space by clearing bounded caches. However \"protect_current_data\" is likely high priority when ENOSPC to prevent overwriting? But action codes are interventions. Need choose two. Let's think.\n\nSynthetic evidence: EV1 filesystem blocks 95% used. EV2 inodes 97% used. EV3 deleted-but-open files total 3221225472 bytes. EV4 application reports ENOSPC.\n\nRoot cause: combined_disk_pressure because both space and inode pressure, plus deleted open files. Database_deadlock and cpu_throttle not indicated.\n\nActions: Need exactly two highest-priority. The deleted-but-open files are occupying space but not visible in directory, so restart_file_owner will release them. This is direct. Also inodes 97% used means inode exhaustion; need free inodes maybe remove files. Bounded_cache_cleanup might clear cached file entries? Actually \"bounded_cache_cleanup\" could free inodes? No, inodes are tied to files, cache cleanup won't free inodes. \"recursive_delete_root\" dangerous destructive, not highest priority. \"protect_current_data\" might be needed to prevent application writes causing data loss under ENOSPC. But the action codes: \"bounded_cache_cleanup\" and \"restart_file_owner\" are specifically related to disk space/inodes. Let's evaluate.\n\nGiven ENOSPC, protect_current_data is crucial: ensure application doesn't corrupt data. But the question asks \"exactly two highest-priority action_codes\" from list. In incident response, when ENOSPC due to disk pressure, we need to free space: restart_file_owner to release deleted open files, and bounded_cache_cleanup to free cache space. \"protect_current_data\" is more about mitigation while preserving data integrity, but with deleted open files, restarting owner is safe? Actually restarting file owner will release file descriptors, making deleted files' space available. That's good. \"bounded_cache_cleanup\" might remove cached data if cache is on disk? Not sure.\n\nNeed parse wording: \"EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.\" Root cause \"combined_disk_pressure\" because both blocks and inodes. Action codes \"bounded_cache_cleanup\" and \"restart_file_owner\" are the two highest priority? Let's see options:\n- bounded_cache_cleanup: cleanup bounded caches to free blocks.\n- restart_file_owner: release deleted open files.\n- protect_current_data: protect current data during ENOSPC.\n- recursive_delete_root: delete root recursively, bad.\n\nWith filesystem blocks 95% and inodes 97%, and deleted-open files 3GB, restart_file_owner directly reclaims 3GB. Bounded_cache_cleanup likely frees additional blocks/inodes? Actually cache cleanup frees memory not disk. But \"bounded_cache_cleanup\" could be application cache bounded to disk? Hmm \"bounded_cache_cleanup\" maybe means clear a bounded cache to reduce disk usage. Since inode pressure, deleting cached files could free inodes. It's plausible. \"protect_current_data\" is a priority in ENOSPC to prevent data loss, but action codes probably ordered: first free space via restart_file_owner and bounded_cache_cleanup. \"protect_current_data\" would be an action, but does it address root cause? No.\n\nLet's consider \"restart_file_owner\" and \"protect_current_data\": If deleted-but-open files are held by a process, restarting that process will release space. But before that, protecting current data ensures no further writes causing loss. However the question asks \"highest-priority action_codes\" in response to ENOSPC. Typically, when ENOSPC occurs, you want to protect current data (stop writes) and free disk space. But \"exactly two highest-priority\" implies choose two most urgent among options. The evidence indicates deleted open files; restart_file_owner is key. \"protect_current_data\" is also high-priority because ENOSPC can cause application failure/data corruption, so protect current data? But \"bounded_cache_cleanup\" is more directly freeing space. Need decide.\n\nLet's look at the exact options: 'bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root'. The only two that are non-destructive and address disk pressure: bounded_cache_cleanup and restart_file_owner. protect_current_data is not an action to free space; it's a safety measure. But the prompt: \"exactly two highest-priority action_codes\" not \"remediation actions\". In a production incident, protecting current data might be higher priority than cache cleanup. However \"bounded_cache_cleanup\" seems specifically a remedy for disk pressure due to cache usage. \"restart_file_owner\" for open deleted files. \"protect_current_data\" is generic and not specifically tied to evidence. \"recursive_delete_root\" is destructive. So I think two highest-priority actions are bounded_cache_cleanup and restart_file_owner.\n\nLet's craft explanation: Filesystem block and inode usage both near capacity indicate combined disk pressure; deleted-but-open files consume ~3 GiB and require restarting the owning process to release; bounded cache cleanup can quickly reclaim additional space/inodes without data loss. Need mention protect_current_data? Maybe not.\n\nNeed final JSON only. Ensure root_cause exactly one, action_codes exactly two.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 1629,
+        "prompt_tokens": 220,
+        "total_tokens": 1849
+      },
+      "seconds": 105.471,
+      "response_evidence": {
+        "chars": 430,
+        "sha256": "2913f5622c516a980df511603175c48a10db34d94527633fbf702e181f8a5edd",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 6683,
+        "sha256": "ca022f0fb8cad93b5afd5ebae6c2585894b7050daab64c8ec3c816e4c286d5e1",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "db_pool_saturation",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 pool active=40 max=40 wait_p95=2100ms; EV2 database CPU=28%, locks=0, connection count=45/500; EV3 request latency tracks pool wait.\nChoose root_cause from ['client_pool_saturation', 'database_cpu_saturation', 'lock_contention'] and exactly two highest-priority action_codes from ['bounded_pool_increase', 'statement_timeout', 'observe_wait_p95', 'disable_timeout'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "client_pool_saturation",
+        "action_codes": [
+          "bounded_pool_increase",
+          "observe_wait_p95"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "client_pool_saturation",
+          "action_codes": [
+            "bounded_pool_increase",
+            "observe_wait_p95"
+          ],
+          "explanation": "EV1 shows the client pool is fully saturated (active=40 max=40) with high wait_p95, while EV2 indicates no database bottleneck (CPU 28%, locks 0, low connections). EV3 confirms request latency tracks pool wait, so the pool is the constraint. Increase the pool with a bounded limit and monitor wait_p95 to verify improvement."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"client_pool_saturation\",\"action_codes\":[\"bounded_pool_increase\",\"observe_wait_p95\"],\"explanation\":\"EV1 shows the client pool is fully saturated (active=40 max=40) with high wait_p95, while EV2 indicates no database bottleneck (CPU 28%, locks 0, low connections). EV3 confirms request latency tracks pool wait, so the pool is the constraint. Increase the pool with a bounded limit and monitor wait_p95 to verify improvement.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 pool active=40 max=40 wait_p95=2100ms. EV2 database CPU=28%, locks=0, connection count=45/500. EV3 request latency tracks pool wait. Root cause client_pool_saturation because pool full, DB not saturated, no locks. Actions: bounded_pool_increase and observe_wait_p95? Need exactly two highest-priority action codes. Since pool saturation, increase pool bounded. Also observe wait_p95? Hmm action codes include observe_wait_p95, but EV3 already says request latency tracks pool wait. Highest priority actions: bounded_pool_increase, statement_timeout? Let's think. Pool active=max, wait high. DB CPU low, locks 0, connections low. So client pool saturation. Actions: bounded_pool_increase to allow more concurrent requests. Also observe_wait_p95? But that's monitoring, not action to fix. Statement_timeout would not help because DB not slow. disable_timeout harmful. \"observe_wait_p95\" maybe action code to monitor. But exactly two highest-priority action_codes from list. Since pool saturation root cause, primary action bounded_pool_increase. Secondary? Could be observe_wait_p95 to confirm effect? But evidence already includes EV3. Maybe action codes are candidate interventions; \"observe_wait_p95\" is not intervention but observation. However list includes it. Need choose exactly two. Which two highest-priority? bounded_pool_increase and observe_wait_p95? Let's examine. If pool max=40, active=40, wait_p95=2100. DB has capacity (CPU 28%, connections 45/500). Increase pool bounded to allow more concurrent requests, reducing wait. Also statement_timeout could prevent runaway queries, but DB CPU low and no locks, so not relevant. disable_timeout bad. observe_wait_p95 is to monitor wait after changes. But question asks \"action_codes\" highest-priority actions. In such root cause analysis, interventions: bounded_pool_increase, statement_timeout, observe_wait_p95, disable_timeout. Given bottleneck is client pool, increase pool is appropriate. Also observe_wait_p95 is a safe action to track effectiveness. But is it \"action\" or metric? The code says observe_wait_p95. The evidence EV3 already tells request latency tracks pool wait; root cause pool saturation. The highest-priority action after increasing pool would be observe wait_p95 to validate. However \"exactly two highest-priority action_codes\" means pick two. I think bounded_pool_increase and observe_wait_p95. Let's craft explanation: client pool at max with high wait, DB resources idle, no locks, latency correlated with pool wait; so increase pool bounded and monitor wait p95. Need JSON only.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 711,
+        "prompt_tokens": 222,
+        "total_tokens": 933
+      },
+      "seconds": 45.241,
+      "response_evidence": {
+        "chars": 440,
+        "sha256": "f7cebceff86b29aceb0071d0a02d07e97e1605ec6fd86152d9de6bd2a54a060b",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2629,
+        "sha256": "339a0c3a0d4d4b3441956336c6865fa1582a19f3c474300ff9a8266b23033b34",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "iceberg_commit_conflict",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds.\nChoose root_cause from ['optimistic_commit_conflict', 'catalog_unavailable', 'corrupt_manifest'] and exactly two highest-priority action_codes from ['bounded_commit_retry', 'refresh_snapshot', 'idempotent_write', 'delete_metadata'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "optimistic_commit_conflict",
+        "action_codes": [
+          "bounded_commit_retry",
+          "refresh_snapshot"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "optimistic_commit_conflict",
+          "action_codes": [
+            "bounded_commit_retry",
+            "refresh_snapshot"
+          ],
+          "explanation": "Writer B failed because writer A committed snapshot 813 first, causing a conflicting-files validation failure. Retrying after refreshing the snapshot resolved the conflict, so the root cause is an optimistic commit conflict."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"optimistic_commit_conflict\",\"action_codes\":[\"bounded_commit_retry\",\"refresh_snapshot\"],\"explanation\":\"Writer B failed because writer A committed snapshot 813 first, causing a conflicting-files validation failure. Retrying after refreshing the snapshot resolved the conflict, so the root cause is an optimistic commit conflict.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds. Root cause optimistic_commit_conflict. Actions: refresh_snapshot and bounded_commit_retry? Need exactly two highest-priority action_codes. Bounded commit retry and refresh snapshot. Explanation brief.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 170,
+        "prompt_tokens": 218,
+        "total_tokens": 388
+      },
+      "seconds": 8.187,
+      "response_evidence": {
+        "chars": 343,
+        "sha256": "dcb27fb42060e6b25bdf9b6088c775b9b341ab4eaae41b8f92581250dcf0929c",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 430,
+        "sha256": "e605067bd653d24aa27e73098945246566c23ba9d76760c79ea38fed1b2105a0",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "spark_shuffle_skew",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 median task duration=20s, max=1080s; EV2 one partition has 62% of rows for key UNKNOWN; EV3 executors have free memory and no GC pause; EV4 stage waits for one task.\nChoose root_cause from ['shuffle_key_skew', 'executor_memory_shortage', 'scheduler_outage'] and exactly two highest-priority action_codes from ['salt_hot_key', 'adaptive_skew_join', 'repartition_by_distribution', 'increase_all_memory'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "shuffle_key_skew",
+        "action_codes": [
+          "adaptive_skew_join",
+          "salt_hot_key"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "shuffle_key_skew",
+          "action_codes": [
+            "salt_hot_key",
+            "adaptive_skew_join"
+          ],
+          "explanation": "EV2 shows one partition holds 62% of rows for key UNKNOWN, and EV4's stage waits on a single long task (EV1 max=1080s vs median=20s), indicating data skew during shuffle. EV3 confirms memory is not the issue, so skew handling actions are prioritized."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"shuffle_key_skew\",\"action_codes\":[\"salt_hot_key\",\"adaptive_skew_join\"],\"explanation\":\"EV2 shows one partition holds 62% of rows for key UNKNOWN, and EV4's stage waits on a single long task (EV1 max=1080s vs median=20s), indicating data skew during shuffle. EV3 confirms memory is not the issue, so skew handling actions are prioritized.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 median task duration=20s, max=1080s. EV2 one partition has 62% rows for key UNKNOWN. EV3 executors have free memory and no GC pause. EV4 stage waits for one task. Root cause likely shuffle_key_skew because one partition 62% rows for key UNKNOWN and task max huge, waiting for one task. Not executor_memory_shortage because free memory/no GC. Not scheduler_outage? Stage waits for one task due to skew. Actions: salt_hot_key and adaptive_skew_join? Need exactly two highest-priority action codes. repartition_by_distribution could help but salt_hot_key and adaptive_skew_join are specific for key skew. Increase_all_memory not relevant. So root_cause shuffle_key_skew, action_codes [\"salt_hot_key\",\"adaptive_skew_join\"]. Explanation brief. Need JSON only.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 304,
+        "prompt_tokens": 233,
+        "total_tokens": 537
+      },
+      "seconds": 15.107,
+      "response_evidence": {
+        "chars": 353,
+        "sha256": "15fe5fd84c32565b655f101334c2ed24ae0be0bd588d8fdd36dfcc7dc29c2d72",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 817,
+        "sha256": "18b51cd51f0db80b2d0c03f553d7d6bb90ec3d61db9fc07eae822426cff48632",
+        "storage_truncated": false
+      }
+    }
+  ]
+}

@@ -16,6 +16,28 @@
         }
       }
     },
+    "private_flash_bounded_4k": {
+      "high": {
+        "runs": 2,
+        "macro_score": 0.930556,
+        "stdev": 0.058925,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.916667,
+          "incident": 0.875
+        }
+      },
+      "max": {
+        "runs": 2,
+        "macro_score": 0.694444,
+        "stdev": 0.117851,
+        "categories": {
+          "sql": 0.75,
+          "python": 0.416666,
+          "incident": 0.916667
+        }
+      }
+    },
     "private_flash_legacy_requested": {
       "high": {
         "runs": 2,
@@ -111,6 +133,28 @@
           "incident": 0.958333
         }
       }
+    }
+  },
+  "private_bounded_4k_telemetry": {
+    "high": {
+      "requests": 36,
+      "completed_finals": 36,
+      "final_coverage": 1.0,
+      "completed_final_score": 0.930556,
+      "length_truncations": 0,
+      "empty_finals": 0,
+      "errors": 0,
+      "completion_tokens_mean_per_run": 15063.5
+    },
+    "max": {
+      "requests": 36,
+      "completed_finals": 26,
+      "final_coverage": 0.722222,
+      "completed_final_score": 0.961538,
+      "length_truncations": 10,
+      "empty_finals": 10,
+      "errors": 0,
+      "completion_tokens_mean_per_run": 29496.0
     }
   },
   "online_pro_telemetry": {
@@ -268,6 +312,7 @@
       "legacy_quality_requests_in_portal_access_log": 108,
       "legacy_latency_requests_in_portal_access_log": 4,
       "verified_high_quality_requests": 36,
+      "bounded_high_max_quality_requests": 72,
       "verified_high_max_latency_requests": 8,
       "latency_request_contract": "one warmup plus three measured requests"
     }
@@ -279,7 +324,7 @@
     "legacy_requested_efforts_effective_effort": "high",
     "legacy_reason": "LiteLLM drop_params removed reasoning_effort for the generic OpenAI-compatible deployment",
     "verified_same_max_tokens": 32768,
-    "verified_max_quality_status": "not_completed_due_unbounded_generation",
+    "verified_max_quality_status": "completed_with_4k_bound",
     "verified_max_quality_pilot": {
       "parallel_requests": 2,
       "same_max_tokens_as_high": 32768,
@@ -289,6 +334,17 @@
         499,
         499
       ]
+    },
+    "bounded_quality_matrix": {
+      "max_tokens": 4096,
+      "runs_per_effort": 2,
+      "requests_per_effort": 36,
+      "concurrency_per_effort": 3,
+      "paired_total_concurrency": 6,
+      "high_final_coverage": 1.0,
+      "max_final_coverage": 0.722222,
+      "high_completed_final_score": 0.930556,
+      "max_completed_final_score": 0.961538
     },
     "direct_tokenize_probe": {
       "high_prompt_tokens": 11,
@@ -301,6 +357,7 @@
     "existing_adjudication": "105b97acd0fb8882b8672cac31c80e2da4513244186e52f945636e5914f8d4d3",
     "pro_adjudication": "8fcd810c8db24550a997a661ee1be911ff03994fb8bd2400fa446fe02c1ee59d",
     "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1",
-    "verified_private_adjudication": "c6554c2c1c8d1d4339b5ef94e2c91df97c00d6c6246beea4dd8733f28b5dc0d3"
+    "verified_private_adjudication": "c6554c2c1c8d1d4339b5ef94e2c91df97c00d6c6246beea4dd8733f28b5dc0d3",
+    "bounded_private_adjudication": "7de330257ea3663b29aec20bed6a69bb972bd0daf44cc3f42a2711882898baac"
   }
 }
