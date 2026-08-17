@@ -64,10 +64,23 @@ RTX 4090 上完成的四组 Qwen 对比，以及私有与 online OpenAI-compatib
 ## 湖仓参数矩阵
 
 [`lakehouse-parameter-matrix.html`](./lakehouse-parameter-matrix.html) 是 2026-08-17 的
-DeepSeek `low / 32K`、`high / 256K`、`max / 384K` 参数矩阵。private 固定为
+DeepSeek `low / 32K`、`high / 256K`、`max / 384K` 参数矩阵，并补充标准化推理性能、
+服务启动和完整环境快照。private 固定为
 `deepseek-v4-flash-0731`，online 为动态 `deepseek-v4-flash`；每个 DS 处理组完成两次独立运行。
 
-- Report SHA-256：`f0f96a9aa3135594c4136f22fa6077cb255e0607002e04abd36da1de5c22f925`
-- Harness：`lakehouse-thinking-v1`，每次 18 题；online 用 SSE，private 保持 vLLM 非流式请求。
+- HTML SHA-256：`47f87da6a48facacfc64e48b4ac955aeee9c1abbbda3f1f84af45608db14a4fd`
+- PDF SHA-256：`abcf920d43a999d2f5e1eff86ee1fd162fb41e4f8af9e12a7c079fce07980729`
+- PDF：7 页 A4；嵌入 `NotoSansCJKsc-Regular/Bold`，并通过中文文本抽取检查。
+- 原始 Harness：`lakehouse-thinking-v1`，每次 18 题；online 用 SSE，private 保持 vLLM 非流式请求。
+- 裁决：CDC 题剔除、拓扑排序题重判；原始证据未修改。后续运行使用 `lakehouse-thinking-v2`。
 - 决策与 NAS Ubuntu Nginx 504 诊断见
   [`LAKEHOUSE-PARAMETER-MATRIX-20260817.md`](./LAKEHOUSE-PARAMETER-MATRIX-20260817.md)。
+
+| 补充输入 | SHA-256 |
+|---|---|
+| `data/lakehouse-parameter-matrix-adjudicated.json` | `105b97acd0fb8882b8672cac31c80e2da4513244186e52f945636e5914f8d4d3` |
+| `data/inference-environment-20260817.json` | `3d94668beba6fce4521f357d309a615f6e6eb3f56fbc0c2fb3932c36655950ef` |
+| `data/inference-performance/qwen38-low.json` | `bbd9ccc170b04a2171d71f52f611889f62f145cf0eb8fbc3866d0748de549bed` |
+| `data/inference-performance/qwen36-thinking.json` | `762986623158495015a8acdfcbb1352d7eabbffa20897f89e0f6b78030626e80` |
+| `data/inference-performance/private-ds-high.json` | `086ff0824dbfba39036a5f254223d157003cd36504d9f4b2378940b09149d38e` |
+| `data/inference-performance/online-ds-low.json` | `cefc3061b33bebf1daeb6095d6c34d0a3563629b13a6a5ded08a4cc992fb2045` |

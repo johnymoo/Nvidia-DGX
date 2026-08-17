@@ -31,6 +31,29 @@ class LakehouseThinkingBenchmarkTests(unittest.TestCase):
         ids += [case["id"] for case in BENCH.INCIDENT_CASES]
         self.assertEqual(len(ids), 18)
         self.assertEqual(len(set(ids)), 18)
+        self.assertEqual(BENCH.HARNESS_ID, "lakehouse-thinking-v2")
+        self.assertIn("D for delete", BENCH.SQL_CASES[0]["prompt"])
+
+    def test_stable_toposort_oracle_uses_insertion_order_and_exceptions(self) -> None:
+        code = """
+def stable_toposort(graph):
+    keys = list(graph)
+    known = set(keys)
+    if any(dep not in known for deps in graph.values() for dep in deps):
+        raise ValueError('missing dependency')
+    result = []
+    remaining = set(keys)
+    while remaining:
+        ready = next((node for node in keys if node in remaining and all(dep in result for dep in graph[node])), None)
+        if ready is None:
+            raise ValueError('cycle')
+        result.append(ready)
+        remaining.remove(ready)
+    return result
+"""
+        _, _, checks = next(item for item in BENCH.PYTHON_CASES if item[0] == "stable_toposort")
+        passed, detail = BENCH.execute_python("stable_toposort", code, checks)
+        self.assertTrue(passed, detail)
 
     def test_sql_reference_answers_execute(self) -> None:
         reference = {
@@ -134,9 +157,23 @@ class LakehouseThinkingBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["response"], "ok")
         self.assertEqual(result["usage"]["completion_tokens"], 3)
 
+    def test_streaming_request_rejects_clean_early_eof(self) -> None:
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                self.close()
+
+        events = b'data: {"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}\n'
+        with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(events)):
+            result = BENCH.request("http://example.test/v1", "model", "test", "off", 256, stream=True)
+        self.assertEqual(result["finish_reason"], "error")
+        self.assertEqual(result["error"]["type"], "incomplete_stream")
+
     def test_report_input_validation(self) -> None:
         value = {
-            "harness_id": BENCH.HARNESS_ID,
+            "harness_id": "lakehouse-thinking-v1",
             "cases": [{"id": "x", "category": "sql"}],
         }
         with tempfile.TemporaryDirectory() as directory:

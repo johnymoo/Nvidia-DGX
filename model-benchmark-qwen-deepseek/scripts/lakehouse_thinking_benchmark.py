@@ -16,12 +16,12 @@ from pathlib import Path
 from quality_benchmark import run_code
 
 
-HARNESS_ID = "lakehouse-thinking-v1"
+HARNESS_ID = "lakehouse-thinking-v2"
 
 SQL_CASES = [
     {
         "id": "cdc_latest_live",
-        "prompt": """SQLite table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT) contains change events. Return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq. Return one SQL code block only.""",
+        "prompt": """SQLite table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT) contains change events. op uses I for insert, U for update, and D for delete. Return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq. Return one SQL code block only.""",
         "setup": "CREATE TABLE cdc(id TEXT,event_time INT,seq INT,op TEXT,value TEXT); INSERT INTO cdc VALUES ('a',10,1,'I','old'),('a',20,1,'U','new'),('b',5,1,'I','keep'),('b',8,1,'D',NULL),('c',7,1,'I','v1'),('c',7,2,'U','v2');",
         "expected": [["a", "new"], ["c", "v2"]],
     },
@@ -59,7 +59,7 @@ SQL_CASES = [
 
 PYTHON_CASES = [
     ("cdc_deduplicate", "Implement def current_rows(events). Each event is a dict with id, event_time, seq, op, value. Keep the latest by (event_time,seq), omit ids whose latest op is D, and return surviving dicts with only id and value ordered by id. Return Python code only.", [("current_rows([{'id':'a','event_time':1,'seq':1,'op':'I','value':'x'},{'id':'a','event_time':2,'seq':1,'op':'U','value':'y'},{'id':'b','event_time':1,'seq':1,'op':'I','value':'z'},{'id':'b','event_time':2,'seq':1,'op':'D','value':None}])", [{"id":"a","value":"y"}]), ("current_rows([{'id':'a','event_time':2,'seq':1,'op':'U','value':'x'},{'id':'a','event_time':2,'seq':2,'op':'U','value':'y'}])", [{"id":"a","value":"y"}])]),
-    ("stable_toposort", "Implement def stable_toposort(graph). graph maps a node to its dependencies. Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for a missing dependency or cycle. Do not mutate the input. Return Python code only.", [("stable_toposort({'publish':['package','test'],'package':['compile'],'test':['lint'],'compile':['lint'],'lint':[],'docs':[]})", ['lint','compile','package','test','publish','docs']), ("(lambda g:(stable_toposort(g),g))({'b':['a'],'a':[]})", [['a','b'],{'b':['a'],'a':[]}]), ("(lambda: ('no-error' if not None else ''))() if False else (lambda: None)()", None)]),
+    ("stable_toposort", "Implement def stable_toposort(graph). graph maps a node to its dependencies. Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for a missing dependency or cycle. Do not mutate the input. Return Python code only.", [("stable_toposort({'publish':['package','test'],'package':['compile'],'test':['lint'],'compile':['lint'],'lint':[],'docs':[]})", ['lint','test','compile','package','publish','docs']), ("(lambda g:(stable_toposort(g),g))({'b':['a'],'a':[]})", [['a','b'],{'b':['a'],'a':[]}]), ("__raises_value_error(lambda: stable_toposort({'a':['missing']}))", True), ("__raises_value_error(lambda: stable_toposort({'a':['b'],'b':['a']}))", True)]),
     ("schema_drift", "Implement def schema_drift(expected, actual). Inputs are nested dicts whose leaves are type strings. Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths. Return Python code only.", [("schema_drift({'id':'int','profile':{'name':'str','age':'int'}},{'id':'int','profile':{'name':'str','age':'str','city':'str'}})", ['profile.age','profile.city']), ("schema_drift({'a':{'b':'int','c':'str'}},{})", ['a.b','a.c']), ("schema_drift({}, {'x':{'y':'bool'}})", ['x.y'])]),
     ("bounded_batches", "Implement def bounded_batches(items, max_rows). items is an iterable of (partition,row_count). Preserve order and return a list of batches, each a list of items, whose total rows does not exceed max_rows. An item larger than max_rows must be alone. Reject max_rows <= 0. Consume the iterable once. Return Python code only.", [("bounded_batches([('a',4),('b',6),('c',7),('d',15),('e',2)],10)", [[['a',4],['b',6]],[['c',7]],[['d',15]],[['e',2]]]), ("bounded_batches(iter([('a',3),('b',3),('c',3)]),6)", [[['a',3],['b',3]],[['c',3]]])]),
     ("merge_intervals_payload", "Implement def merge_payload_ranges(items). Each item is (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start > end. Do not mutate input. Return Python code only.", [("merge_payload_ranges([(5,7,'a'),(1,3,'a'),(3,5,'a'),(7,9,'b'),(9,10,'b')])", [[1,7,'a'],[7,10,'b']]), ("merge_payload_ranges([])", []), ("(lambda x:(merge_payload_ranges(x),x))([(2,3,'x'),(1,1,'x')])", [[[1,1,'x'],[2,3,'x']],[[2,3,'x'],[1,1,'x']]])]),
@@ -93,6 +93,23 @@ def execute_sql(case: dict, response: str) -> tuple[bool, dict]:
     finally:
         if "connection" in locals():
             connection.close()
+
+
+def execute_python(case_id: str, response: str, checks: list[tuple[str, object]]) -> tuple[bool, str]:
+    code = extract_block(response, "python")
+    if case_id == "stable_toposort":
+        code += """
+
+def __raises_value_error(function):
+    try:
+        function()
+    except ValueError:
+        return True
+    except Exception:
+        return False
+    return False
+"""
+    return run_code(code, checks)
 
 
 def extract_json(text: str) -> dict | None:
@@ -187,12 +204,14 @@ def request(
                 reasoning_parts: list[str] = []
                 finish_reason = None
                 usage: dict = {}
+                saw_done = False
                 for raw_line in response:
                     line = raw_line.decode("utf-8", errors="replace").strip()
                     if not line.startswith("data:"):
                         continue
                     data = line[5:].strip()
                     if data == "[DONE]":
+                        saw_done = True
                         break
                     event = json.loads(data)
                     if event.get("usage"):
@@ -203,13 +222,22 @@ def request(
                         reasoning_parts.append(delta.get("reasoning") or delta.get("reasoning_content") or "")
                         if choice.get("finish_reason") is not None:
                             finish_reason = choice["finish_reason"]
-                return {
+                result = {
                     "response": "".join(content_parts),
                     "reasoning": "".join(reasoning_parts),
                     "finish_reason": finish_reason,
                     "usage": usage,
                     "seconds": round(time.monotonic() - started, 3),
                 }
+                if not saw_done or not usage or finish_reason is None:
+                    result["finish_reason"] = "error"
+                    result["error"] = {
+                        "type": "incomplete_stream",
+                        "saw_done": saw_done,
+                        "has_usage": bool(usage),
+                        "has_finish_reason": finish_reason is not None,
+                    }
+                return result
             payload = json.load(response)
     except urllib.error.HTTPError as exc:
         return {
@@ -329,7 +357,7 @@ def main() -> int:
 
     for case_id, prompt, checks in PYTHON_CASES:
         row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
-        passed, executor_tail = run_code(extract_block(row["response"], "python"), checks)
+        passed, executor_tail = execute_python(case_id, row["response"], checks)
         rows.append(compact_row({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case_id, "score": float(passed), "seconds": row["seconds"]}), flush=True)
 

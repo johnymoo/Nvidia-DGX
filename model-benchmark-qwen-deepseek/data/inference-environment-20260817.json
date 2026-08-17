@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-08-17T05:59:10.492507+00:00",
+  "host": {
+    "hostname": "dell-Precision-7960-Tower",
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "7.0.0-28-generic",
+    "architecture": "x86_64",
+    "cpu": [
+      {
+        "field": "Architecture:",
+        "data": "x86_64"
+      },
+      {
+        "field": "CPU op-mode(s):",
+        "data": "32-bit, 64-bit"
+      },
+      {
+        "field": "Address sizes:",
+        "data": "52 bits physical, 57 bits virtual"
+      },
+      {
+        "field": "Byte Order:",
+        "data": "Little Endian"
+      },
+      {
+        "field": "CPU(s):",
+        "data": "32"
+      },
+      {
+        "field": "On-line CPU(s) list:",
+        "data": "0-31"
+      },
+      {
+        "field": "Vendor ID:",
+        "data": "GenuineIntel"
+      },
+      {
+        "field": "Model name:",
+        "data": "Intel(R) Xeon(R) w5-3435X"
+      },
+      {
+        "field": "CPU family:",
+        "data": "6"
+      },
+      {
+        "field": "Model:",
+        "data": "143"
+      },
+      {
+        "field": "Thread(s) per core:",
+        "data": "2"
+      },
+      {
+        "field": "Core(s) per socket:",
+        "data": "16"
+      },
+      {
+        "field": "Socket(s):",
+        "data": "1"
+      },
+      {
+        "field": "Stepping:",
+        "data": "8"
+      },
+      {
+        "field": "CPU(s) scaling MHz:",
+        "data": "29%"
+      },
+      {
+        "field": "CPU max MHz:",
+        "data": "4700.0000"
+      },
+      {
+        "field": "CPU min MHz:",
+        "data": "800.0000"
+      },
+      {
+        "field": "BogoMIPS:",
+        "data": "6192.00"
+      },
+      {
+        "field": "Flags:",
+        "data": "fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cat_l2 cdp_l3 intel_ppin cdp_l2 ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect user_shstk avx_vnni avx512_bf16 wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req vnmi avx512vbmi umip pku ospke waitpkg avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq la57 rdpid bus_lock_detect cldemote movdiri movdir64b enqcmd fsrm md_clear serialize tsxldtrk pconfig arch_lbr ibt amx_bf16 avx512_fp16 amx_tile amx_int8 flush_l1d arch_capabilities"
+      },
+      {
+        "field": "Virtualization:",
+        "data": "VT-x"
+      },
+      {
+        "field": "L1d cache:",
+        "data": "768 KiB (16 instances)"
+      },
+      {
+        "field": "L1i cache:",
+        "data": "512 KiB (16 instances)"
+      },
+      {
+        "field": "L2 cache:",
+        "data": "32 MiB (16 instances)"
+      },
+      {
+        "field": "L3 cache:",
+        "data": "45 MiB (1 instance)"
+      },
+      {
+        "field": "NUMA node(s):",
+        "data": "1"
+      },
+      {
+        "field": "NUMA node0 CPU(s):",
+        "data": "0-31"
+      },
+      {
+        "field": "Vulnerability Gather data sampling:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Ghostwrite:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Indirect target selection:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Itlb multihit:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability L1tf:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Mds:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Meltdown:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Mmio stale data:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Old microcode:",
+        "data": "Vulnerable"
+      },
+      {
+        "field": "Vulnerability Reg file data sampling:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Retbleed:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Spec rstack overflow:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Spec store bypass:",
+        "data": "Mitigation; Speculative Store Bypass disabled via prctl"
+      },
+      {
+        "field": "Vulnerability Spectre v1:",
+        "data": "Mitigation; usercopy/swapgs barriers and __user pointer sanitization"
+      },
+      {
+        "field": "Vulnerability Spectre v2:",
+        "data": "Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI BHI_DIS_S"
+      },
+      {
+        "field": "Vulnerability Srbds:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Tsa:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Tsx async abort:",
+        "data": "Not affected"
+      },
+      {
+        "field": "Vulnerability Vmscape:",
+        "data": "Mitigation; IBPB before exit to userspace"
+      }
+    ],
+    "logical_cpus": 32,
+    "memory_total_bytes": 32844038144,
+    "swap_total_bytes": 8589930496,
+    "docker_version": "29.1.3",
+    "python_version": "3.12.3",
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 4090",
+      "pci_bus_id": "00000000:AC:00.0",
+      "driver_version": "580.173.02",
+      "memory_total_mib": 49140,
+      "power_limit_w": 450.0
+    }
+  },
+  "local_deployments": {
+    "qwen38": {
+      "model_id": "Qwen/Qwen3.8-27B-FP8",
+      "model_source": "ModelScope",
+      "model_path": "/data/models/modelscope/Qwen3.8-27B-FP8",
+      "model_size_bytes": 30890049500,
+      "config_sha256": "74227dd615bf1ea975aa676bdf355a0379858c12f394b5365cd9dfa5fc2c70bc",
+      "architecture": "Qwen3_5ForConditionalGeneration",
+      "quantization": "fp8",
+      "container": "qwen38-vllm",
+      "container_image": "vllm/vllm-openai@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504",
+      "command": [
+        "/models/Qwen3.8-27B-FP8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--served-model-name",
+        "qwen3.8-27b-fp8",
+        "--max-model-len",
+        "65536",
+        "--gpu-memory-utilization",
+        "0.92",
+        "--cpu-offload-gb",
+        "0",
+        "--max-num-seqs",
+        "4",
+        "--max-num-batched-tokens",
+        "8192",
+        "--reasoning-parser",
+        "qwen3",
+        "--default-chat-template-kwargs",
+        "{\"enable_thinking\": false}",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--limit-mm-per-prompt",
+        "{\"image\": 2, \"video\": 0}"
+      ],
+      "memory_limit_bytes": 17179869184,
+      "memory_swap_limit_bytes": 17179869184,
+      "shm_size_bytes": 17179869184,
+      "restart_policy": "unless-stopped",
+      "running_after_benchmark": true,
+      "startup": {
+        "definition": "Docker StartedAt to vLLM Application startup complete",
+        "started_at": "2026-08-17T05:52:02.598005847Z",
+        "ready_at": "2026-08-17T05:55:21.150977+00:00",
+        "service_startup_seconds": 198.553,
+        "model_load_seconds": 150.597895,
+        "model_load_gpu_memory_gib": 28.51,
+        "host_page_cache_cleared": false,
+        "qualification": "observed service restart; not a power-off cold boot"
+      }
+    },
+    "qwen36": {
+      "model_id": "Qwen/Qwen3.6-35B-A3B-FP8",
+      "model_source": "ModelScope",
+      "model_path": "/data/models/modelscope/Qwen3.6-35B-A3B-FP8",
+      "model_size_bytes": 37493018754,
+      "config_sha256": "570ef7ea45a7e1d3de2b1d3c70c4ac3562d0e768acdc195778cb4f4d95025845",
+      "architecture": "Qwen3_5MoeForConditionalGeneration",
+      "quantization": "fp8",
+      "container": "qwen36-vllm",
+      "container_image": "vllm/vllm-openai@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504",
+      "command": [
+        "/models/Qwen3.6-35B-A3B-FP8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--served-model-name",
+        "qwen3.6-35b-a3b-fp8",
+        "--max-model-len",
+        "32768",
+        "--gpu-memory-utilization",
+        "0.95",
+        "--cpu-offload-gb",
+        "0",
+        "--max-num-seqs",
+        "2",
+        "--max-num-batched-tokens",
+        "8192",
+        "--reasoning-parser",
+        "qwen3",
+        "--default-chat-template-kwargs",
+        "{\"enable_thinking\": false}",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--limit-mm-per-prompt",
+        "{\"image\": 2, \"video\": 0}"
+      ],
+      "memory_limit_bytes": 17179869184,
+      "memory_swap_limit_bytes": 17179869184,
+      "shm_size_bytes": 17179869184,
+      "restart_policy": "unless-stopped",
+      "running_after_benchmark": false,
+      "startup": {
+        "definition": "Docker StartedAt to vLLM Application startup complete",
+        "started_at": "2026-08-17T05:46:53.799435796Z",
+        "ready_at": "2026-08-17T05:50:25.474302+00:00",
+        "service_startup_seconds": 211.675,
+        "model_load_seconds": 172.307996,
+        "model_load_gpu_memory_gib": 34.23,
+        "host_page_cache_cleared": false,
+        "qualification": "observed service restart; not a power-off cold boot"
+      }
+    }
+  },
+  "external_deployments": {
+    "private-dgx-spark": {
+      "model": "deepseek-v4-flash-0731",
+      "hardware": "2 x NVIDIA GB10 / DGX Spark cluster",
+      "runtime": "vLLM OpenAI-compatible API",
+      "max_model_len": 1048576,
+      "ownership": "private deployment",
+      "cold_start": null,
+      "cold_start_reason": "service lifecycle and startup logs are not exposed to this benchmark host"
+    },
+    "online-gateway": {
+      "model": "deepseek-v4-flash (dynamic alias)",
+      "hardware": "not disclosed",
+      "runtime": "not disclosed behind managed API",
+      "gateway": "Nginx 1.29.5 on NAS Ubuntu",
+      "ownership": "online managed service",
+      "cold_start": null,
+      "cold_start_reason": "provider service lifecycle is not observable"
+    }
+  },
+  "benchmark_conditions": {
+    "quality_harness": "lakehouse-thinking-v1 with adjudication errata",
+    "quality_seed": 42,
+    "quality_execution": "single-stream, sequential within each endpoint",
+    "latency_probe": "one warmup plus three measured SSE requests; endpoints run on independent hardware",
+    "latency_max_tokens": 2048,
+    "latency_prompt_language": "English",
+    "pdf_font": "Noto Sans CJK SC"
+  }
+}

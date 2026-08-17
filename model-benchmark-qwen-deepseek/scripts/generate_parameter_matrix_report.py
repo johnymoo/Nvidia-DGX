@@ -39,15 +39,37 @@ def record_key(record: dict) -> tuple:
         config.get("deepseek_effort"),
         record.get("max_tokens"),
         record.get("sampling"),
+        bool(config.get("stream")),
+        config.get("request_timeout_seconds"),
+        record.get("seed"),
     )
 
 
-def read_runs(input_dir: Path, max_deepseek_repeat: int | None = None) -> list[dict]:
+def validate_raw_summary(record: dict, path: Path) -> None:
+    cases = record.get("cases") or []
+    if len(cases) != 18:
+        return
+    for category in CATEGORIES:
+        selected = [case for case in cases if case["category"] == category]
+        computed = mean([float(case["score"]) for case in selected])
+        if abs(computed - record["categories"][category]["score"]) > 1e-9:
+            raise RuntimeError(f"category summary mismatch in {path}: {category}")
+    computed_macro = mean([record["categories"][name]["score"] for name in CATEGORIES])
+    if abs(computed_macro - record["macro_score"]) > 1e-9:
+        raise RuntimeError(f"macro summary mismatch in {path}")
+
+
+def read_runs(input_dir: Path, max_deepseek_repeat: int | None = None, adjudication_file: Path | None = None) -> list[dict]:
+    adjudication = {}
+    if adjudication_file:
+        payload = json.loads(adjudication_file.read_text())
+        adjudication = {item["tag"]: item for item in payload["runs"]}
     runs = []
     for path in sorted(input_dir.glob("*.json")):
         record = json.loads(path.read_text())
         if record.get("harness_id") != "lakehouse-thinking-v1" or record.get("status") != "passed":
             continue
+        validate_raw_summary(record, path)
         if (
             max_deepseek_repeat is not None
             and record.get("mode") == "deepseek-thinking"
@@ -55,6 +77,12 @@ def read_runs(input_dir: Path, max_deepseek_repeat: int | None = None) -> list[d
         ):
             continue
         record["_path"] = path.name
+        if record["tag"] in adjudication:
+            adjusted = adjudication[record["tag"]]
+            record["_original_macro_score"] = record["macro_score"]
+            record["macro_score"] = adjusted["macro_score"]
+            for category in CATEGORIES:
+                record["categories"][category].update(adjusted["categories"][category])
         runs.append(record)
     if not runs:
         raise RuntimeError(f"No completed lakehouse matrix JSON files in {input_dir}")
@@ -77,6 +105,8 @@ def groups(runs: list[dict], expected_deepseek_runs: int | None = None) -> list[
         repeats = [run["repeat"] for run in values]
         if len(values) != expected or repeats != list(range(1, expected + 1)):
             raise RuntimeError(f"incomplete repeats for {key[0]}: expected 1..{expected}, got {repeats}")
+        for run in values:
+            run["_display_expected_runs"] = expected
         ordered.append((key, values))
     return sorted(ordered, key=lambda item: (item[0][0], EFFORT_ORDER.get(item[0][4], 9), item[0][1] or ""))
 
@@ -106,7 +136,7 @@ def group_metrics(runs: list[dict]) -> dict:
 def summary_rows(grouped: list[tuple[tuple, list[dict]]]) -> str:
     rows = []
     for key, runs in grouped:
-        treatment, endpoint, model, _mode, effort, max_tokens, sampling = key
+        treatment, endpoint, model, _mode, effort, max_tokens, sampling = key[:7]
         metrics = group_metrics(runs)
         effort_label = effort or "-"
         rows.append(
@@ -132,8 +162,8 @@ def run_rows(grouped: list[tuple[tuple, list[dict]]]) -> str:
             empty = sum(row["empty_finals"] for row in run["categories"].values())
             rows.append(
                 "<tr>"
-                f"<td>{esc(run['treatment'])}</td><td>{run['repeat']}/{run['expected_runs']}</td>"
-                f"<td>{pct(run['macro_score'])}</td><td>{run['total_seconds']:.1f}s</td>"
+                f"<td>{esc(run['treatment'])}</td><td>{run['repeat']}/{run['_display_expected_runs']}</td>"
+                f"<td>{pct(run['macro_score'])}</td><td>{pct(run.get('_original_macro_score', run['macro_score']))}</td><td>{run['total_seconds']:.1f}s</td>"
             f"<td>{tokens:,}</td><td>{truncations}</td><td>{empty}</td><td>{sum(row.get('errors', 0) for row in run['categories'].values())}</td><td><code>{esc(run['_path'])}</code></td>"
                 "</tr>"
             )
@@ -143,7 +173,7 @@ def run_rows(grouped: list[tuple[tuple, list[dict]]]) -> str:
 def config_rows(grouped: list[tuple[tuple, list[dict]]]) -> str:
     rows = []
     for key, runs in grouped:
-        treatment, endpoint, model, mode, effort, max_tokens, sampling = key
+        treatment, endpoint, model, mode, effort, max_tokens, sampling = key[:7]
         config = runs[0].get("request_config") or {}
         rows.append(
             "<tr>"
@@ -265,30 +295,108 @@ def run_stability_rows(grouped: list[tuple[tuple, list[dict]]]) -> str:
     return "".join(rows)
 
 
+def load_performance(directory: Path | None) -> list[dict]:
+    if not directory:
+        return []
+    records = [json.loads(path.read_text()) for path in sorted(directory.glob("*.json"))]
+    if not records:
+        raise RuntimeError(f"No inference performance JSON files in {directory}")
+    return records
+
+
+def performance_rows(records: list[dict]) -> str:
+    rows = []
+    for record in records:
+        summary = record["summary"]
+        rows.append(
+            "<tr>"
+            f"<th>{esc(record['endpoint'])}<small>{esc(record['model'])} · {esc(record['profile'])}</small></th>"
+            f"<td>{summary['ttft_seconds']['mean']:.3f}s<small>{summary['ttft_seconds']['min']:.3f}–{summary['ttft_seconds']['max']:.3f}s</small></td>"
+            f"<td>{summary['response_seconds']['mean']:.3f}s<small>{summary['response_seconds']['min']:.3f}–{summary['response_seconds']['max']:.3f}s</small></td>"
+            f"<td>{summary['decode_tokens_per_second']['mean']:.1f}<small>tokens/s</small></td>"
+            f"<td>{summary['completion_tokens_mean']:.0f}</td>"
+            f"<td>{summary['successful_runs']}/{summary['runs']}<small>错误 {summary['errors']}</small></td>"
+            "</tr>"
+        )
+    return "".join(rows)
+
+
+def cpu_value(environment: dict, field: str) -> str:
+    for item in environment["host"]["cpu"]:
+        if item["field"] == field:
+            return str(item["data"])
+    return "-"
+
+
+def gib(value: int | float | None) -> str:
+    return "-" if value is None else f"{value / 1024 ** 3:.1f} GiB"
+
+
+def environment_section(environment: dict | None, performance: list[dict]) -> str:
+    if not environment:
+        return ""
+    host = environment["host"]
+    gpu = host["gpu"]
+    local_rows = []
+    startup_rows = []
+    for name, item in environment["local_deployments"].items():
+        command = " ".join(item["command"] or [])
+        local_rows.append(
+            "<tr>"
+            f"<th>{esc(name)}<small>{esc(item['model_id'])}</small></th>"
+            f"<td>ModelScope<small>{gib(item['model_size_bytes'])} · {esc(item['quantization'])}</small></td>"
+            f"<td>{esc(item['container_image'])}</td><td>{gib(item['memory_limit_bytes'])} / {gib(item['memory_swap_limit_bytes'])}</td>"
+            f"<td><code>{esc(command)}</code></td></tr>"
+        )
+        startup = item["startup"]
+        startup_rows.append(
+            "<tr>"
+            f"<th>{esc(item['model_id'])}</th><td>{startup['service_startup_seconds']:.3f}s</td>"
+            f"<td>{startup['model_load_seconds']:.3f}s</td><td>{startup['model_load_gpu_memory_gib']:.2f} GiB</td>"
+            f"<td>{esc(startup['started_at'])}</td></tr>"
+        )
+    external_rows = "".join(
+        f"<tr><th>{esc(name)}</th><td>{esc(item['model'])}</td><td>{esc(item['hardware'])}</td><td>{esc(item['runtime'])}</td><td>{esc(item['cold_start_reason'])}</td></tr>"
+        for name, item in environment["external_deployments"].items()
+    )
+    return f"""
+<section id='performance'><h2>推理性能：首 token、端到端响应与解码吞吐分开看</h2><p>统一短任务，1 次预热 + 3 次计量，SSE 单请求。TTFT 从请求发出到首个 reasoning/content delta；TPS 为 completion tokens /（响应时间 − TTFT）。输出长度不同，因此响应时间不能脱离 tokens 与 TPS 单独排名。</p><div class='table-wrap'><table><thead><tr><th>endpoint / 配置</th><th>TTFT 均值</th><th>响应时间均值</th><th>解码 TPS</th><th>输出 tokens</th><th>成功</th></tr></thead><tbody>{performance_rows(performance)}</tbody></table></div></section>
+<section id='startup'><h2>模型冷启动：服务重启到 API ready</h2><p>这是 Docker StartedAt 到 vLLM Application startup complete 的实测；未清 Linux page cache，不等同于断电冷启动。外部 DeepSeek 服务生命周期不可观测。</p><div class='table-wrap'><table><thead><tr><th>模型</th><th>服务启动</th><th>模型加载</th><th>加载显存</th><th>开始时间 UTC</th></tr></thead><tbody>{''.join(startup_rows)}</tbody></table></div></section>
+<section id='environment'><h2>完整测试环境与部署配置</h2><p>快照时间 {esc(environment['timestamp'])}。敏感环境变量与 API 密钥未采集。</p><div class='facts'><div><small>操作系统 / 内核</small><strong>{esc(host['os'])}<br>{esc(host['kernel'])}</strong></div><div><small>CPU</small><strong>{esc(cpu_value(environment, 'Model name:'))}<br>{esc(cpu_value(environment, 'Socket(s):'))} socket · {esc(cpu_value(environment, 'Core(s) per socket:'))} cores/socket</strong></div><div><small>内存 / Swap</small><strong>{gib(host['memory_total_bytes'])} / {gib(host['swap_total_bytes'])}</strong></div><div><small>GPU</small><strong>{esc(gpu['name'])} · {gpu['memory_total_mib']} MiB<br>driver {esc(gpu['driver_version'])} · {gpu['power_limit_w']:.0f} W</strong></div><div><small>运行时</small><strong>Docker {esc(host['docker_version'])}<br>Python {esc(host['python_version'])}</strong></div></div><h3 class='subhead'>本机模型容器</h3><div class='table-wrap'><table><thead><tr><th>部署</th><th>来源 / 量化</th><th>镜像</th><th>内存 / swap 限制</th><th>完整启动命令</th></tr></thead><tbody>{''.join(local_rows)}</tbody></table></div><h3 class='subhead'>外部 DeepSeek endpoint</h3><div class='table-wrap'><table><thead><tr><th>endpoint</th><th>模型</th><th>硬件</th><th>运行时</th><th>冷启动不可用原因</th></tr></thead><tbody>{external_rows}</tbody></table></div></section>
+"""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--recommendation", required=True)
     parser.add_argument("--expected-deepseek-runs", type=int, help="Override the recorded DS repeat target for a completed preview")
     parser.add_argument("--max-deepseek-repeat", type=int, help="Exclude later DS repeats when rendering a completed preview")
+    parser.add_argument("--adjudication-file", type=Path)
+    parser.add_argument("--performance-dir", type=Path)
+    parser.add_argument("--environment-file", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.expected_deepseek_runs is not None and args.expected_deepseek_runs < 1:
         parser.error("--expected-deepseek-runs must be at least 1")
     if args.max_deepseek_repeat is not None and args.max_deepseek_repeat < 1:
         parser.error("--max-deepseek-repeat must be at least 1")
-    grouped = groups(read_runs(args.input_dir, args.max_deepseek_repeat), args.expected_deepseek_runs)
+    grouped = groups(read_runs(args.input_dir, args.max_deepseek_repeat, args.adjudication_file), args.expected_deepseek_runs)
+    performance = load_performance(args.performance_dir)
+    environment = json.loads(args.environment_file.read_text()) if args.environment_file else None
+    operational_sections = environment_section(environment, performance)
     document = f"""<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>湖仓推理参数矩阵 Benchmark</title><style>
-:root{{--ink:#151816;--paper:#f5f3ed;--surface:#fffdf8;--line:#c8c5b9;--muted:#6a6c66;--score:#117a65;--time:#c46a1b;--token:#3c6db0;--danger:#b73c38;color-scheme:light}}*{{box-sizing:border-box}}body{{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,"Segoe UI",sans-serif;letter-spacing:0}}main{{width:min(1440px,calc(100% - 36px));margin:auto;padding:30px 0 72px}}h1,h2,h3,p{{margin:0}}h1{{font-size:32px;line-height:1.15}}h2{{font-size:22px;line-height:1.2}}h3{{font-size:16px;line-height:1.25}}small{{display:block;color:var(--muted);font-size:12px;font-weight:400}}header{{border-bottom:2px solid var(--ink);padding-bottom:20px}}header>p{{color:var(--muted);font-size:13px;margin-bottom:8px}}header>div{{max-width:900px;color:var(--muted);margin-top:9px}}nav{{display:flex;gap:20px;flex-wrap:wrap;position:sticky;top:0;background:rgba(245,243,237,.96);z-index:2;padding:13px 0;border-bottom:1px solid var(--line)}}nav a{{color:var(--ink);text-decoration:none;font-size:13px}}.decision{{margin:24px 0 0;border-left:4px solid var(--score);padding:14px 18px;background:#e8f2ed}}.decision strong{{display:block;margin-bottom:4px}}section{{padding:34px 0;border-bottom:1px solid var(--line)}}section>p{{color:var(--muted);margin:6px 0 18px}}.model-list{{border-top:1px solid var(--line)}}.model-row{{display:grid;grid-template-columns:minmax(190px,1.1fr) 105px minmax(330px,2.1fr) minmax(180px,1fr);gap:22px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}}.model-title p{{margin-top:4px;color:var(--muted);font-size:13px}}.macro{{font-size:30px;font-variant-numeric:tabular-nums;color:var(--score);font-weight:700}}.macro small{{margin-top:-2px}}.category-set{{display:grid;gap:7px}}.category{{display:grid;grid-template-columns:66px minmax(80px,1fr) 48px;gap:8px;align-items:center;font-size:12px}}.measure{{height:8px;background:#dedbd1;position:relative;overflow:hidden}}.measure span{{position:absolute;inset:0 auto 0 0}}.measure.score span{{background:var(--score)}}.measure.time span{{background:var(--time)}}.measure.token span{{background:var(--token)}}.cost-cell{{display:grid;grid-template-columns:minmax(90px,1fr) auto;gap:8px;align-items:center}}.cost-cell small{{grid-column:1 / -1}}.endpoint-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}}.endpoint-panel{{min-width:0;border-top:3px solid var(--ink);padding-top:12px}}.endpoint-panel header{{padding:0 0 12px;border-bottom:1px solid var(--line)}}.endpoint-panel header p{{font-size:12px;color:var(--muted);margin-bottom:2px}}.endpoint-panel header span{{display:block;color:var(--muted);font-size:13px;margin-top:4px;overflow-wrap:anywhere}}.table-wrap{{max-width:100%;min-width:0;overflow-x:auto}}table{{width:100%;border-collapse:collapse}}th,td{{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}}th{{font-weight:600}}.score-table th:first-child{{width:105px}}.score-table td{{min-width:120px}}.score-table .measure,.cost-table .measure{{display:inline-block;width:calc(100% - 52px);margin-right:8px;vertical-align:middle}}.strong{{font-weight:700;color:var(--score)}}.cost-table th{{min-width:160px}}.cost-table td{{min-width:170px}}.cost-table td:nth-last-child(-n+3){{min-width:62px;text-align:center;font-variant-numeric:tabular-nums}}.stability-table{{max-width:760px}}.dot-track{{height:22px;position:relative;border-bottom:1px solid var(--line);min-width:220px;background:linear-gradient(to right,transparent 49.5%,#d5d1c5 50%,transparent 50.5%)}}.run-dot{{position:absolute;left:calc(var(--dot) * 1%);top:6px;width:10px;height:10px;background:var(--score);border:1px solid var(--surface);border-radius:50%;transform:translateX(-50%)}}.audit details{{border-top:1px solid var(--line)}}.audit summary{{cursor:pointer;padding:12px 0;color:var(--ink)}}.audit table{{margin-bottom:12px}}code{{font:12px ui-monospace,monospace;color:#34484f}}ul{{padding-left:20px;margin:0}}li+li{{margin-top:6px}}@media(max-width:980px){{.model-row{{grid-template-columns:1fr 105px;gap:16px}}.category-set,.cost-cell{{grid-column:1 / -1}}.endpoint-grid{{grid-template-columns:1fr}}}}@media(max-width:620px){{main{{width:calc(100% - 20px);padding-top:20px}}h1{{font-size:26px}}section{{padding:25px 0}}.model-row{{grid-template-columns:1fr}}.macro{{grid-row:1;grid-column:1;text-align:right}}.model-title{{grid-row:1}}.endpoint-grid{{gap:22px}}.score-table td{{min-width:150px}}}}
+:root{{--ink:#151816;--paper:#f5f3ed;--surface:#fffdf8;--line:#c8c5b9;--muted:#6a6c66;--score:#117a65;--time:#c46a1b;--token:#3c6db0;--danger:#b73c38;color-scheme:light}}*{{box-sizing:border-box}}body{{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Noto Sans CJK SC","Noto Sans CJK",system-ui,"Segoe UI",sans-serif;letter-spacing:0}}main{{width:min(1440px,calc(100% - 36px));margin:auto;padding:30px 0 72px}}h1,h2,h3,p{{margin:0}}h1{{font-size:32px;line-height:1.15}}h2{{font-size:22px;line-height:1.2}}h3{{font-size:16px;line-height:1.25}}small{{display:block;color:var(--muted);font-size:12px;font-weight:400}}header{{border-bottom:2px solid var(--ink);padding-bottom:20px}}header>p{{color:var(--muted);font-size:13px;margin-bottom:8px}}header>div{{max-width:900px;color:var(--muted);margin-top:9px}}nav{{display:flex;gap:20px;flex-wrap:wrap;position:sticky;top:0;background:rgba(245,243,237,.96);z-index:2;padding:13px 0;border-bottom:1px solid var(--line)}}nav a{{color:var(--ink);text-decoration:none;font-size:13px}}.decision{{margin:24px 0 0;border-left:4px solid var(--score);padding:14px 18px;background:#e8f2ed}}.decision strong{{display:block;margin-bottom:4px}}section{{padding:34px 0;border-bottom:1px solid var(--line)}}section>p{{color:var(--muted);margin:6px 0 18px}}.subhead{{margin:24px 0 8px}}.facts{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:20px}}.facts>div{{background:var(--surface);padding:13px;min-width:0}}.facts strong{{font-size:13px;overflow-wrap:anywhere}}.model-list{{border-top:1px solid var(--line)}}.model-row{{display:grid;grid-template-columns:minmax(190px,1.1fr) 105px minmax(330px,2.1fr) minmax(180px,1fr);gap:22px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}}.model-title p{{margin-top:4px;color:var(--muted);font-size:13px}}.macro{{font-size:30px;font-variant-numeric:tabular-nums;color:var(--score);font-weight:700}}.macro small{{margin-top:-2px}}.category-set{{display:grid;gap:7px}}.category{{display:grid;grid-template-columns:66px minmax(80px,1fr) 48px;gap:8px;align-items:center;font-size:12px}}.measure{{height:8px;background:#dedbd1;position:relative;overflow:hidden}}.measure span{{position:absolute;inset:0 auto 0 0}}.measure.score span{{background:var(--score)}}.measure.time span{{background:var(--time)}}.measure.token span{{background:var(--token)}}.cost-cell{{display:grid;grid-template-columns:minmax(90px,1fr) auto;gap:8px;align-items:center}}.cost-cell small{{grid-column:1 / -1}}.endpoint-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}}.endpoint-panel{{min-width:0;border-top:3px solid var(--ink);padding-top:12px}}.endpoint-panel header{{padding:0 0 12px;border-bottom:1px solid var(--line)}}.endpoint-panel header p{{font-size:12px;color:var(--muted);margin-bottom:2px}}.endpoint-panel header span{{display:block;color:var(--muted);font-size:13px;margin-top:4px;overflow-wrap:anywhere}}.table-wrap{{max-width:100%;min-width:0;overflow-x:auto}}table{{width:100%;border-collapse:collapse}}th,td{{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}}th{{font-weight:600}}td code{{display:block;max-width:560px;white-space:normal;overflow-wrap:anywhere}}.score-table th:first-child{{width:105px}}.score-table td{{min-width:120px}}.score-table .measure,.cost-table .measure{{display:inline-block;width:calc(100% - 52px);margin-right:8px;vertical-align:middle}}.strong{{font-weight:700;color:var(--score)}}.cost-table th{{min-width:160px}}.cost-table td{{min-width:170px}}.cost-table td:nth-last-child(-n+3){{min-width:62px;text-align:center;font-variant-numeric:tabular-nums}}.stability-table{{max-width:760px}}.dot-track{{height:22px;position:relative;border-bottom:1px solid var(--line);min-width:220px;background:linear-gradient(to right,transparent 49.5%,#d5d1c5 50%,transparent 50.5%)}}.run-dot{{position:absolute;left:calc(var(--dot) * 1%);top:6px;width:10px;height:10px;background:var(--score);border:1px solid var(--surface);border-radius:50%;transform:translateX(-50%)}}.audit details{{border-top:1px solid var(--line)}}.audit summary{{cursor:pointer;padding:12px 0;color:var(--ink)}}.audit table{{margin-bottom:12px}}code{{font:12px ui-monospace,monospace;color:#34484f}}ul{{padding-left:20px;margin:0}}li+li{{margin-top:6px}}@media(max-width:980px){{.model-row{{grid-template-columns:1fr 105px;gap:16px}}.category-set,.cost-cell{{grid-column:1 / -1}}.endpoint-grid{{grid-template-columns:1fr}}.facts{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}@media(max-width:620px){{main{{width:calc(100% - 20px);padding-top:20px}}h1{{font-size:26px}}section{{padding:25px 0}}.model-row{{grid-template-columns:1fr}}.macro{{grid-row:1;grid-column:1;text-align:right}}.model-title{{grid-row:1}}.endpoint-grid{{gap:22px}}.score-table td{{min-width:150px}}.facts{{grid-template-columns:1fr}}}}
 </style></head><body><main><header><p>2026-08-17 · 固定 18 题 · 每 endpoint 单流 · 所有耗时为 18 题串行墙钟时间</p><h1>湖仓推理参数矩阵</h1><div>将模型选择、DeepSeek 质量、成本、稳定性和审计证据拆开比较。SQL 为可执行验证，Python 使用隐藏测试，故障分析以编码化根因与动作评分。</div></header>
-<nav><a href='#qwen'>Qwen 选型</a><a href='#quality'>DeepSeek 质量</a><a href='#cost'>DeepSeek 成本</a><a href='#stability'>重复稳定性</a><a href='#audit'>审计</a></nav>
+<nav><a href='#qwen'>Qwen 选型</a><a href='#quality'>DeepSeek 质量</a><a href='#cost'>DeepSeek 成本</a><a href='#performance'>推理性能</a><a href='#startup'>冷启动</a><a href='#environment'>环境</a><a href='#audit'>审计</a></nav>
 <div class='decision'><strong>当前结论</strong><div>{esc(args.recommendation)}</div></div>
 <section id='qwen'><h2>Qwen 选型：同一 RTX 4090，质量与耗时并列</h2><p>仅比较同机、CPU offload=0 的两组推荐 thinking 配置。DeepSeek 不进入此处的延迟比较。</p><div class='model-list'>{qwen_section(grouped)}</div></section>
 <section id='quality'><h2>DeepSeek 质量：先分 endpoint，再比较思考档位</h2><p>每格为对应能力的平均通过率；宏平均是三类能力等权平均。online 的动态 alias 与 private 固定 revision 不能解释为同模型 A/B。</p><div class='endpoint-grid'>{deepseek_score_section(grouped)}</div></section>
 <section id='cost'><h2>DeepSeek 成本：耗时与输出 tokens 独立刻度</h2><p>条形长度仅在同一指标内比较，不把时延、token 或正确率折叠成单一分数。</p><div class='table-wrap'><table class='cost-table'><thead><tr><th>endpoint / 档位</th><th>18 题总耗时</th><th>输出 tokens</th><th>截断</th><th>空 final</th><th>HTTP/网络错误</th></tr></thead><tbody>{deepseek_cost_rows(grouped)}</tbody></table></div></section>
 <section id='stability'><h2>重复稳定性：每个圆点是一轮宏平均</h2><p>横轴为 0% 到 100%；这里显示随机采样的实际波动，而不是只显示均值。</p><div class='table-wrap'><table class='stability-table'><thead><tr><th>endpoint / 档位</th><th>轮次位置</th><th>均值</th><th>标准差</th></tr></thead><tbody>{run_stability_rows(grouped)}</tbody></table></div></section>
-<section id='audit' class='audit'><h2>审计与方法边界</h2><details><summary>显示每次运行、证据文件与原始汇总</summary><div class='table-wrap'><table><thead><tr><th>处理组</th><th>重复</th><th>宏平均</th><th>耗时</th><th>输出 tokens</th><th>截断</th><th>空 final</th><th>错误</th><th>证据文件</th></tr></thead><tbody>{run_rows(grouped)}</tbody></table></div><div class='table-wrap'><table><thead><tr><th>处理组</th><th>endpoint</th><th>模型</th><th>模式</th><th>effort</th><th>输出上限</th><th>采样/协议</th><th>提交的响应证据</th></tr></thead><tbody>{config_rows(grouped)}</tbody></table></div></details><ul><li>online 使用官方 <code>thinking</code> 与 <code>reasoning_effort</code> 请求字段并开启 SSE；private DSpark 使用已验证的 chat-template thinking 开关并传相同 effort。</li><li>每题在评分后只提交 final/reasoning 前缀、完整字符数和 SHA-256；评分发生在截断存储之前。</li><li>online 仅提供动态 alias <code>deepseek-v4-flash</code>；private 使用固定 <code>deepseek-v4-flash-0731</code>。硬件、服务 revision 与网络路径不同。</li></ul></section>
+{operational_sections}
+<section id='audit' class='audit'><h2>审计与方法边界</h2><p><strong>评分勘误：</strong><code>cdc_latest_live</code> 因 v1 题面未解释 I/U/D 被剔除；<code>stable_toposort</code> 按字典插入顺序修正预期并执行异常检查。原始证据不改写，表内同时保留原始宏平均。</p><details><summary>显示每次运行、证据文件与原始汇总</summary><div class='table-wrap'><table><thead><tr><th>处理组</th><th>重复</th><th>裁决后宏平均</th><th>原始宏平均</th><th>耗时</th><th>输出 tokens</th><th>截断</th><th>空 final</th><th>错误</th><th>证据文件</th></tr></thead><tbody>{run_rows(grouped)}</tbody></table></div><div class='table-wrap'><table><thead><tr><th>处理组</th><th>endpoint</th><th>模型</th><th>模式</th><th>effort</th><th>输出上限</th><th>采样/协议</th><th>提交的响应证据</th></tr></thead><tbody>{config_rows(grouped)}</tbody></table></div></details><ul><li>DeepSeek 每组只完成 n=2；标准差只描述这两轮观测，不足以证明稳定性优势。high 是风险保守默认，不是统计显著结论。</li><li>online 使用官方 <code>thinking</code> 与 <code>reasoning_effort</code> 请求字段并开启 SSE；private DSpark 使用已验证的 chat-template thinking 开关并传相同 effort。</li><li>online-high-r2 出现 1 个空 final；错误、空 final 与 length 截断分别统计。</li><li>GB10 private max/384K 的 504 目前是 Nginx read-timeout 的高置信假设，仍需 NAS 上 <code>nginx -T</code>、error log/request-id 及 SSE/non-stream A/B 证实，不能写成已确认根因。</li><li>每题在评分后只提交 final/reasoning 前缀、完整字符数和 SHA-256；评分发生在截断存储之前。</li><li>online 仅提供动态 alias <code>deepseek-v4-flash</code>；private 使用固定 <code>deepseek-v4-flash-0731</code>。硬件、服务 revision 与网络路径不同。</li></ul></section>
 </main></body></html>"""
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(line.rstrip() for line in document.splitlines()) + "\n")

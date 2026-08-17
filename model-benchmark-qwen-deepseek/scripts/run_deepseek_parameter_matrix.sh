@@ -28,8 +28,34 @@ run_treatment() {
   local name="${endpoint_kind}-${effort}-$((${max_tokens} / 1024))k-r${repeat}"
   local output="${OUTPUT_DIR}/${name}.json"
   if [[ -s "${output}" ]]; then
-    echo "skip completed ${name}"
-    return
+    if jq -e \
+      --arg tag "${name}" \
+      --arg model "${model}" \
+      --arg effort "${effort}" \
+      --arg contract "${contract}" \
+      --arg sampling "${sampling}" \
+      --argjson max_tokens "${max_tokens}" \
+      --argjson repeat "${repeat}" \
+      --argjson expected_runs "${MATRIX_REPEATS}" \
+      --argjson stream "${stream}" \
+      '.harness_id == "lakehouse-thinking-v2"
+       and .status == "passed"
+       and .tag == $tag
+       and .model == $model
+       and .mode == "deepseek-thinking"
+       and .repeat == $repeat
+       and .expected_runs == $expected_runs
+       and .max_tokens == $max_tokens
+       and .request_config.deepseek_effort == $effort
+       and .request_config.deepseek_contract == $contract
+       and .request_config.deepseek_sampling == $sampling
+       and (.request_config.stream // false) == $stream' \
+      "${output}" >/dev/null; then
+      echo "skip validated ${name}"
+      return
+    fi
+    echo "Refusing to reuse incompatible or incomplete evidence: ${output}" >&2
+    exit 3
   fi
   local stream_args=()
   if [[ "${stream}" == "true" ]]; then
