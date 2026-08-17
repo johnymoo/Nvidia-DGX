@@ -68,9 +68,9 @@ DeepSeek `low / 32K`、`high / 256K`、`max / 384K` 参数矩阵，并补充标�
 服务启动和完整环境快照。private 固定为
 `deepseek-v4-flash-0731`，online 为动态 `deepseek-v4-flash`；每个 DS 处理组完成两次独立运行。
 
-- HTML SHA-256：`47f87da6a48facacfc64e48b4ac955aeee9c1abbbda3f1f84af45608db14a4fd`
-- PDF SHA-256：`abcf920d43a999d2f5e1eff86ee1fd162fb41e4f8af9e12a7c079fce07980729`
-- PDF：7 页 A4；嵌入 `NotoSansCJKsc-Regular/Bold`，并通过中文文本抽取检查。
+- HTML SHA-256：`61066b07b7dd23a78c63ab05b599f27fa39d52c20e2b3659a6088b553ee5e0cc`
+- PDF SHA-256：`54fe94b2111f242ed476ac1384a0e28e7aea95db16e823eac33400877128c1e6`
+- PDF：4 页 A4 横向；表格单元格自动换行、表头跨页重复，嵌入 `NotoSansCJKsc-Regular/Bold`，并通过中文文本抽取检查。
 - 原始 Harness：`lakehouse-thinking-v1`，每次 18 题；online 用 SSE，private 保持 vLLM 非流式请求。
 - 裁决：CDC 题剔除、拓扑排序题重判；原始证据未修改。后续运行使用 `lakehouse-thinking-v2`。
 - 决策与 NAS Ubuntu Nginx 504 诊断见
