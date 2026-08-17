@@ -15,6 +15,32 @@ results/<hardware>/<model>/<run-id>/
 `-- README.md
 ```
 
+## Repository-Only Packaging Workflow
+
+1. Select one exact recipe and read its maturity, limitations, and invalidation
+   conditions. Inspect operations with `./run.sh` or `./lab run ... --dry-run`.
+2. On matching hardware, run the declared acceptance and a canonical suite.
+   This repository delivery does not perform that step for you.
+3. Copy [REPORT.md](../benchmarks/report-template/REPORT.md) into the new result
+   bundle. Add sanitized raw request records or an external URL, byte count, and
+   SHA-256; never add weights, private topology, credentials, or raw host logs.
+4. Hash the four required bundle files:
+
+   ```bash
+   cd results/<hardware>/<model>/<run-id>
+   sha256sum README.md result.json receipt.json report.md > manifest.sha256
+   ```
+
+5. Validate before opening a pull request:
+
+   ```bash
+   python3 benchmarks/runner/validate_submission.py results/<hardware>/<model>/<run-id>
+   ./scripts/validate-no-host.sh
+   ```
+
+6. Use the pull-request template and state separately which checks ran on real
+   hardware and which were repository-only.
+
 ## Required Performance Fields
 
 Text and multimodal text-generation results include every field below. Use
@@ -48,3 +74,5 @@ ineligible. Hardware is grouped before ranking.
 Legacy data may be indexed as Reference without changing its values. State the
 original metric definition, workload, concurrency, and source report; set
 `legacy_metric_definitions: true`; do not assign an active suite retroactively.
+The complete packaging-only fixture is
+[benchmarks/examples/reference-bundle](../benchmarks/examples/reference-bundle/).

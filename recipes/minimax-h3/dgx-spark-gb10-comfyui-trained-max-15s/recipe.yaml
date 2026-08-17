@@ -10,9 +10,16 @@
   "maturity": "Verified",
   "default": true,
   "source_paths": ["README.md", "execution/"],
-  "operations": {"accept": ["test-recipe.sh"], "benchmark": ["execution/minimax-h3-benchmark/run-benchmark.sh"]},
+  "operations": {
+    "prepare": ["execution/minimax-h3/prepare-weights.sh"],
+    "start": ["execution/minimax-h3/start-comfyui.sh"],
+    "status": ["execution/minimax-h3/status-comfyui.sh"],
+    "accept": ["execution/minimax-h3/run-smoke.sh"],
+    "benchmark": ["execution/minimax-h3-benchmark/run-benchmark.sh"],
+    "stop": ["execution/minimax-h3/stop-comfyui.sh"]
+  },
   "benchmark_suites": ["media-performance-v1@1", "legacy-minimax-h3-nine-case"],
-  "evidence": {"receipts": ["BENCHMARK-RESULTS.md"], "benchmarks": ["benchmark-results.json"]},
+  "evidence": {"receipts": ["receipts/deployment-20260813.json"], "benchmarks": ["benchmark-results.json"]},
   "limitations": ["Media results are excluded from token-TPS ranking.", "Generated media and raw host logs are intentionally not committed."],
   "invalidation_conditions": ["Any weight, ComfyUI, workflow, resolution, frame-count, sampling-step, or hardware change."]
 }

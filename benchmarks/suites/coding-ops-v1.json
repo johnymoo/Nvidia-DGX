@@ -1,1 +1,12 @@
-{"id":"coding-ops-v1","version":"1.0.0","cases":["programming","terminal","operations"],"requires_sandbox":true}
+{
+  "id": "coding-ops-v1",
+  "version": "1.0.0",
+  "case_source": {
+    "path": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/benchmark/tasks.json",
+    "sha256": "05a72e83e107ba0d6fbbfef6b60178aba9ab00935679e7630c9e3926524cd880",
+    "groups": ["programming", "terminal", "operations"]
+  },
+  "request_contract": {"samples_per_case": 1, "isolated_sandbox": true, "network": "disabled"},
+  "evaluation": "Run only the deterministic task grader declared by the source manifest.",
+  "active_result_rule": "Requires a new run against this exact suite identity; historical results remain Reference."
+}

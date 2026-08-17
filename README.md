@@ -47,7 +47,8 @@ identity is incomplete.
 Grouped by `hardware_id + model_family`; quantization and runtime remain visible
 inside the selected row. Different hardware is never ranked together. Selection
 requires a Verified recipe and result, active suite major version, explicit
-workload/cache/concurrency identity, passing acceptance/reliability/safety, and
+workload/cache/concurrency identity, a SHA-bound exact-subject receipt, configured
+model-group quality/context floors, passing acceptance/reliability/safety, and
 all ranking metrics. Missing evidence fails closed.
 
 <!-- BEGIN GENERATED:best-verified -->
@@ -69,15 +70,16 @@ and metric definitions and are not ranked as Best Verified. `N/A` means the
 source did not record a compatible field; it never means zero.
 
 <!-- BEGIN GENERATED:reference-results -->
-| Hardware | Model | Runtime / profile | TTFT | Response | Decode TPS | Aggregate TPS | Evidence |
-|---|---|---|---:|---:|---:|---:|---|
-| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | N/A | N/A | 68.8 | 229.3 | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
-| dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | N/A | 130.5 | N/A | N/A | [result](results/dgx-spark-gb10/minimax-h3/reference-20260813/result.json) / [source](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md) |
-| dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | N/A | 28.89 | 34.6 | N/A | [result](results/dgx-spark-gb10/qwen3.5/reference-legacy/result.json) / [source](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md) |
-| dgx-spark-gb10 | Qwen3.6-35B-A3B-NVFP4 | vllm / nvfp4-mtp3-256k | N/A | N/A | 152.1 | N/A | [result](results/dgx-spark-gb10/qwen3.6/reference-20260618/result.json) / [source](recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md) |
-| rtx4090-48gb | Qwen/Qwen3.6-35B-A3B-FP8 | vllm-0.19.0 / fp8-32k-p2 | 0.08743 | 17.094655 | 112.18763 | N/A | [result](results/rtx4090-48gb/qwen3.6/reference-20260817/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/report/lakehouse-thinking.html) |
-| rtx3090-24gb | Qwen3.8-27B-Q3_K_S | llama.cpp / q3-k-s-128k-p2 | N/A | N/A | 30.1 | 50.8 | [result](results/rtx3090-24gb/qwen3.8/reference-20260815/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/README.md) |
-| rtx4090-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-256k-p1 | N/A | N/A | 94.33 | N/A | [result](results/rtx4090-48gb/qwen3.8/reference-20260817/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.html) |
+| Hardware | Model | Runtime / profile | Legacy workload | Recorded metrics | Evidence |
+|---|---|---|---|---|---|
+| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance-concurrent-6; concurrency=6; cache=unknown | recorded aggregate TPS: 229.3 (recorded concurrent aggregate) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-concurrent/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance; concurrency=1; cache=unknown | recorded generation/decode TPS: 68.8 (recorded single-stream mean) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-single/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | 362-frames-512x320-six-steps; concurrency=1; cache=cold | response: 130.5 (approximate recorded bounded wall time) | [result](results/dgx-spark-gb10/minimax-h3/reference-20260813/result.json) / [source](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | 1000-token-generation; concurrency=1; cache=unknown | response: 28.89 (legacy source definition); recorded generation/decode TPS: 34.6 (recorded llama.cpp speed) | [result](results/dgx-spark-gb10/qwen3.5/reference-legacy/result.json) / [source](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md) |
+| dgx-spark-gb10 | Qwen3.6-35B-A3B-NVFP4 | vllm / nvfp4-mtp3-256k | legacy-16-case-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 152.1 (recorded average generation throughput) | [result](results/dgx-spark-gb10/qwen3.6/reference-20260618/result.json) / [source](recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md) |
+| rtx4090-48gb | Qwen/Qwen3.6-35B-A3B-FP8 | vllm-0.19.0 / fp8-32k-p2 | legacy-fixed-generation; concurrency=1; cache=unknown | TTFT: 0.08743 (legacy source definition); response: 17.094655 (legacy source definition); recorded generation/decode TPS: 112.18763 (legacy corrected stream decode field) | [result](results/rtx4090-48gb/qwen3.6/reference-20260817/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/report/lakehouse-thinking.html) |
+| rtx3090-24gb | Qwen3.8-27B-Q3_K_S | llama.cpp / q3-k-s-128k-p2 | legacy-single-stream-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 30.1 (recorded single-stream mean); recorded_aggregate_tps: 50.8 (source summary did not record concurrency; not mapped to canonical aggregate TPS) | [result](results/rtx3090-24gb/qwen3.8/reference-20260815-single/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/README.md) |
+| rtx4090-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-256k-p1 | legacy-q4-mtp2-single-stream; concurrency=1; cache=unknown | recorded generation/decode TPS: 94.33 (recorded Q4 plus MTP2 generation throughput) | [result](results/rtx4090-48gb/qwen3.8/reference-20260817/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.html) |
 <!-- END GENERATED:reference-results -->
 
 ## Hardware
@@ -93,6 +95,7 @@ source did not record a compatible field; it never means zero.
 <!-- BEGIN GENERATED:recipes -->
 | Hardware | Model | Runtime / profile | Maturity | Recipe |
 |---|---|---|---|---|
+| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-off-tp2-control | Archived | [`deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-off`](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-off/) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | Reference | [`deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on`](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/) |
 | dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | Verified | [`minimax-h3.gb10.comfyui-trained-max-15s`](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/) |
 | dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | Reference | [`qwen3.5.gb10.llamacpp-9b-q4-k-m-8k`](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/) |

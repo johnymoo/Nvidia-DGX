@@ -10,7 +10,14 @@
   "maturity": "Reference",
   "default": true,
   "source_paths": ["README.md", "docker-compose.thinking-on.yml", "docker-compose.yml", "benchmark/", "data/"],
-  "operations": {"benchmark": ["benchmark/run.sh"]},
+  "operations": {
+    "prepare": ["scripts/lifecycle.sh", "prepare"],
+    "start": ["scripts/lifecycle.sh", "start"],
+    "status": ["scripts/lifecycle.sh", "status"],
+    "accept": ["scripts/lifecycle.sh", "accept"],
+    "benchmark": ["benchmark/run.sh"],
+    "stop": ["scripts/lifecycle.sh", "stop"]
+  },
   "benchmark_suites": ["legacy-deepseek-agent-route-comparison"],
   "evidence": {"receipts": [], "benchmarks": ["BENCHMARK-RESULTS.md", "benchmark-results-20260812.json"]},
   "limitations": ["Model weights and private runtime receipt are not published.", "Historical metrics do not declare an active canonical suite."],

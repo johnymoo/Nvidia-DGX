@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "recipe_id": "minimax-h3.gb10.comfyui-trained-max-15s",
+  "subject": {
+    "model": "MiniMax-H3",
+    "hardware": "dgx-spark-gb10",
+    "runtime": "comfyui",
+    "profile": "trained-max-362-frames-512x320"
+  },
+  "acceptance": {
+    "status": "passed",
+    "source": "BENCHMARK-RESULTS.md",
+    "scope": "Existing nine-case media benchmark and lifecycle evidence"
+  },
+  "collected_at": "2026-08-13T00:00:00Z",
+  "invalidation_conditions": [
+    "Any weight, ComfyUI, workflow, resolution, frame-count, sampling-step, or hardware change."
+  ]
+}

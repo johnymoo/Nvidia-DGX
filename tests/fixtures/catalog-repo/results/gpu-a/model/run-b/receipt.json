@@ -1,1 +1,1 @@
-{"schema_version":1,"status":"passed","recipe_id":"model.verified"}
+{"schema_version":1,"status":"passed","recipe_id":"model.verified","subject":{"model":"model/checkpoint","hardware":"gpu-a","runtime":"runtime-a","profile":"profile-a"},"acceptance":{"status":"passed"},"collected_at":"2026-01-01T00:00:00Z"}

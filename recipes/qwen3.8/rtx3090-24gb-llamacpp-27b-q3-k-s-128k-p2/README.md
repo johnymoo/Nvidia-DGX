@@ -80,7 +80,7 @@ df -h /mnt/LLM/Qwen
 ## 安装与下载
 
 ```bash
-cd qwen38-rtx3090
+cd recipes/qwen3.8/rtx3090-24gb-llamacpp-27b-q3-k-s-128k-p2
 cp config/qwen38.env.example config/qwen38.env
 chmod +x scripts/*.sh scripts/*.py
 mkdir -p /mnt/LLM/Qwen

@@ -32,7 +32,7 @@ ModelScope 下载原生 FP8 多模态权重到 `/data/models`，使用固定 dig
 依赖 Docker、NVIDIA Container Toolkit、`nvidia-smi`、Python 3 和 curl。
 
 ```bash
-cd qwen38-rtx4090-vllm
+cd recipes/qwen3.8/rtx4090-48gb-vllm-27b-fp8-64k-p4
 cp config/qwen38.env.example config/qwen38.env
 ./scripts/download.sh
 ./scripts/start.sh

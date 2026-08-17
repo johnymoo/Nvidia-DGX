@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "result_id": "example-reference-bundle",
+  "recipe_id": "example.not-a-deployment",
+  "suite": {"id": "example-only", "version": "0"},
+  "workload": {"id": "no-inference-example", "concurrency": 1, "cache_state": "unknown"},
+  "metrics": {},
+  "receipt": "receipt.json",
+  "maturity": "Reference",
+  "status": {"acceptance": "unknown", "reliability": "unknown", "safety": "unknown"},
+  "legacy_metric_definitions": true
+}

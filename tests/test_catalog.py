@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import shutil
 import tempfile
 import unittest
@@ -80,10 +81,35 @@ class CatalogTests(unittest.TestCase):
 
     def test_receipt_identity_mismatch_is_ineligible(self) -> None:
         receipt = self.root / "results/gpu-a/model/run-a/receipt.json"
-        receipt.write_text('{"status":"passed","recipe_id":"another.recipe"}\n')
+        value = json.loads(receipt.read_text())
+        value["subject"]["hardware"] = "gpu-b"
+        receipt.write_text(json.dumps(value))
+        result = self.root / "results/gpu-a/model/run-a/result.json"
+        result_value = json.loads(result.read_text())
+        result_value["receipt_sha256"] = hashlib.sha256(receipt.read_bytes()).hexdigest()
+        result.write_text(json.dumps(result_value))
         latest = latest_benchmarks(self.root)
         rejected = {item["result_id"]: item["reasons"] for item in latest["ineligible_verified"]}
-        self.assertIn("receipt recipe_id does not match", " ".join(rejected["run-a"]))
+        self.assertIn("receipt subject does not match", " ".join(rejected["run-a"]))
+
+    def test_receipt_hash_mismatch_is_ineligible(self) -> None:
+        receipt = self.root / "results/gpu-a/model/run-a/receipt.json"
+        receipt.write_text(receipt.read_text() + "\n")
+        rejected = {item["result_id"]: item["reasons"] for item in latest_benchmarks(self.root)["ineligible_verified"]}
+        self.assertIn("receipt_sha256 does not match", " ".join(rejected["run-a"]))
+
+    def test_quality_context_and_cache_requirements_fail_closed(self) -> None:
+        result = self.root / "results/gpu-a/model/run-a/result.json"
+        value = json.loads(result.read_text())
+        value.pop("quality_floor")
+        value["workload"]["cache_state"] = "unknown"
+        value["context_floor"]["tested_tokens"] = 2048
+        result.write_text(json.dumps(value))
+        rejected = {item["result_id"]: item["reasons"] for item in latest_benchmarks(self.root)["ineligible_verified"]}
+        reasons = " ".join(rejected["run-a"])
+        self.assertIn("quality floor", reasons)
+        self.assertIn("context floor", reasons)
+        self.assertIn("cache_state cannot be unknown", reasons)
 
     def test_readme_renderer_only_replaces_explicit_markers(self) -> None:
         source = "# Lab\n\n<!-- BEGIN GENERATED:best-verified -->\nold\n<!-- END GENERATED:best-verified -->\n"
@@ -91,7 +117,12 @@ class CatalogTests(unittest.TestCase):
         rendered = render_readme(source, {"best-verified": fragment})
         self.assertIn("run-b", rendered)
         self.assertNotIn("\nold\n", rendered)
-        self.assertEqual(render_readme("# No markers\n", {"best-verified": fragment}), "# No markers\n")
+        with self.assertRaisesRegex(CatalogError, "exactly one marker pair"):
+            render_readme("# No markers\n", {"best-verified": fragment})
+        with self.assertRaisesRegex(CatalogError, "exactly one marker pair"):
+            render_readme(source + source, {"best-verified": fragment})
+        with self.assertRaisesRegex(CatalogError, "exactly one marker pair"):
+            render_readme("<!-- BEGIN GENERATED:best-verified -->\n", {"best-verified": fragment})
 
     def test_reference_fragment_keeps_legacy_results_separate(self) -> None:
         fragment = reference_results_fragment(latest_benchmarks(self.root))
@@ -99,7 +130,12 @@ class CatalogTests(unittest.TestCase):
         self.assertNotIn("run-b", fragment)
 
     def test_generated_outputs_are_stable(self) -> None:
-        (self.root / "README.md").write_text("# Fixture\n")
+        (self.root / "README.md").write_text(
+            "# Fixture\n\n"
+            "<!-- BEGIN GENERATED:best-verified -->\nold\n<!-- END GENERATED:best-verified -->\n\n"
+            "<!-- BEGIN GENERATED:reference-results -->\nold\n<!-- END GENERATED:reference-results -->\n\n"
+            "<!-- BEGIN GENERATED:recipes -->\nold\n<!-- END GENERATED:recipes -->\n"
+        )
         outputs = generated_outputs(self.root)
         first = {path.relative_to(self.root): content for path, content in outputs.items()}
         second = {path.relative_to(self.root): content for path, content in generated_outputs(self.root).items()}

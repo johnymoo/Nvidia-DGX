@@ -1,1 +1,11 @@
-{"id":"long-context-v1","version":"1.0.0","levels":"recipe-defined bounded token levels","requires_retrieval_check":true}
+{
+  "id": "long-context-v1",
+  "version": "1.0.0",
+  "case_source": {
+    "path": "benchmarks/legacy/qwen-deepseek-cross-model/scripts/long_context_retrieval_benchmark.py",
+    "sha256": "aa53402accfce87bf17147f24499599a1639296b2b3d9b3885ec6b0093e89b3e"
+  },
+  "request_contract": {"levels": "explicit token counts in workload", "cache_states": ["cold", "warm"], "concurrency": 1},
+  "evaluation": "Exact retrieval answer plus recorded prompt-token count and client-observed latency.",
+  "active_result_rule": "Requires a new run against this exact suite identity; historical results remain Reference."
+}

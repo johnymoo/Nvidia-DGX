@@ -1,6 +1,17 @@
 {
   "id": "performance-v1",
   "version": "1.0.0",
+  "case_source": {
+    "path": "benchmarks/legacy/qwen-deepseek-cross-model/scripts/inference_latency_benchmark.py",
+    "sha256": "286d2d89dacad97612ecdd7653b9a8366feb5ee0e46caf16188edbf6b4ec206a",
+    "adapter": "Reuse metric collection semantics only; a new run must record exact prompts and request parameters in its workload bundle."
+  },
+  "request_contract": {
+    "stream": true,
+    "cache_states": ["cold", "warm"],
+    "concurrency_levels": "result bundle must enumerate every tested level",
+    "samples_per_case": "result bundle must state a positive integer"
+  },
   "modalities": ["text-generation", "multimodal-generation"],
   "required_client_metrics": [
     "ttft_seconds",
@@ -24,5 +35,7 @@
     "output_tokens_per_second_e2e": "completion tokens divided by response time",
     "aggregate_tokens_per_second": "concurrent batch completion tokens divided by batch wall time"
   },
-  "distribution_fields": ["min", "mean", "p50", "p95", "p99", "max"]
+  "distribution_fields": ["min", "mean", "p50", "p95", "p99", "max"],
+  "evaluation": "Client-observed timings and token counts are computed from the committed raw request records.",
+  "active_result_rule": "Requires a new run against this exact suite identity; historical results remain Reference."
 }

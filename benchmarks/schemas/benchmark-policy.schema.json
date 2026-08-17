@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Best Verified benchmark policy",
+  "type": "object",
+  "required": ["schema_version", "policy_id", "group_by", "active_suites", "required_identity", "required_status", "model_group_floors", "ranking"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "policy_id": {"type": "string"},
+    "group_by": {"const": ["hardware_id", "model_family"]},
+    "active_suites": {"type": "object"},
+    "required_identity": {"type": "array", "items": {"type": "string"}},
+    "required_status": {"type": "object"},
+    "model_group_floors": {"type": "object"},
+    "ranking": {"type": "array"}
+  }
+}

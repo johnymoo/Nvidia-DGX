@@ -17,7 +17,7 @@ from tools.catalog import (
 from tools.validate import run_checks
 
 
-ALL_CHECKS = ["metadata", "privacy", "links", "generated", "static"]
+ALL_CHECKS = ["metadata", "privacy", "binary", "links", "generated", "static"]
 
 
 def repository_root() -> Path:

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Canonical benchmark suite",
+  "type": "object",
+  "required": ["id", "version", "case_source", "request_contract", "evaluation", "active_result_rule"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "case_source": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "request_contract": {"type": "object"},
+    "evaluation": {"type": "string"},
+    "active_result_rule": {"type": "string"}
+  }
+}

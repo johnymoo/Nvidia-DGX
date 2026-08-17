@@ -19,7 +19,7 @@
       }
     },
     "acceptance": {"type": "object"},
-    "collected_at": {"type": "string"},
+    "collected_at": {"type": "string", "format": "date-time"},
     "invalidation_conditions": {"type": "array", "items": {"type": "string"}}
   },
   "additionalProperties": true

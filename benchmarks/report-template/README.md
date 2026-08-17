@@ -17,3 +17,6 @@ Use separate sections for:
 Unsupported metrics are `N/A`; they are never represented as zero and are
 excluded from applicable averages. Different hardware may be shown side by side
 but is never ranked together.
+
+Copy [REPORT.md](REPORT.md) into each new result bundle. Validate the completed
+bundle with `python3 benchmarks/runner/validate_submission.py <bundle>`.

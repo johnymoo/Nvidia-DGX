@@ -5,6 +5,8 @@
   "maturity": "Verified",
   "suite": {"id": "performance-v1", "version": "1.9.0"},
   "workload": {"id": "single", "concurrency": 1, "cache_state": "warm"},
+  "quality_floor": {"id": "quality-v1", "status": "passed"},
+  "context_floor": {"status": "passed", "tested_tokens": 8192},
   "acceptance": {"status": "passed"},
   "reliability": {"status": "passed"},
   "safety": {"status": "passed"},
@@ -14,5 +16,6 @@
     "ttft_seconds": {"mean": 0.6}
   },
   "receipt": "results/gpu-a/model/run-b/receipt.json",
+  "receipt_sha256": "b19828aee8216eefee66a499e8048158dcb51d7f578faf666e9889da6bf6982b",
   "report": "results/gpu-a/model/run-b/report.md"
 }

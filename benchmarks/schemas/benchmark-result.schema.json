@@ -54,6 +54,20 @@
       }
     },
     "receipt": {"type": "string"},
+    "receipt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "quality_floor": {
+      "type": "object",
+      "required": ["id", "status"],
+      "properties": {"id": {"type": "string"}, "status": {"enum": ["passed", "failed"]}}
+    },
+    "context_floor": {
+      "type": "object",
+      "required": ["status", "tested_tokens"],
+      "properties": {
+        "status": {"enum": ["passed", "failed"]},
+        "tested_tokens": {"type": "integer", "minimum": 1}
+      }
+    },
     "maturity": {"enum": ["Verified", "Reference", "Archived"]},
     "status": {
       "type": "object",

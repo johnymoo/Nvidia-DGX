@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "result_id": "qwen3.8-27b-rtx3090-reference-20260815",
+  "result_id": "qwen3.8-27b-rtx3090-reference-20260815-single",
   "recipe_id": "qwen3.8.rtx3090-24gb.llamacpp-27b-q3-k-s-128k-p2",
   "suite": {"id": "legacy-pr29-quality-performance", "version": "2026-08-15"},
   "workload": {"id": "legacy-single-stream-generation", "concurrency": 1, "cache_state": "unknown"},
@@ -10,13 +10,16 @@
     "response_time_seconds": null,
     "decode_tokens_per_second": {"mean": 30.1, "definition": "recorded single-stream mean"},
     "output_tokens_per_second_e2e": null,
-    "aggregate_tokens_per_second": {"mean": 50.8, "definition": "recorded concurrent aggregate"},
+    "aggregate_tokens_per_second": null,
     "prompt_tokens": null,
     "completion_tokens": null,
     "reasoning_tokens": null,
     "cached_tokens": null,
     "errors": {"status": "legacy"},
     "hardware": {"class": "NVIDIA RTX 3090 24 GB"}
+  },
+  "legacy_metrics": {
+    "recorded_aggregate_tps": {"value": 50.8, "definition": "source summary did not record concurrency; not mapped to canonical aggregate TPS"}
   },
   "receipt": "recipes/qwen3.8/rtx3090-24gb-llamacpp-27b-q3-k-s-128k-p2/receipts/deployment-20260815T144804Z.json",
   "report": "benchmarks/legacy/qwen-deepseek-cross-model/README.md",

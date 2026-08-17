@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from dataclasses import dataclass
 from functools import cmp_to_key
@@ -185,7 +186,15 @@ def suite_identity(result: dict[str, Any]) -> str | None:
     return f"{suite_id}@{major}" if major.isdigit() else None
 
 
-def receipt_reasons(root: Path, result: dict[str, Any]) -> list[str]:
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def receipt_reasons(root: Path, recipe: dict[str, Any], result: dict[str, Any]) -> list[str]:
     receipt = result.get("receipt")
     if not isinstance(receipt, str) or not receipt.strip():
         return ["receipt is missing"]
@@ -196,6 +205,11 @@ def receipt_reasons(root: Path, result: dict[str, Any]) -> list[str]:
         return ["receipt escapes the repository"]
     if not path.is_file():
         return ["receipt does not resolve to a repository file"]
+    expected_hash = result.get("receipt_sha256")
+    if not isinstance(expected_hash, str) or len(expected_hash) != 64:
+        return ["receipt_sha256 is missing or invalid"]
+    if _sha256(path) != expected_hash:
+        return ["receipt_sha256 does not match the receipt"]
     try:
         value = read_json_object(path, "deployment receipt")
     except CatalogError as exc:
@@ -205,6 +219,38 @@ def receipt_reasons(root: Path, result: dict[str, Any]) -> list[str]:
         reasons.append("receipt status is not 'passed'")
     if value.get("recipe_id") != result.get("recipe_id"):
         reasons.append("receipt recipe_id does not match result recipe_id")
+    subject = value.get("subject")
+    expected_subject = {
+        "model": recipe.get("model_id"),
+        "hardware": recipe.get("hardware_id"),
+        "runtime": recipe.get("runtime_id"),
+        "profile": recipe.get("profile_id"),
+    }
+    if subject != expected_subject:
+        reasons.append("receipt subject does not match recipe identity")
+    return reasons
+
+
+def floor_reasons(recipe: dict[str, Any], result: dict[str, Any], policy: dict[str, Any]) -> list[str]:
+    key = f"{recipe.get('hardware_id')}::{recipe.get('model_family')}"
+    floor = (policy.get("model_group_floors") or {}).get(key)
+    if not isinstance(floor, dict):
+        return [f"model-group floor {key!r} is not configured"]
+    reasons = []
+    quality = result.get("quality_floor")
+    context = result.get("context_floor")
+    if not isinstance(quality, dict) or quality.get("id") != floor.get("quality_id") or quality.get("status") != "passed":
+        reasons.append("quality floor is missing, mismatched, or not passed")
+    required_tokens = floor.get("minimum_context_tokens")
+    measured_tokens = context.get("tested_tokens") if isinstance(context, dict) else None
+    if (
+        not isinstance(context, dict)
+        or context.get("status") != "passed"
+        or not isinstance(required_tokens, int)
+        or not isinstance(measured_tokens, int)
+        or measured_tokens < required_tokens
+    ):
+        reasons.append("context floor is missing or not satisfied")
     return reasons
 
 
@@ -232,10 +278,13 @@ def eligibility_reasons(
         value = result.get("suite") if field == "suite" else dotted(result, field)
         if not explicit(value):
             reasons.append(f"required identity {field!r} is missing")
+    if dotted(result, "workload.cache_state") == "unknown":
+        reasons.append("workload cache_state cannot be unknown")
     for field, expected in (policy.get("required_status") or {}).items():
         if status_value(dotted(result, field)) != expected:
             reasons.append(f"status {field!r} is not {expected!r}")
-    reasons.extend(receipt_reasons(root, result))
+    reasons.extend(receipt_reasons(root, recipe, result))
+    reasons.extend(floor_reasons(recipe, result, policy))
     for rule in policy.get("ranking", []):
         field = rule.get("field")
         value = dotted(result, field) if isinstance(field, str) else None
@@ -280,6 +329,7 @@ def _result_summary(root: Path, path: Path, result: dict[str, Any], recipe: dict
         "suite": result["suite"],
         "workload": result["workload"],
         "metrics": result["metrics"],
+        "legacy_metrics": result.get("legacy_metrics", {}),
         "receipt": result["receipt"],
         "report": result.get("report"),
         "result_path": path.relative_to(root).as_posix(),
@@ -417,23 +467,37 @@ def best_verified_fragment(latest: dict[str, Any]) -> str:
 
 def reference_results_fragment(latest: dict[str, Any]) -> str:
     lines = [
-        "| Hardware | Model | Runtime / profile | TTFT | Response | Decode TPS | Aggregate TPS | Evidence |",
-        "|---|---|---|---:|---:|---:|---:|---|",
+        "| Hardware | Model | Runtime / profile | Legacy workload | Recorded metrics | Evidence |",
+        "|---|---|---|---|---|---|",
     ]
     for item in latest["reference_results"]:
         metrics = item["metrics"]
         report = item.get("report") or item["result_path"]
+        recorded = []
+        for field, label in (
+            ("ttft_seconds", "TTFT"),
+            ("response_time_seconds", "response"),
+            ("decode_tokens_per_second", "recorded generation/decode TPS"),
+            ("aggregate_tokens_per_second", "recorded aggregate TPS"),
+        ):
+            metric = metrics.get(field)
+            if isinstance(metric, dict) and metric.get("mean") is not None:
+                definition = metric.get("definition", "legacy source definition")
+                recorded.append(f"{label}: {metric['mean']} ({definition})")
+        for label, metric in (item.get("legacy_metrics") or {}).items():
+            if isinstance(metric, dict) and metric.get("value") is not None:
+                recorded.append(f"{label}: {metric['value']} ({metric.get('definition', 'legacy source definition')})")
+        workload = item["workload"]
         lines.append(
             f"| {_md(item['hardware_id'])} | {_md(item['model_id'])} | "
             f"{_md(item['runtime_id'])} / {_md(item['profile_id'])} | "
-            f"{_md(dotted(metrics, 'ttft_seconds.mean'))} | "
-            f"{_md(dotted(metrics, 'response_time_seconds.mean'))} | "
-            f"{_md(dotted(metrics, 'decode_tokens_per_second.mean'))} | "
-            f"{_md(dotted(metrics, 'aggregate_tokens_per_second.mean'))} | "
+            f"{_md(workload.get('id'))}; concurrency={_md(workload.get('concurrency'))}; "
+            f"cache={_md(workload.get('cache_state'))} | "
+            f"{_md('; '.join(recorded) if recorded else 'N/A')} | "
             f"[result]({_md(item['result_path'])}) / [source]({_md(report)}) |"
         )
     if len(lines) == 2:
-        lines.append("| - | - | - | - | - | - | - | No historical Reference result is cataloged. |")
+        lines.append("| - | - | - | - | No historical Reference result is cataloged. | - |")
     return "\n".join(lines)
 
 
@@ -444,8 +508,6 @@ def render_readme(readme: str, fragments: dict[str, str]) -> str:
             raise CatalogError(f"unknown README generated fragment {name!r}")
         begin, end = README_MARKERS[name]
         begin_count, end_count = rendered.count(begin), rendered.count(end)
-        if begin_count == end_count == 0:
-            continue
         if begin_count != 1 or end_count != 1:
             raise CatalogError(f"README must contain exactly one marker pair for {name!r}")
         start = rendered.index(begin) + len(begin)

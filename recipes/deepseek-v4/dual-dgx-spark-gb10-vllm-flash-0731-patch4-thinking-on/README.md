@@ -116,6 +116,17 @@ Worker DGX Spark
 
 ## 使用
 
+从该 recipe 目录可先检查统一入口而不执行操作：
+
+```bash
+./run.sh
+./run.sh prepare --dry-run
+```
+
+`start` 和 `stop` 委托下述现有 Compose 流程，并要求显式设置
+`DEEPSEEK_ALLOW_LIVE=1`。双机顺序、`.env` 和维护窗口仍由操作者负责；
+`accept` 只检查配置、health 和模型列表，不提交生成请求。
+
 ### 1. 验证 Thinking 配置
 
 在任一节点渲染最终配置：

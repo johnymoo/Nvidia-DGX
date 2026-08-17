@@ -62,6 +62,15 @@ Offline tests and a synthetic 141-attempt report need no model access:
 ./run.sh fake
 ```
 
+`fixtures/` contains challenge inputs, not repository regression projects.
+Several untouched programming fixtures are intentionally failing: the official
+offline harness first confirms baseline failure, overlays the calibration
+solution in an isolated temporary copy, and then requires the grader to pass.
+Do not run broad `unittest` discovery inside individual challenge fixtures and
+interpret those expected failures as repository regressions. The supported
+repository-only check is exactly `./run.sh test`; `./run.sh fake` generates a
+synthetic report but is not part of CI acceptance.
+
 Real endpoint/judge preflight and the complete run are single commands:
 
 ```bash

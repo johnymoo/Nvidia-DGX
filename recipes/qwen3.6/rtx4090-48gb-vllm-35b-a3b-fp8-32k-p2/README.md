@@ -32,7 +32,7 @@ vLLM 部署，用于和 Qwen3.8-27B-FP8 做同机湖仓推理对比。模型从 
 依赖 Docker、NVIDIA Container Toolkit、`nvidia-smi`、Python 3 和 curl。
 
 ```bash
-cd qwen36-rtx4090-vllm
+cd recipes/qwen3.6/rtx4090-48gb-vllm-35b-a3b-fp8-32k-p2
 cp config/qwen36.env.example config/qwen36.env
 ./scripts/download.sh
 ./scripts/start.sh

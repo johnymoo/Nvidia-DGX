@@ -1,1 +1,11 @@
-{"id":"multimodal-v1","version":"1.0.0","inputs":["image","video"],"optional":true}
+{
+  "id": "multimodal-v1",
+  "version": "1.0.0",
+  "case_source": {
+    "path": "benchmarks/legacy/qwen-deepseek-cross-model/scripts/vision_quantization_benchmark.py",
+    "sha256": "e3c8ec94372710fccdcc9c36dc063538141497ba018f5c0d2420858e71f4a239"
+  },
+  "request_contract": {"inputs": ["image", "video"], "assets": "result workload must bind each asset SHA-256", "samples_per_case": 1},
+  "evaluation": "Case-specific deterministic expected content and client-observed performance metrics.",
+  "active_result_rule": "Requires a new run against this exact suite identity; historical results remain Reference."
+}

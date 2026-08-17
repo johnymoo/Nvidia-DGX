@@ -3,6 +3,35 @@
   "recipes": [
     {
       "schema_version": 1,
+      "id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-off",
+      "model_family": "deepseek-v4",
+      "model_id": "DeepSeek-V4-Flash-0731",
+      "hardware_id": "dgx-spark-gb10-pair",
+      "runtime_id": "vllm-patch4",
+      "profile_id": "thinking-off-tp2-control",
+      "modality": "text-generation",
+      "maturity": "Archived",
+      "default": false,
+      "source_paths": [
+        "../dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/docker-compose.yml"
+      ],
+      "operations": {},
+      "benchmark_suites": [],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": []
+      },
+      "limitations": [
+        "Retained only as the historical thinking-off recovery/control Compose profile.",
+        "No independent acceptance receipt or benchmark is published for this profile."
+      ],
+      "invalidation_conditions": [
+        "Checkpoint, Patch4 image, tensor-parallel topology, thinking mode, or Compose arguments change."
+      ],
+      "metadata_path": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-off/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
       "id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on",
       "model_family": "deepseek-v4",
       "model_id": "DeepSeek-V4-Flash-0731",
@@ -20,8 +49,28 @@
         "data/"
       ],
       "operations": {
+        "prepare": [
+          "scripts/lifecycle.sh",
+          "prepare"
+        ],
+        "start": [
+          "scripts/lifecycle.sh",
+          "start"
+        ],
+        "status": [
+          "scripts/lifecycle.sh",
+          "status"
+        ],
+        "accept": [
+          "scripts/lifecycle.sh",
+          "accept"
+        ],
         "benchmark": [
           "benchmark/run.sh"
+        ],
+        "stop": [
+          "scripts/lifecycle.sh",
+          "stop"
         ]
       },
       "benchmark_suites": [
@@ -59,11 +108,23 @@
         "execution/"
       ],
       "operations": {
+        "prepare": [
+          "execution/minimax-h3/prepare-weights.sh"
+        ],
+        "start": [
+          "execution/minimax-h3/start-comfyui.sh"
+        ],
+        "status": [
+          "execution/minimax-h3/status-comfyui.sh"
+        ],
         "accept": [
-          "test-recipe.sh"
+          "execution/minimax-h3/run-smoke.sh"
         ],
         "benchmark": [
           "execution/minimax-h3-benchmark/run-benchmark.sh"
+        ],
+        "stop": [
+          "execution/minimax-h3/stop-comfyui.sh"
         ]
       },
       "benchmark_suites": [
@@ -72,7 +133,7 @@
       ],
       "evidence": {
         "receipts": [
-          "BENCHMARK-RESULTS.md"
+          "receipts/deployment-20260813.json"
         ],
         "benchmarks": [
           "benchmark-results.json"
@@ -494,7 +555,7 @@
       ],
       "evidence": {
         "receipts": [
-          "receipts/deployment-20260815T144804Z.json"
+          "receipts/canonical-deployment-20260815.json"
         ],
         "benchmarks": [
           "../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"

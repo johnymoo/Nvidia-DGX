@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "result_id": "deepseek-v4-dual-gb10-reference-20260812",
+  "result_id": "deepseek-v4-dual-gb10-reference-20260812-concurrent-6",
   "recipe_id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on",
   "suite": {"id": "legacy-deepseek-agent-route-comparison", "version": "2026-08-12"},
-  "workload": {"id": "legacy-cross-model-performance", "concurrency": 1, "cache_state": "unknown"},
+  "workload": {"id": "legacy-cross-model-performance-concurrent-6", "concurrency": 6, "cache_state": "unknown"},
   "metrics": {
     "ttft_seconds": null,
     "first_final_token_seconds": null,
     "response_time_seconds": null,
-    "decode_tokens_per_second": {"mean": 68.8, "definition": "recorded single-stream mean"},
+    "decode_tokens_per_second": null,
     "output_tokens_per_second_e2e": null,
     "aggregate_tokens_per_second": {"mean": 229.3, "concurrency": 6, "definition": "recorded concurrent aggregate"},
     "prompt_tokens": null,

@@ -46,11 +46,14 @@ canonical result only after running the named suite.
 ## Before Opening A Pull Request
 
 ```bash
-python3 -m unittest discover -s tests -v
-./lab generate --write
-./lab validate
-git diff --check
+./scripts/validate-no-host.sh
 ```
+
+This allowlisted entry point runs only static, fixture, schema, generated-file,
+privacy, link, safe Compose-render, and official offline harness checks. It does
+not run recipe lifecycle commands, endpoint probes, Docker workloads, SSH, or
+model inference. Untouched benchmark challenge fixtures may intentionally fail;
+run them only through their documented offline harness.
 
 Describe what was tested on real hardware and what was only checked statically.
 Include rollback/recovery notes for lifecycle changes. Do not report a host test

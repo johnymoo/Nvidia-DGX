@@ -17,9 +17,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Fixture tests
-        run: python -m unittest discover -s tests -v
-      - name: Catalog and repository validation
-        run: python lab validate
-      - name: Generated files are current
-        run: python lab generate --check
+      - name: Install PDF inspection tools
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Explicit repository-only validation
+        run: ./scripts/validate-no-host.sh

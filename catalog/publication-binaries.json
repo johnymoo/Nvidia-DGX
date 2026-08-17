@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "exact": [
+    {
+      "path": "benchmarks/legacy/qwen-deepseek-cross-model/report/lakehouse-parameter-matrix.pdf",
+      "sha256": "54fe94b2111f242ed476ac1384a0e28e7aea95db16e823eac33400877128c1e6",
+      "reason": "Historical benchmark report paired with committed HTML and Markdown sources."
+    },
+    {
+      "path": "benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.pdf",
+      "sha256": "799488d6fe935a2fe875c42536e11a6b76364ab62914e13d3054663e7bbd0a0c",
+      "reason": "Historical benchmark report paired with committed HTML and Markdown sources."
+    },
+    {
+      "path": "examples/apps/xiaoyuzhou-podcast-asr/benchmarks/asr-eval-100/results/sensevoice-small-cuda-20260629/comparison.png",
+      "sha256": "5d11f9acc8911b2cb8820dc3939c12bda61708693bd8893aa5d5ee5b0ebc8542",
+      "reason": "Published chart generated from the committed ASR benchmark result."
+    },
+    {
+      "path": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/benchmark/fixtures/terminal-archive-verify/input/bundle.tar",
+      "sha256": "1ffa85a7b109087ba34780ceb583cd82cbeb1171eae38f6b6e3d53187166dc94",
+      "reason": "Synthetic offline benchmark fixture."
+    }
+  ],
+  "prefixes": [
+    {
+      "path": "examples/apps/xiaoyuzhou-podcast-asr/benchmarks/asr-eval-100/dataset/audio/",
+      "manifest": "examples/apps/xiaoyuzhou-podcast-asr/benchmarks/asr-eval-100/manifest.json",
+      "manifest_field": "dataset_audio_sha256",
+      "reason": "Synthetic 100-sample public ASR regression corpus with a committed aggregate digest."
+    }
+  ]
+}

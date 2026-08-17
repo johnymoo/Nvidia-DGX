@@ -12,7 +12,7 @@ OpenAI-compatible API。权重和 `mmproj` 从 ModelScope 下载，
 以字节数与 SHA-256 固定；运行时使用固定 OCI digest。
 
 ```bash
-cd qwen38-rtx4090-llamacpp
+cd recipes/qwen3.8/rtx4090-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-256k
 cp config/qwen38.env.example config/qwen38.env
 chmod +x scripts/*.sh
 ./scripts/download.sh
