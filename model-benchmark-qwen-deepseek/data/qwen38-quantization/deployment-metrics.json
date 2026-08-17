@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-08-17",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "vram_total_mib": 49140,
+    "driver": "580.173.02"
+  },
+  "profiles": {
+    "fp8": {
+      "runtime": "vLLM 0.19.0",
+      "quantization": "FP8",
+      "model_bytes": 30890049500,
+      "context": 65536,
+      "parallel": 4,
+      "kv_cache": "vLLM automatic",
+      "startup_seconds": 198.553,
+      "startup_qualification": "Observed service restart; Linux page cache was not cleared",
+      "vram_used_mib": 43439,
+      "cpu_offload_gb": 0
+    },
+    "q4": {
+      "runtime": "llama.cpp build 10459, commit 4197155ad",
+      "quantization": "Unsloth Dynamic V3 UD-Q4_K_XL",
+      "model_bytes": 17923394624,
+      "context": 65536,
+      "parallel": 1,
+      "kv_cache": "F16",
+      "startup_seconds": 100.928,
+      "startup_qualification": "Process start to health-ready; Linux page cache was not cleared",
+      "vram_used_mib": 22237,
+      "cpu_offload_gb": 0,
+      "tensor_types": {
+        "F32": 360,
+        "IQ4_XS": 65,
+        "Q4_K": 97,
+        "Q5_K": 325,
+        "Q6_K": 19
+      }
+    },
+    "q4_mtp2": {
+      "runtime": "llama.cpp build 10454, commit 4df29be4f",
+      "quantization": "Unsloth Dynamic V3 UD-Q4_K_XL + built-in MTP2",
+      "model_bytes": 17923394624,
+      "context": 65536,
+      "parallel": 1,
+      "kv_cache": "F16",
+      "startup_seconds": 20.434,
+      "startup_qualification": "Warm page-cache restart; process start to listening; excluded from cold-start ranking",
+      "vram_used_mib": 23205,
+      "cpu_offload_gb": 0,
+      "speculative_decoding": {
+        "type": "draft-mtp",
+        "n_max": 2,
+        "p_min": 0
+      },
+      "tensor_types": {
+        "F32": 360,
+        "IQ4_XS": 65,
+        "Q4_K": 97,
+        "Q5_K": 325,
+        "Q6_K": 19
+      }
+    },
+    "q6": {
+      "runtime": "llama.cpp build 10459, commit 4197155ad",
+      "quantization": "Unsloth Dynamic V3 UD-Q6_K_XL",
+      "model_bytes": 25924152384,
+      "context": 65536,
+      "parallel": 1,
+      "kv_cache": "F16",
+      "startup_seconds": 181.33,
+      "startup_qualification": "Process start to health-ready; Linux page cache was not cleared",
+      "vram_used_mib": 29437,
+      "cpu_offload_gb": 0,
+      "tensor_types": {
+        "F32": 360,
+        "Q5_K": 96,
+        "Q6_K": 131,
+        "Q8_0": 279
+      }
+    }
+  },
+  "selection": {
+    "profile": "q4",
+    "reason": "Q4 and Q6 tied on business and vision accuracy; Q4 had higher throughput, lower latency, lower VRAM use, and faster startup"
+  },
+  "deployment_runtime": {
+    "image": "m.daocloud.io/ghcr.io/ggml-org/llama.cpp@sha256:32d4b78519e450e9754853c500c41cea13488d01bd0d6a8333ed7dacf1d14180",
+    "image_id": "sha256:78ca0c1b14cc293e801845745f22fb4b260e806021a01eb465d0805bf14e374e",
+    "version": "b10454",
+    "commit": "4df29be4f4c3673f428170fda944a5b19f743bb8",
+    "qualification": "Selected Q4 is re-run on this deployment runtime after the three-way comparison"
+  },
+  "context_profiles": {
+    "65k": {
+      "context": 65536,
+      "vram_used_mib": 23205,
+      "vram_headroom_mib": 25295,
+      "decode_tokens_per_second": 94.32886,
+      "response_seconds": 11.986009000000001,
+      "long_context": "not measured in this sweep"
+    },
+    "128k": {
+      "context": 131072,
+      "vram_used_mib": 27685,
+      "vram_headroom_mib": 20815,
+      "decode_tokens_per_second": 94.09324600000001,
+      "response_seconds": 12.015259666666665,
+      "long_prompt_tokens": 120036,
+      "long_response_seconds": 68.764503,
+      "prefill_tokens_per_second": 1759.72,
+      "deep_decode_tokens_per_second": 70.27,
+      "retrieval": "passed"
+    },
+    "256k": {
+      "context": 262144,
+      "vram_used_mib": 36645,
+      "vram_headroom_mib": 11855,
+      "decode_tokens_per_second": 93.44575466666667,
+      "response_seconds": 12.098971,
+      "long_prompt_tokens": 245034,
+      "long_response_seconds": 194.984852,
+      "prefill_tokens_per_second": 1261.58,
+      "deep_decode_tokens_per_second": 54.39,
+      "retrieval": "passed"
+    }
+  }
+}

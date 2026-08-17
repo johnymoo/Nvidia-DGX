@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-08-17T05:59:10.492507+00:00",
+  "host": {
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "7.0.0-28-generic",
+    "architecture": "x86_64",
+    "cpu": [
+      {
+        "field": "Architecture:",
+        "data": "x86_64"
+      },
+      {
+        "field": "CPU(s):",
+        "data": "32"
+      },
+      {
+        "field": "Model name:",
+        "data": "Intel(R) Xeon(R) w5-3435X"
+      },
+      {
+        "field": "Thread(s) per core:",
+        "data": "2"
+      },
+      {
+        "field": "Core(s) per socket:",
+        "data": "16"
+      },
+      {
+        "field": "Socket(s):",
+        "data": "1"
+      },
+      {
+        "field": "L1d cache:",
+        "data": "768 KiB (16 instances)"
+      },
+      {
+        "field": "L1i cache:",
+        "data": "512 KiB (16 instances)"
+      },
+      {
+        "field": "L2 cache:",
+        "data": "32 MiB (16 instances)"
+      },
+      {
+        "field": "L3 cache:",
+        "data": "45 MiB (1 instance)"
+      },
+      {
+        "field": "NUMA node(s):",
+        "data": "1"
+      }
+    ],
+    "logical_cpus": 32,
+    "memory_total_bytes": 32844038144,
+    "swap_total_bytes": 8589930496,
+    "docker_version": "29.1.3",
+    "python_version": "3.12.3",
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 4090",
+      "driver_version": "580.173.02",
+      "memory_total_mib": 49140,
+      "power_limit_w": 450.0
+    }
+  },
+  "local_deployments": {
+    "qwen38": {
+      "model_id": "Qwen/Qwen3.8-27B-FP8",
+      "model_source": "ModelScope",
+      "model_path": "/data/models/modelscope/Qwen3.8-27B-FP8",
+      "model_size_bytes": 30890049500,
+      "config_sha256": "74227dd615bf1ea975aa676bdf355a0379858c12f394b5365cd9dfa5fc2c70bc",
+      "architecture": "Qwen3_5ForConditionalGeneration",
+      "quantization": "fp8",
+      "container": "qwen38-vllm",
+      "container_image": "vllm/vllm-openai@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504",
+      "command": [
+        "/models/Qwen3.8-27B-FP8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--served-model-name",
+        "qwen3.8-27b-fp8",
+        "--max-model-len",
+        "65536",
+        "--gpu-memory-utilization",
+        "0.92",
+        "--cpu-offload-gb",
+        "0",
+        "--max-num-seqs",
+        "4",
+        "--max-num-batched-tokens",
+        "8192",
+        "--reasoning-parser",
+        "qwen3",
+        "--default-chat-template-kwargs",
+        "{\"enable_thinking\": false}",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--limit-mm-per-prompt",
+        "{\"image\": 2, \"video\": 0}"
+      ],
+      "memory_limit_bytes": 17179869184,
+      "memory_swap_limit_bytes": 17179869184,
+      "shm_size_bytes": 17179869184,
+      "restart_policy": "unless-stopped",
+      "running_after_benchmark": true,
+      "startup": {
+        "definition": "Docker StartedAt to vLLM Application startup complete",
+        "started_at": "2026-08-17T05:52:02.598005847Z",
+        "ready_at": "2026-08-17T05:55:21.150977+00:00",
+        "service_startup_seconds": 198.553,
+        "model_load_seconds": 150.597895,
+        "model_load_gpu_memory_gib": 28.51,
+        "host_page_cache_cleared": false,
+        "qualification": "observed service restart; not a power-off cold boot"
+      }
+    },
+    "qwen36": {
+      "model_id": "Qwen/Qwen3.6-35B-A3B-FP8",
+      "model_source": "ModelScope",
+      "model_path": "/data/models/modelscope/Qwen3.6-35B-A3B-FP8",
+      "model_size_bytes": 37493018754,
+      "config_sha256": "570ef7ea45a7e1d3de2b1d3c70c4ac3562d0e768acdc195778cb4f4d95025845",
+      "architecture": "Qwen3_5MoeForConditionalGeneration",
+      "quantization": "fp8",
+      "container": "qwen36-vllm",
+      "container_image": "vllm/vllm-openai@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504",
+      "command": [
+        "/models/Qwen3.6-35B-A3B-FP8",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--served-model-name",
+        "qwen3.6-35b-a3b-fp8",
+        "--max-model-len",
+        "32768",
+        "--gpu-memory-utilization",
+        "0.95",
+        "--cpu-offload-gb",
+        "0",
+        "--max-num-seqs",
+        "2",
+        "--max-num-batched-tokens",
+        "8192",
+        "--reasoning-parser",
+        "qwen3",
+        "--default-chat-template-kwargs",
+        "{\"enable_thinking\": false}",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--limit-mm-per-prompt",
+        "{\"image\": 2, \"video\": 0}"
+      ],
+      "memory_limit_bytes": 17179869184,
+      "memory_swap_limit_bytes": 17179869184,
+      "shm_size_bytes": 17179869184,
+      "restart_policy": "unless-stopped",
+      "running_after_benchmark": false,
+      "startup": {
+        "definition": "Docker StartedAt to vLLM Application startup complete",
+        "started_at": "2026-08-17T05:46:53.799435796Z",
+        "ready_at": "2026-08-17T05:50:25.474302+00:00",
+        "service_startup_seconds": 211.675,
+        "model_load_seconds": 172.307996,
+        "model_load_gpu_memory_gib": 34.23,
+        "host_page_cache_cleared": false,
+        "qualification": "observed service restart; not a power-off cold boot"
+      }
+    }
+  },
+  "external_deployments": {
+    "private-dgx-spark": {
+      "model": "deepseek-v4-flash-0731",
+      "hardware": "2 x NVIDIA GB10 / DGX Spark cluster",
+      "runtime": "vLLM OpenAI-compatible API",
+      "max_model_len": 1048576,
+      "ownership": "private deployment",
+      "cold_start": null,
+      "cold_start_reason": "service lifecycle and startup logs are not exposed to this benchmark host"
+    },
+    "online-gateway": {
+      "model": "deepseek-v4-flash (dynamic alias)",
+      "hardware": "not disclosed",
+      "runtime": "not disclosed behind managed API",
+      "gateway": "Nginx 1.29.5 on NAS Ubuntu",
+      "ownership": "online managed service",
+      "cold_start": null,
+      "cold_start_reason": "provider service lifecycle is not observable"
+    }
+  },
+  "benchmark_conditions": {
+    "quality_harness": "lakehouse-thinking-v1 with adjudication errata",
+    "quality_seed": 42,
+    "quality_execution": "single-stream, sequential within each endpoint",
+    "latency_probe": "one warmup plus three measured SSE requests; endpoints run on independent hardware",
+    "latency_max_tokens": 2048,
+    "latency_prompt_language": "English",
+    "pdf_font": "Noto Sans CJK SC"
+  }
+}

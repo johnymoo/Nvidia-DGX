@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "harness_id": "qwen38-quantization-vision-v1",
+  "tag": "qwen38-fp8-vision",
+  "model": "qwen3.8-27b-fp8",
+  "runtime": "vLLM",
+  "quantization": "FP8",
+  "thinking_mode": "off",
+  "passed": 6,
+  "total": 6,
+  "score": 1.0,
+  "cases": [
+    {
+      "id": "dominant_blue",
+      "expected": "blue",
+      "actual": "blue",
+      "passed": true,
+      "seconds": 0.35,
+      "response": " blue",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 97,
+        "total_tokens": 99,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      }
+    },
+    {
+      "id": "three_red_blocks",
+      "expected": "3",
+      "actual": "3",
+      "passed": true,
+      "seconds": 0.186,
+      "response": "3",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 97,
+        "total_tokens": 99,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      }
+    },
+    {
+      "id": "red_left_blue",
+      "expected": "left",
+      "actual": "left",
+      "passed": true,
+      "seconds": 0.184,
+      "response": "left",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 103,
+        "total_tokens": 105,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      }
+    },
+    {
+      "id": "green_top_left",
+      "expected": "green",
+      "actual": "green",
+      "passed": true,
+      "seconds": 0.188,
+      "response": " green",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 99,
+        "total_tokens": 101,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      }
+    },
+    {
+      "id": "middle_tallest",
+      "expected": "middle",
+      "actual": "middle",
+      "passed": true,
+      "seconds": 0.188,
+      "response": " middle",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 102,
+        "total_tokens": 104,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      }
+    },
+    {
+      "id": "two_blue_one_red",
+      "expected": "2",
+      "actual": "2",
+      "passed": true,
+      "seconds": 0.182,
+      "response": "2",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 97,
+        "total_tokens": 99,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      }
+    }
+  ]
+}

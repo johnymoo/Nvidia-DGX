@@ -1,0 +1,480 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "source_harness": "lakehouse-thinking-v2",
+  "adjudication": {
+    "reason": "Raw Python scores were invalid because the pinned sandbox image was unavailable during generation; saved final responses were re-executed without model calls.",
+    "executor_image": {
+      "requested": "public.ecr.aws/docker/library/python@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de",
+      "id": "sha256:944a73bd27d7b5fad206369e77bb7a6da51e073236b9dece9ff387df433de7bb",
+      "repo_digests": [
+        "public.ecr.aws/docker/library/python@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de"
+      ],
+      "architecture": "arm64"
+    }
+  },
+  "runs": [
+    {
+      "tag": "online-pro-high-256k-r1",
+      "source_file": "online-pro-high-256k-r1.json",
+      "source_sha256": "45485978173f70094c6278930818ed0c10d4181028b3283f27e3e362886c5139",
+      "original_macro_score": 0.666667,
+      "macro_score": 1.0,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 46.742667,
+          "completion_tokens": 19663,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 106.740667,
+          "completion_tokens": 43712,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 75.606167,
+          "completion_tokens": 28252,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "f149162347c34b058816daee7ee6aaa8[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "8de695c980e545ffa9bb43e2b77f46ea[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "1671b40d21a342f88dc6d2f6995a21fb[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "779a29410d964938a8665d3038325a5c[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "e835b5963f30464896db03240517a4fe[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,1,\"x\"],[2,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "3c1eae9262604f9585bbdf8ecd43650e[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "online-pro-high-256k-r2",
+      "source_file": "online-pro-high-256k-r2.json",
+      "source_sha256": "f2e0136e583e18e03b3c6f507fbae8b64c9ef18c312a293b764fc1613559a268",
+      "original_macro_score": 0.611111,
+      "macro_score": 0.944444,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 38.9675,
+          "completion_tokens": 16513,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 162.025833,
+          "completion_tokens": 69832,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.833333,
+          "passed": 4,
+          "total": 6,
+          "mean_seconds": 40.630833,
+          "completion_tokens": 15367,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "11a44286c66c4b0abcbf80d3bc2aa46f[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "8ed434ea317c4a138f5d84d9662bb29f[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "cd6f4444f74749dfba99f065cd688f20[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "19e8364257fc4cc09f7e97b407836b9a[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "9db4774167fd4a6faf4888b236526c7b[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,1,\"x\"],[2,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "bc6539176bcb4f7baa08496ad17990fe[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "online-pro-low-32k-r1",
+      "source_file": "online-pro-low-32k-r1.json",
+      "source_sha256": "6d35cbe972ebc5e36485c1bdd114d690054def6bd93c2afa04d0afe862094d59",
+      "original_macro_score": 0.583333,
+      "macro_score": 0.861111,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 21.317333,
+          "completion_tokens": 8325,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 0.833333,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 46.679667,
+          "completion_tokens": 18832,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.75,
+          "passed": 3,
+          "total": 6,
+          "mean_seconds": 36.4865,
+          "completion_tokens": 12302,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "320537b352354604b62477bbcbb1dda5[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "a027fdfa0f394871ba9e87aa82f1281c[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "0a50c59ac7b44f678c9c3c7e456181d4[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "3dc86542092e40b0abb51f4172b089b8[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "69622e17689b4e71a94bd3565c1282a0[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "a6b1a56c0dad4c26841264b920ac6546[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "online-pro-low-32k-r2",
+      "source_file": "online-pro-low-32k-r2.json",
+      "source_sha256": "878c32f705c91b1584525a43f2b79e13515205fa29a4c05d5e182830106dba3c",
+      "original_macro_score": 0.638889,
+      "macro_score": 0.916667,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 33.866667,
+          "completion_tokens": 13560,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 0.833333,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 35.914833,
+          "completion_tokens": 14394,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.916667,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 26.623833,
+          "completion_tokens": 9381,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "7ee331dc79f549e6b8b160db99f2a6d2[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "7842eb42eed44a2f9703e89e721df03a[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "eabebd1791ed40f98a5b9a72d9886633[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "55d952178e7a4a208f8adbfe7a36931f[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "afa084b666844238b8725e82280929be[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "8f74e2d8980943e489492087bfa0f065[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "online-pro-max-384k-r1",
+      "source_file": "online-pro-max-384k-r1.json",
+      "source_sha256": "a388ffa458f2234456831dd750c50b85320c04571e105e1eb9147901db26eed4",
+      "original_macro_score": 0.638889,
+      "macro_score": 0.916667,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 56.238833,
+          "completion_tokens": 22761,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 0.833333,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 182.322333,
+          "completion_tokens": 73970,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 0.916667,
+          "passed": 5,
+          "total": 6,
+          "mean_seconds": 90.561667,
+          "completion_tokens": 33951,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "09f5e35c9a9047248997f7c2ce0bbac6[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "654ee7ada36245459e511db3f57a1b9a[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "59ebab27724648a398ee1a02b5f2c9ef[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "f9cf541220824f5499713ee6699e075b[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "executor_tail": "2108feaeeda2445ba553ffc167ad0252[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "4f8bf8cd12834828b6bd195b2e5acfb7[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    },
+    {
+      "tag": "online-pro-max-384k-r2",
+      "source_file": "online-pro-max-384k-r2.json",
+      "source_sha256": "787def6ee04d6bbfb22bcbe9e32d3f0245f60655b0b8e6f4248c9ff366b7ca12",
+      "original_macro_score": 0.666667,
+      "macro_score": 1.0,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 57.5695,
+          "completion_tokens": 24342,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 126.883333,
+          "completion_tokens": 51497,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        },
+        "incident": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6,
+          "mean_seconds": 90.465167,
+          "completion_tokens": 34341,
+          "length_truncations": 0,
+          "empty_finals": 0,
+          "errors": 0
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_deduplicate",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "aa1ca955d394402b87b2fe1e810b12da[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+        },
+        {
+          "id": "stable_toposort",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "ce49447cc9df4c4da395c9c11c4e0177[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+        },
+        {
+          "id": "schema_drift",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "426c1b0dd96047038db670f6a41923c1[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+        },
+        {
+          "id": "bounded_batches",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "169d2e43a93f4e83afa546c288f26fa5[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+        },
+        {
+          "id": "merge_intervals_payload",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "eae0305a0c784389bbacd465c5a9f0b9[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,1,\"x\"],[2,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+        },
+        {
+          "id": "watermark_commit",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "executor_tail": "ed5bb5916ca14c11bdb2b33f35f25705[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+        }
+      ]
+    }
+  ]
+}

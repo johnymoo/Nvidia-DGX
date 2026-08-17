@@ -1,0 +1,2672 @@
+{
+  "schema_version": 1,
+  "source_harness": "lakehouse-thinking-v1",
+  "adjudication": "2026-08-17-contract-review-v1",
+  "policy": {
+    "cdc_latest_live": "excluded from SQL score because the prompt omitted operation-code semantics",
+    "stable_toposort": "rescored against corrected insertion-order oracle plus executed missing-dependency and cycle checks",
+    "raw_evidence_mutated": false
+  },
+  "runs": [
+    {
+      "tag": "online-high-256k-r1",
+      "source_file": "online-high-256k-r1.json",
+      "original_macro_score": 0.7777777777777778,
+      "macro_score": 0.888888888888889,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.8333333333333334,
+          "passed": 4,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "5329e4389e7d464faf22506d7837dcf8[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "online-high-256k-r2",
+      "source_file": "online-high-256k-r2.json",
+      "original_macro_score": 0.8333333333333334,
+      "macro_score": 0.9444444444444445,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "f8d0c6e615c1415892da46f108c3b9ea[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "online-low-32k-r1",
+      "source_file": "online-low-32k-r1.json",
+      "original_macro_score": 0.7777777777777778,
+      "macro_score": 0.888888888888889,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.8333333333333334,
+          "passed": 4,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "41d946180eba49dfb0ad36123389227b[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "online-low-32k-r2",
+      "source_file": "online-low-32k-r2.json",
+      "original_macro_score": 0.861111111111111,
+      "macro_score": 0.9166666666666666,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.9166666666666666,
+          "passed": 5,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 1.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "82a6320959c545919533a8903d4c99ce[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "online-max-384k-r1",
+      "source_file": "online-max-384k-r1.json",
+      "original_macro_score": 0.8611111111111112,
+      "macro_score": 0.9722222222222222,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.9166666666666666,
+          "passed": 5,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "328d4c1d51f34be3b774f3af1ff3d4ee[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "online-max-384k-r2",
+      "source_file": "online-max-384k-r2.json",
+      "original_macro_score": 0.8888888888888888,
+      "macro_score": 0.9444444444444445,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 1.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "161d87c533e3434da1835c71fde37399[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "private-high-256k-r1",
+      "source_file": "private-high-256k-r1.json",
+      "original_macro_score": 0.7777777777777778,
+      "macro_score": 0.888888888888889,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.8333333333333334,
+          "passed": 4,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "74e7eef28a6340a097c5b482067375b2[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "private-high-256k-r2",
+      "source_file": "private-high-256k-r2.json",
+      "original_macro_score": 0.8055555555555555,
+      "macro_score": 0.9166666666666666,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.8333333333333334,
+          "passed": 5,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.9166666666666666,
+          "passed": 5,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "c3a9192327d14993b27a09b21e69dd20[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "private-low-32k-r1",
+      "source_file": "private-low-32k-r1.json",
+      "original_macro_score": 0.7222222222222223,
+      "macro_score": 0.8333333333333334,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.6666666666666666,
+          "passed": 4,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.8333333333333334,
+          "passed": 4,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "184246e14b5d4d49be23d753aa74e873[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "private-low-32k-r2",
+      "source_file": "private-low-32k-r2.json",
+      "original_macro_score": 0.7222222222222223,
+      "macro_score": 0.8333333333333334,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.6666666666666666,
+          "passed": 4,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.8333333333333334,
+          "passed": 4,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "a0cdd243faaf4293b78b7b5704d3d838[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "private-max-384k-r1",
+      "source_file": "private-max-384k-r1.json",
+      "original_macro_score": 0.8333333333333334,
+      "macro_score": 0.9444444444444445,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.8333333333333334,
+          "passed": 4,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "f305fc1113fd412fbc157c8c36ff6a74[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "private-max-384k-r2",
+      "source_file": "private-max-384k-r2.json",
+      "original_macro_score": 0.6944444444444445,
+      "macro_score": 0.8055555555555555,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.6666666666666666,
+          "passed": 4,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.75,
+          "passed": 3,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "9e257469d5db4ffdaa3e15ef97503b19[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "qwen36-recommended-thinking-28k-r1",
+      "source_file": "qwen36-thinking-28k-r1.json",
+      "original_macro_score": 0.75,
+      "macro_score": 0.8055555555555555,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 0.6666666666666666,
+          "passed": 4,
+          "total": 6
+        },
+        "incident": {
+          "score": 0.75,
+          "passed": 3,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": false,
+            "executor_tail": "4e0777e8e37045449ddd4e6f6daa28cc[[\"lint\",\"docs\",\"test\",\"compile\",\"package\",\"publish\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 0.0,
+          "adjudicated_score": 0.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 0.5,
+          "adjudicated_score": 0.5,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "tag": "qwen38-recommended-low-32k-r1",
+      "source_file": "qwen38-low-32k-r1.json",
+      "original_macro_score": 0.888888888888889,
+      "macro_score": 1.0,
+      "categories": {
+        "sql": {
+          "score": 1.0,
+          "passed": 5,
+          "total": 5
+        },
+        "python": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6
+        },
+        "incident": {
+          "score": 1.0,
+          "passed": 6,
+          "total": 6
+        }
+      },
+      "case_overrides": [
+        {
+          "id": "cdc_latest_live",
+          "category": "sql",
+          "status": "excluded",
+          "original_score": 0.0,
+          "adjudicated_score": null,
+          "reason": "v1 prompt did not define the I/U/D operation codes, so the original answer cannot be fairly graded",
+          "detail": null
+        },
+        {
+          "id": "scd2_intervals",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "sessionize_events",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "rolling_revenue",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "recursive_hierarchy",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "funnel_first_order",
+          "category": "sql",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cdc_deduplicate",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "stable_toposort",
+          "category": "python",
+          "status": "rescored",
+          "original_score": 0.0,
+          "adjudicated_score": 1.0,
+          "reason": "v1 expected order contradicted dict insertion-order tie breaking and did not execute exception checks",
+          "detail": {
+            "passed": true,
+            "executor_tail": "9b2ff966b1db47e283aeeffbd9e71b20[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],true,true]\n"
+          }
+        },
+        {
+          "id": "schema_drift",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "bounded_batches",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "merge_intervals_payload",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "watermark_commit",
+          "category": "python",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "cgroup_oom",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "gpu_cpu_spill",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "disk_inode_pressure",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "db_pool_saturation",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "iceberg_commit_conflict",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        },
+        {
+          "id": "spark_shuffle_skew",
+          "category": "incident",
+          "status": "unchanged",
+          "original_score": 1.0,
+          "adjudicated_score": 1.0,
+          "reason": null,
+          "detail": null
+        }
+      ]
+    }
+  ]
+}

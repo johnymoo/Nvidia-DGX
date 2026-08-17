@@ -1,0 +1,922 @@
+{
+  "schema_version": 2,
+  "harness_id": "lakehouse-thinking-v1",
+  "status": "passed",
+  "tag": "online-low-32k-r2",
+  "treatment": "online DS / low / 32K",
+  "model": "deepseek-v4-flash",
+  "base_url": "online-gateway",
+  "mode": "deepseek-thinking",
+  "seed": 42,
+  "repeat": 2,
+  "expected_runs": 3,
+  "max_tokens": 32768,
+  "sampling": "DeepSeek online-api; official-api; effort=low",
+  "request_config": {
+    "deepseek_contract": "online-api",
+    "deepseek_effort": "low",
+    "deepseek_sampling": "official-api",
+    "max_response_chars": 32768,
+    "max_reasoning_chars": 32768,
+    "request_timeout_seconds": 14400,
+    "stream": true
+  },
+  "categories": {
+    "sql": {
+      "score": 1.0,
+      "passed": 6,
+      "total": 6,
+      "mean_seconds": 6.116499999999999,
+      "completion_tokens": 3893,
+      "length_truncations": 0,
+      "empty_finals": 0,
+      "errors": 0
+    },
+    "python": {
+      "score": 0.6666666666666666,
+      "passed": 4,
+      "total": 6,
+      "mean_seconds": 8.985833333333334,
+      "completion_tokens": 6475,
+      "length_truncations": 0,
+      "empty_finals": 0,
+      "errors": 0
+    },
+    "incident": {
+      "score": 0.9166666666666666,
+      "passed": 5,
+      "total": 6,
+      "mean_seconds": 3.717333333333333,
+      "completion_tokens": 1837,
+      "length_truncations": 0,
+      "empty_finals": 0,
+      "errors": 0
+    }
+  },
+  "macro_score": 0.861111111111111,
+  "total_seconds": 112.918,
+  "cases": [
+    {
+      "id": "cdc_latest_live",
+      "category": "sql",
+      "prompt": "SQLite table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT) contains change events. Return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          "new"
+        ],
+        [
+          "c",
+          "v2"
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            "new"
+          ],
+          [
+            "c",
+            "v2"
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT id, value\nFROM (\n    SELECT id, value, op,\n           ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) AS rn\n    FROM cdc\n)\nWHERE rn = 1 AND op != 'D'\nORDER BY id;\n```",
+      "reasoning": "We need to return the latest non-deleted current row for each id. The definition: \"A delete is effective only when it is the latest event.\" That means for each id, we look at the events sorted by event_time, seq (descending for latest). If the latest event is an 'op' of 'D' (delete), then we should not return that id. If the latest event is not delete, then we want the value from that latest event. However, the phrase \"latest non-deleted current row\" might imply that if a delete is the latest event, then there is no current row for that id, so we exclude it. Alternatively, if there is a delete, and then later there is another insert/update, we use the latest non-delete? But the condition says \"A delete is effective only when it is the latest event.\" So if a delete is the latest, we exclude; otherwise we use the latest event (which is not delete). So for each id, we need to find the most recent event (based on event_time, seq). If that event's op is 'D', then exclude that id; else output that event's value.\n\nWe need to group by id, get the row with max (event_time, seq) (i.e., order by event_time desc, seq desc limit 1). Then filter out those where op='D'. Then output id and value.\n\nWe can use window functions: ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) as rn. Then select where rn=1 and op != 'D'.\n\nOr we can use a subquery with MAX and correlated subquery.\n\nSQLite supports window functions.\n\nWe'll produce SQL query.\n\nWe need to return (id, value) ordered by id.\n\nEnsure we handle ties: event_time equal, larger seq is latest.\n\nSo query:\n\nSELECT id, value\nFROM (\n    SELECT id, value, op,\n           ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) as rn\n    FROM cdc\n) WHERE rn = 1 AND op != 'D'\nORDER BY id;\n\nThat's it.\n\nWe'll return only the SQL block.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 78,
+        "completion_tokens": 531,
+        "total_tokens": 609
+      },
+      "seconds": 5.698,
+      "response_evidence": {
+        "chars": 203,
+        "sha256": "98ab144781044f5f5e22d600a1608fe27704e3b312d95b744ab7fd30052770a0",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1827,
+        "sha256": "e2e9754a5c8ead9bd6b25f18aa52f53baaef30056f051a0593ed94ab8ca68cb0",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "scd2_intervals",
+      "category": "sql",
+      "prompt": "SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT) contains SCD changes. Return (customer_id,status,valid_from,valid_to), where valid_to is the next effective_at for that customer or NULL, ordered by customer_id, valid_from. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          "new",
+          "2026-01-01",
+          "2026-02-10"
+        ],
+        [
+          "a",
+          "active",
+          "2026-02-10",
+          "2026-03-01"
+        ],
+        [
+          "a",
+          "paused",
+          "2026-03-01",
+          null
+        ],
+        [
+          "b",
+          "new",
+          "2026-01-05",
+          "2026-01-20"
+        ],
+        [
+          "b",
+          "active",
+          "2026-01-20",
+          null
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            "new",
+            "2026-01-01",
+            "2026-02-10"
+          ],
+          [
+            "a",
+            "active",
+            "2026-02-10",
+            "2026-03-01"
+          ],
+          [
+            "a",
+            "paused",
+            "2026-03-01",
+            null
+          ],
+          [
+            "b",
+            "new",
+            "2026-01-05",
+            "2026-01-20"
+          ],
+          [
+            "b",
+            "active",
+            "2026-01-20",
+            null
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT \n    customer_id,\n    status,\n    effective_at AS valid_from,\n    LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to\nFROM changes\nORDER BY customer_id, valid_from;\n```",
+      "reasoning": "We need to write an SQL query for SQLite using window functions to compute SCD type 2 valid_from and valid_to. The table changes has columns: customer_id, effective_at (TEXT), status. We need to produce customer_id, status, valid_from, valid_to where valid_to is next effective_at for same customer (i.e., LEAD(effective_at) over partition by customer_id order by effective_at) but we also need to consider status changes only? The table changes presumably contains all changes, but we only want to output the status changes? The problem states: \"SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT) contains SCD changes. Return (customer_id,status,valid_from,valid_to), where valid_to is the next effective_at for that customer or NULL, ordered by customer_id, valid_from.\" So likely we just select all rows from changes, and compute valid_to as next effective_at for that customer (regardless of status). But wait, if multiple changes for same customer at same effective_at? Probably unique per customer? Not specified. We'll assume distinct.\n\nSo query: SELECT customer_id, status, effective_at AS valid_from, LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to FROM changes ORDER BY customer_id, valid_from;\n\nBut careful: if there are multiple changes with same effective_at for same customer, that might cause duplicates. We can handle by using ROW_NUMBER or GROUP BY if needed. But assumption: each change has unique timestamp per customer. We'll go with simple.\n\nAlso note that \"valid_to\" is the next effective_at for that customer, but if same status persists across changes? The table contains SCD changes, so each row represents a change, so probably each row is a new status. So we just take all rows.\n\nThus final SQL:\n\nSELECT customer_id, status, effective_at AS valid_from, LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to FROM changes ORDER BY customer_id, valid_from;\n\nMake sure to include semicolon? Usually we don't need but we can include. The instruction says \"Return one SQL code block only\", so we'll output the query in a code block.\n\nAlso could use CTE but simple is fine.\n\nLet's double-check: The table name is \"changes\" but it's said \"SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT)\". So table name is \"changes\". So query: SELECT customer_id, status, effective_at AS valid_from, LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to FROM changes ORDER BY customer_id, valid_from;\n\nYes.\n\nWe'll produce that.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 67,
+        "completion_tokens": 628,
+        "total_tokens": 695
+      },
+      "seconds": 6.182,
+      "response_evidence": {
+        "chars": 215,
+        "sha256": "348647a35d4039551dbb3b7092b5c4cc6939acb87cc73f228ae99435ee13e3f5",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2571,
+        "sha256": "883a98164643ebf68a8dad2067cba96daed4899f028d13c2ae90e8299f54caa1",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "sessionize_events",
+      "category": "sql",
+      "prompt": "SQLite table events(user_id TEXT, minute INT) contains event timestamps in minutes. A new session starts when the gap from the previous event is greater than 30 minutes. Return (user_id,session_no,start_minute,end_minute,event_count), with session_no starting at 1 per user, ordered by user_id, session_no. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          1,
+          0,
+          40,
+          3
+        ],
+        [
+          "a",
+          2,
+          71,
+          75,
+          2
+        ],
+        [
+          "b",
+          1,
+          5,
+          5,
+          1
+        ],
+        [
+          "b",
+          2,
+          36,
+          36,
+          1
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            1,
+            0,
+            40,
+            3
+          ],
+          [
+            "a",
+            2,
+            71,
+            75,
+            2
+          ],
+          [
+            "b",
+            1,
+            5,
+            5,
+            1
+          ],
+          [
+            "b",
+            2,
+            36,
+            36,
+            1
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nWITH flagged AS (\n  SELECT user_id, minute,\n         CASE WHEN LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) IS NULL \n              OR minute - LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) > 30\n              THEN 1 ELSE 0 END AS new_session\n  FROM events\n),\nsessioned AS (\n  SELECT user_id, minute,\n         SUM(new_session) OVER (PARTITION BY user_id ORDER BY minute ROWS UNBOUNDED PRECEDING) AS session_no\n  FROM flagged\n)\nSELECT user_id, session_no, \n       MIN(minute) AS start_minute, \n       MAX(minute) AS end_minute, \n       COUNT(*) AS event_count\nFROM sessioned\nGROUP BY user_id, session_no\nORDER BY user_id, session_no;\n```",
+      "reasoning": "We need to write an SQL query for SQLite. The table events has user_id TEXT, minute INT. We need to define sessions: a new session starts when gap from previous event > 30 minutes. For each user, sessions numbered starting at 1, ordered by minute (implicitly). For each session, we need start_minute (first event minute of that session), end_minute (last event minute of that session), event_count (number of events in that session). Output columns: user_id, session_no, start_minute, end_minute, event_count.\n\nWe must order by user_id, session_no. Return one SQL code block.\n\nWe need to compute session numbers. Use window functions. SQLite supports window functions.\n\nApproach: For each user, order by minute. Determine if a new session starts by checking lag(minute) over (partition by user_id order by minute). If gap > 30, then it's a new session. We can create a marker, then a cumulative sum to assign session numbers.\n\nSteps:\n1. Get for each event: user_id, minute, and prev_minute using LAG(minute) OVER (PARTITION BY user_id ORDER BY minute). If prev_minute is NULL or minute - prev_minute > 30, then new_session_flag = 1 else 0.\n2. Then compute session_no = SUM(new_session_flag) OVER (PARTITION BY user_id ORDER BY minute ROWS UNBOUNDED PRECEDING) - but note: for the first event, flag=1, so sum starts at 1. For second event if new_session_flag=0, sum remains 1. So session_no will be correct. Actually we can do SUM(...) OVER (...) as session_no.\n3. Then group by user_id, session_no to get MIN(minute) start, MAX(minute) end, COUNT(*) event_count.\n\nMake sure ordering.\n\nLet's write.\n\nPossible query:\n\nWITH flagged AS (\n  SELECT user_id, minute,\n         CASE WHEN LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) IS NULL \n              OR minute - LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) > 30\n              THEN 1 ELSE 0 END AS new_session\n  FROM events\n),\nsessioned AS (\n  SELECT user_id, minute,\n         SUM(new_session) OVER (PARTITION BY user_id ORDER BY minute ROWS UNBOUNDED PRECEDING) AS session_no\n  FROM flagged\n)\nSELECT user_id, session_no, MIN(minute) AS start_minute, MAX(minute) AS end_minute, COUNT(*) AS event_count\nFROM sessioned\nGROUP BY user_id, session_no\nORDER BY user_id, session_no;\n\nThat should work.\n\nWe must output only SQL code block.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 83,
+        "completion_tokens": 768,
+        "total_tokens": 851
+      },
+      "seconds": 6.349,
+      "response_evidence": {
+        "chars": 662,
+        "sha256": "25cf0f6c9a5ec3c5cdf34d68506f8c396ca9e428a9644a7556ab96acefc3cc00",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2299,
+        "sha256": "dfc283e443fa84e43a3b8e1818755ada66077de19b0e656898aab2f00270c036",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "rolling_revenue",
+      "category": "sql",
+      "prompt": "SQLite table daily(day TEXT, revenue INT) has one row for each calendar day. Return each day and the inclusive three-row rolling revenue (current day and two preceding days), ordered by day. Return one SQL code block only.",
+      "expected": [
+        [
+          "2026-01-01",
+          10
+        ],
+        [
+          "2026-01-02",
+          30
+        ],
+        [
+          "2026-01-03",
+          60
+        ],
+        [
+          "2026-01-04",
+          90
+        ],
+        [
+          "2026-01-05",
+          120
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "2026-01-01",
+            10
+          ],
+          [
+            "2026-01-02",
+            30
+          ],
+          [
+            "2026-01-03",
+            60
+          ],
+          [
+            "2026-01-04",
+            90
+          ],
+          [
+            "2026-01-05",
+            120
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT day, SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue\nFROM daily\nORDER BY day;\n```",
+      "reasoning": "We need to write SQL code for SQLite. The task: \"Return each day and the inclusive three-row rolling revenue (current day and two preceding days), ordered by day.\" So for each day, we compute sum of revenue of that day and the two previous days (based on day order). Since day is TEXT (presumably in a format that sorts correctly, like 'YYYY-MM-DD'), we can order by day. The rolling window is inclusive of the current row and two preceding rows. So like a moving sum with window size 3, but only looking at past rows, not future.\n\nIn SQLite, we can use window functions. The syntax: SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW). This will compute for each day the sum of revenue for the current row and the two rows immediately preceding it (when ordered by day). But we need to ensure that the order is correct by day. Also, for early days, there may be fewer than 2 preceding rows; then the window will just include whatever available. That's fine.\n\nWe need to return each day and the rolling revenue. So SELECT day, SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_rev FROM daily ORDER BY day.\n\nBut the problem says \"inclusive three-row rolling revenue (current day and two preceding days)\". So that's exactly what we need.\n\nWrite the SQL code block. It should be one SQL code block only. Probably just a single SELECT statement.\n\nEnsure to use correct column names.\n\nSo final answer: \n```sql\nSELECT day, SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue\nFROM daily\nORDER BY day;\n```\n\nI'll output that.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 52,
+        "completion_tokens": 426,
+        "total_tokens": 478
+      },
+      "seconds": 4.482,
+      "response_evidence": {
+        "chars": 140,
+        "sha256": "2d68eace86f6b1ebb38fc8942e6a8343d5eb3c157b455ceae719be2ca0541ed3",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1614,
+        "sha256": "f7518a58a070803af61943933de70ee90758a1d568d185413db7515b123c946a",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "recursive_hierarchy",
+      "category": "sql",
+      "prompt": "SQLite table nodes(id TEXT,parent_id TEXT,amount INT) is a forest. Return (root_id,total_amount) for each root, including all descendant amounts, ordered by root_id. Return one SQL code block only.",
+      "expected": [
+        [
+          "a",
+          100
+        ],
+        [
+          "x",
+          12
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            "a",
+            100
+          ],
+          [
+            "x",
+            12
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nWITH RECURSIVE tree AS (\n  SELECT id, id AS root_id, amount\n  FROM nodes\n  WHERE parent_id IS NULL\n  UNION ALL\n  SELECT n.id, t.root_id, n.amount\n  FROM nodes n\n  JOIN tree t ON n.parent_id = t.id\n)\nSELECT root_id, SUM(amount) AS total_amount\nFROM tree\nGROUP BY root_id\nORDER BY root_id;\n```",
+      "reasoning": "We need to write SQL query to compute total amount for each root in a forest. The table has id, parent_id, amount. A root is a node with parent_id NULL or empty? Typically parent_id NULL indicates root. But the problem says \"forest\", so multiple roots. Need to include all descendants recursively. We need to output root_id and total sum of amounts of all nodes in its subtree (including root itself). Ordered by root_id.\n\nWe need to provide one SQL code block. Since SQLite, we can use recursive CTE to traverse tree.\n\nWe'll assume parent_id is NULL for roots. Also, we might need to handle cases where parent_id is '' or something, but typically NULL. We'll use IS NULL.\n\nQuery: recursive CTE that for each node, get its root by following parents up. Or we can traverse from each root downwards, summing amounts.\n\nApproach: Start with roots (parent_id IS NULL), then recursively join children. Use a CTE that expands all descendants for each root.\n\nPseudo:\n\nWITH RECURSIVE tree AS (\n  SELECT id, id AS root_id, amount FROM nodes WHERE parent_id IS NULL\n  UNION ALL\n  SELECT n.id, t.root_id, n.amount FROM nodes n JOIN tree t ON n.parent_id = t.id\n)\nSELECT root_id, SUM(amount) AS total_amount FROM tree GROUP BY root_id ORDER BY root_id;\n\nThis works. But need to ensure that if there are multiple roots, each node belongs to exactly one root. Yes.\n\nPotential issue: If a node has parent_id not NULL but points to non-existent id, it's a forest, so okay.\n\nWe'll output as one SQL code block.\n\nWe'll write the query. Also, we might need to handle empty parent_id string? We'll assume NULL.\n\nIf needed, we can treat '' as NULL, but not specified.\n\nWe'll produce final answer.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 51,
+        "completion_tokens": 486,
+        "total_tokens": 537
+      },
+      "seconds": 5.292,
+      "response_evidence": {
+        "chars": 298,
+        "sha256": "1b6446ab2bb65711dce38af218dc7cb3359f65e8661a5c5b5cd6486480a5a063",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1674,
+        "sha256": "155bf88b6da47252d12d257a5adc69f6c36187416df418cf5af0ef48268e665a",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "funnel_first_order",
+      "category": "sql",
+      "prompt": "SQLite tables users(user_id TEXT,signup_day TEXT) and orders(user_id TEXT,order_day TEXT) are given. Return one row (users_total,converted_7d). A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order. Return one SQL code block only.",
+      "expected": [
+        [
+          4,
+          2
+        ]
+      ],
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "actual": [
+          [
+            4,
+            2
+          ]
+        ],
+        "error": null
+      },
+      "response": "```sql\nSELECT\n  (SELECT COUNT(*) FROM users) AS users_total,\n  (SELECT COUNT(*)\n   FROM users u\n   WHERE (SELECT MIN(o.order_day)\n          FROM orders o\n          WHERE o.user_id = u.user_id\n            AND o.order_day >= u.signup_day) <= date(u.signup_day, '+7 days')\n  ) AS converted_7d;\n```",
+      "reasoning": "We need to answer with SQL code for SQLite. The problem: given two tables: users(user_id, signup_day) and orders(user_id, order_day). Return one row with two columns: users_total (total number of users) and converted_7d (number of users who have a first order within 7 days inclusive of signup day, after signup, and no order before signup? Actually condition: \"A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\" That means: For a user to convert, they must have at least one order that is on or after signup_day and within 7 days (signup_day <= order_day <= signup_day + 7). But we need to consider \"first order\" must be after signup? Actually \"first order is on or after signup_day and no more than 7 days later\" - so the first order (in terms of order_day) must be within that window. But orders before signup do not count as such? The phrasing: \"Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.\" Means: If a user has an order before signup, that doesn't count as conversion, and also doesn't prevent conversion. But if they have multiple orders after signup, we must consider the earliest such order. If that earliest order is within 7 days after signup, then they convert. If the earliest order after signup is later than 7 days, they don't convert, even if they have a later order within 7 days? Actually \"later orders cannot replace an earlier valid post-signup order\" - meaning that if a user has an order on day 10 after signup and another on day 5, the day 5 order should be considered. But if they have an order on day 2 and one on day 8, the day 2 order is valid, so they convert. If they have an order before signup and first after signup is day 10, they don't convert.\n\nSo basically: For each user, we need to find the earliest order_day that is >= signup_day. If that order_day <= signup_day + 7, then the user converts. Also, we need total users count.\n\nThus we need to join users with orders, but we need to handle users with no orders: they don't convert. So we need left join.\n\nWe'll compute for each user the minimum order_day that is >= signup_day. Use a subquery or group by.\n\nApproach: \n- Get total users: SELECT COUNT(*) FROM users.\n- Get converted users: count of users where exists an order with order_day >= signup_day and order_day <= date(signup_day, '+7 days') AND no other order that is earlier than that? Actually we need the earliest order >= signup_day. If that earliest order is within 7 days, convert. So we can do: for each user, find MIN(order_day) where order_day >= signup_day. Then check if that MIN(order_day) <= signup_day + 7. If yes, convert.\n\nSo SQL: \nSELECT \n  (SELECT COUNT(*) FROM users) AS users_total,\n  (SELECT COUNT(*) FROM users u WHERE \n    (SELECT MIN(o.order_day) FROM orders o WHERE o.user_id = u.user_id AND o.order_day >= u.signup_day) <= date(u.signup_day, '+7 days')\n  ) AS converted_7d;\n\nBut we must ensure that if a user has no order after signup, the MIN returns NULL, then comparison is false, so not counted. Also, date functions: SQLite uses date() and julianday. We can use date(signup_day, '+7 days') assuming signup_day is a date string in YYYY-MM-DD format. We'll assume that.\n\nEdge cases: The condition says \"no more than 7 days later\". So inclusive of signup_day and +7 days.\n\nWe can also use a join and group by, but subqueries are fine.\n\nWe must return only one SQL code block. So output should be just the SQL statement.\n\nMake sure to use proper quoting: table names users, orders. Column names user_id, signup_day, order_day.\n\nPotential issue: If a user has multiple orders, we need min after signup. The subquery does that.\n\nSo final answer: a SELECT with two scalar subqueries.\n\nWe'll write the SQL.\n\nI'll output the SQL code block.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 93,
+        "completion_tokens": 1054,
+        "total_tokens": 1147
+      },
+      "seconds": 8.696,
+      "response_evidence": {
+        "chars": 294,
+        "sha256": "ad19ded8e365b2dc675ab007ba7c25e12bd32579a50d5b9904f74b61d755269a",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 3913,
+        "sha256": "2d4cf4c9edf7c99c997381b9adc88a531c7e0c87a1c497d0694191dff9fa5315",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "cdc_deduplicate",
+      "category": "python",
+      "prompt": "Implement def current_rows(events). Each event is a dict with id, event_time, seq, op, value. Keep the latest by (event_time,seq), omit ids whose latest op is D, and return surviving dicts with only id and value ordered by id. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "86474fc9491548858c92f46e03093848[[{\"id\":\"a\",\"value\":\"y\"}],[{\"id\":\"a\",\"value\":\"y\"}]]\n"
+      },
+      "response": "```python\ndef current_rows(events):\n    latest = {}\n    for event in events:\n        key = event['id']\n        current = latest.get(key)\n        if current is None or (event['event_time'], event['seq']) > (current['event_time'], current['seq']):\n            latest[key] = event\n    \n    result = []\n    for id_ in sorted(latest):\n        ev = latest[id_]\n        if ev['op'] != 'D':\n            result.append({'id': id_, 'value': ev['value']})\n    return result\n```",
+      "reasoning": "We need to implement a function that processes events. Each event has id, event_time, seq, op, value. We need to keep the latest event per id based on (event_time, seq). \"Latest\" meaning the event with the maximum (event_time, seq) tuple (order by event_time ascending, then seq ascending? Actually we need to define ordering: typically later events have larger event_time, and if tie, larger seq. So we take the one with max (event_time, seq) lexicographically). If the latest event for an id has op == 'D' (delete), then omit that id entirely. Otherwise, keep the id and its value from the latest event. Return a list of dicts with only 'id' and 'value', ordered by id.\n\nWe need to return Python code only. So just implement the function.\n\nWe'll iterate through events, keep track of best event per id. Then filter.\n\nEdge cases: empty events list -> empty list.\n\nLet's write it.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 65,
+        "completion_tokens": 327,
+        "total_tokens": 392
+      },
+      "seconds": 3.149,
+      "response_evidence": {
+        "chars": 465,
+        "sha256": "5ffc8601c45e059f1c5e1f52e055c6f8b34864b1513074b0529046a6951be87a",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 880,
+        "sha256": "b048ad527b7c67bfedc9396434c32aef7fa354f0380040c679a0e8d4155d62fc",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "stable_toposort",
+      "category": "python",
+      "prompt": "Implement def stable_toposort(graph). graph maps a node to its dependencies. Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for a missing dependency or cycle. Do not mutate the input. Return Python code only.",
+      "score": 0.0,
+      "passed": false,
+      "detail": {
+        "executor_tail": "bbb8eca865374dbeae173567a84aa88a[[\"lint\",\"test\",\"compile\",\"package\",\"publish\",\"docs\"],[[\"a\",\"b\"],{\"b\":[\"a\"],\"a\":[]}],null]\n"
+      },
+      "response": "```python\nimport heapq\n\ndef stable_toposort(graph):\n    n = len(graph)\n    index = {node: i for i, node in enumerate(graph.keys())}\n    in_degree = {node: 0 for node in graph}\n    adj = {node: [] for node in graph}\n\n    for node, deps in graph.items():\n        for dep in deps:\n            if dep not in graph:\n                raise ValueError(f\"Missing dependency: {dep}\")\n            in_degree[node] += 1\n            adj[dep].append(node)\n\n    heap = []\n    for node in graph:\n        if in_degree[node] == 0:\n            heapq.heappush(heap, (index[node], node))\n\n    order = []\n    while heap:\n        _, node = heapq.heappop(heap)\n        order.append(node)\n        for dependent in adj[node]:\n            in_degree[dependent] -= 1\n            if in_degree[dependent] == 0:\n                heapq.heappush(heap, (index[dependent], dependent))\n\n    if len(order) != n:\n        raise ValueError(\"Cycle detected\")\n\n    return order\n```",
+      "reasoning": "We need to implement a function stable_toposort(graph) that returns a topological ordering such that dependencies come before dependents. The graph is a dict mapping node -> list of dependencies. The order should be stable meaning that when multiple nodes are ready (i.e., all dependencies are satisfied), we should pick them in the original insertion order of the dict (i.e., iterating the dict keys gives that order). Also, we must check for missing dependencies (nodes not in graph) and cycles. Raise ValueError accordingly. Do not mutate input.\n\nThis is a classic topological sort with a stable tie-breaking.\n\nAlgorithm: Use Kahn's algorithm. We'll maintain in-degree counts for each node. But we need to detect missing dependencies: when we encounter a dependency that is not a key in graph, raise ValueError. Also, detect cycles: if we don't process all nodes, there's a cycle.\n\nFor stability: We can use a priority queue, but Python's heapq is min-heap and not stable by insertion order. Instead, we can maintain a list of ready nodes and repeatedly scan the keys in order to pick the next ready node. But that's O(n^2). Alternatively, we can use a deque, but we need to pick in insertion order among ready ones. Since we have a limited set, we can use a list and sort by index maybe. But better: we can maintain a set of ready nodes, and each time we need to pick the next, we scan the original key order and pick the first that is ready and not processed. That is O(n) per pick, overall O(n^2). Typically acceptable for moderate sizes. For optimal, we can maintain a heap with (insertion_index, node) to pop smallest index among ready. But we need to know the insertion index. Since the input dict orders keys, we can map each node to its position (0..n-1). Then we can use a priority queue (min-heap) with (position, node) where node is ready. That ensures we pick the node with smallest insertion index among all ready.\n\nSteps:\n- n = len(graph)\n- Create index_map: dict mapping node -> position in original dict order (enumerate(graph.items()) gives order).\n- Compute in_degree: for each node, we need to count dependencies that are in graph. For each dependency in node's dependencies, if dep not in graph, raise ValueError. Else increment in_degree[node]? Actually in-degree of a node is number of its dependencies (since edges from dep to node). So in_degree[node] = len(deps). But we also need to compute adjacency list: for each dep, add node as a dependent. So we'll build adj: dep -> list of dependents.\n- Also collect all nodes: keys of graph.\n- Initialize heap with all nodes that have in_degree == 0. Push (index_map[node], node). But careful: we need to pop smallest index among ready, so we use heap.\n- Process: while heap: pop (_, node) - this is the next node to add to order. Add to result. For each dependent in adj[node]: decrement in_degree[dep]. If becomes 0, push (index_map[dep], dep) onto heap.\n- After loop, if len(result) != n: cycle exists (some nodes never become ready), raise ValueError.\n- Return result.\n\nNote: The graph dict may have nodes with dependencies that are not present? The problem says \"missing dependency\" - that is if a dependency node is not a key in graph. So we check.\n\nEdge cases: empty graph ({}), return [] (empty list). Also nodes with empty dependency list.\n\nWe must not mutate input. So we create copies if needed.\n\nImplementation details:\n- For missing dependency: when iterating deps for node, if dep not in graph, raise ValueError.\n- For cycle: after processing, if result length < n, raise ValueError.\n\nWe'll use standard library heapq.\n\nNow, write code.\n\nWe'll define function stable_toposort(graph).\n\nPseudo:\n\ndef stable_toposort(graph):\n    n = len(graph)\n    # map node to index\n    index = {node: i for i, node in enumerate(graph.keys())}\n    in_degree = {node: 0 for node in graph}\n    adj = {node: [] for node in graph}  # dep -> [dependents]\n    for node, deps in graph.items():\n        for dep in deps:\n            if dep not in graph:\n                raise ValueError(f\"Missing dependency: {dep}\")\n            in_degree[node] += 1  # each dep contributes to in-degree of node\n            adj[dep].append(node)  # dep is prerequisite for node\n\n    # heap of (index, node) for ready nodes\n    import heapq\n    heap = []\n    for node in graph:\n        if in_degree[node] == 0:\n            heapq.heappush(heap, (index[node], node))\n\n    order = []\n    while heap:\n        _, node = heapq.heappop(heap)\n        order.append(node)\n        for dependent in adj[node]:\n            in_degree[dependent] -= 1\n            if in_degree[dependent] == 0:\n                heapq.heappush(heap, (index[dependent], dependent))\n\n    if len(order) < n:\n        raise ValueError(\"Cycle detected\")\n\n    return order\n\nThat's it.\n\nBut we need to consider that input might be any dict, not necessarily preserving insertion order? In Python 3.7+ dicts are insertion-ordered. The problem says \"original dict insertion order\", so we assume it's ordered. So we use that.\n\nNow, output code only.\n\nI'll produce the final answer.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 57,
+        "completion_tokens": 1433,
+        "total_tokens": 1490
+      },
+      "seconds": 11.561,
+      "response_evidence": {
+        "chars": 936,
+        "sha256": "bcef8d49a71c3112176e22fd9fb48aa134e9b2c18624dbacf6a049241e79c524",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 5074,
+        "sha256": "fd09db2ed7abe02e2830446745760b416124412b238f177dbdaa5197f5c48cd3",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "schema_drift",
+      "category": "python",
+      "prompt": "Implement def schema_drift(expected, actual). Inputs are nested dicts whose leaves are type strings. Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "669ab072e58e4b49a198903ec0d5a655[[\"profile.age\",\"profile.city\"],[\"a.b\",\"a.c\"],[\"x.y\"]]\n"
+      },
+      "response": "```python\ndef schema_drift(expected, actual):\n    drift = []\n\n    def collect_leaf_paths(obj, prefix):\n        if not isinstance(obj, dict):\n            return [prefix]\n        paths = []\n        for k, v in obj.items():\n            new_prefix = f\"{prefix}.{k}\" if prefix else k\n            paths.extend(collect_leaf_paths(v, new_prefix))\n        return paths\n\n    def compare(e, a, path):\n        # missing in actual\n        for key in e:\n            new_path = f\"{path}.{key}\" if path else key\n            if key not in a:\n                paths = collect_leaf_paths(e[key], new_path)\n                drift.extend(paths)\n            else:\n                ev, av = e[key], a[key]\n                if isinstance(ev, dict) and isinstance(av, dict):\n                    compare(ev, av, new_path)\n                elif ev != av:  # string vs string or dict vs string\n                    drift.append(new_path)\n\n        # extra in actual\n        for key in a:\n            new_path = f\"{path}.{key}\" if path else key\n            if key not in e:\n                paths = collect_leaf_paths(a[key], new_path)\n                drift.extend(paths)\n\n    compare(expected, actual, \"\")\n    return sorted(drift)\n```",
+      "reasoning": "We need to implement a function `schema_drift(expected, actual)` that compares two nested dictionaries. The leaves are type strings (e.g., \"string\", \"int\", \"list\", etc.). The function should return a sorted list of dotted paths that represent: missing fields (present in expected but not in actual), extra fields (present in actual but not in expected), and fields whose type differs (present in both but the type strings are different). Also, if a nested object is missing or extra, we need to report its leaf paths. For example, if expected has a dict at \"a.b\" and actual doesn't have \"a\" at all, then we need to report the leaf paths under \"a.b\" as missing, i.e., \"a.b.c\" etc. Similarly, extra nested objects: if actual has a dict at \"x.y\" but expected doesn't have \"x\", then report all leaf paths under \"x.y\" as extra.\n\nWe need to return a sorted list of dotted paths. No code beyond the function.\n\nLet's think about approach. We'll do a recursive comparison. We'll have two dictionaries. For each key in expected, if not in actual, then all leaf paths under that expected value are missing. But we need to be careful: if the expected value is a dict, we need to traverse it and collect all leaf paths (where leaves are type strings). If it's a string (type), then that's a leaf itself.\n\nSimilarly, for extra keys in actual but not in expected, we collect leaf paths from actual.\n\nFor keys present in both, if both are dicts, we recurse. If both are strings, we compare if they are equal; if not, that path is a type difference. If one is dict and the other is string, then there is a type difference at that path? But the spec says \"fields whose type differs\" - leaves are type strings. So if expected has a dict and actual has a string at same path, that's a type difference at that path? But then we wouldn't get into leaf paths because we stop. The instruction: \"A missing/extra nested object reports its leaf paths.\" That suggests that when we have a missing or extra object (i.e., a dict), we report all leaf paths inside it. But if it's a type mismatch at a non-leaf level (dict vs string), what do we report? Probably the path itself as a type difference. Because we wouldn't be able to descend further. So we handle that: if both keys exist, compare types (dict vs string). If both are dict, recurse. If both are string, compare values. If one is dict and the other string, that's a type difference at that path.\n\nEdge cases: paths like \"a.b.c\" where \"a\" is dict, \"b\" is dict, \"c\" is leaf type.\n\nNow, we need to return a sorted list of dotted paths. Sorted lexicographically.\n\nImplementation: define a helper function `collect_leaf_paths(obj, prefix)` to recursively collect all leaf paths as dotted strings. But we need to be careful: a leaf is defined as a value that is a type string (i.e., not a dict). So we can check if isinstance(obj, dict). If not, it's a leaf, and the path is the prefix.\n\nNow, the main function: we'll do a recursive compare.\n\nWe'll initialize an empty list for drift paths.\n\nDefine `compare(expected, actual, path)`: \n- For each key in expected: \n  - if key not in actual: \n    - For each leaf path in collect_leaf_paths(expected[key], f\"{path}.{key}\" if path else key), add to drift (missing).\n  - else: (key in actual)\n    - expected_val = expected[key]; actual_val = actual[key]\n    - if both are dicts: compare(expected_val, actual_val, f\"{path}.{key}\" if path else key)\n    - else if both are strings: if expected_val != actual_val: add path (type difference)\n    - else (one dict, one string): add path (type difference)\n- For each key in actual: \n  - if key not in expected: \n    - For each leaf path in collect_leaf_paths(actual[key], ...), add to drift (extra)\n\nWe need to avoid duplicates: if a key is missing in expected->actual and also extra in actual->expected, we handle both sides.\n\nBut careful: if a key is present in both but one is dict and the other is string, we add a type difference at that path. But we should not descend further because we can't compare dict with string.\n\nNow, sort the list of drift paths.\n\nReturn sorted list.\n\nWe need to output Python code only.\n\nLet's test with examples.\n\nExample 1:\nexpected = {\"a\": \"string\", \"b\": {\"c\": \"int\"}}\nactual = {\"a\": \"string\", \"b\": {\"d\": \"int\"}}\n- key \"a\": both \"string\" -> equal, no drift.\n- key \"b\": both dicts -> compare sub:\n  - expected has \"c\", actual has \"d\": \"c\" missing in actual -> leaf path \"b.c\" (since \"b.c\" is a leaf). \n  - actual has \"d\", expected lacks \"d\": extra -> \"b.d\".\n- So drift = [\"b.c\", \"b.d\"] sorted -> same.\n\nExample 2:\nexpected = {\"a\": \"string\", \"b\": {\"c\": \"int\"}}\nactual = {\"a\": \"int\"}\n- key \"a\": type difference: \"string\" vs \"int\" => add \"a\".\n- key \"b\" not in actual: missing. collect leaf paths of expected[\"b\"] = {\"c\":\"int\"}: path \"b.c\". So add \"b.c\".\n- For actual keys: \"a\" present, no extra. So drift = [\"a\", \"b.c\"].\n\nExample 3:\nexpected = {\"a\": {\"b\": {\"c\": \"int\"}}}\nactual = {\"a\": {\"d\": \"string\"}}\n- key \"a\": both dicts -> compare sub:\n  - expected has \"b\", actual lacks \"b\": missing leaf path under \"b\": \"a.b.c\".\n  - actual has \"d\", expected lacks \"d\": extra leaf path \"a.d\".\n- result: [\"a.b.c\", \"a.d\"].\n\nExample 4:\nexpected = {\"a\": {\"b\": \"int\"}}\nactual = {\"a\": \"string\"}\n- key \"a\": expected dict, actual string -> type difference at \"a\". Not descending. So drift = [\"a\"].\n\nNote: For missing/extra nested objects, we report leaf paths. So if expected has a dict with no leaves? Could be empty dict? That's edge case: if a nested object is empty (no leaves), then there are no leaf paths to report. So missing/extra of an empty dict would produce no drift? But that seems odd. Probably we ignore empty dicts? Or maybe treat as a leaf? The spec says \"nested dicts whose leaves are type strings\". So a dict with no keys is an empty dict: no leaves. So if expected has \"a\": {} and actual doesn't have \"a\", then no leaf paths to report. So drift list would be empty? That seems weird. But we'll follow spec. Alternatively, maybe we should report the path itself as missing? But spec says \"reports its leaf paths.\" So if no leaves, no report. We'll go with that.\n\nNow, implement collect_leaf_paths: recursively traverse, build prefix with dot.\n\nWe'll need to handle root path: we call with path=\"\" initially.\n\nImplementation details: In compare, we need to pass path prefix. Use f\"{path}.{key}\" if path else key.\n\nNow, code.\n\nWe'll define helper functions inside the main function or as nested.\n\nLet's write:\n\ndef schema_drift(expected, actual):\n    drift = []\n    def collect_leaf_paths(obj, prefix):\n        if not isinstance(obj, dict):\n            # leaf\n            return [prefix]\n        paths = []\n        for k, v in obj.items():\n            new_prefix = f\"{prefix}.{k}\" if prefix else k\n            paths.extend(collect_leaf_paths(v, new_prefix))\n        return paths\n\n    def compare(e, a, path):\n        # e and a are dicts at this level\n        # expected keys\n        for key in e:\n            new_path = f\"{path}.{key}\" if path else key\n            if key not in a:\n                # missing, collect leaf paths from e[key]\n                paths = collect_leaf_paths(e[key], new_path)\n                drift.extend(paths)\n            else:\n                ev, av = e[key], a[key]\n                if isinstance(ev, dict) and isinstance(av, dict):\n                    compare(ev, av, new_path)\n                else:\n                    # either both strings, or one dict one string\n                    # if both strings and equal, no drift\n                    if ev != av:\n                        drift.append(new_path)\n        # actual keys not in expected\n        for key in a:\n            new_path = f\"{path}.{key}\" if path else key\n            if key not in e:\n                paths = collect_leaf_paths(a[key], new_path)\n                drift.extend(paths)\n\n    compare(expected, actual, \"\")\n    # remove duplicates? Probably not necessary but might be.\n    return sorted(set(drift))\n\nWait: there might be duplicates? For example, if a key is both missing and extra? No, that can't happen. But in compare we only add missing for expected keys not in actual, and extra for actual keys not in expected. So distinct. So set not needed.\n\nBut consider: if expected has \"a\": {\"b\": \"int\"} and actual has \"a\": {\"b\": \"string\"} -> we get type difference at \"a.b\". That's fine.\n\nNow test with examples:\n\nExample1: expected={\"a\":\"string\",\"b\":{\"c\":\"int\"}}, actual={\"a\":\"string\",\"b\":{\"d\":\"int\"}}:\ncompare: \n- key \"a\": both string, equal, no drift.\n- key \"b\": both dicts, compare:\n  - e[\"c\"] not in a => collect leaf paths of \"int\" with prefix \"b.c\" => [\"b.c\"]\n  - a[\"d\"] not in e => collect leaf paths of \"int\" with prefix \"b.d\" => [\"b.d\"]\n- Result: [\"b.c\",\"b.d\"] sorted.\n\nExample2: expected={\"a\":\"string\",\"b\":{\"c\":\"int\"}}, actual={\"a\":\"int\"}:\n- key \"a\": both strings, ev != av => append \"a\"\n- key \"b\": missing => collect leaf paths of {\"c\":\"int\"} with prefix \"b\" => \"b.c\" => [\"b.c\"]\n- actual keys: only \"a\" present, no extra.\n- drift = [\"a\",\"b.c\"]\n\nExample3: as above.\n\nNow, ensure sorting: return sorted(drift).\n\nPotential edge case: path with empty string if root is leaf? But root is always dict. So fine.\n\nNow, we need to return Python code only. So we'll output the function definition.\n\nOne more thought: What about fields that are nested objects but both present but one has extra/missing leafs? We already handle recursively.\n\nSo final code.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 58,
+        "completion_tokens": 2692,
+        "total_tokens": 2750
+      },
+      "seconds": 20.552,
+      "response_evidence": {
+        "chars": 1198,
+        "sha256": "161f79d1c37f840a67623a8edf2c14c1212b8e6bca2da0888c20293f4ec1d3fb",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 9397,
+        "sha256": "7711db4fe1dc71d4fc3f3f835d91a3ffbebee448cb0ea4568baa30df7fc0fae5",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "bounded_batches",
+      "category": "python",
+      "prompt": "Implement def bounded_batches(items, max_rows). items is an iterable of (partition,row_count). Preserve order and return a list of batches, each a list of items, whose total rows does not exceed max_rows. An item larger than max_rows must be alone. Reject max_rows <= 0. Consume the iterable once. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "5d97e4c683104134849248d9ccfc1488[[[[\"a\",4],[\"b\",6]],[[\"c\",7]],[[\"d\",15]],[[\"e\",2]]],[[[\"a\",3],[\"b\",3]],[[\"c\",3]]]]\n"
+      },
+      "response": "```python\ndef bounded_batches(items, max_rows):\n    if max_rows <= 0:\n        raise ValueError(\"max_rows must be positive\")\n    \n    batches = []\n    current_batch = []\n    current_total = 0\n    \n    for item in items:\n        partition, row_count = item\n        \n        if row_count > max_rows:\n            # close the current batch if any\n            if current_batch:\n                batches.append(current_batch)\n                current_batch = []\n                current_total = 0\n            # this item must be alone\n            batches.append([item])\n        else:\n            if current_total + row_count <= max_rows:\n                current_batch.append(item)\n                current_total += row_count\n            else:\n                # close current batch and start a new one\n                if current_batch:\n                    batches.append(current_batch)\n                current_batch = [item]\n                current_total = row_count\n    \n    # append any remaining items\n    if current_batch:\n        batches.append(current_batch)\n    \n    return batches\n```",
+      "reasoning": "We are asked to implement a function `bounded_batches(items, max_rows)`. The function takes an iterable of pairs (partition, row_count). It should return a list of batches, where each batch is a list of items. The total rows in each batch (sum of row_counts) must not exceed max_rows. If an item has row_count > max_rows, it must be alone in its own batch. Preserve order. Consume the iterable once. Also reject (raise?) max_rows <= 0. The problem statement says \"Reject max_rows <= 0.\" This likely means raise an error, perhaps ValueError. We need to output Python code only.\n\nWe'll implement:\n\n- Check max_rows > 0, else raise ValueError.\n- Iterate through items.\n- For each item, check row_count.\n- If row_count > max_rows: it must be alone, so if current batch has items, we close it and start a new batch with just this item. But careful: we might have an existing non-empty batch; we should flush it, start a new batch for this item alone, and then that batch is complete, so we close it and start a new empty batch. However, we need to ensure order preserved: we process items sequentially.\n- If row_count <= max_rows: we can try to put it into the current batch if the current batch has room. If it fits (current_total + row_count <= max_rows), add it; else, start a new batch with this item.\n- At end, if there's any remaining batch (non-empty), append it.\n\nEdge cases: max_rows <= 0 -> raise ValueError. Also, if max_rows is positive but row_count could be negative? But presumably row_count is non-negative. Assume non-negative.\n\nLet's code.\n\nWe'll use a list `batches`, variable `current_batch` (list), `current_total`. For each item:\n\nif row_count > max_rows:\n    if current_batch: append current_batch to batches; reset.\n    # now start a new batch for this item alone, add, then close.\n    current_batch = [item]\n    batches.append(current_batch)\n    # after appending, we need to reset for next item.\n    current_batch = []\n    current_total = 0\nelse:\n    if current_total + row_count <= max_rows:\n        current_batch.append(item)\n        current_total += row_count\n    else:\n        # close current batch\n        if current_batch: append to batches\n        # start new batch\n        current_batch = [item]\n        current_total = row_count\n# At end, if current_batch not empty, append.\n\nAlso we should ensure the iterable is consumed once. We'll just iterate.\n\nWe'll implement.\n\nNote: The problem says \"Return a list of batches, each a list of items\". So output type is list of lists.\n\nWe can also use `itertools` but simple loop is fine.\n\nLet's write the code.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 81,
+        "completion_tokens": 840,
+        "total_tokens": 921
+      },
+      "seconds": 7.13,
+      "response_evidence": {
+        "chars": 1080,
+        "sha256": "87d0c47f6c85cd203316e4622d2f37a4fdd98f9644c779a04c52e00882ef0359",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2580,
+        "sha256": "32c9f8d5a2aa893cdc539ef9a8efc5312229a06a96ef61b37484f172ee79e29f",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "merge_intervals_payload",
+      "category": "python",
+      "prompt": "Implement def merge_payload_ranges(items). Each item is (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start > end. Do not mutate input. Return Python code only.",
+      "score": 0.0,
+      "passed": false,
+      "detail": {
+        "executor_tail": "1b891dd06c1349b78d267c5343276597[[[1,7,\"a\"],[7,10,\"b\"]],[],[[[1,3,\"x\"]],[[2,3,\"x\"],[1,1,\"x\"]]]]\n"
+      },
+      "response": "```python\ndef merge_payload_ranges(items):\n    # Validate and convert to list of lists for non-mutation\n    valid_items = []\n    for start, end, payload in items:\n        if start > end:\n            raise ValueError(f\"Invalid range: start {start} > end {end}\")\n        valid_items.append([start, end, payload])\n\n    # Sort by start, then by end\n    valid_items.sort(key=lambda x: (x[0], x[1]))\n\n    if not valid_items:\n        return []\n\n    merged = [valid_items[0]]\n    for current in valid_items[1:]:\n        last = merged[-1]\n        # Merge if same payload and overlapping or touching\n        if current[2] == last[2] and current[0] <= last[1] + 1:\n            # Merge: update the end of last to max of both ends\n            if current[1] > last[1]:\n                last[1] = current[1]\n        else:\n            # Cannot merge, add as new range\n            merged.append(current)\n\n    return merged\n```",
+      "reasoning": "We need to implement a function that takes a list of items, each being a tuple (start, end, payload). The function should:\n\n1. Validate that start <= end for each item, otherwise reject (likely raise an exception? The prompt says \"Reject start > end.\" We need to decide how to reject: probably raise ValueError or something. But it says \"Return Python code only.\", so we just implement the function with validation. Could raise ValueError. We'll do that.\n\n2. Sort the items by start, then end.\n\n3. Merge overlapping or touching ranges (i.e., intervals that overlap or are adjacent, meaning start <= previous_end or start == previous_end + 1) only if payloads are equal. If payloads differ, do not merge; even if they overlap, they remain separate.\n\n4. Return list of [start, end, payload] (list of lists).\n\n5. Do not mutate input.\n\nImplementation details:\n\n- Input: list of tuples (start, end, payload). Could be any order.\n\n- We first validate each: if start > end, raise ValueError.\n\n- Then sort by start, then end.\n\n- Then iterate through sorted list, merging if possible.\n\n- We'll build result list.\n\n- For each item, we compare with last item in result: if payloads equal and new start <= last_end + 1 (touching means new_start == last_end + 1, overlapping means new_start <= last_end), then merge: new_end = max(last_end, new_end), and update last item's end. Since we sort by start, we can assume new_start >= last_start.\n\n- If not merge, append new item as [start, end, payload].\n\nEdge cases:\n\n- Empty input -> return empty list.\n\n- Items with same start, different payloads: they will be separate, but if same payload, we merge touching? Actually if same start, overlap, so merge if same payload.\n\n- We need to ensure we don't mutate input: we are not modifying items, just creating new lists.\n\nReturn: list of lists.\n\nLet's write the code.\n\nTest cases:\n\nInput: [(1,5,'a'), (6,10,'a')] -> touch (6 == 5+1) -> merge -> [1,10,'a']\n\nInput: [(1,5,'a'), (6,10,'b')] -> touch but different payload -> separate.\n\nInput: [(1,5,'a'), (5,10,'a')] -> overlap at 5 -> merge -> [1,10,'a']\n\nInput: [(1,5,'a'), (2,3,'a')] -> subset -> merge -> [1,5,'a']\n\nInput: [(1,5,'a'), (2,3,'b')] -> overlap but different payload -> separate.\n\nAlso consider sorting: by start, then end. For same start, end ascending.\n\nValidation: start > end -> raise ValueError.\n\nWe'll implement.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 64,
+        "completion_tokens": 846,
+        "total_tokens": 910
+      },
+      "seconds": 7.354,
+      "response_evidence": {
+        "chars": 908,
+        "sha256": "fad402e77a7e9194ac0a3a1f5f7e0a24639b53e7ec65e28066ecbcab1950030c",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2363,
+        "sha256": "93cb188d4e3debc50fe7f4d4e81901a31614e23211f9a6b74bf90196e3eb29aa",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "watermark_commit",
+      "category": "python",
+      "prompt": "Implement def committable_windows(events, watermark). events is an iterable of dicts with window, event_time, value. Drop late events with event_time <= watermark. For remaining events, return a dict mapping window to values in input order, with window keys inserted in first-seen order. Consume the iterable once and do not mutate events. Return Python code only.",
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "executor_tail": "29c87201356c4905b24ea2da1c4e24b1[{\"w1\":[\"a\",\"c\"]},{\"x\":[1],\"y\":[2]}]\n"
+      },
+      "response": "```python\ndef committable_windows(events, watermark):\n    result = {}\n    for event in events:\n        if event[\"event_time\"] > watermark:\n            window = event[\"window\"]\n            if window in result:\n                result[window].append(event[\"value\"])\n            else:\n                result[window] = [event[\"value\"]]\n    return result\n```",
+      "reasoning": "We need to implement a function that takes an iterable of dicts, a watermark (presumably a timestamp), and processes events. For each event in the iterable, if event_time > watermark, keep it. Then we need to group by window, but preserve input order for values within each window. Also, windows keys should be inserted in first-seen order. The output is a dict mapping window to a list of values (since \"values in input order\"). We must not mutate events (the input dicts) and consume the iterable once.\n\nWe'll just write a Python function.\n\nImplementation: iterate, filter, then use a dict to collect, using setdefault or check. Keep insertion order of keys by using regular dict (Python 3.7+ guarantees order). When we see a new window, we create a list and append the value; existing window append to its list.\n\nMake sure to handle if events is an iterable, possibly a generator, so we iterate once.\n\nReturn the dict.\n\nWe'll write code accordingly.\n\nAlso, note that watermark comparison is \"event_time <= watermark\" are dropped. So we keep event_time > watermark.\n\nEdge cases: empty iterable -> return empty dict.\n\nNo need to import anything.\n\nWe'll provide code only.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 83,
+        "completion_tokens": 337,
+        "total_tokens": 420
+      },
+      "seconds": 4.169,
+      "response_evidence": {
+        "chars": 352,
+        "sha256": "85454445a87fbdd5a83c775475f8a82c64c7bbb1cdb98cfe4a3045abfecce25a",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1172,
+        "sha256": "d60de7c5ed6de29eb1c28ed78b4ff7a0502dc3f1084c84d4e3121e6a6d4d3497",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "cgroup_oom",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 kernel: Memory cgroup out of memory: Killed process worker; EV2 memory.current=1073741824 and memory.max=1073741824; EV3 service restarted 14 times; host MemAvailable=48 GiB.\nChoose root_cause from ['host_memory_exhaustion', 'cgroup_memory_limit', 'disk_pressure'] and exactly two highest-priority action_codes from ['memory_max', 'swap_zero', 'restart_backoff', 'delete_logs'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "cgroup_memory_limit",
+        "action_codes": [
+          "memory_max",
+          "restart_backoff"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "cgroup_memory_limit",
+          "action_codes": [
+            "memory_max",
+            "restart_backoff"
+          ],
+          "explanation": "EV1 and EV2 indicate the cgroup hit its memory.max limit (current=1GiB, max=1GiB) causing OOM kills. Host memory is ample (48GiB), so not host exhaustion. Repeated restarts suggest need for backoff to avoid rapid loops."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"cgroup_memory_limit\",\"action_codes\":[\"memory_max\",\"restart_backoff\"],\"explanation\":\"EV1 and EV2 indicate the cgroup hit its memory.max limit (current=1GiB, max=1GiB) causing OOM kills. Host memory is ample (48GiB), so not host exhaustion. Repeated restarts suggest need for backoff to avoid rapid loops.\"}",
+      "reasoning": "我们根据证据分析：EV1显示cgroup OOM，EV2显示memory.current等于memory.max，说明cgroup达到限制。EV3显示服务重启多次，host内存充足（48GiB），所以不是主机内存耗尽。因此根因是cgroup内存限制。行动代码：提高memory_max，以及可能调整重启退避（restart_backoff）以避免频繁重启。但题目要求恰好两个，选择memory_max和restart_backoff。",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 144,
+        "completion_tokens": 185,
+        "total_tokens": 329,
+        "prompt_tokens_details": {
+          "cached_tokens": 128
+        }
+      },
+      "seconds": 3.45,
+      "response_evidence": {
+        "chars": 320,
+        "sha256": "2ba005148d93d639e7fce00502217f72a231013e402edbf76a2c96cdcfed7fda",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 217,
+        "sha256": "1715b89706008fa15166b3b7a6665d2d127d4536302efa19e234536fa947214e",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "gpu_cpu_spill",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 inference log: insufficient GPU memory, moving 9.5 GiB layers to CPU; EV2 container RSS rose from 7 to 61 GiB; EV3 kernel invoked OOM killer; EV4 GPU had another process using 18 GiB.\nChoose root_cause from ['gpu_to_cpu_offload', 'model_corruption', 'network_loss'] and exactly two highest-priority action_codes from ['disable_cpu_offload', 'container_memory_limit', 'vram_guard', 'increase_swap'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "gpu_to_cpu_offload",
+        "action_codes": [
+          "disable_cpu_offload",
+          "vram_guard"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "gpu_to_cpu_offload",
+          "action_codes": [
+            "disable_cpu_offload",
+            "vram_guard"
+          ],
+          "explanation": "GPU内存不足触发了将9.5GiB层卸载到CPU，导致容器RSS从7GiB升至61GiB，最终触发OOM killer。同时检测到GPU被其他进程占用18GiB，表明资源竞争加剧。禁用CPU卸载可避免内存压力激增，vram_guard可防止未来GPU被其他进程过度占用。"
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"gpu_to_cpu_offload\",\"action_codes\":[\"disable_cpu_offload\",\"vram_guard\"],\"explanation\":\"GPU内存不足触发了将9.5GiB层卸载到CPU，导致容器RSS从7GiB升至61GiB，最终触发OOM killer。同时检测到GPU被其他进程占用18GiB，表明资源竞争加剧。禁用CPU卸载可避免内存压力激增，vram_guard可防止未来GPU被其他进程过度占用。\"}",
+      "reasoning": "我们根据证据：GPU内存不足，移动层到CPU，导致CPU内存上升，触发OOM killer，且GPU有其他进程占用。根因是gpu_to_cpu_offload。行动：禁用CPU offload，增加vram guard防止其他进程占用？但两个行动：disable_cpu_offload和vram_guard。因为问题是offload导致，且有其他进程占用GPU，所以vram_guard可防止。container_memory_limit是限制容器内存，但这里是CPU内存不足，可能也有用但优先级不如前两个。increase_swap不解决根本。所以选择disable_cpu_offload和vram_guard。",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 153,
+        "completion_tokens": 251,
+        "total_tokens": 404,
+        "prompt_tokens_details": {
+          "cached_tokens": 128
+        }
+      },
+      "seconds": 3.219,
+      "response_evidence": {
+        "chars": 239,
+        "sha256": "3c1d77888da4069ed3d5f8b9c4e0bf028589d53a63a8071a656ce00a8d2a5611",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 309,
+        "sha256": "2e85bfc6a4c025a3929b847cf1700c0a2fa18f913a479c040f0f762c2b4d2448",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "disk_inode_pressure",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.\nChoose root_cause from ['combined_disk_pressure', 'database_deadlock', 'cpu_throttle'] and exactly two highest-priority action_codes from ['bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "combined_disk_pressure",
+        "action_codes": [
+          "bounded_cache_cleanup",
+          "restart_file_owner"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "combined_disk_pressure",
+          "action_codes": [
+            "bounded_cache_cleanup",
+            "restart_file_owner"
+          ],
+          "explanation": "High block (95%) and inode (97%) usage plus deleted-but-open files consuming ~3GB indicate disk pressure. ENOSPC arises from combined space exhaustion. Priority: clean cache to free blocks and restart owning process to release deleted-but-open files."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"combined_disk_pressure\",\"action_codes\":[\"bounded_cache_cleanup\",\"restart_file_owner\"],\"explanation\":\"High block (95%) and inode (97%) usage plus deleted-but-open files consuming ~3GB indicate disk pressure. ENOSPC arises from combined space exhaustion. Priority: clean cache to free blocks and restart owning process to release deleted-but-open files.\"}",
+      "reasoning": "We need to analyze the synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.\n\nENOSPC means no space left on device. This is clearly a disk space issue. The root cause could be \"combined_disk_pressure\" because both blocks and inodes are highly used. Also deleted-but-open files are consuming space. However, the options are 'combined_disk_pressure', 'database_deadlock', 'cpu_throttle'. Obviously it's disk pressure. But \"combined_disk_pressure\" might refer to both inode and block pressure. So root_cause: \"combined_disk_pressure\".\n\nAction codes: We need exactly two highest-priority from ['bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root'].\n\nThe evidence: filesystem blocks 95% used, inodes 97% used, deleted-but-open files occupy 3GB (3221225472 bytes). ENOSPC is reported. So the immediate issue is lack of space. Actions: bounded_cache_cleanup could free up cache space, but we need to address deleted-but-open files. Usually, restarting the file owner might release the deleted files if they are locked. But 'restart_file_owner' could be appropriate. Also 'protect_current_data' is to prevent data loss. 'recursive_delete_root' is too aggressive. So likely the two highest-priority actions are to clean up bounded cache and restart the file owner to release deleted-but-open files. Alternatively, protect current data might be needed to avoid corruption. But the question says \"exactly two highest-priority action_codes\". Given the context, probably 'bounded_cache_cleanup' and 'restart_file_owner' are the most direct.\n\nLet's craft explanation: Evidence shows high disk usage (blocks and inodes) and deleted-but-open files consuming space, causing ENOSPC. The root cause is combined disk pressure from both inode and block exhaustion. Actions: clean up temporary/cache files (bounded cache cleanup) and restart the process that holds deleted files to release space (restart file owner).\n\nSo JSON with root_cause: \"combined_disk_pressure\", action_codes: [\"bounded_cache_cleanup\",\"restart_file_owner\"], explanation brief.\n\nI'll output that.",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 141,
+        "completion_tokens": 601,
+        "total_tokens": 742,
+        "prompt_tokens_details": {
+          "cached_tokens": 128
+        }
+      },
+      "seconds": 5.502,
+      "response_evidence": {
+        "chars": 368,
+        "sha256": "a291f0bd0fc3d3f3671476df0fae1020daf0abcbe59e9115ce3e1d8e5881d49f",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2191,
+        "sha256": "0c3d84cb141300a8a4c573a0539c413cd55c4a7460a1e5fe1ddbdb40cc5b7dec",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "db_pool_saturation",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 pool active=40 max=40 wait_p95=2100ms; EV2 database CPU=28%, locks=0, connection count=45/500; EV3 request latency tracks pool wait.\nChoose root_cause from ['client_pool_saturation', 'database_cpu_saturation', 'lock_contention'] and exactly two highest-priority action_codes from ['bounded_pool_increase', 'statement_timeout', 'observe_wait_p95', 'disable_timeout'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "client_pool_saturation",
+        "action_codes": [
+          "bounded_pool_increase",
+          "observe_wait_p95"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "client_pool_saturation",
+          "action_codes": [
+            "bounded_pool_increase",
+            "observe_wait_p95"
+          ],
+          "explanation": "EV1 pool is fully saturated (active=40/max=40) with high p95 wait, and EV3 latency correlates with pool wait. Database CPU is low (28%), no locks, and connection count is far from limit, ruling out database-side issues. Root cause is client pool saturation; increase pool bound and monitor wait p95 to validate improvement."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"client_pool_saturation\",\"action_codes\":[\"bounded_pool_increase\",\"observe_wait_p95\"],\"explanation\":\"EV1 pool is fully saturated (active=40/max=40) with high p95 wait, and EV3 latency correlates with pool wait. Database CPU is low (28%), no locks, and connection count is far from limit, ruling out database-side issues. Root cause is client pool saturation; increase pool bound and monitor wait p95 to validate improvement.\"}",
+      "reasoning": "我们根据证据分析：EV1池满（active=40 max=40），wait_p95=2100ms，说明客户端连接池饱和。EV3延迟跟随池等待，确认是池等待导致。EV2数据库CPU不高，锁为0，连接数低，排除数据库问题。因此根因是客户端池饱和。行动：增加池上限（bounded_pool_increase）和观察等待时间（observe_wait_p95）？但要求恰好两个最高优先级行动。通常增加池大小和设置语句超时？但语句超时可能不合适，因为数据库正常。更合适的是增加池大小和观察等待？但观察等待不是行动？选项中有observe_wait_p95，可能是一个行动。也可能disable_timeout？不。基于证据，增加池上限是直接解决，另一个是观察p95以确认改进。但题目要求\"action_codes\"，我选择bounded_pool_increase和observe_wait_p95。",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 143,
+        "completion_tokens": 313,
+        "total_tokens": 456,
+        "prompt_tokens_details": {
+          "cached_tokens": 128
+        }
+      },
+      "seconds": 4.273,
+      "response_evidence": {
+        "chars": 439,
+        "sha256": "3410c7345888b8b1dc507b85a3304db0ef469264e8652de8e61316c95cfa6551",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 396,
+        "sha256": "47e40fc6d29320f43f61c772ca2e2db3055d260697c9f071f1a267847c400c73",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "iceberg_commit_conflict",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds.\nChoose root_cause from ['optimistic_commit_conflict', 'catalog_unavailable', 'corrupt_manifest'] and exactly two highest-priority action_codes from ['bounded_commit_retry', 'refresh_snapshot', 'idempotent_write', 'delete_metadata'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "optimistic_commit_conflict",
+        "action_codes": [
+          "bounded_commit_retry",
+          "refresh_snapshot"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "optimistic_commit_conflict",
+          "action_codes": [
+            "bounded_commit_retry",
+            "refresh_snapshot"
+          ],
+          "explanation": "EV1 shows two writers on the same snapshot 812; EV2 A commits 813; EV3 B fails due to conflicting files, indicating an optimistic commit conflict. EV4 retry after refreshing snapshot succeeds, so bounded retry with snapshot refresh resolves it."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"optimistic_commit_conflict\",\"action_codes\":[\"bounded_commit_retry\",\"refresh_snapshot\"],\"explanation\":\"EV1 shows two writers on the same snapshot 812; EV2 A commits 813; EV3 B fails due to conflicting files, indicating an optimistic commit conflict. EV4 retry after refreshing snapshot succeeds, so bounded retry with snapshot refresh resolves it.\"}",
+      "reasoning": "我们根据提供的证据：EV1两个写者读取快照812，EV2写者A提交快照813，EV3写者B失败ValidationException: conflicting files，EV4重试在刷新快照后成功。根因是乐观提交冲突（optimistic_commit_conflict），因为两个写者基于同一快照，一个先提交，另一个冲突。动作代码：bounded_commit_retry（有界重试）和refresh_snapshot（刷新快照）。证据显示重试成功在刷新快照后，所以两者都合适。返回JSON。",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 139,
+        "completion_tokens": 212,
+        "total_tokens": 351,
+        "prompt_tokens_details": {
+          "cached_tokens": 128
+        }
+      },
+      "seconds": 2.649,
+      "response_evidence": {
+        "chars": 363,
+        "sha256": "4953b7059b9d93d61a3499484c7e6c26ab3e6544029bbea4181f8e709d5de9c9",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 248,
+        "sha256": "328c2a0b5a238290c465b6fe5faab9924aef2aca4a4484b7bbdce063313148c0",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "spark_shuffle_skew",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 median task duration=20s, max=1080s; EV2 one partition has 62% of rows for key UNKNOWN; EV3 executors have free memory and no GC pause; EV4 stage waits for one task.\nChoose root_cause from ['shuffle_key_skew', 'executor_memory_shortage', 'scheduler_outage'] and exactly two highest-priority action_codes from ['salt_hot_key', 'adaptive_skew_join', 'repartition_by_distribution', 'increase_all_memory'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "shuffle_key_skew",
+        "action_codes": [
+          "adaptive_skew_join",
+          "salt_hot_key"
+        ]
+      },
+      "score": 0.5,
+      "passed": false,
+      "detail": {
+        "parsed": {
+          "root_cause": "shuffle_key_skew",
+          "action_codes": [
+            "salt_hot_key",
+            "repartition_by_distribution"
+          ],
+          "explanation": "EV2 shows a single partition holding 62% of rows for key UNKNOWN, indicating severe data skew. EV1's long max duration (1080s) with low median (20s) and EV4's stage waiting on one task confirm the straggler effect from that skewed partition. EV3's free memory and no GC pause rule out memory shortage, so skew is the root cause. Salt the hot key to distribute load and repartition by distribution to rebalance data."
+        },
+        "cause": true,
+        "correct_actions": 1,
+        "wrong_actions": 1
+      },
+      "response": "{\"root_cause\":\"shuffle_key_skew\",\"action_codes\":[\"salt_hot_key\",\"repartition_by_distribution\"],\"explanation\":\"EV2 shows a single partition holding 62% of rows for key UNKNOWN, indicating severe data skew. EV1's long max duration (1080s) with low median (20s) and EV4's stage waiting on one task confirm the straggler effect from that skewed partition. EV3's free memory and no GC pause rule out memory shortage, so skew is the root cause. Salt the hot key to distribute load and repartition by distribution to rebalance data.\"}",
+      "reasoning": "我们根据证据分析：EV1显示任务持续时间中位数20秒，最大1080秒，说明有长尾任务。EV2显示一个分区有62%的行，键为UNKNOWN，这是数据倾斜的典型特征。EV3显示executor有内存空闲且无GC暂停，排除内存不足。EV4显示stage等待一个任务，即长尾任务。因此根因是shuffle_key_skew。行动：salt_hot_key用于处理热点键，repartition_by_distribution也合适。adaptive_skew_join通常用于join场景，这里不明确。increase_all_memory不需要。所以选择salt_hot_key和repartition_by_distribution。",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 154,
+        "completion_tokens": 275,
+        "total_tokens": 429,
+        "prompt_tokens_details": {
+          "cached_tokens": 128
+        }
+      },
+      "seconds": 3.211,
+      "response_evidence": {
+        "chars": 527,
+        "sha256": "99743d9d1f625d99682871c7b5d642fddb4637ecf47d26bb436c8c2b5a8999b9",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 315,
+        "sha256": "d5f025eda5a5ff8c0e4d1ad86c5d952131df6f2bb175ae989ef946672c1a1c0d",
+        "storage_truncated": false
+      }
+    }
+  ]
+}

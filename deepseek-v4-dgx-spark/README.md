@@ -13,6 +13,26 @@ Claude Code 执行的聚焦评测结果。
 Compose 默认使用 `{"thinking":false}`，通过 additive override 将其替换为
 `{"thinking":true}`，便于清晰审计和回退。
 
+2026-08-17 完成了 private Flash、online Flash 与 online Pro low/high/max 的快速决策
+benchmark。结论是 private Flash high 适合作为默认私有线路；复杂失败任务升级到 online
+Pro high；True Max 只按请求启用。旧 private low/high/max 矩阵中的 `reasoning_effort` 被
+LiteLLM 静默丢弃，不能用于 effort 对比；修正后的报告已加入显式透传验证和 Private Max
+短请求性能。精度覆盖、短请求性能、token 成本、Agent 聚焦结果和适用边界见
+[`BENCHMARK-COMPARISON-20260817.md`](BENCHMARK-COMPARISON-20260817.md)，可视化网站见
+[`BENCHMARK-COMPARISON-20260817.html`](BENCHMARK-COMPARISON-20260817.html)。
+本轮 private benchmark 经 LLM Portal 转发到双 GB10 vLLM，并非客户端直连；报告中的 private
+TTFT 是包含反向代理、Portal 兼容层和 WireGuard 的端到端指标。
+
+2026-08-17 已使用私有 OpenAI-compatible endpoint 对 `deepseek-v4-flash-0731` 的原生
+`thinking=true` 补跑 18 道湖仓 SQL/Python/故障分析题。结果、逐题输出及与 Qwen 的
+边界说明位于
+[`../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html`](../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html)。
+该补充服务的硬件和网络配置不同于 RTX 4090 Qwen，报告不作跨端点性能排序。
+
+同日还以 `.env` 的 `DS_` 前缀变量通过 online gateway 跑了相同 treatment。online DS
+thinking 宏平均为 63.9%，其中 5 题在 4,096-token 预算内没有 final；完整逐题证据也在
+同一报告中。online 与私有端点均不替代本双 DGX Spark 部署的独立性能基线。
+
 ## 架构
 
 ```text

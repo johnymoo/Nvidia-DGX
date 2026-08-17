@@ -1,0 +1,67 @@
+name: qwen38-rtx4090-vllm
+
+services:
+  qwen38:
+    image: ${VLLM_IMAGE}
+    container_name: ${CONTAINER_NAME}
+    restart: unless-stopped
+    ipc: host
+    ports:
+      - "${PUBLISH_HOST}:${PORT}:8000"
+    volumes:
+      - "${MODEL_ROOT}:/models/Qwen3.8-27B-FP8:ro"
+      - "${VLLM_CACHE_ROOT}:/root/.cache/vllm"
+    command:
+      - /models/Qwen3.8-27B-FP8
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --served-model-name
+      - ${MODEL_ALIAS}
+      - --max-model-len
+      - ${MAX_MODEL_LEN}
+      - --gpu-memory-utilization
+      - ${GPU_MEMORY_UTILIZATION}
+      - --cpu-offload-gb
+      - "0"
+      - --max-num-seqs
+      - "4"
+      - --max-num-batched-tokens
+      - "8192"
+      - --reasoning-parser
+      - qwen3
+      - --default-chat-template-kwargs
+      - '{"enable_thinking": false}'
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - qwen3_coder
+      - --limit-mm-per-prompt
+      - '{"image": 2, "video": 0}'
+    environment:
+      VLLM_NO_USAGE_STATS: "1"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    mem_limit: ${HOST_MEMORY_LIMIT}
+    memswap_limit: ${HOST_MEMORY_LIMIT}
+    pids_limit: 1024
+    shm_size: 16g
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)\" >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 20m
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"

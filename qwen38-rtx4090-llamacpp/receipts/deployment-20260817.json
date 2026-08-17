@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "timestamp": "2026-08-17T08:19:10Z",
+  "selection": {
+    "model": "Qwen3.8-27B",
+    "quantization": "Unsloth Dynamic V3 UD-Q4_K_XL",
+    "reason": "UD-Q4_K_XL tied UD-Q6_K_XL on business and vision accuracy; enabling its built-in MTP head preserved those scores while doubling single-stream decode throughput versus the identical Q4 baseline",
+    "comparison_report": "../model-benchmark-qwen-deepseek/report/qwen38-quantization.html"
+  },
+  "artifacts": {
+    "source": "ModelScope",
+    "repository": "unsloth/Qwen3.8-27B-GGUF",
+    "revision": "f1bfb127c64f7072bdd2cad55f258b9c8b2910fe",
+    "model_file": "Qwen3.8-27B-UD-Q4_K_XL.gguf",
+    "model_bytes": 17923394624,
+    "model_sha256": "bee238bbeb3dc0a34bde4d0dedbaee1f98c009e8bb4226f03070054c12fb1372",
+    "mmproj_file": "mmproj-F16.gguf",
+    "mmproj_bytes": 927607488,
+    "mmproj_sha256": "cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e"
+  },
+  "runtime": {
+    "name": "llama.cpp",
+    "version": "b10454",
+    "commit": "4df29be4f4c3673f428170fda944a5b19f743bb8",
+    "image": "m.daocloud.io/ghcr.io/ggml-org/llama.cpp@sha256:32d4b78519e450e9754853c500c41cea13488d01bd0d6a8333ed7dacf1d14180",
+    "image_id": "sha256:78ca0c1b14cc293e801845745f22fb4b260e806021a01eb465d0805bf14e374e",
+    "api_model": "qwen3.8-27b",
+    "api": "http://0.0.0.0:8005/v1",
+    "context": 262144,
+    "parallel": 1,
+    "kv_cache": "F16",
+    "gpu_layers": 999,
+    "cpu_weight_offload": false,
+    "flash_attention": true,
+    "speculative_decoding": {
+      "type": "draft-mtp",
+      "n_max": 2,
+      "p_min": 0
+    },
+    "reasoning": "request-selectable; OpenAI reasoning_content format",
+    "container_memory_limit_bytes": 51539607552,
+    "restart_policy": "unless-stopped"
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "driver": "580.173.02",
+    "vram_total_mib": 49140,
+    "vram_idle_service_mib": 36645,
+    "vram_headroom_mib": 11855
+  },
+  "startup": {
+    "definition": "final MTP2 container process start to listening",
+    "seconds": 4.301,
+    "page_cache_cleared": false,
+    "qualification": "Warm page-cache deployment restart; not comparable to the cold-start candidate measurements"
+  },
+  "validation": {
+    "health": "passed",
+    "model_identity": "passed; 27,320,697,856 parameters and 65,536 context",
+    "lakehouse_thinking_low": {
+      "passed": 17,
+      "total": 18,
+      "sql": "6/6",
+      "python": "5/6",
+      "incident": "6/6",
+      "evidence_sha256": "35f9b3b306f0d283b34a4e4a9a5fd44b953f1c259914d14e96c1bc53ea0fdc38"
+    },
+    "vision": {
+      "passed": 6,
+      "total": 6,
+      "evidence_sha256": "832f624771f17b9de64579acbeb4b12d8da5afe6474709685c207b8b663cfa81"
+    },
+    "performance": {
+      "warmup_runs": 1,
+      "measured_runs": 3,
+      "context": 262144,
+      "decode_tokens_per_second_mean": 93.44575466666667,
+      "ttft_seconds_mean": 0.20971833333333334,
+      "response_seconds_mean": 12.098971,
+      "completion_tokens_mean": 1111,
+      "final_answer_present": true,
+      "evidence_sha256": "61b74f4be13a6ee26336191b4c739c35242b4ba4198adae48a1be29ced883104"
+    },
+    "long_context": {
+      "status": "passed",
+      "allocated_context": 262144,
+      "prompt_tokens": 245034,
+      "completion_tokens": 26,
+      "response_seconds": 194.984852,
+      "prefill_tokens_per_second": 1261.58,
+      "deep_decode_tokens_per_second": 54.39,
+      "retrieval": "Both deterministic access codes near the beginning and end were returned exactly",
+      "evidence_sha256": "752b2e339273d469f443ff08b8f246843581438165ae1eb8941def5299fafd05"
+    },
+    "short_output_performance": {
+      "max_tokens": 128,
+      "baseline_decode_tokens_per_second_mean": 46.868257666666665,
+      "mtp2_decode_tokens_per_second_mean": 77.126175,
+      "baseline_response_seconds_mean": 2.930296,
+      "mtp2_response_seconds_mean": 1.857467,
+      "baseline_evidence_sha256": "dd703ce16887a4f4a10c1e5b3ddcc54b42c7dbf2d4e03aa3dbac180834782bd1",
+      "mtp2_evidence_sha256": "a055ef96154f7e146c541ef8e21f6178c30f4088b26fe29904c196ed4f5a1bb4"
+    },
+    "bge_m3_cpu_ollama": "healthy and unchanged"
+  },
+  "known_limits": [
+    "MTP is primarily a single-stream optimization; concurrency 2 and 4 are not yet validated",
+    "A fully populated 245K prompt takes about 195 seconds; clients should trim actual input to the task",
+    "The 128K profile remains available when additional GPU headroom is more important than maximum context",
+    "The server logs warn that no API key is configured; 0.0.0.0:8005 must remain on a controlled LAN or behind an authenticated proxy",
+    "The 48-hour stress test remains deferred",
+    "Changing the model artifact, llama.cpp image, context, KV type, or runtime arguments invalidates this receipt"
+  ],
+  "report": {
+    "html_sha256": "480fb3d3816b3bc53f8248c2f46b49016a932a487bce82f3d7d4532ab57aba74",
+    "pdf_sha256": "799488d6fe935a2fe875c42536e11a6b76364ab62914e13d3054663e7bbd0a0c"
+  }
+}

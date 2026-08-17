@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "timestamp": "2026-08-16",
+  "model": {
+    "source": "ModelScope",
+    "id": "Qwen/Qwen3.8-27B-FP8",
+    "revision": "master",
+    "path": "/data/models/modelscope/Qwen3.8-27B-FP8",
+    "architecture": "Qwen3_5ForConditionalGeneration",
+    "quantization": "fp8",
+    "indexed_weight_files": 66,
+    "critical_sha256": {
+      "config.json": "74227dd615bf1ea975aa676bdf355a0379858c12f394b5365cd9dfa5fc2c70bc",
+      "model.safetensors.index.json": "f0838c766951bdfe76d6afbdb2771a8f67aaa2231dedb3d33cebd817729843a2",
+      "chat_template.jinja": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+      "generation_config.json": "e70c136c1b78ddc1fb0905bac8e733a4dc448d4f852a5dd75143fffc70be550e",
+      "tokenizer_config.json": "b11349aafa7cdc6a320767cf7ceb29ed82f7eda5d65e8e0819e76f0ce947bf27"
+    }
+  },
+  "runtime": {
+    "name": "vLLM",
+    "version": "0.19.0",
+    "image": "vllm/vllm-openai@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504",
+    "model_alias": "qwen3.8-27b-fp8",
+    "max_model_len": 65536,
+    "max_sequences": 4,
+    "gpu_memory_utilization": 0.92,
+    "cpu_offload_gb": 0,
+    "host_memory_limit_gib": 16,
+    "host_memory_swap_gib": 16,
+    "api": "http://localhost:8005/v1",
+    "health": "healthy"
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "vram_total_mib": 49140,
+    "vram_used_mib": 43439,
+    "vram_free_mib": 5061
+  },
+  "validation": {
+    "model_structure": "passed",
+    "critical_file_hashes": "passed",
+    "indexed_weight_presence": "passed",
+    "container_healthcheck": "passed",
+    "openai_api_healthcheck": "passed",
+    "quality_instruct": "quality-instruct-20260816.json",
+    "quality_thinking_low": "quality-thinking-low-20260816.json",
+    "performance_and_capabilities": "benchmark-20260816.json",
+    "soak_48h": "deferred"
+  }
+}

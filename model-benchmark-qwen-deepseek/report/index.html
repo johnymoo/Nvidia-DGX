@@ -2,15 +2,16 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Qwen3.6、Qwen3.8 与 DeepSeek-V4-Flash-0731 完整评测</title>
 <style>
-:root{--bg:#0c0f12;--surface:#14191e;--surface2:#1a2026;--text:#f2f5f7;--muted:#9ca8b2;--line:#303943;--q36:#55a7e8;--q38:#f28b48;--ds:#62c58b;--good:#58c58b;--warn:#f1c45b;color-scheme:dark}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0}main{width:min(1220px,calc(100% - 32px));margin:auto;padding:28px 0 64px}h1,h2,h3,h4{font-weight:600;letter-spacing:0}h1{font-size:30px;line-height:1.2;margin:0}h2{font-size:21px;margin:0 0 6px}h3{font-size:16px}h4{margin:0 0 8px;font-size:14px}.eyebrow,.muted,.section-meta{color:var(--muted)}.eyebrow{margin-bottom:8px}.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:20px}.state{text-align:right}.state strong{color:var(--good)}nav{display:flex;gap:18px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(12,15,18,.96);z-index:3}nav a{color:var(--muted);text-decoration:none}nav a:hover{color:var(--text)}.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:22px 0}.stat{background:var(--surface);border:1px solid var(--line);padding:14px;border-radius:6px}.stat span{display:block;color:var(--muted)}.stat strong{display:block;font-size:23px;margin:4px 0}.report-section{padding:28px 0;border-bottom:1px solid var(--line)}.config-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.config{background:var(--surface);border:1px solid var(--line);padding:16px;border-radius:6px}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}.legend{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:var(--muted)}.legend i{display:inline-block;width:11px;height:11px;margin-right:6px}.bar-row{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center;margin:16px 0}.bar-pair{display:grid;gap:6px}.bar-line{display:grid;grid-template-columns:76px 1fr 68px;gap:8px;align-items:center}.series-name{color:var(--muted);font-size:13px}.bar-track{height:18px;border:1px solid var(--line);overflow:hidden}.bar-track.na{font-size:11px;color:var(--muted);padding:0 6px;line-height:16px}.bar{height:100%}.q36{background:var(--q36)}.q38{background:var(--q38)}.ds{background:var(--ds)}.case{border-top:1px solid var(--line)}.case summary{cursor:pointer;display:flex;justify-content:space-between;gap:16px;padding:13px 4px}.case-score{color:var(--muted);text-align:right}.question,.expected{padding:8px 4px;color:var(--muted)}.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 0 18px}.answers.three{grid-template-columns:repeat(3,minmax(0,1fr))}.answers>section{min-width:0;background:var(--surface);border:1px solid var(--line);padding:12px;border-radius:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;max-height:460px;overflow:auto;background:var(--surface2);padding:11px;border-radius:4px;color:var(--text);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.validation{margin-top:8px;color:var(--good)}.checks{margin:8px 0 0;padding-left:18px;color:var(--muted)}.reasoning{margin-top:10px;color:var(--muted)}.reasoning pre{margin-top:8px}.empty-answer{border:1px solid var(--warn);padding:11px;color:var(--warn)}.response-meta{margin-top:6px;color:var(--muted);font-size:12px}.setup li{margin:6px 0}code{color:var(--text)}.note{border-left:3px solid var(--warn);padding:8px 12px;color:var(--muted)}button{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:7px 10px;cursor:pointer}
+:root{--bg:#0c0f12;--surface:#14191e;--surface2:#1a2026;--text:#f2f5f7;--muted:#9ca8b2;--line:#303943;--q36:#55a7e8;--q38:#f28b48;--q4090:#d05ee8;--ds:#62c58b;--good:#58c58b;--warn:#f1c45b;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0}main{width:min(1220px,calc(100% - 32px));margin:auto;padding:28px 0 64px}h1,h2,h3,h4{font-weight:600;letter-spacing:0}h1{font-size:30px;line-height:1.2;margin:0}h2{font-size:21px;margin:0 0 6px}h3{font-size:16px}h4{margin:0 0 8px;font-size:14px}.eyebrow,.muted,.section-meta{color:var(--muted)}.eyebrow{margin-bottom:8px}.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:20px}.state{text-align:right}.state strong{color:var(--good)}nav{display:flex;gap:18px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(12,15,18,.96);z-index:3}nav a{color:var(--muted);text-decoration:none}nav a:hover{color:var(--text)}.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:22px 0}.stat{background:var(--surface);border:1px solid var(--line);padding:14px;border-radius:6px}.stat span{display:block;color:var(--muted)}.stat strong{display:block;font-size:23px;margin:4px 0}.report-section{padding:28px 0;border-bottom:1px solid var(--line)}.config-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.config{background:var(--surface);border:1px solid var(--line);padding:16px;border-radius:6px}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}.legend{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;color:var(--muted)}.legend i{display:inline-block;width:11px;height:11px;margin-right:6px}.bar-row{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center;margin:16px 0}.bar-pair{display:grid;gap:6px}.bar-line{display:grid;grid-template-columns:76px 1fr 68px;gap:8px;align-items:center}.series-name{color:var(--muted);font-size:13px}.bar-track{height:18px;border:1px solid var(--line);overflow:hidden}.bar-track.na{font-size:11px;color:var(--muted);padding:0 6px;line-height:16px}.bar{height:100%}.q36{background:var(--q36)}.q38{background:var(--q38)}.q4090{background:var(--q4090)}.ds{background:var(--ds)}.case{border-top:1px solid var(--line)}.case summary{cursor:pointer;display:flex;justify-content:space-between;gap:16px;padding:13px 4px}.case-score{color:var(--muted);text-align:right}.question,.expected{padding:8px 4px;color:var(--muted)}.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 0 18px}.answers.three{grid-template-columns:repeat(3,minmax(0,1fr))}.answers.four{grid-template-columns:repeat(2,minmax(0,1fr))}.answers>section{min-width:0;background:var(--surface);border:1px solid var(--line);padding:12px;border-radius:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;max-height:460px;overflow:auto;background:var(--surface2);padding:11px;border-radius:4px;color:var(--text);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.validation{margin-top:8px;color:var(--good)}.checks{margin:8px 0 0;padding-left:18px;color:var(--muted)}.reasoning{margin-top:10px;color:var(--muted)}.reasoning pre{margin-top:8px}.empty-answer{border:1px solid var(--warn);padding:11px;color:var(--warn)}.response-meta{margin-top:6px;color:var(--muted);font-size:12px}.setup li{margin:6px 0}code{color:var(--text)}.note{border-left:3px solid var(--warn);padding:8px 12px;color:var(--muted)}button{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:7px 10px;cursor:pointer}
 @media(max-width:900px){.config-grid,.answers.three{grid-template-columns:1fr}}@media(max-width:760px){main{width:min(100% - 20px,1220px);padding-top:18px}h1{font-size:24px}.top{display:block}.state{text-align:left;margin-top:12px}.summary{grid-template-columns:1fr 1fr}.config-grid,.answers{grid-template-columns:1fr}.bar-row{grid-template-columns:1fr;gap:5px}.bar-line{grid-template-columns:70px 1fr 54px}.case summary{display:block}.case-score{display:block;text-align:left;margin-top:5px}.table-wrap{overflow-x:auto}th,td{padding:7px 6px;font-size:12px;white-space:nowrap}}@media(max-width:430px){.summary{grid-template-columns:1fr}}
 </style></head><body><main>
-<header class="top"><div><div class="eyebrow">X570 RTX 3090 + 双 NVIDIA GB10 · 更新于 2026-08-16</div><h1>Qwen3.6、Qwen3.8 与 DeepSeek-V4-Flash-0731</h1><p class="muted">性能、图片、编程、写作与数学推理对比；DeepSeek 不参与图片识别</p></div><div class="state"><span>最终 Qwen 生产</span><strong>Qwen3.6 在线</strong><div>Qwen3.8 已停止 · DeepSeek 独立在线</div><div>OPF :8765 当前未监听（本次未触碰）</div></div></header>
-<nav><a href="#summary">汇总</a><a href="#config">配置</a><a href="#setup">Setup</a><a href="#performance">性能</a><a href="#quality">精度</a><a href="#cases-image_recognition">逐题回答</a><button id="toggle">展开全部题目</button></nav>
+<header class="top"><div><div class="eyebrow">RTX 3090 + 48 GiB RTX 4090 + 双 NVIDIA GB10 · 更新于 2026-08-16</div><h1>Qwen3.6、Qwen3.8 与 DeepSeek-V4-Flash-0731</h1><p class="muted">性能、图片、编程、写作与数学推理对比；DeepSeek 不参与图片识别</p></div><div class="state"><span>RTX 4090 Qwen 服务</span><strong>Qwen3.8 FP8 在线</strong><div>vLLM 0.19.0 · 65K context · CPU offload 0</div></div></header>
+<nav><a href="#summary">汇总</a><a href="#config">配置</a><a href="#setup">Setup</a><a href="#performance">性能</a><a href="#quality">精度</a><a href="#thinking">Thinking</a><a href="#cases-image_recognition">逐题回答</a><button id="toggle">展开全部题目</button></nav>
 <section id="summary" class="summary">
   <div class="stat"><span>质量宏平均（4 类）</span><strong>87.8%</strong><small>Qwen3.6</small></div>
   <div class="stat"><span>质量宏平均（4 类）</span><strong>83.6%</strong><small>Qwen3.8</small></div>
+  <div class="stat"><span>质量宏平均（4 类）</span><strong>81.6%</strong><small>Qwen3.8 RTX 4090 FP8</small></div>
   <div class="stat"><span>质量宏平均（3 类）</span><strong>86.7%</strong><small>DeepSeek，排除图片</small></div>
   <div class="stat"><span>单流生成均值</span><strong>133.2 tok/s</strong><small>Qwen3.6 · X570</small></div>
   <div class="stat"><span>单流生成均值</span><strong>30.1 tok/s</strong><small>Qwen3.8 · X570</small></div>
@@ -19,6 +20,7 @@
 <section id="config" class="report-section"><h2>模型与运行配置</h2><div class="config-grid">
   <article class="config"><h3>Qwen3.6-35B-A3B</h3><table><tr><td>权重</td><td>UD-IQ3_S GGUF</td></tr><tr><td>结构</td><td>35B A3B MoE</td></tr><tr><td>硬件</td><td>X570 / RTX 3090</td></tr><tr><td>总 context</td><td>262,144</td></tr><tr><td>并行槽</td><td>4</td></tr><tr><td>每槽 context</td><td>65,536</td></tr></table></article>
   <article class="config"><h3>Qwen3.8-27B</h3><table><tr><td>权重</td><td>Q3_K_S GGUF</td></tr><tr><td>参数</td><td>27,320,697,856</td></tr><tr><td>硬件</td><td>X570 / RTX 3090</td></tr><tr><td>总 context</td><td>131,072</td></tr><tr><td>并行槽</td><td>2</td></tr><tr><td>每槽 context</td><td>65,536</td></tr></table></article>
+  <article class="config"><h3>Qwen3.8-27B-FP8</h3><table><tr><td>权重</td><td>原生 FP8</td></tr><tr><td>运行时</td><td>vLLM 0.19.0</td></tr><tr><td>硬件</td><td>RTX 4090 48 GiB</td></tr><tr><td>最大 context</td><td>65,536</td></tr><tr><td>CPU offload</td><td>0 GiB</td></tr><tr><td>默认模式</td><td>non-thinking</td></tr></table></article>
   <article class="config"><h3>DeepSeek-V4-Flash-0731</h3><table><tr><td>运行时</td><td>vLLM f277b3d</td></tr><tr><td>硬件</td><td>2 × NVIDIA GB10</td></tr><tr><td>并行</td><td>TP=2</td></tr><tr><td>最大 context</td><td>1,048,576</td></tr><tr><td>KV cache</td><td>NVFP4 MLA</td></tr><tr><td>MTP</td><td>5</td></tr></table></article>
 </div></section>
 <section id="setup" class="report-section setup"><h2>Setup 与证据</h2><ol>
@@ -36,107 +38,131 @@
 <h3>并发聚合 tok/s</h3><div class="table-wrap"><table><thead><tr><th>并发</th><th>Qwen3.6</th><th>Qwen3.8</th><th>DeepSeek</th><th>Qwen3.8 / 3.6</th><th>DeepSeek / 3.6</th></tr></thead><tbody><tr><td>1</td><td>130.8</td><td>29.9</td><td>70.6</td><td>22.8%</td><td>53.9%</td></tr><tr><td>2</td><td>101.0</td><td>49.8</td><td>107.7</td><td>49.3%</td><td>106.6%</td></tr><tr><td>4</td><td>265.2</td><td>50.5</td><td>161.5</td><td>19.0%</td><td>60.9%</td></tr><tr><td>6</td><td>244.1</td><td>50.8</td><td>229.3</td><td>20.8%</td><td>94.0%</td></tr></tbody></table></div>
 <h3>Prefill tok/s</h3><div class="table-wrap"><table><thead><tr><th>目标</th><th>Qwen3.6</th><th>Qwen3.8</th><th>DeepSeek</th><th>Qwen3.8 / 3.6</th><th>DeepSeek / 3.6</th></tr></thead><tbody><tr><td>0</td><td>101.5</td><td>97.8</td><td>5.3</td><td>96.4%</td><td>5.3%</td></tr><tr><td>32000</td><td>2,822.2</td><td>993.1</td><td>1,753.3</td><td>35.2%</td><td>62.1%</td></tr></tbody></table></div>
 <p class="note">Qwen3.6 与 Qwen3.8 是同机 A/B；DeepSeek 使用双 GB10，硬件、并行策略和模型规模不同，性能数字用于部署实测参考，不代表同硬件架构效率排名。DeepSeek 另通过 100K prefill；两个 Qwen 因每槽约 65K 上限排除该项。</p></section>
-<section id="quality" class="report-section"><h2>精度与质量汇总</h2><div class="legend"><span><i class="q36"></i>Qwen3.6</span><span><i class="q38"></i>Qwen3.8</span><span><i class="ds"></i>DeepSeek</span></div>
+<section id="rtx4090-performance" class="report-section"><h2>RTX 4090 / Qwen3.8 FP8 性能补充</h2><div class="table-wrap"><table><thead><tr><th>场景</th><th>Prompt tokens</th><th>TTFT ms</th><th>Decode tok/s</th><th>Prefill tok/s</th></tr></thead><tbody><tr><td>decode_256</td><td>24</td><td>92.8</td><td>19.9</td><td>258.7</td></tr><tr><td>code_256</td><td>27</td><td>83.9</td><td>20.0</td><td>321.7</td></tr><tr><td>prefill_1k</td><td>1,164</td><td>371.6</td><td>39.7</td><td>3,132.8</td></tr><tr><td>prefill_8k</td><td>8,864</td><td>2,182.0</td><td>41.1</td><td>4,062.4</td></tr><tr><td>prefill_32k</td><td>33,065</td><td>9,131.9</td><td>45.4</td><td>3,620.8</td></tr></tbody></table></div><p class="note">此表来自 vLLM streaming harness，与 RTX 3090 llama.cpp 的任务和运行时不同，不计算跨硬件倍率。</p></section>
+<section id="quality" class="report-section"><h2>精度与质量汇总</h2><div class="legend"><span><i class="q36"></i>Qwen3.6</span><span><i class="q38"></i>Qwen3.8</span><span><i class="q4090"></i>Qwen3.8 4090 FP8</span><span><i class="ds"></i>DeepSeek</span></div>
         <div class="bar-row"><div class="bar-label">图片识别</div><div class="bar-pair">
           <div class="bar-line"><span class="series-name">Qwen3.6</span><div class="bar-track"><div class="bar q36" style="width:100.0%"></div></div><span>100.0%</span></div>
           <div class="bar-line"><span class="series-name">Qwen3.8</span><div class="bar-track"><div class="bar q38" style="width:100.0%"></div></div><span>100.0%</span></div>
+          <div class="bar-line"><span class="series-name">4090 FP8</span><div class="bar-track"><div class="bar q4090" style="width:100.0%"></div></div><span>100.0%</span></div>
           <div class="bar-line"><span class="series-name">DeepSeek</span><div class="bar-track na">非多模态，不适用</div><span>N/A</span></div>
         </div></div>
         <div class="bar-row"><div class="bar-label">编程</div><div class="bar-pair">
           <div class="bar-line"><span class="series-name">Qwen3.6</span><div class="bar-track"><div class="bar q36" style="width:100.0%"></div></div><span>100.0%</span></div>
           <div class="bar-line"><span class="series-name">Qwen3.8</span><div class="bar-track"><div class="bar q38" style="width:100.0%"></div></div><span>100.0%</span></div>
+          <div class="bar-line"><span class="series-name">4090 FP8</span><div class="bar-track"><div class="bar q4090" style="width:100.0%"></div></div><span>100.0%</span></div>
           <div class="bar-line"><span class="series-name">DeepSeek</span><div class="bar-track"><div class="bar ds" style="width:100.0%"></div></div><span>100.0%</span></div>
         </div></div>
         <div class="bar-row"><div class="bar-label">文章写作约束</div><div class="bar-pair">
           <div class="bar-line"><span class="series-name">Qwen3.6</span><div class="bar-track"><div class="bar q36" style="width:76.0%"></div></div><span>76.0%</span></div>
           <div class="bar-line"><span class="series-name">Qwen3.8</span><div class="bar-track"><div class="bar q38" style="width:76.0%"></div></div><span>76.0%</span></div>
+          <div class="bar-line"><span class="series-name">4090 FP8</span><div class="bar-track"><div class="bar q4090" style="width:68.0%"></div></div><span>68.0%</span></div>
           <div class="bar-line"><span class="series-name">DeepSeek</span><div class="bar-track"><div class="bar ds" style="width:60.0%"></div></div><span>60.0%</span></div>
         </div></div>
         <div class="bar-row"><div class="bar-label">数学推理</div><div class="bar-pair">
           <div class="bar-line"><span class="series-name">Qwen3.6</span><div class="bar-track"><div class="bar q36" style="width:75.0%"></div></div><span>75.0%</span></div>
           <div class="bar-line"><span class="series-name">Qwen3.8</span><div class="bar-track"><div class="bar q38" style="width:58.3%"></div></div><span>58.3%</span></div>
+          <div class="bar-line"><span class="series-name">4090 FP8</span><div class="bar-track"><div class="bar q4090" style="width:58.3%"></div></div><span>58.3%</span></div>
           <div class="bar-line"><span class="series-name">DeepSeek</span><div class="bar-track"><div class="bar ds" style="width:100.0%"></div></div><span>100.0%</span></div>
         </div></div>
-<div class="table-wrap"><table><thead><tr><th>类别</th><th>Qwen3.6</th><th>Qwen3.8</th><th>DeepSeek</th><th>题数</th></tr></thead><tbody><tr><td>图片识别</td><td>100.0%</td><td>100.0%</td><td>N/A</td><td>6</td></tr><tr><td>编程</td><td>100.0%</td><td>100.0%</td><td>100.0%</td><td>5</td></tr><tr><td>文章写作约束</td><td>76.0%</td><td>76.0%</td><td>60.0%</td><td>4</td></tr><tr><td>数学推理</td><td>75.0%</td><td>58.3%</td><td>100.0%</td><td>12</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>类别</th><th>Qwen3.6</th><th>Qwen3.8</th><th>4090 FP8</th><th>DeepSeek</th><th>题数</th></tr></thead><tbody><tr><td>图片识别</td><td>100.0%</td><td>100.0%</td><td>100.0%</td><td>N/A</td><td>6</td></tr><tr><td>编程</td><td>100.0%</td><td>100.0%</td><td>100.0%</td><td>100.0%</td><td>5</td></tr><tr><td>文章写作约束</td><td>76.0%</td><td>76.0%</td><td>68.0%</td><td>60.0%</td><td>4</td></tr><tr><td>数学推理</td><td>75.0%</td><td>58.3%</td><td>58.3%</td><td>100.0%</td><td>12</td></tr></tbody></table></div>
 <p class="note">图片、编程、数学按确定答案或隐藏测试计分；写作只衡量长度、结构和指定要点。DeepSeek 的宏平均只覆盖编程、写作和数学三类，不能与 Qwen 的四类宏平均直接等同。DeepSeek 的 <code>risk_memo</code> 未返回 final content，因此实际为 20 份 final 回答加 1 份明确标记的空回答。</p></section>
+<section id="thinking" class="report-section"><h2>RTX 4090 Thinking 模式核验</h2><p class="section-meta"><code>reasoning_effort=low</code> · 输出预算为原 harness 的 4 倍 · 宏平均 85.0%</p><div class="table-wrap"><table><thead><tr><th>类别</th><th>non-thinking</th><th>thinking-low</th><th>length 截断</th><th>空 final</th></tr></thead><tbody><tr><td>图片识别</td><td>100.0%</td><td>100.0%</td><td>0</td><td>0</td></tr><tr><td>编程</td><td>100.0%</td><td>100.0%</td><td>0</td><td>0</td></tr><tr><td>文章写作约束</td><td>68.0%</td><td>40.0%</td><td>2</td><td>2</td></tr><tr><td>数学推理</td><td>58.3%</td><td>100.0%</td><td>0</td><td>0</td></tr></tbody></table></div><p class="note">Thinking-low 将数学从 58.3% 提升到 100%，编程和图片保持 100%，但写作从 68.0% 降至 40.0%。两道写作题即使使用 4 倍输出预算仍在 reasoning 阶段触发 length，未生成 final content。因此生产建议是数学与复杂编程按请求开启 low thinking；长篇写作继续使用 non-thinking，不能把 85.0% 宏平均解释为所有任务都更优。</p></section>
 
         <section id="cases-image_recognition" class="report-section">
-          <h2>图片识别逐题结果</h2><p class="section-meta">Qwen3.6 100.0% · Qwen3.8 100.0% · DeepSeek N/A（非多模态） · 6 题</p>
+          <h2>图片识别逐题结果</h2><p class="section-meta">Qwen3.6 100.0% · Qwen3.8 100.0% · Qwen3.8 4090 FP8 100.0% · DeepSeek N/A（非多模态） · 6 题</p>
 
             <details class="case">
-              <summary><span>1. dominant_blue</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek N/A</span></summary>
+              <summary><span>1. dominant_blue</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek N/A</span></summary>
               <div class="question"><strong>题目：</strong>What is the dominant color? Answer exactly one lowercase word.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>blue</pre></div><div class="answers ">
+              <div class="expected"><strong>期望/验证：</strong><pre>blue</pre></div><div class="answers three">
     <section><h4>Qwen3.6 实际回答</h4><pre>blue</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>blue</pre>
       <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre> blue</pre>
+      <div class="validation">验证：通过</div>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>2. three_red_blocks</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek N/A</span></summary>
+              <summary><span>2. three_red_blocks</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek N/A</span></summary>
               <div class="question"><strong>题目：</strong>How many red rectangles are visible? Answer with one integer.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>3</pre></div><div class="answers ">
+              <div class="expected"><strong>期望/验证：</strong><pre>3</pre></div><div class="answers three">
     <section><h4>Qwen3.6 实际回答</h4><pre>3</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>3</pre>
       <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>3</pre>
+      <div class="validation">验证：通过</div>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>3. red_left_blue</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek N/A</span></summary>
+              <summary><span>3. red_left_blue</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek N/A</span></summary>
               <div class="question"><strong>题目：</strong>Is the red block left or right of the blue block? Answer exactly left or right.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>left</pre></div><div class="answers ">
+              <div class="expected"><strong>期望/验证：</strong><pre>left</pre></div><div class="answers three">
     <section><h4>Qwen3.6 实际回答</h4><pre>left</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>left</pre>
       <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>left</pre>
+      <div class="validation">验证：通过</div>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>4. green_top_left</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek N/A</span></summary>
+              <summary><span>4. green_top_left</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek N/A</span></summary>
               <div class="question"><strong>题目：</strong>What color is the top-left quadrant? Answer exactly one lowercase word.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>green</pre></div><div class="answers ">
+              <div class="expected"><strong>期望/验证：</strong><pre>green</pre></div><div class="answers three">
     <section><h4>Qwen3.6 实际回答</h4><pre>green</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>green</pre>
       <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre> green</pre>
+      <div class="validation">验证：通过</div>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>5. middle_tallest</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek N/A</span></summary>
+              <summary><span>5. middle_tallest</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek N/A</span></summary>
               <div class="question"><strong>题目：</strong>Which bar is tallest: left, middle, or right? Answer exactly one word.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>middle</pre></div><div class="answers ">
+              <div class="expected"><strong>期望/验证：</strong><pre>middle</pre></div><div class="answers three">
     <section><h4>Qwen3.6 实际回答</h4><pre>middle</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>middle</pre>
       <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre> middle</pre>
+      <div class="validation">验证：通过</div>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>6. two_blue_one_red</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek N/A</span></summary>
+              <summary><span>6. two_blue_one_red</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek N/A</span></summary>
               <div class="question"><strong>题目：</strong>How many blue blocks are visible? Answer with one integer.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>2</pre></div><div class="answers ">
+              <div class="expected"><strong>期望/验证：</strong><pre>2</pre></div><div class="answers three">
     <section><h4>Qwen3.6 实际回答</h4><pre>2</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>2</pre>
       <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>2</pre>
+      <div class="validation">验证：通过</div>
     </section></div>
             </details>
         </section>
         <section id="cases-programming" class="report-section">
-          <h2>编程逐题结果</h2><p class="section-meta">Qwen3.6 100.0% · Qwen3.8 100.0% · DeepSeek 100.0% · 5 题</p>
+          <h2>编程逐题结果</h2><p class="section-meta">Qwen3.6 100.0% · Qwen3.8 100.0% · Qwen3.8 4090 FP8 100.0% · DeepSeek 100.0% · 5 题</p>
 
             <details class="case">
-              <summary><span>1. is_prime</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>1. is_prime</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Write Python code only. Implement def is_prime(n: int) -&gt; bool.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>[[&#x27;is_prime(-3)&#x27;, False], [&#x27;is_prime(0)&#x27;, False], [&#x27;is_prime(1)&#x27;, False], [&#x27;is_prime(2)&#x27;, True], [&#x27;is_prime(97)&#x27;, True], [&#x27;is_prime(221)&#x27;, False]]</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>[[&#x27;is_prime(-3)&#x27;, False], [&#x27;is_prime(0)&#x27;, False], [&#x27;is_prime(1)&#x27;, False], [&#x27;is_prime(2)&#x27;, True], [&#x27;is_prime(97)&#x27;, True], [&#x27;is_prime(221)&#x27;, False]]</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>```python
 def is_prime(n: int) -&gt; bool:
     if n &lt; 2:
@@ -153,6 +179,21 @@ def is_prime(n: int) -&gt; bool:
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>```python
+def is_prime(n: int) -&gt; bool:
+    if n &lt; 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+```</pre>
+      <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>```python
 def is_prime(n: int) -&gt; bool:
     if n &lt; 2:
         return False
@@ -188,9 +229,9 @@ We&#x27;ll output the function definition.</pre></details>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>2. merge_intervals</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>2. merge_intervals</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Write Python code only. Implement def merge_intervals(items) returning sorted merged [start,end] lists. Touching intervals merge.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>[[&#x27;merge_intervals([])&#x27;, []], [&#x27;merge_intervals([[1,3],[2,6],[8,10],[10,12]])&#x27;, [[1, 6], [8, 12]]], [&#x27;merge_intervals([[5,7],[1,2]])&#x27;, [[1, 2], [5, 7]]]]</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>[[&#x27;merge_intervals([])&#x27;, []], [&#x27;merge_intervals([[1,3],[2,6],[8,10],[10,12]])&#x27;, [[1, 6], [8, 12]]], [&#x27;merge_intervals([[5,7],[1,2]])&#x27;, [[1, 2], [5, 7]]]]</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>```python
 def merge_intervals(items):
     if not items:
@@ -233,6 +274,29 @@ def merge_intervals(items):
             merged[-1][1] = max(last_end, current_end)
         else:
             merged.append([current_start, current_end])
+
+    return merged
+```</pre>
+      <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>```python
+def merge_intervals(items):
+    if not items:
+        return []
+
+    # Sort by start time
+    sorted_items = sorted(items, key=lambda x: x[0])
+
+    merged = [sorted_items[0]]
+
+    for current in sorted_items[1:]:
+        last = merged[-1]
+        # If current start &lt;= last end, they overlap or touch
+        if current[0] &lt;= last[1]:
+            # Merge: extend the end if needed
+            merged[-1] = [last[0], max(last[1], current[1])]
+        else:
+            merged.append(current)
 
     return merged
 ```</pre>
@@ -291,9 +355,9 @@ Let&#x27;s write it.</pre></details>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>3. group_anagrams</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>3. group_anagrams</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Write Python code only. Implement def group_anagrams(words). Return groups sorted internally and sort groups by their first item.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>[[&quot;group_anagrams([&#x27;eat&#x27;,&#x27;tea&#x27;,&#x27;tan&#x27;,&#x27;ate&#x27;,&#x27;nat&#x27;,&#x27;bat&#x27;])&quot;, [[&#x27;ate&#x27;, &#x27;eat&#x27;, &#x27;tea&#x27;], [&#x27;bat&#x27;], [&#x27;nat&#x27;, &#x27;tan&#x27;]]], [&#x27;group_anagrams([])&#x27;, []]]</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>[[&quot;group_anagrams([&#x27;eat&#x27;,&#x27;tea&#x27;,&#x27;tan&#x27;,&#x27;ate&#x27;,&#x27;nat&#x27;,&#x27;bat&#x27;])&quot;, [[&#x27;ate&#x27;, &#x27;eat&#x27;, &#x27;tea&#x27;], [&#x27;bat&#x27;], [&#x27;nat&#x27;, &#x27;tan&#x27;]]], [&#x27;group_anagrams([])&#x27;, []]]</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>```python
 def group_anagrams(words):
     from collections import defaultdict
@@ -339,6 +403,27 @@ def group_anagrams(words):
 ```</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>```python
+def group_anagrams(words):
+    from collections import defaultdict
+
+    anagram_groups = defaultdict(list)
+    for word in words:
+        key = tuple(sorted(word))
+        anagram_groups[key].append(word)
+
+    # Sort each group internally
+    for key in anagram_groups:
+        anagram_groups[key].sort()
+
+    # Sort groups by their first item
+    groups = list(anagram_groups.values())
+    groups.sort(key=lambda g: g[0])
+
+    return groups
+```</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>```python
 def group_anagrams(words):
     from collections import defaultdict
@@ -372,9 +457,9 @@ Let&#x27;s write it.</pre></details>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>4. balanced</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>4. balanced</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Write Python code only. Implement def is_balanced(text: str) -&gt; bool for (), [], and {}, ignoring other characters.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>[[&quot;is_balanced(&#x27;a({[]})&#x27;)&quot;, True], [&quot;is_balanced(&#x27;([)]&#x27;)&quot;, False], [&quot;is_balanced(&#x27;(()&#x27;)&quot;, False], [&quot;is_balanced(&#x27;&#x27;)&quot;, True]]</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>[[&quot;is_balanced(&#x27;a({[]})&#x27;)&quot;, True], [&quot;is_balanced(&#x27;([)]&#x27;)&quot;, False], [&quot;is_balanced(&#x27;(()&#x27;)&quot;, False], [&quot;is_balanced(&#x27;&#x27;)&quot;, True]]</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>```python
 def is_balanced(text: str) -&gt; bool:
     stack = []
@@ -411,6 +496,24 @@ def is_balanced(text: str) -&gt; bool:
 ```</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>```python
+def is_balanced(text: str) -&gt; bool:
+    stack = []
+    matching = {&#x27;)&#x27;: &#x27;(&#x27;, &#x27;]&#x27;: &#x27;[&#x27;, &#x27;}&#x27;: &#x27;{&#x27;}
+    opening = {&#x27;(&#x27;, &#x27;[&#x27;, &#x27;{&#x27;}
+
+    for char in text:
+        if char in opening:
+            stack.append(char)
+        elif char in matching:
+            if not stack or stack[-1] != matching[char]:
+                return False
+            stack.pop()
+
+    return len(stack) == 0
+```</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>```python
 def is_balanced(text: str) -&gt; bool:
     stack = []
@@ -437,9 +540,9 @@ Write the code.</pre></details>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>5. top_k</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>5. top_k</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Write Python code only. Implement def top_k_frequent(values, k). Return the k most frequent values ordered by descending frequency, then ascending value.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>[[&#x27;top_k_frequent([1,1,1,2,2,3],2)&#x27;, [1, 2]], [&#x27;top_k_frequent([4,4,2,2,1],2)&#x27;, [2, 4]], [&#x27;top_k_frequent([],0)&#x27;, []]]</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>[[&#x27;top_k_frequent([1,1,1,2,2,3],2)&#x27;, [1, 2]], [&#x27;top_k_frequent([4,4,2,2,1],2)&#x27;, [2, 4]], [&#x27;top_k_frequent([],0)&#x27;, []]]</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>```python
 def top_k_frequent(values, k):
     from collections import Counter
@@ -465,6 +568,16 @@ def top_k_frequent(values, k):
 ```</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>```python
+def top_k_frequent(values, k):
+    from collections import Counter
+    freq = Counter(values)
+    # Sort by descending frequency, then ascending value
+    sorted_items = sorted(freq.items(), key=lambda x: (-x[1], x[0]))
+    return [item[0] for item in sorted_items[:k]]
+```</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>```python
 def top_k_frequent(values, k):
     from collections import Counter
@@ -487,12 +600,12 @@ Let&#x27;s write.</pre></details>
             </details>
         </section>
         <section id="cases-article_writing" class="report-section">
-          <h2>文章写作约束逐题结果</h2><p class="section-meta">Qwen3.6 76.0% · Qwen3.8 76.0% · DeepSeek 60.0% · 4 题</p>
+          <h2>文章写作约束逐题结果</h2><p class="section-meta">Qwen3.6 76.0% · Qwen3.8 76.0% · Qwen3.8 4090 FP8 68.0% · DeepSeek 60.0% · 4 题</p>
 
             <details class="case">
-              <summary><span>1. zh_release</span><span class="case-score">Qwen3.6 5 / 6 · Qwen3.8 5 / 6 · DeepSeek 5 / 6</span></summary>
+              <summary><span>1. zh_release</span><span class="case-score">Qwen3.6 5 / 6 · Qwen3.8 5 / 6 · Qwen3.8 4090 FP8 3 / 6 · DeepSeek 5 / 6</span></summary>
               <div class="question"><strong>题目：</strong>用中文写一篇 180 到 260 个汉字的三段式产品发布短文。必须原样包含“本地推理”“隐私保护”“性能取舍”，不要使用项目符号。</div>
-              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers three">
+              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>我们自豪地推出全新智能终端，旨在重新定义个人计算体验。这款设备搭载了最新一代边缘计算芯片，专为处理复杂任务而设计，确保在离线环境下依然能流畅运行各类应用。通过深度优化算法，我们成功将强大的算力浓缩于小巧机身之中，为用户带来前所未有的便捷与高效，真正实现了随时随地的高效工作与生活。
 
 在数据安全日益重要的今天，我们深知用户对于信息安全的关切。因此，本产品核心架构全面支持本地推理，所有敏感数据均在设备端完成处理，无需上传至云端服务器。这一创新举措不仅大幅降低了网络延迟，更从根本上杜绝了数据泄露风险，为用户提供坚不可摧的隐私保护屏障，让您在享受科技便利的同时，无需担忧个人信息安全。
@@ -507,6 +620,13 @@ Let&#x27;s write.</pre></details>
 未来，我们将持续迭代算法效率，进一步缩小本地与云端的性能差距。我们坚信，赋予用户对自己数据的主权是科技发展的正确方向。通过这款新品，我们希望构建一个既高效又安全的数字生态，让每一位用户都能安心享受人工智能带来的便利，同时牢牢掌握个人信息的控制权，实现技术与隐私的完美共生。</pre>
       <div class="validation">验证：5 / 6</div><ul class="checks"><li>length: 未通过</li><li>paragraphs: 通过</li><li>no_bullets: 通过</li><li>term:本地推理: 通过</li><li>term:隐私保护: 通过</li><li>term:性能取舍: 通过</li></ul>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>今日，我们正式推出新一代智能终端，旨在重新定义个人计算体验。这款设备搭载了全新架构的芯片，能够高效运行复杂的大语言模型，让用户无需依赖云端即可享受流畅的交互服务。通过深度优化的算法，我们确保了在有限硬件资源下，依然能提供接近专业工作站的响应速度，真正实现了技术普惠。
+
+安全始终是用户最核心的关切。我们坚持将数据主权交还给用户，所有敏感信息均经过加密处理，确保在传输与存储过程中万无一失。这种设计不仅符合全球最严格的数据合规标准，更从根本上杜绝了数据泄露风险，让用户在享受智能便利的同时，无需担忧个人隐私被侵犯，构建起坚不可摧的信任基石。
+
+当然，极致体验往往伴随着权衡。我们在追求极致算力的同时，也清醒地认识到电池续航与散热控制的重要性。因此，团队在研发过程中进行了大量的性能取舍，力求在功耗、发热与计算能力之间找到最佳平衡点。这种克制而理性的工程哲学，使得设备在长时间高负载运行下依然保持冷静稳定，为用户带来持久且可靠的陪伴。</pre>
+      <div class="validation">验证：3 / 6</div><ul class="checks"><li>length: 未通过</li><li>paragraphs: 通过</li><li>no_bullets: 通过</li><li>term:本地推理: 未通过</li><li>term:隐私保护: 未通过</li><li>term:性能取舍: 通过</li></ul>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>**第一段**
 今日，我们正式发布新一代边缘智能终端“灵枢X1”。它首次将大语言模型完整部署于设备端，实现真正的**本地推理**，无需依赖云端服务器。无论是文档摘要还是语音转写，所有计算均在芯片内部完成，响应速度提升至毫秒级，即便在无网络环境中也能流畅运行。
 
@@ -519,9 +639,9 @@ Let&#x27;s write.</pre></details>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>2. en_summary</span><span class="case-score">Qwen3.6 5 / 6 · Qwen3.8 5 / 6 · DeepSeek 5 / 6</span></summary>
+              <summary><span>2. en_summary</span><span class="case-score">Qwen3.6 5 / 6 · Qwen3.8 5 / 6 · Qwen3.8 4090 FP8 5 / 6 · DeepSeek 5 / 6</span></summary>
               <div class="question"><strong>题目：</strong>Write a 120-160 word English technical summary in exactly two paragraphs. It must include the exact terms &#x27;context window&#x27;, &#x27;GPU memory&#x27;, and &#x27;throughput&#x27;. No bullet list.</div>
-              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers three">
+              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>Large language models have achieved remarkable success in natural language processing, yet their deployment faces significant computational bottlenecks. A primary challenge lies in the substantial **GPU memory** required to store model parameters and intermediate activation states during inference. As model sizes continue to scale, the demand for high-performance hardware intensifies, often leading to prohibitive costs and energy consumption. Efficient resource management becomes crucial to maintain operational feasibility. By optimizing memory allocation strategies and leveraging advanced kernel optimizations, developers can mitigate these hardware constraints. This approach ensures that systems remain responsive and scalable, allowing for broader accessibility without compromising the quality of generated outputs or the stability of the underlying infrastructure.
 
 Furthermore, the efficiency of serving these models depends heavily on the **context window** size, which dictates how much historical information the model can process simultaneously. Larger windows enable better coherence but increase computational load, directly impacting system **throughput**. To address this, techniques such as continuous batching and speculative decoding are employed to maximize parallel processing capabilities. These methods allow multiple requests to be handled concurrently, significantly improving the number of tokens processed per second. By balancing context length with processing speed, organizations can deliver high-quality responses while maintaining cost-effective operations. This balance is essential for real-time applications where latency and resource utilization are critical performance indicators for user satisfaction and system reliability.</pre>
@@ -530,6 +650,11 @@ Furthermore, the efficiency of serving these models depends heavily on the **con
     <section><h4>Qwen3.8 实际回答</h4><pre>Modern large language models face significant architectural constraints that directly impact their operational efficiency and scalability. The primary bottleneck often lies in the limited **context window**, which restricts the amount of historical data a model can process simultaneously during inference. This limitation forces developers to implement complex truncation strategies or sliding window mechanisms, potentially degrading the quality of long-form generation tasks. Furthermore, the computational demands of these models place immense pressure on hardware resources, particularly **GPU memory**. As model parameters grow exponentially, the requirement for high-capacity VRAM becomes a critical barrier to deployment, necessitating advanced optimization techniques such as quantization or offloading to prevent out-of-memory errors during training and serving phases.
 
 To address these challenges, system architects must prioritize strategies that maximize computational efficiency without sacrificing accuracy. Optimizing data pipelines and employing mixed-precision arithmetic are essential for improving overall **throughput**, allowing systems to handle higher request volumes with reduced latency. By carefully balancing the trade-offs between model size, context length, and hardware capabilities, organizations can deploy robust AI solutions that remain responsive under heavy load. This holistic approach ensures that infrastructure investments yield tangible performance gains, enabling seamless integration of large language models into production environments while maintaining strict service level objectives for real-time applications.</pre>
+      <div class="validation">验证：5 / 6</div><ul class="checks"><li>length: 未通过</li><li>paragraphs: 通过</li><li>no_bullets: 通过</li><li>term:context window: 通过</li><li>term:GPU memory: 通过</li><li>term:throughput: 通过</li></ul>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>Large language models face significant architectural constraints when processing extensive documents, primarily due to the finite size of the **context window**. This limitation dictates the maximum sequence length a model can effectively attend to, often necessitating complex chunking strategies or retrieval-augmented generation techniques to maintain coherence across long-form inputs. As models scale in parameter count, the demand for high-precision arithmetic operations increases, placing immense pressure on hardware resources. Consequently, efficient memory management becomes critical to prevent bottlenecks that could otherwise degrade performance or cause system failures during inference tasks.
+
+To mitigate these challenges, engineers must carefully balance batch sizes and sequence lengths to optimize **GPU memory** utilization. Exceeding available memory limits leads to out-of-memory errors, forcing the system to swap data to slower storage, which drastically reduces computational efficiency. By implementing mixed-precision training and quantization methods, developers can significantly lower memory footprints while preserving model accuracy. This strategic approach not only stabilizes the inference pipeline but also maximizes overall **throughput**, allowing for faster response times and higher concurrency in production environments. Ultimately, achieving a harmonious balance between model capacity and hardware constraints is essential for deploying scalable, high-performance AI solutions.</pre>
       <div class="validation">验证：5 / 6</div><ul class="checks"><li>length: 未通过</li><li>paragraphs: 通过</li><li>no_bullets: 通过</li><li>term:context window: 通过</li><li>term:GPU memory: 通过</li><li>term:throughput: 通过</li></ul>
     </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>Optimizing large language model inference requires a delicate balance between the model&#x27;s architectural constraints and the physical limits of the hardware. The maximum sequence length, or **context window**, directly dictates the size of the key-value cache that must be stored during generation. As this window expands, the cache grows quadratically, placing immense pressure on **GPU memory** and often causing out-of-memory errors for long prompts. Consequently, efficient memory management, such as paged attention or quantization, becomes critical to accommodate larger batches and longer conversations without exceeding the device&#x27;s capacity.
@@ -544,9 +669,9 @@ To achieve practical deployment, systems must prioritize maximizing **throughput
     </section></div>
             </details>
             <details class="case">
-              <summary><span>3. risk_memo</span><span class="case-score">Qwen3.6 2 / 6 · Qwen3.8 2 / 6 · DeepSeek 0 / 6</span></summary>
+              <summary><span>3. risk_memo</span><span class="case-score">Qwen3.6 2 / 6 · Qwen3.8 2 / 6 · Qwen3.8 4090 FP8 2 / 6 · DeepSeek 0 / 6</span></summary>
               <div class="question"><strong>题目：</strong>Write a 160-230 word English decision memo with exactly three headings: Benefits, Risks, Recommendation. Mention benchmark evidence and rollback explicitly.</div>
-              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers three">
+              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>**Benefits**
 
 Implementing the proposed digital transformation strategy offers significant operational advantages. By automating routine administrative tasks, we anticipate a reduction in manual processing time by approximately forty percent. This efficiency gain allows our workforce to focus on high-value strategic initiatives rather than repetitive data entry. Furthermore, the integration of advanced analytics tools provides real-time insights into customer behavior, enabling more precise marketing campaigns and improved resource allocation. These enhancements are expected to drive revenue growth and strengthen our competitive position in the market. The scalability of the new system ensures that we can adapt quickly to changing market demands without substantial additional infrastructure costs.
@@ -571,6 +696,19 @@ The primary concern involves potential integration conflicts with legacy systems
 **Recommendation**
 
 We recommend proceeding with a phased implementation strategy starting next quarter. The first phase will involve deploying the new pipeline in a sandbox environment for two weeks to validate performance against established benchmark evidence. This period allows us to compare key performance indicators, such as throughput and error rates, against our current baseline. If the results meet or exceed our predefined success criteria, we will proceed with a limited production rollout. Throughout this process, we must maintain strict monitoring and ensure that the rollback mechanism is fully tested and ready for immediate activation if any anomalies are detected. This cautious approach minimizes risk while maximizing the potential benefits of automation.</pre>
+      <div class="validation">验证：2 / 6</div><ul class="checks"><li>length: 未通过</li><li>term:benchmark evidence: 通过</li><li>term:rollback: 通过</li><li>heading:Benefits: 未通过</li><li>heading:Risks: 未通过</li><li>heading:Recommendation: 未通过</li></ul>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>**Benefits**
+
+Adopting the new microservices architecture will significantly enhance our system’s scalability and deployment velocity. By decoupling monolithic components, we enable independent scaling of high-traffic services, directly addressing the latency spikes observed during peak usage periods. Furthermore, this transition aligns with our long-term strategic goal of reducing technical debt. Preliminary internal testing indicates a 40% reduction in average response times for core user-facing APIs. This improvement is not merely theoretical; it is supported by rigorous **benchmark evidence** collected over the last two weeks, which demonstrates consistent performance gains across all critical endpoints compared to the legacy infrastructure. Additionally, the modular nature of the new stack facilitates faster feature iteration, allowing product teams to release updates without risking the stability of unrelated system components. This agility is crucial for maintaining our competitive edge in the rapidly evolving market landscape.
+
+**Risks**
+
+Despite the clear advantages, the migration process carries inherent operational risks. The primary concern is the potential for data inconsistency during the transition period, particularly if synchronization errors occur between the old and new databases. There is also a non-negligible risk of increased complexity in monitoring and debugging, as distributed systems introduce new failure modes that are less intuitive than those in monolithic setups. Team members may face a steep learning curve, potentially slowing down initial development cycles. To mitigate these concerns, we must strictly adhere to our established change management protocols. Crucially, we have designed a comprehensive **rollback** plan that allows us to revert to the previous stable version within fifteen minutes if critical failures are detected. This safety net ensures that business continuity is maintained even in the event of unforeseen technical issues during the cutover phase.
+
+**Recommendation**
+
+Based on the compelling performance data and the robust mitigation strategies in place, I recommend proceeding with the phased rollout of the new architecture. We should begin with the low-traffic internal services to validate the **rollback** procedures under controlled conditions before expanding to customer-facing applications. This cautious approach balances the need for innovation with the imperative of system reliability.</pre>
       <div class="validation">验证：2 / 6</div><ul class="checks"><li>length: 未通过</li><li>term:benchmark evidence: 通过</li><li>term:rollback: 通过</li><li>heading:Benefits: 未通过</li><li>heading:Risks: 未通过</li><li>heading:Recommendation: 未通过</li></ul>
     </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><div class="empty-answer">模型未返回 final content</div><div class="response-meta">finish_reason：本次运行未记录</div>
@@ -612,13 +750,16 @@ We recommend proceeding with a phased implementation strategy starting next quar
     </section></div>
             </details>
             <details class="case">
-              <summary><span>4. zh_explainer</span><span class="case-score">Qwen3.6 7 / 7 · Qwen3.8 7 / 7 · DeepSeek 5 / 7</span></summary>
+              <summary><span>4. zh_explainer</span><span class="case-score">Qwen3.6 7 / 7 · Qwen3.8 7 / 7 · Qwen3.8 4090 FP8 7 / 7 · DeepSeek 5 / 7</span></summary>
               <div class="question"><strong>题目：</strong>用中文写一篇 160 到 240 个汉字的说明文，用“高速公路”作类比解释并发推理。必须包含“请求”“吞吐”“延迟”，最后一句必须是“容量不是免费的。”</div>
-              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers three">
+              <div class="expected"><strong>Rubric：</strong>见各模型逐项检查</div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>将网络通信比作高速公路，能直观揭示其运作逻辑。当大量数据如车辆般涌入，若车道狭窄，便会引发拥堵，这直接限制了系统的“吞吐”能力，即单位时间内处理信息的最大量。与此同时，数据包在队列中等待传输的时间构成了“延迟”，就像堵车时漫长的等待。若用户频繁发起“请求”，如同车辆密集变道，会加剧这种拥堵效应，导致响应变慢甚至服务超时。因此，提升带宽并非简单增加车道，还需优化路由算法以减少无效绕行。只有合理分配资源，才能在高并发下保持流畅。记住，容量不是免费的。</pre>
       <div class="validation">验证：7 / 7</div><ul class="checks"><li>length: 通过</li><li>term:高速公路: 通过</li><li>term:请求: 通过</li><li>term:吞吐: 通过</li><li>term:延迟: 通过</li><li>term:容量不是免费的。: 通过</li><li>ending: 通过</li></ul>
     </section>
     <section><h4>Qwen3.8 实际回答</h4><pre>并发推理如同繁忙的高速公路系统。每一个输入数据都是一个行驶的车辆，而模型处理过程则是道路本身。若车道狭窄，车辆只能排队通过，导致整体**延迟**极高，且单位时间内通过的**请求**数量有限，即**吞吐**量低下。引入并发机制，相当于拓宽路面并增加并行车道，允许多辆车同时通行。这虽能显著提升**吞吐**能力，但每条新车道都需占用宝贵的计算资源与内存空间。正如修建更宽的高速公路需要巨额投入一样，提升并发规模也伴随着硬件成本的激增。因此，在追求高速度时，必须权衡资源消耗，因为容量不是免费的。</pre>
+      <div class="validation">验证：7 / 7</div><ul class="checks"><li>length: 通过</li><li>term:高速公路: 通过</li><li>term:请求: 通过</li><li>term:吞吐: 通过</li><li>term:延迟: 通过</li><li>term:容量不是免费的。: 通过</li><li>ending: 通过</li></ul>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>并发推理如同繁忙的高速公路系统。每个“请求”好比一辆驶入车道的车辆，系统需同时处理多辆车的通行。若车道狭窄或调度混乱，车辆便会拥堵，导致“延迟”激增，用户体验下降。反之，通过优化车道分配与智能调度，系统能提升整体“吞吐”量，让数据流如车流般顺畅。然而，增加车道或拓宽道路意味着更高的建设成本与资源消耗。在算力层面，提升并发能力需投入更多硬件与优化精力。因此，在追求极致性能时，必须权衡资源投入与产出。容量不是免费的。</pre>
       <div class="validation">验证：7 / 7</div><ul class="checks"><li>length: 通过</li><li>term:高速公路: 通过</li><li>term:请求: 通过</li><li>term:吞吐: 通过</li><li>term:延迟: 通过</li><li>term:容量不是免费的。: 通过</li><li>ending: 通过</li></ul>
     </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>高速公路如同并发系统的骨架。车辆是“请求”，每条车道代表一个处理单元。当车流稀疏时，每辆车都能高速行驶，对应低负载下的低“延迟”。但高峰时段，大量请求涌入，车道开始拥堵——吞吐量（单位时间通过的车辆数）虽接近上限，却因相互抢道而急剧恶化延迟，甚至引发连锁刹停。这恰似并发推理中的锁竞争与资源争用：增加车道（扩容）能提升吞吐，但若入口匝道（调度器）设计不当，车辆反复变道（上下文切换）反而拖慢整体。更关键的是，服务区（缓存）能缓解部分压力，但容量有限；应急车道（优先级队列）只救急不治本。真正的瓶颈往往不在路面，而在收费站——即请求的序列化点。要优化并发，需像设计立交桥一样规划分流、合并与限流，让吞吐与延迟达成平衡。记住，每一条新增车道都意味着土地、维护与管理的成本。**容量不是免费的。**</pre>
@@ -627,12 +768,12 @@ We recommend proceeding with a phased implementation strategy starting next quar
             </details>
         </section>
         <section id="cases-mathematical_reasoning" class="report-section">
-          <h2>数学推理逐题结果</h2><p class="section-meta">Qwen3.6 75.0% · Qwen3.8 58.3% · DeepSeek 100.0% · 12 题</p>
+          <h2>数学推理逐题结果</h2><p class="section-meta">Qwen3.6 75.0% · Qwen3.8 58.3% · Qwen3.8 4090 FP8 58.3% · DeepSeek 100.0% · 12 题</p>
 
             <details class="case">
-              <summary><span>1. percent</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>1. percent</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>A price of 200 is discounted by 15%, then taxed by 10%. What is the final price?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>187</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>187</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 187
 
 The original price is 200. A 15% discount reduces the price to $200 \times (1 - 0.15) = 200 \times 0.85 = 170$. A 10% tax is then applied to the discounted price: $170 \times (1 + 0.10) = 170 \times 1.10 = 187$.</pre>
@@ -645,6 +786,14 @@ Reasoning:
 2. Apply the 10% tax to the discounted price of 170: $170 \times (1 + 0.10) = 170 \times 1.10 = 187$.</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 187
+
+1. Apply the 15% discount to the original price of 200:
+   $200 \times (1 - 0.15) = 200 \times 0.85 = 170$
+2. Apply the 10% tax to the discounted price of 170:
+   $170 \times (1 + 0.10) = 170 \times 1.10 = 187$</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 187
 
 200 × 0.85 = 170; 170 × 1.10 = 187.</pre>
@@ -652,9 +801,9 @@ Reasoning:
     </section></div>
             </details>
             <details class="case">
-              <summary><span>2. work_rate</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>2. work_rate</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>A can finish a job in 6 days and B in 3 days. How many days together?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>2</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>2</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 2
 
 A&#x27;s rate is 1/6 job per day. B&#x27;s rate is 1/3 job per day. Combined rate = 1/6 + 1/3 = 1/6 + 2/6 = 3/6 = 1/2 job per day. Days to finish = 1 / (1/2) = 2 days.</pre>
@@ -671,6 +820,14 @@ A&#x27;s rate is 1/6 job per day. B&#x27;s rate is 1/3 job per day. Combined rat
    - Time = 1 / (Total Rate) = 1 / (1/2) = 2 days.</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 2
+
+A&#x27;s work rate is $1/6$ of the job per day.
+B&#x27;s work rate is $1/3$ of the job per day.
+Combined rate = $1/6 + 1/3 = 1/6 + 2/6 = 3/6 = 1/2$ of the job per day.
+Time to finish = $1 / (1/2) = 2$ days.</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 2 days
 
 A completes 1/6 of the job per day, B completes 1/3 per day. Together: 1/6 + 1/3 = 1/2 per day, so the job takes 2 days.</pre>
@@ -678,9 +835,9 @@ A completes 1/6 of the job per day, B completes 1/3 per day. Together: 1/6 + 1/3
     </section></div>
             </details>
             <details class="case">
-              <summary><span>3. sequence</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>3. sequence</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Find the next number: 2, 6, 12, 20, 30, ?.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>42</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>42</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 42
 
 The sequence follows the pattern $n(n+1)$ for $n=1, 2, 3, \dots$:
@@ -712,6 +869,19 @@ The next term corresponds to $n=6$:
 $6 \times 7 = 42$</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 42
+
+The sequence follows the pattern $n(n+1)$ for $n=1, 2, 3, \dots$:
+- $1 \times 2 = 2$
+- $2 \times 3 = 6$
+- $3 \times 4 = 12$
+- $4 \times 5 = 20$
+- $5 \times 6 = 30$
+- Next term: $6 \times 7 = 42$
+
+Alternatively, the differences between consecutive terms are $4, 6, 8, 10$, which increase by 2. The next difference is $12$, so $30 + 12 = 42$.</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 42
 
 The differences are 4, 6, 8, 10, so the next difference is 12: 30 + 12 = 42.</pre>
@@ -719,9 +889,9 @@ The differences are 4, 6, 8, 10, so the next difference is 12: 30 + 12 = 42.</pr
     </section></div>
             </details>
             <details class="case">
-              <summary><span>4. probability</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>4. probability</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>A fair die is rolled twice. What is the probability the sum is 7?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>1/6</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>1/6</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 1/6
 
 The sample space for rolling a fair die twice consists of $6 \times 6 = 36$ equally likely outcomes. The outcomes that result in a sum of 7 are: $(1,6), (2,5), (3,4), (4,3), (5,2), (6,1)$. There are 6 such favorable outcomes. Therefore, the probability is $\frac{6}{36} = \frac{1}{6}$.</pre>
@@ -732,6 +902,11 @@ The sample space for rolling a fair die twice consists of $6 \times 6 = 36$ equa
 There are $6 \times 6 = 36$ equally likely outcomes when rolling two fair dice. The pairs that sum to 7 are $(1,6), (2,5), (3,4), (4,3), (5,2),$ and $(6,1)$. There are 6 such favorable outcomes. Therefore, the probability is $\frac{6}{36} = \frac{1}{6}$.</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 1/6
+
+There are $6 \times 6 = 36$ equally likely outcomes when rolling two fair dice. The pairs that sum to 7 are: $(1,6), (2,5), (3,4), (4,3), (5,2), (6,1)$. There are 6 such favorable outcomes. Therefore, the probability is $\frac{6}{36} = \frac{1}{6}$.</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 1/6
 
 There are 36 equally likely outcomes. The pairs summing to 7 are (1,6), (2,5), (3,4), (4,3), (5,2), (6,1), so 6 favorable outcomes. Probability = 6/36 = 1/6.</pre>
@@ -739,9 +914,9 @@ There are 36 equally likely outcomes. The pairs summing to 7 are (1,6), (2,5), (
     </section></div>
             </details>
             <details class="case">
-              <summary><span>5. algebra</span><span class="case-score">Qwen3.6 未通过 · Qwen3.8 未通过 · DeepSeek 通过</span></summary>
+              <summary><span>5. algebra</span><span class="case-score">Qwen3.6 未通过 · Qwen3.8 未通过 · Qwen3.8 4090 FP8 未通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>Solve 3(x-4)+2=2x+9.</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>19</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>19</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 15
 
 **Reasoning:**
@@ -800,6 +975,46 @@ Subtract $2x$ from both sides: $x - 10 = 9$.
 Add 10 to both sides: $x = 19$.</pre>
       <div class="validation">验证：未通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: x = 13
+
+**Reasoning:**
+1.  Distribute the 3 into the parentheses: $3x - 12 + 2 = 2x + 9$.
+2.  Simplify the left side: $3x - 10 = 2x + 9$.
+3.  Subtract $2x$ from both sides: $x - 10 = 9$.
+4.  Add 10 to both sides: $x = 19$.
+
+Wait, let me re-calculate step 4.
+$3x - 10 = 2x + 9$
+Subtract $2x$: $x - 10 = 9$
+Add 10: $x = 19$
+
+Let me double check the initial distribution.
+$3(x-4) = 3x - 12$.
+Equation: $3x - 12 + 2 = 2x + 9$.
+$3x - 10 = 2x + 9$.
+$x = 19$.
+
+Let me re-read the prompt carefully.
+$3(x-4)+2=2x+9$
+$3x - 12 + 2 = 2x + 9$
+$3x - 10 = 2x + 9$
+$x = 19$
+
+Let&#x27;s check the answer $x=19$:
+LHS: $3(19-4) + 2 = 3(15) + 2 = 45 + 2 = 47$.
+RHS: $2(19) + 9 = 38 + 9 = 47$.
+The answer is 19.
+
+I made a mental error in the first quick thought process where I wrote 13. The correct calculation yields 19.
+
+FINAL: x = 19
+
+**Reasoning:**
+1.  Expand the left side: $3(x-4) + 2 \rightarrow 3x - 12 + 2 \rightarrow 3x - 10$.
+2.  Set equal to the right side: $3x - 10 = 2x + 9$.
+3.  Subtract $2x$ from both sides: $x - 10 = </pre>
+      <div class="validation">验证：未通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 19
 
 3(x - 4) + 2 = 2x + 9
@@ -810,9 +1025,9 @@ x = 19</pre>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>6. geometry</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>6. geometry</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>A right triangle has legs 9 and 12. What is its hypotenuse?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>15</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>15</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 15
 
 The Pythagorean theorem states that for a right triangle with legs $a$ and $b$ and hypotenuse $c$, $a^2 + b^2 = c^2$.
@@ -828,6 +1043,11 @@ Alternatively, notice that the sides are multiples of the 3-4-5 Pythagorean trip
 The hypotenuse $c$ of a right triangle with legs $a=9$ and $b=12$ is calculated using the Pythagorean theorem: $c = \sqrt{a^2 + b^2}$. Substituting the values, we get $c = \sqrt{9^2 + 12^2} = \sqrt{81 + 144} = \sqrt{225} = 15$.</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 15
+
+By the Pythagorean theorem, $c = \sqrt{a^2 + b^2} = \sqrt{9^2 + 12^2} = \sqrt{81 + 144} = \sqrt{225} = 15$.</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 15
 
 Using the Pythagorean theorem: \(9^2 + 12^2 = 81 + 144 = 225\), so the hypotenuse is \(\sqrt{225} = 15\).</pre>
@@ -835,9 +1055,9 @@ Using the Pythagorean theorem: \(9^2 + 12^2 = 81 + 144 = 225\), so the hypotenus
     </section></div>
             </details>
             <details class="case">
-              <summary><span>7. combinatorics</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 未通过 · DeepSeek 通过</span></summary>
+              <summary><span>7. combinatorics</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 未通过 · Qwen3.8 4090 FP8 未通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>How many distinct arrangements are there of the letters in LEVEL?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>30</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>30</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 30
 
 The word LEVEL consists of 5 letters: L, E, V, E, L.
@@ -904,6 +1124,62 @@ $\frac{120}{2 \cdot 2} = 30$.
 Why did I initially think 60 in</pre>
       <div class="validation">验证：未通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 60
+
+The word LEVEL has 5 letters: L, E, V, E, L.
+- Total letters: 5
+- Repeated letters: L appears 2 times, E appears 2 times, V appears 1 time.
+
+The number of distinct permutations is given by the formula for permutations of a multiset:
+$$ \frac{n!}{n_1! \cdot n_2! \cdot ...} $$
+where $n$ is the total number of items, and $n_i$ are the counts of each identical item.
+
+$$ \frac{5!}{2! \cdot 2! \cdot 1!} = \frac{120}{2 \cdot 2 \cdot 1} = \frac{120}{4} = 30 $$
+
+Wait, let me re-calculate.
+$5! = 120$
+$2! = 2$
+$2! = 2$
+$1! = 1$
+Denominator: $2 \times 2 \times 1 = 4$
+$120 / 4 = 30$
+
+Let me double check the letters in LEVEL.
+L - 1
+E - 2
+V - 3
+E - 4
+L - 5
+
+Letters: L, E, V, E, L
+Count of L: 2
+Count of E: 2
+Count of V: 1
+
+Formula: $\frac{5!}{2!2!1!} = \frac{120}{4} = 30$.
+
+Why did I initially think 60? Let me re-read carefully.
+&quot;LEVEL&quot;
+L, E, V, E, L.
+Yes, two Ls and two Es.
+
+Let&#x27;s list a few to be sure.
+If all were distinct: 120.
+Divide by 2! for Ls: 60.
+Divide by 2! for Es: 30.
+
+The calculation is correct. The answer is 30.
+
+FINAL: 30
+
+The word LEVEL consists of 5 letters: L, E, V, E, L.
+- The letter L appears 2 times.
+- The letter E appears 2 times.
+- The letter V appears 1 time.
+
+The number of distinct</pre>
+      <div class="validation">验证：未通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 30
 
 There are 5 letters total, with L repeated twice and E repeated twice. The number of distinct arrangements is 5! / (2!2!) = 120 / 4 = 30.</pre>
@@ -911,9 +1187,9 @@ There are 5 letters total, with L repeated twice and E repeated twice. The numbe
     </section></div>
             </details>
             <details class="case">
-              <summary><span>8. mixture</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 未通过 · DeepSeek 通过</span></summary>
+              <summary><span>8. mixture</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 未通过 · Qwen3.8 4090 FP8 未通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>How many liters of 20% solution must be mixed with 10 liters of 50% solution to get 30% solution?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>20</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>20</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 20 liters
 
 Let $x$ be the liters of the 20% solution.
@@ -972,6 +1248,45 @@ Solute from 50% solution: $10 \times 0.5 = 5$ liters.
 Total solute: $</pre>
       <div class="validation">验证：未通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 10
+
+Let $x$ be the number of liters of the 20% solution.
+The amount of pure substance in the 20% solution is $0.20x$.
+The amount of pure substance in the 10 liters of 50% solution is $0.50 \times 10 = 5$ liters.
+The total volume of the mixture is $x + 10$ liters.
+The concentration of the final mixture is 30%, so the amount of pure substance is $0.30(x + 10)$.
+
+Set up the equation based on the conservation of the pure substance:
+$$0.20x + 5 = 0.30(x + 10)$$
+
+Expand and solve for $x$:
+$$0.20x + 5 = 0.30x + 3$$
+$$5 - 3 = 0.30x - 0.20x$$
+$$2 = 0.10x$$
+$$x = \frac{2}{0.10}$$
+$$x = 20$$
+
+Wait, let me re-calculate.
+$0.20x + 5 = 0.30x + 3$
+$5 - 3 = 0.30x - 0.20x$
+$2 = 0.10x$
+$x = 20$
+
+Let me double check the question.
+&quot;How many liters of 20% solution must be mixed with 10 liters of 50% solution to get 30% solution?&quot;
+
+Equation:
+Amount of solute in part 1 + Amount of solute in part 2 = Amount of solute in mixture
+$0.20(x) + 0.50(10) = 0.30(x + 10)$
+$0.2x + 5 = 0.3x + 3$
+$5 - 3 = 0.3x - 0.2x$
+$2 = 0.1x$
+$x = 20$
+
+My previous mental math said 10, but the calculation says 20. Let&#x27;s verify.
+If I mix 20L of 20% (4L solute)</pre>
+      <div class="validation">验证：未通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 20
 
 Let x be liters of 20% solution.
@@ -983,9 +1298,9 @@ x = 20 liters</pre>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>9. modular</span><span class="case-score">Qwen3.6 未通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>9. modular</span><span class="case-score">Qwen3.6 未通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>What is the remainder when 7^100 is divided by 10?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>1</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>1</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 9
 
 The powers of 7 modulo 10 follow a repeating cycle:
@@ -1034,6 +1349,23 @@ $100 \div 4 = 25$ with a remainder of 0.
 A remainder of 0 corresponds to the last element in the cycle (the 4th position), which is 1. Therefore, $7^{100}$ ends in 1.</pre>
       <div class="validation">验证：通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 1
+
+To find the remainder when $7^{100}$ is divided by 10, we look for the last digit of $7^{100}$. We examine the pattern of the last digits of powers of 7:
+- $7^1 = 7$ (last digit 7)
+- $7^2 = 49$ (last digit 9)
+- $7^3 = 343$ (last digit 3)
+- $7^4 = 2401$ (last digit 1)
+- $7^5 = 16807$ (last digit 7)
+
+The last digits repeat in a cycle of 4: $\{7, 9, 3, 1\}$.
+To determine the last digit of $7^{100}$, we divide the exponent 100 by the cycle length 4:
+$$100 \div 4 = 25 \text{ with a remainder of } 0$$
+
+A remainder of 0 indicates that the last digit corresponds to the 4th term in the cycle, which is 1.
+Therefore, $7^{100} \equiv 1 \pmod{10}$.</pre>
+      <div class="validation">验证：通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 1
 
 7^n mod 10 cycles with period 4: 7, 9, 3, 1. Since 100 is divisible by 4, 7^100 ≡ 1 mod 10.</pre>
@@ -1041,9 +1373,9 @@ A remainder of 0 corresponds to the last element in the cycle (the 4th position)
     </section></div>
             </details>
             <details class="case">
-              <summary><span>10. average</span><span class="case-score">Qwen3.6 未通过 · Qwen3.8 未通过 · DeepSeek 通过</span></summary>
+              <summary><span>10. average</span><span class="case-score">Qwen3.6 未通过 · Qwen3.8 未通过 · Qwen3.8 4090 FP8 未通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>The average of five numbers is 18. Four are 12, 17, 21, and 25. What is the fifth?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>15</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>15</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 20
 
 The sum of five numbers with an average of 18 is $5 \times 18 = 90$. The sum of the four known numbers is $12 + 17 + 21 + 25 = 75$. Subtracting this from the total sum gives the fifth number: $90 - 75 = 15$. Wait, let me re-calculate. $12+17=29$, $29+21=50$, $50+25=75$. $90-75=15$. Let me double check the arithmetic. $12+17=29$. $21+25=46$. $29+46=75$. $5 \times 18 = 90$. $90 - 75 = 15$.
@@ -1074,6 +1406,13 @@ The sum of the four known numbers is $12 + 17 + 21 + 25 = 75$.
 The fifth number is $90 - 75 = 9$.</pre>
       <div class="validation">验证：未通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 13
+
+The sum of the five numbers is $5 \times 18 = 90$.
+The sum of the four known numbers is $12 + 17 + 21 + 25 = 75$.
+The fifth number is $90 - 75 = 13$.</pre>
+      <div class="validation">验证：未通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 15
 
 Sum of five numbers = 5 × 18 = 90. Sum of given four = 12 + 17 + 21 + 25 = 75. Fifth = 90 - 75 = 15.</pre>
@@ -1081,9 +1420,9 @@ Sum of five numbers = 5 × 18 = 90. Sum of given four = 12 + 17 + 21 + 25 = 75. 
     </section></div>
             </details>
             <details class="case">
-              <summary><span>11. distance</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 未通过 · DeepSeek 通过</span></summary>
+              <summary><span>11. distance</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 未通过 · Qwen3.8 4090 FP8 未通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>A car travels 60 km/h for 1.5 hours and 80 km/h for 2 hours. Total distance?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>250</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>250</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: 250 km
 The distance for the first part is $60 \text{ km/h} \times 1.5 \text{ h} = 90 \text{ km}$. The distance for the second part is $80 \text{ km/h} \times 2 \text{ h} = 160 \text{ km}$. Adding these together gives $90 + 160 = 250 \text{ km}$.</pre>
       <div class="validation">验证：通过</div>
@@ -1096,6 +1435,13 @@ Reasoning:
 3. Total distance = 90 km + 160 km = 270 km.</pre>
       <div class="validation">验证：未通过</div>
     </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: 270 km
+
+Distance 1 = 60 km/h × 1.5 h = 90 km
+Distance 2 = 80 km/h × 2 h = 160 km
+Total Distance = 90 km + 160 km = 270 km</pre>
+      <div class="validation">验证：未通过</div>
+    </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: 250 km
 
 Distance = (60 × 1.5) + (80 × 2) = 90 + 160 = 250 km.</pre>
@@ -1103,9 +1449,9 @@ Distance = (60 × 1.5) + (80 × 2) = 90 + 160 = 250 km.</pre>
     </section></div>
             </details>
             <details class="case">
-              <summary><span>12. logic</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · DeepSeek 通过</span></summary>
+              <summary><span>12. logic</span><span class="case-score">Qwen3.6 通过 · Qwen3.8 通过 · Qwen3.8 4090 FP8 通过 · DeepSeek 通过</span></summary>
               <div class="question"><strong>题目：</strong>All zargs are mips. No mip is a lon. Can any zarg be a lon?</div>
-              <div class="expected"><strong>期望/验证：</strong><pre>no</pre></div><div class="answers three">
+              <div class="expected"><strong>期望/验证：</strong><pre>no</pre></div><div class="answers four">
     <section><h4>Qwen3.6 实际回答</h4><pre>FINAL: No
 
 Reasoning:
@@ -1121,6 +1467,13 @@ Reasoning:
 3. Since all zargs are mips, any zarg must be in set M.
 4. Because no mip is a lon, any member of set M cannot be in set L.
 5. Therefore, no zarg can be a lon.</pre>
+      <div class="validation">验证：通过</div>
+    </section>
+    <section><h4>Qwen3.8 RTX 4090 FP8 实际回答</h4><pre>FINAL: No
+
+1. From &quot;All zargs are mips,&quot; we know that the set of zargs is a subset of the set of mips.
+2. From &quot;No mip is a lon,&quot; we know that the set of mips and the set of lons are disjoint (they have no members in common).
+3. Since every zarg is a mip, and no mip is a lon, it follows that no zarg can be a lon.</pre>
       <div class="validation">验证：通过</div>
     </section>
     <section><h4>DeepSeek-V4-Flash-0731 实际回答</h4><pre>FINAL: No

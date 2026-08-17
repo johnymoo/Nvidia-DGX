@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "timestamp": "2026-08-17T09:14:39.935477+00:00",
+  "endpoint": "private-llm-portal",
+  "model": "deepseek-v4-flash-0731",
+  "profile": "deepseek-private-high",
+  "method": {
+    "transport": "OpenAI-compatible SSE streaming",
+    "ttft": "request dispatch to first non-empty reasoning or content delta",
+    "response_time": "request dispatch to SSE completion",
+    "decode_tps": "completion_tokens / (response_time - TTFT)",
+    "prompt": "You are a data lakehouse engineer. Explain in exactly four concise bullet points how to diagnose an Apache Spark job stalled by shuffle skew. Keep the final answer under 180 English words.",
+    "seed": 42,
+    "max_tokens": 2048,
+    "warmup_runs": 1,
+    "measured_runs": 3,
+    "single_stream": true
+  },
+  "summary": {
+    "runs": 3,
+    "successful_runs": 3,
+    "errors": 0,
+    "ttft_seconds": {
+      "mean": 0.2700926666666667,
+      "min": 0.269109,
+      "max": 0.270591,
+      "stdev": 0.0008519051199126295
+    },
+    "response_seconds": {
+      "mean": 12.900217666666668,
+      "min": 12.226345,
+      "max": 14.138605,
+      "stdev": 1.0738678613131754
+    },
+    "decode_tokens_per_second": {
+      "mean": 32.590574,
+      "min": 32.486381,
+      "max": 32.665065,
+      "stdev": 0.09297122978104376
+    },
+    "completion_tokens_mean": 411.6666666666667
+  },
+  "runs": [
+    {
+      "ttft_seconds": 0.270578,
+      "response_seconds": 14.138605,
+      "decode_seconds": 13.868027,
+      "decode_tokens_per_second": 32.665065,
+      "first_token_kind": "reasoning",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 453,
+        "prompt_tokens": 41,
+        "total_tokens": 494,
+        "completion_tokens_details": {
+          "reasoning_tokens": 257
+        }
+      },
+      "content_chars": 860,
+      "reasoning_chars": 1176,
+      "content_sha256": "69e52a6cbfd0212533d3a94c7e546a74eb901b69f678f6982f29b23c8ad0e0b9",
+      "reasoning_sha256": "88615272619f7622692f3df2dcce68e7a6260433dd46bd3f586b1a2648b8215c",
+      "run": 1
+    },
+    {
+      "ttft_seconds": 0.270591,
+      "response_seconds": 12.226345,
+      "decode_seconds": 11.955754,
+      "decode_tokens_per_second": 32.620276,
+      "first_token_kind": "reasoning",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 390,
+        "prompt_tokens": 41,
+        "total_tokens": 431,
+        "completion_tokens_details": {
+          "reasoning_tokens": 133
+        }
+      },
+      "content_chars": 1114,
+      "reasoning_chars": 588,
+      "content_sha256": "b50dfddcbe1ccdc87093d9a3d4daf6d7f5da0048e687d4a5e22c9759de8380f0",
+      "reasoning_sha256": "90cd3a85232f9a820305ca4e63f22432a4a6e604c891de407bd8ab155e8cc7a4",
+      "run": 2
+    },
+    {
+      "ttft_seconds": 0.269109,
+      "response_seconds": 12.335703,
+      "decode_seconds": 12.066595,
+      "decode_tokens_per_second": 32.486381,
+      "first_token_kind": "reasoning",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 392,
+        "prompt_tokens": 41,
+        "total_tokens": 433,
+        "completion_tokens_details": {
+          "reasoning_tokens": 184
+        }
+      },
+      "content_chars": 894,
+      "reasoning_chars": 827,
+      "content_sha256": "bf4b1b23c5357dddd0b15426599a69caa41349ae735769ed0407e80b3658da60",
+      "reasoning_sha256": "d01cd538c941914509d4beeb4156515eab8bebb251d47fe189fb7b69dbc5e17c",
+      "run": 3
+    }
+  ]
+}

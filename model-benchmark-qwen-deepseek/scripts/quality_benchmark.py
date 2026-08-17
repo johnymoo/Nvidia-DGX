@@ -5,6 +5,7 @@ import argparse
 import base64
 import binascii
 import json
+import os
 import re
 import struct
 import subprocess
@@ -69,8 +70,19 @@ MATH = [
 ]
 
 
-def post(base: str, model: str, messages: list[dict], max_tokens: int = 700) -> dict:
+def post(
+    base: str,
+    model: str,
+    messages: list[dict],
+    max_tokens: int = 700,
+    thinking: str = "server-default",
+) -> dict:
     body = {"model": model, "messages": messages, "temperature": 0, "max_tokens": max_tokens}
+    if thinking == "off":
+        body["chat_template_kwargs"] = {"enable_thinking": False}
+    elif thinking != "server-default":
+        body["chat_template_kwargs"] = {"enable_thinking": True}
+        body["reasoning_effort"] = thinking
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     started = time.monotonic()
     with urllib.request.urlopen(req, timeout=900) as response:
@@ -97,7 +109,11 @@ def extract_code(value: str) -> str:
 def run_code(code: str, checks: list[tuple[str, object]]) -> tuple[bool, str]:
     marker = uuid.uuid4().hex
     runner = "import base64,json,os\nns={}\nexec(compile(base64.b64decode(os.environ['SUBMISSION']),'<submission>','exec'),ns)\nvalues=[eval(item,ns) for item in json.loads(base64.b64decode(os.environ['EXPRESSIONS']))]\nprint(os.environ['MARKER']+json.dumps(values,separators=(',',':')))"
-    command = ["docker", "run", "--rm", "--network", "none", "--read-only", "--memory", "128m", "--cpus", "1", "--pids-limit", "64", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534", "--tmpfs", "/tmp:rw,noexec,nosuid,size=16m", "-e", f"SUBMISSION={base64.b64encode(code.encode()).decode()}", "-e", f"EXPRESSIONS={base64.b64encode(json.dumps([item[0] for item in checks]).encode()).decode()}", "-e", f"MARKER={marker}", "python@sha256:a630a63cdb314e2d138a2fca3e375e319e8568346ffafac5b980f888630ac4f1", "python", "-I", "-c", runner]
+    image = os.environ.get(
+        "PYTHON_SANDBOX_IMAGE",
+        "python@sha256:a630a63cdb314e2d138a2fca3e375e319e8568346ffafac5b980f888630ac4f1",
+    )
+    command = ["docker", "run", "--pull=never", "--rm", "--network", "none", "--read-only", "--memory", "128m", "--cpus", "1", "--pids-limit", "64", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534", "--tmpfs", "/tmp:rw,noexec,nosuid,size=16m", "-e", f"SUBMISSION={base64.b64encode(code.encode()).decode()}", "-e", f"EXPRESSIONS={base64.b64encode(json.dumps([item[0] for item in checks]).encode()).decode()}", "-e", f"MARKER={marker}", image, "python", "-I", "-c", runner]
     completed = subprocess.run(command, text=True, capture_output=True, timeout=20, check=False)
     detail = (completed.stdout + completed.stderr)[-2000:]
     matched = re.search(rf"(?m)^{marker}(.+)$", completed.stdout)
@@ -129,7 +145,15 @@ def main() -> int:
     parser.add_argument("--tag", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--exclude-category", action="append", choices=["image_recognition"], default=[])
+    parser.add_argument(
+        "--thinking",
+        choices=["server-default", "off", "low", "medium", "xhigh"],
+        default="server-default",
+    )
+    parser.add_argument("--max-token-multiplier", type=int, default=1)
     args = parser.parse_args()
+    if args.max_token_multiplier < 1:
+        parser.error("--max-token-multiplier must be at least 1")
     excluded = set(args.exclude_category)
     result = {
         "schema_version": 2,
@@ -138,6 +162,8 @@ def main() -> int:
         "model": args.model,
         "base_url": args.base_url,
         "excluded_categories": sorted(excluded),
+        "thinking_mode": args.thinking,
+        "max_token_multiplier": args.max_token_multiplier,
         "categories": {},
         "status": "failed",
     }
@@ -146,14 +172,14 @@ def main() -> int:
         vision_rows = []
         for name, rects, prompt, expected in VISION:
             data = base64.b64encode(png(160, 120, rects)).decode()
-            row = post(args.base_url, args.model, [{"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/png;base64,{data}"}}, {"type": "text", "text": prompt}]}], 64)
+            row = post(args.base_url, args.model, [{"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/png;base64,{data}"}}, {"type": "text", "text": prompt}]}], 64 * args.max_token_multiplier, args.thinking)
             actual = clean_exact(row["content"])
             vision_rows.append({"id": name, "prompt": prompt, "expected": expected, "actual": actual, "response": row["content"], "passed": actual == expected, "seconds": row["seconds"]})
         result["categories"]["image_recognition"] = {"score": sum(r["passed"] for r in vision_rows) / len(vision_rows), "passed": sum(r["passed"] for r in vision_rows), "total": len(vision_rows), "cases": vision_rows}
 
     code_rows = []
     for name, prompt, checks in PROGRAMMING:
-        row = post(args.base_url, args.model, [{"role": "user", "content": prompt}], 900)
+        row = post(args.base_url, args.model, [{"role": "user", "content": prompt}], 900 * args.max_token_multiplier, args.thinking)
         passed, detail = run_code(extract_code(row["content"]), checks)
         code_rows.append({"id": name, "prompt": prompt, "expected": checks, "response": row["content"], "reasoning": row["reasoning"], "finish_reason": row["finish_reason"], "passed": passed, "seconds": row["seconds"], "executor_tail": detail})
     result["categories"]["programming"] = {"score": sum(r["passed"] for r in code_rows) / len(code_rows), "passed": sum(r["passed"] for r in code_rows), "total": len(code_rows), "cases": code_rows}
@@ -161,7 +187,7 @@ def main() -> int:
     writing_rows = []
     writing_points = writing_total = 0
     for case in WRITING:
-        row = post(args.base_url, args.model, [{"role": "user", "content": case["prompt"]}], 700)
+        row = post(args.base_url, args.model, [{"role": "user", "content": case["prompt"]}], 700 * args.max_token_multiplier, args.thinking)
         points, total, detail = writing_score(case, row["content"])
         writing_points += points
         writing_total += total
@@ -171,7 +197,7 @@ def main() -> int:
     math_rows = []
     for name, prompt, expected in MATH:
         question = prompt.split(" Answer", 1)[0]
-        row = post(args.base_url, args.model, [{"role": "user", "content": question + " Put the answer on the first line in the exact format FINAL: <answer>. Then show concise reasoning."}], 512)
+        row = post(args.base_url, args.model, [{"role": "user", "content": question + " Put the answer on the first line in the exact format FINAL: <answer>. Then show concise reasoning."}], 512 * args.max_token_multiplier, args.thinking)
         match = re.search(r"(?m)^FINAL:\s*([^\s]+)", row["content"], re.I)
         actual = clean_exact(match.group(1) if match else "")
         math_rows.append({"id": name, "prompt": question, "expected": expected, "actual": actual, "response": row["content"], "reasoning": row["reasoning"], "finish_reason": row["finish_reason"], "usage": row["usage"], "passed": actual == expected, "seconds": row["seconds"]})
