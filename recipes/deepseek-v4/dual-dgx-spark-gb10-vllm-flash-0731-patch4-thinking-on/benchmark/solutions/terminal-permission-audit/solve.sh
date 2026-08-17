@@ -6,7 +6,7 @@ tree=$root/tree
 [[ -d $tree ]] || { printf '%s\n' "input/tree is missing" >&2; exit 2; }
 tmp=$(mktemp "${TMPDIR:-/tmp}/terminal-mode.XXXXXX")
 trap 'rm -f "$tmp"' EXIT
-mode_of() { stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1"; }
+mode_of() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
 
 while IFS= read -r -d '' path; do
   rel=${path#"$tree"}

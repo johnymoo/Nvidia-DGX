@@ -82,6 +82,14 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("./run.sh test", script)
         self.assertIn("config --quiet", script)
 
+    def test_permission_fixture_prefers_gnu_stat_before_bsd_fallback(self) -> None:
+        solution = (
+            ROOT
+            / "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on"
+            / "benchmark/solutions/terminal-permission-audit/solve.sh"
+        ).read_text()
+        self.assertLess(solution.index("stat -c '%a'"), solution.index("stat -f '%Lp'"))
+
 
 if __name__ == "__main__":
     unittest.main()
