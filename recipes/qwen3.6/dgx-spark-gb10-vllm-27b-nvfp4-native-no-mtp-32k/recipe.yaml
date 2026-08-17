@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.gb10.vllm-27b-nvfp4-native-no-mtp-32k",
+  "model_family": "qwen3.6",
+  "model_id": "unsloth/Qwen3.6-27B-NVFP4",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "vllm",
+  "profile_id": "native-nvfp4-no-mtp-32k",
+  "modality": "multimodal-generation",
+  "maturity": "Archived",
+  "default": false,
+  "source_paths": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native.yml", "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/benchmark_outputs/single-stream-nomtp-20260716-070601.json"],
+  "operations": {},
+  "benchmark_suites": ["legacy-qwen3.6-mtp-ab"],
+  "evidence": {"receipts": [], "benchmarks": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md"]},
+  "limitations": ["Archived control profile; use the shared historical guide."],
+  "invalidation_conditions": ["Checkpoint, image, context, or no-MTP control configuration changes."]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "model.reference",
+  "model_family": "other-family",
+  "model_id": "model/reference",
+  "hardware_id": "gpu-a",
+  "runtime_id": "runtime-b",
+  "profile_id": "profile-b",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "operations": {},
+  "evidence": {"receipts": [], "benchmarks": []},
+  "limitations": ["no subject-bound receipt"],
+  "invalidation_conditions": []
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "recipe_id": "qwen3.8.rtx3090-24gb.llamacpp-27b-q3-k-s-128k-p2",
+  "subject": {
+    "model": "Qwen3.8-27B-Q3_K_S",
+    "hardware": "rtx3090-24gb",
+    "runtime": "llama.cpp",
+    "profile": "q3-k-s-128k-p2"
+  },
+  "acceptance": {
+    "status": "passed",
+    "source": "deployment-20260815T144804Z.json",
+    "scope": "Existing identity, deterministic, concurrency, long-context, soak, and safety acceptance"
+  },
+  "collected_at": "2026-08-15T14:48:04Z",
+  "invalidation_conditions": [
+    "Changing quantization, projector, image digest, context, parallel slots, KV cache type, thinking mode, or hardware."
+  ]
+}

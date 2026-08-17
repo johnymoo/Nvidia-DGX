@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "status": "reference",
+  "recipe_id": "example.not-a-deployment",
+  "subject": {"model": "N/A", "hardware": "N/A", "runtime": "N/A", "profile": "N/A"},
+  "acceptance": {"status": "not-run", "reason": "Packaging example only"},
+  "collected_at": "2026-08-18T00:00:00Z"
+}

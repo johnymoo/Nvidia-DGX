@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "result_id": "run-ref",
+  "recipe_id": "model.reference",
+  "maturity": "Reference",
+  "suite": {"id": "legacy", "version": "0"},
+  "workload": {"id": "legacy", "concurrency": 1, "cache_state": "unknown"},
+  "metrics": {},
+  "receipt": "results/gpu-a/reference/run-ref/receipt.json"
+}

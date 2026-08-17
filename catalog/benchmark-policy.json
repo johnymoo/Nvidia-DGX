@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "policy_id": "best-verified-v1",
+  "group_by": ["hardware_id", "model_family"],
+  "eligible_maturity": "Verified",
+  "active_suites": {
+    "text-generation": "performance-v1@1",
+    "multimodal-generation": "performance-v1@1",
+    "media-generation": "media-performance-v1@1"
+  },
+  "required_identity": ["suite", "workload.id", "workload.concurrency", "workload.cache_state", "receipt", "receipt_sha256", "quality_floor", "context_floor"],
+  "floor_policy_source": "docs/architecture/repository-reorganization.md#best-verified-selection",
+  "model_group_floors": {
+    "dgx-spark-gb10::qwen3.5": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
+    "dgx-spark-gb10::qwen3.6": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
+    "dgx-spark-gb10-pair::deepseek-v4": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
+    "rtx3090-24gb::qwen3.8": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
+    "rtx4090-48gb::qwen3.6": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
+    "rtx4090-48gb::qwen3.8": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192}
+  },
+  "required_status": {
+    "status.acceptance": "passed",
+    "status.reliability": "passed",
+    "status.safety": "passed"
+  },
+  "missing_required_value": "ineligible",
+  "ranking": [
+    {"field": "metrics.aggregate_tokens_per_second.mean", "order": "desc"},
+    {"field": "metrics.decode_tokens_per_second.mean", "order": "desc"},
+    {"field": "metrics.ttft_seconds.mean", "order": "asc"},
+    {"field": "result_id", "order": "asc"}
+  ],
+  "excluded_modalities": ["media-generation", "embedding", "application"],
+  "no_eligible_state": "No eligible Verified result is available for this hardware and model group."
+}

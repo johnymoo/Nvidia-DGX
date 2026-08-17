@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/johnymoo/Nvidia-DGX/benchmarks/schemas/benchmark-result.schema.json",
+  "title": "Benchmark result",
+  "type": "object",
+  "required": ["schema_version", "result_id", "recipe_id", "suite", "workload", "metrics", "receipt", "maturity", "status"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "result_id": {"type": "string"},
+    "recipe_id": {"type": "string"},
+    "suite": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {"id": {"type": "string"}, "version": {"type": "string"}}
+    },
+    "workload": {
+      "type": "object",
+      "required": ["id", "concurrency", "cache_state"],
+      "properties": {
+        "id": {"type": "string"},
+        "concurrency": {"type": "integer", "minimum": 1},
+        "cache_state": {"enum": ["cold", "warm", "mixed", "unknown"]}
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "ttft_seconds",
+        "first_final_token_seconds",
+        "response_time_seconds",
+        "decode_tokens_per_second",
+        "output_tokens_per_second_e2e",
+        "aggregate_tokens_per_second",
+        "prompt_tokens",
+        "completion_tokens",
+        "reasoning_tokens",
+        "cached_tokens",
+        "errors",
+        "hardware"
+      ],
+      "properties": {
+        "ttft_seconds": {"type": ["object", "null"]},
+        "first_final_token_seconds": {"type": ["object", "null"]},
+        "response_time_seconds": {"type": ["object", "null"]},
+        "decode_tokens_per_second": {"type": ["object", "null"]},
+        "output_tokens_per_second_e2e": {"type": ["object", "null"]},
+        "aggregate_tokens_per_second": {"type": ["object", "null"]},
+        "prompt_tokens": {"type": ["object", "null"]},
+        "completion_tokens": {"type": ["object", "null"]},
+        "reasoning_tokens": {"type": ["object", "null"]},
+        "cached_tokens": {"type": ["object", "null"]},
+        "errors": {"type": "object"},
+        "hardware": {"type": "object"}
+      }
+    },
+    "receipt": {"type": "string"},
+    "receipt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "quality_floor": {
+      "type": "object",
+      "required": ["id", "status"],
+      "properties": {"id": {"type": "string"}, "status": {"enum": ["passed", "failed"]}}
+    },
+    "context_floor": {
+      "type": "object",
+      "required": ["status", "tested_tokens"],
+      "properties": {
+        "status": {"enum": ["passed", "failed"]},
+        "tested_tokens": {"type": "integer", "minimum": 1}
+      }
+    },
+    "maturity": {"enum": ["Verified", "Reference", "Archived"]},
+    "status": {
+      "type": "object",
+      "required": ["acceptance", "reliability", "safety"],
+      "properties": {
+        "acceptance": {"enum": ["passed", "failed", "partial", "unknown"]},
+        "reliability": {"enum": ["passed", "failed", "partial", "unknown"]},
+        "safety": {"enum": ["passed", "failed", "partial", "unknown"]}
+      }
+    },
+    "legacy_metric_definitions": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.gb10.vllm-27b-nvfp4-native-mtp2-128k",
+  "model_family": "qwen3.6",
+  "model_id": "unsloth/Qwen3.6-27B-NVFP4",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "vllm",
+  "profile_id": "native-nvfp4-mtp2-128k",
+  "modality": "multimodal-generation",
+  "maturity": "Reference",
+  "default": true,
+  "source_paths": ["README.md", "CONFIG.md", "docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native-mtp2.yml", "benchmark_outputs/"],
+  "operations": {"benchmark": ["run_full_mtp2_benchmark.py"]},
+  "benchmark_suites": ["legacy-qwen3.6-mtp2-matrix"],
+  "evidence": {"receipts": ["UNSLOTH-QWEN36-27B-NVFP4-NATIVE-FP4-RESULTS.md"], "benchmarks": ["UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md", "benchmark_outputs/"]},
+  "limitations": ["Historical result definitions are legacy and do not declare performance-v1.", "The served model alias differs from the checkpoint identity."],
+  "invalidation_conditions": ["Checkpoint, image digest, MTP depth, context, alias, or GB10 runtime changes."]
+}

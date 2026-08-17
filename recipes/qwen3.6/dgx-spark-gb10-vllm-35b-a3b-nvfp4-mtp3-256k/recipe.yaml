@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.gb10.vllm-35b-a3b-nvfp4-mtp3-256k",
+  "model_family": "qwen3.6",
+  "model_id": "Qwen3.6-35B-A3B-NVFP4",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "vllm",
+  "profile_id": "nvfp4-mtp3-256k",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/docker-compose-vllm-nvfp4-nightly-aarch64.yml", "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md"],
+  "operations": {},
+  "benchmark_suites": ["legacy-qwen3.6-runtime-comparison"],
+  "evidence": {"receipts": [], "benchmarks": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md"]},
+  "limitations": ["Shared historical assets; no canonical deployment receipt."],
+  "invalidation_conditions": ["Model, image, MTP, context, or GB10 software changes."]
+}

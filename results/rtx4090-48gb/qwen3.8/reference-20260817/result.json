@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "result_id": "qwen3.8-27b-rtx4090-reference-20260817",
+  "recipe_id": "qwen3.8.rtx4090-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-256k",
+  "suite": {"id": "legacy-qwen3.8-quantization", "version": "2026-08-17"},
+  "workload": {"id": "legacy-q4-mtp2-single-stream", "concurrency": 1, "cache_state": "unknown"},
+  "metrics": {
+    "ttft_seconds": null,
+    "first_final_token_seconds": null,
+    "response_time_seconds": null,
+    "decode_tokens_per_second": {"mean": 94.33, "definition": "recorded Q4 plus MTP2 generation throughput"},
+    "output_tokens_per_second_e2e": null,
+    "aggregate_tokens_per_second": null,
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "reasoning_tokens": null,
+    "cached_tokens": null,
+    "errors": {"status": "legacy"},
+    "hardware": {"class": "NVIDIA RTX 4090 48 GB"}
+  },
+  "receipt": "recipes/qwen3.8/rtx4090-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-256k/receipts/deployment-20260817.json",
+  "report": "benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.html",
+  "maturity": "Reference",
+  "status": {"acceptance": "passed", "reliability": "unknown", "safety": "unknown"},
+  "legacy_metric_definitions": true
+}

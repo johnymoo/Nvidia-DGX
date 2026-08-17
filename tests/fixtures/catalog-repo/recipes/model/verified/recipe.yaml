@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "model.verified",
+  "model_family": "model-family",
+  "model_id": "model/checkpoint",
+  "hardware_id": "gpu-a",
+  "runtime_id": "runtime-a",
+  "profile_id": "profile-a",
+  "modality": "text-generation",
+  "maturity": "Verified",
+  "operations": {"status": "status.sh"},
+  "evidence": {"receipts": ["results/gpu-a/model/run-b/receipt.json"], "benchmarks": []},
+  "limitations": [],
+  "invalidation_conditions": ["model identity changes"]
+}

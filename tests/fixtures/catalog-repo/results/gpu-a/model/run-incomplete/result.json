@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "result_id": "run-incomplete",
+  "recipe_id": "model.verified",
+  "maturity": "Verified",
+  "suite": {"id": "performance-v1", "version": "1.0.0"},
+  "workload": {"id": "single", "concurrency": 1, "cache_state": "unknown"},
+  "acceptance": "passed",
+  "reliability": "passed",
+  "metrics": {
+    "aggregate_tokens_per_second": {"mean": 999.0},
+    "decode_tokens_per_second": {"mean": 999.0}
+  },
+  "receipt": "results/gpu-a/model/run-incomplete/missing-receipt.json"
+}

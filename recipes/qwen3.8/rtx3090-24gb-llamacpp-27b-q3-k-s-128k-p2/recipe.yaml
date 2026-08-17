@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.8.rtx3090-24gb.llamacpp-27b-q3-k-s-128k-p2",
+  "model_family": "qwen3.8",
+  "model_id": "Qwen3.8-27B-Q3_K_S",
+  "hardware_id": "rtx3090-24gb",
+  "runtime_id": "llama.cpp",
+  "profile_id": "q3-k-s-128k-p2",
+  "modality": "multimodal-generation",
+  "maturity": "Verified",
+  "default": true,
+  "source_paths": ["README.md", "config/", "scripts/", "receipts/"],
+  "operations": {"prepare": ["scripts/download.sh"], "start": ["scripts/start.sh"], "status": ["scripts/status.sh"], "accept": ["scripts/accept.sh"], "stop": ["scripts/stop.sh"]},
+  "benchmark_suites": ["legacy-pr29-quality-performance"],
+  "evidence": {"receipts": ["receipts/canonical-deployment-20260815.json"], "benchmarks": ["../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"]},
+  "limitations": ["Historical benchmark does not declare active performance-v1 and cannot enter Best Verified.", "The recorded deployment is stopped; receipt reuse requires exact identity."],
+  "invalidation_conditions": ["GGUF, mmproj, image digest, context, parallelism, KV cache, thinking mode, or hardware changes."]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/johnymoo/Nvidia-DGX/benchmarks/schemas/receipt.schema.json",
+  "title": "Deployment receipt",
+  "type": "object",
+  "required": ["schema_version", "status", "recipe_id", "subject", "acceptance", "collected_at"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"enum": ["passed", "failed", "partial", "reference"]},
+    "recipe_id": {"type": "string"},
+    "subject": {
+      "type": "object",
+      "required": ["model", "hardware", "runtime", "profile"],
+      "properties": {
+        "model": {"type": "string"},
+        "hardware": {"type": "string"},
+        "runtime": {"type": "string"},
+        "profile": {"type": "string"}
+      }
+    },
+    "acceptance": {"type": "object"},
+    "collected_at": {"type": "string", "format": "date-time"},
+    "invalidation_conditions": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

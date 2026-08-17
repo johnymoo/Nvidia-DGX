@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "result_id": "minimax-h3-gb10-reference-20260813",
+  "recipe_id": "minimax-h3.gb10.comfyui-trained-max-15s",
+  "suite": {"id": "legacy-minimax-h3-nine-case", "version": "2026-08-13"},
+  "workload": {"id": "362-frames-512x320-six-steps", "concurrency": 1, "cache_state": "cold"},
+  "metrics": {
+    "ttft_seconds": null,
+    "first_final_token_seconds": null,
+    "response_time_seconds": {"mean": 130.5, "definition": "approximate recorded bounded wall time"},
+    "decode_tokens_per_second": null,
+    "output_tokens_per_second_e2e": null,
+    "aggregate_tokens_per_second": null,
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "reasoning_tokens": null,
+    "cached_tokens": null,
+    "errors": {"successful_cases": 9, "total_cases": 9},
+    "hardware": {"class": "one NVIDIA DGX Spark / GB10", "max_gpu_percent": 96}
+  },
+  "receipt": "recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md",
+  "report": "recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md",
+  "maturity": "Reference",
+  "status": {"acceptance": "passed", "reliability": "passed", "safety": "passed"},
+  "legacy_metric_definitions": true
+}

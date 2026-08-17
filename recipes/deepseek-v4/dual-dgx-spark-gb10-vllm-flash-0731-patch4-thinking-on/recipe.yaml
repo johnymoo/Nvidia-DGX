@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on",
+  "model_family": "deepseek-v4",
+  "model_id": "DeepSeek-V4-Flash-0731",
+  "hardware_id": "dgx-spark-gb10-pair",
+  "runtime_id": "vllm-patch4",
+  "profile_id": "thinking-on-tp2",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": true,
+  "source_paths": ["README.md", "docker-compose.thinking-on.yml", "docker-compose.yml", "benchmark/", "data/"],
+  "operations": {
+    "prepare": ["scripts/lifecycle.sh", "prepare"],
+    "start": ["scripts/lifecycle.sh", "start"],
+    "status": ["scripts/lifecycle.sh", "status"],
+    "accept": ["scripts/lifecycle.sh", "accept"],
+    "benchmark": ["benchmark/run.sh"],
+    "stop": ["scripts/lifecycle.sh", "stop"]
+  },
+  "benchmark_suites": ["legacy-deepseek-agent-route-comparison"],
+  "evidence": {"receipts": [], "benchmarks": ["BENCHMARK-RESULTS.md", "benchmark-results-20260812.json"]},
+  "limitations": ["Model weights and private runtime receipt are not published.", "Historical metrics do not declare an active canonical suite."],
+  "invalidation_conditions": ["Checkpoint, Patch4 image, tensor-parallel topology, thinking mode, or gateway route changes."]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "result_id": "qwen3.5-9b-gb10-reference",
+  "recipe_id": "qwen3.5.gb10.llamacpp-9b-q4-k-m-8k",
+  "suite": {"id": "legacy-qwen3.5-speed", "version": "1"},
+  "workload": {"id": "1000-token-generation", "concurrency": 1, "cache_state": "unknown"},
+  "metrics": {
+    "ttft_seconds": null,
+    "first_final_token_seconds": null,
+    "response_time_seconds": {"mean": 28.89},
+    "decode_tokens_per_second": {"mean": 34.6, "definition": "recorded llama.cpp speed"},
+    "output_tokens_per_second_e2e": null,
+    "aggregate_tokens_per_second": null,
+    "prompt_tokens": null,
+    "completion_tokens": {"mean": 1000},
+    "reasoning_tokens": null,
+    "cached_tokens": null,
+    "errors": {"status": "not recorded"},
+    "hardware": {"class": "NVIDIA DGX Spark / GB10"}
+  },
+  "receipt": "recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md",
+  "report": "recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md",
+  "maturity": "Reference",
+  "status": {"acceptance": "unknown", "reliability": "unknown", "safety": "unknown"},
+  "legacy_metric_definitions": true
+}

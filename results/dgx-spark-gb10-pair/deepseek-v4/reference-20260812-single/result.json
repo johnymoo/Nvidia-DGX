@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "result_id": "deepseek-v4-dual-gb10-reference-20260812-single",
+  "recipe_id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on",
+  "suite": {"id": "legacy-deepseek-agent-route-comparison", "version": "2026-08-12"},
+  "workload": {"id": "legacy-cross-model-performance", "concurrency": 1, "cache_state": "unknown"},
+  "metrics": {
+    "ttft_seconds": null,
+    "first_final_token_seconds": null,
+    "response_time_seconds": null,
+    "decode_tokens_per_second": {"mean": 68.8, "definition": "recorded single-stream mean"},
+    "output_tokens_per_second_e2e": null,
+    "aggregate_tokens_per_second": null,
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "reasoning_tokens": null,
+    "cached_tokens": null,
+    "errors": {"status": "legacy"},
+    "hardware": {"class": "two NVIDIA DGX Spark / GB10"}
+  },
+  "receipt": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/benchmark-results-20260812.json",
+  "report": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md",
+  "maturity": "Reference",
+  "status": {"acceptance": "unknown", "reliability": "unknown", "safety": "unknown"},
+  "legacy_metric_definitions": true
+}

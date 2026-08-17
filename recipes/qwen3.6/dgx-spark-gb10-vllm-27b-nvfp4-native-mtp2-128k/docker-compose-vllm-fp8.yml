@@ -1,0 +1,60 @@
+# Qwen3.6-35B-A3B-FP8 vLLM Docker Compose (DGX Spark / GB10)
+# Usage: docker compose -f docker-compose-vllm-fp8.yml up -d
+#
+# 注意：
+# - 首次启动需要 ~10-15 分钟捕获 CUDA graphs
+# - FP8 量化需要 vLLM cu130-nightly 镜像（标准镜像不支持 Qwen3.6 MoE）
+# - 当挂载本地权重时，设置 HF_HOME=/tmp 避免缓存混乱
+
+services:
+  vllm-qwen36-fp8:
+    image: vllm/vllm-openai:cu130-nightly
+    container_name: vllm-qwen36-fp8
+    restart: unless-stopped
+    ports:
+      - "8004:8000"
+    volumes:
+      - /home/YOUR_USERNAME/models/Qwen3.6-35B-A3B-FP8:/models:ro
+    environment:
+      - HF_HOME=/tmp
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ipc: host
+    shm_size: 64gb
+    # entrypoint 是 vllm serve，所以模型路径直接作为第一个参数
+    command: >
+      /models
+      --served-model-name qwen3.6-35b-fp8
+      --port 8000
+      --host 0.0.0.0
+      --max-model-len 262144
+      --gpu-memory-utilization 0.80
+      --quantization fp8
+      --dtype bfloat16
+      --kv-cache-dtype fp8
+      --reasoning-parser qwen3
+      --enable-auto-tool-choice
+      --tool-call-parser qwen3_coder
+      --enable-prefix-caching
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+networks:
+  default:
+    name: vllm-qwen36-network

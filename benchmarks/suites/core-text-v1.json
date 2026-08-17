@@ -1,0 +1,12 @@
+{
+  "id": "core-text-v1",
+  "version": "1.0.0",
+  "case_source": {
+    "path": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/benchmark/tasks.json",
+    "sha256": "05a72e83e107ba0d6fbbfef6b60178aba9ab00935679e7630c9e3926524cd880",
+    "groups": ["pilot", "writing"]
+  },
+  "request_contract": {"temperature": 0, "samples_per_case": 1, "cache_states": ["cold", "warm"]},
+  "evaluation": "Use the deterministic graders and calibration flow referenced by the source manifest.",
+  "active_result_rule": "Requires a new run against this exact suite identity; historical results remain Reference."
+}

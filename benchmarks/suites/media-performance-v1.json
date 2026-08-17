@@ -1,0 +1,32 @@
+{
+  "id": "media-performance-v1",
+  "version": "1.0.0",
+  "case_source": {
+    "path": "recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/execution/minimax-h3-benchmark/cases.json",
+    "sha256": "fe12e5331864ee82f3b8a0da56e70837c99d7c01f701170d7ba2ee64224b3727"
+  },
+  "request_contract": {"cache_state": "cold", "concurrency": 1, "samples_per_case": 1},
+  "modalities": ["media-generation"],
+  "required_client_metrics": [
+    "time_to_first_artifact_seconds",
+    "response_time_seconds",
+    "artifact_count",
+    "artifact_duration_seconds",
+    "artifact_resolution",
+    "errors",
+    "distributions"
+  ],
+  "not_applicable": [
+    "ttft_seconds",
+    "first_final_token_seconds",
+    "decode_tokens_per_second",
+    "output_tokens_per_second_e2e",
+    "aggregate_tokens_per_second",
+    "prompt_tokens",
+    "completion_tokens",
+    "reasoning_tokens",
+    "cached_tokens"
+  ],
+  "evaluation": "Use source case parameters, artifact hashes, and client-observed generation time.",
+  "active_result_rule": "Requires a new run against this exact suite identity; the historical MiniMax result remains Reference."
+}

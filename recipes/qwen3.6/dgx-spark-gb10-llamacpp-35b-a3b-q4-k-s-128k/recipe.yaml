@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.gb10.llamacpp-35b-a3b-q4-k-s-128k",
+  "model_family": "qwen3.6",
+  "model_id": "Qwen3.6-35B-A3B-UD-Q4_K_S",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "llama.cpp",
+  "profile_id": "q4-k-s-128k",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/deploy-llamacpp.sh", "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/README.md"],
+  "operations": {},
+  "benchmark_suites": ["legacy-qwen3.6-runtime-comparison"],
+  "evidence": {"receipts": [], "benchmarks": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/BENCHMARK-RESULTS.md"]},
+  "limitations": ["Shared historical guide; llama.cpp build and GGUF receipt are incomplete."],
+  "invalidation_conditions": ["GGUF, llama.cpp build, context, KV cache, or GB10 software changes."]
+}
