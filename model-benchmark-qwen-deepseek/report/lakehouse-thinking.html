@@ -1,14 +1,14 @@
 <!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>Qwen3.6 vs Qwen3.8 湖仓推理 Benchmark</title><style>
+<title>Qwen 与 DeepSeek 湖仓推理 Benchmark</title><style>
 :root{--bg:#0b1013;--panel:#141b20;--panel2:#1b242b;--line:#33414b;--text:#f4f7f8;--muted:#9cabb5;--ok:#65c7a2;--warn:#f0bb58;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,"Segoe UI",sans-serif;letter-spacing:0}main{width:min(1240px,calc(100% - 28px));margin:auto;padding:28px 0 60px}h1{font-size:30px;line-height:1.2;margin:4px 0 8px}h2{font-size:21px;margin:0 0 10px}h3{font-size:16px}h4{font-size:14px;margin:0}.muted,.metrics{color:var(--muted)}header{border-bottom:1px solid var(--line);padding-bottom:20px}nav{display:flex;gap:18px;flex-wrap:wrap;position:sticky;top:0;background:rgba(11,16,19,.96);z-index:3;padding:13px 0;border-bottom:1px solid var(--line)}nav a{color:var(--muted);text-decoration:none}.decision{border-left:3px solid var(--ok);padding:14px 16px;background:var(--panel);margin:22px 0}.report-section{padding:26px 0;border-bottom:1px solid var(--line)}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}.dot{display:inline-block;width:10px;height:10px;margin-right:7px}.bars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.bar-group{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:6px}.bar-line{display:grid;grid-template-columns:140px 1fr 52px;align-items:center;gap:8px;margin:9px 0;font-size:12px}.track{height:15px;border:1px solid var(--line)}.track i{display:block;height:100%}.case{border-top:1px solid var(--line)}.case>summary{display:flex;justify-content:space-between;gap:18px;padding:13px 3px;cursor:pointer}.case>summary span:last-child{color:var(--muted);text-align:right;font-size:12px}.prompt{color:var(--muted);padding:8px 3px}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:8px 0 18px}article{min-width:0;background:var(--panel);border:1px solid var(--line);padding:12px;border-radius:5px}.metrics{margin:4px 0 8px;font-size:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;background:var(--panel2);padding:10px;margin:0;font:12px/1.5 ui-monospace,monospace}.nested{margin-top:8px;color:var(--muted)}.nested pre{margin-top:6px}.empty{border:1px solid var(--warn);color:var(--warn);padding:10px}
 @media(max-width:900px){.bars{grid-template-columns:1fr}}@media(max-width:680px){main{width:calc(100% - 18px);padding-top:18px}h1{font-size:24px}.answers{grid-template-columns:1fr}.case>summary{display:block}.case>summary span{display:block;text-align:left!important;margin-top:4px}.bar-line{grid-template-columns:110px 1fr 48px}}
-</style></head><body><main><header><div class='muted'>RTX 4090 48 GiB · FP8 · vLLM 0.19.0 · 2026-08-17</div><h1>Qwen3.6 vs Qwen3.8 湖仓推理 Benchmark</h1><div class='muted'>18 道固定题：可执行 SQL、隐藏测试 Python、编码化故障诊断；四组原生 thinking/non-thinking 对比</div></header>
+</style></head><body><main><header><div class='muted'>2026-08-17 · 18 道固定题</div><h1>Qwen 与 DeepSeek 湖仓推理 Benchmark</h1><div class='muted'>可执行 SQL、隐藏测试 Python、编码化故障诊断；Qwen 同机对比与 DeepSeek thinking 补充测试</div></header>
 <nav><a href='#summary'>汇总</a><a href='#scores'>分类</a><a href='#method'>方法</a><a href='#sql'>SQL</a><a href='#python'>Python</a><a href='#incident'>故障</a></nav>
-<div class='decision'><strong>选型结论</strong><div>默认推理选择 Qwen3.8-27B-FP8。普通请求保持 non-thinking；复杂 SQL、Python 与故障分析按请求启用 reasoning_effort=low。它在两种模式下均显著高于 Qwen3.6-35B-A3B-FP8，且 low-thinking 18 题无截断、无空 final。Qwen3.6 虽生成更快，但 thinking 无低强度预算控制，本轮 8 题耗尽 4096 tokens，不能作为主要企业湖仓推理模型。</div></div>
-<section id='summary' class='report-section'><h2>结果汇总</h2><div class='table-wrap'><table><thead><tr><th>处理组</th><th>SQL</th><th>Python</th><th>故障</th><th>宏平均</th><th>总耗时</th><th>输出 tokens</th><th>截断</th><th>空 final</th></tr></thead><tbody><tr><td><span class='dot' style='background:#3c8fc9'></span>Qwen3.6 FP8 · non-thinking</td><td>33.3%</td><td>66.7%</td><td>83.3%</td><td><strong>61.1%</strong></td><td>54.7s</td><td>5,581</td><td>0</td><td>0</td></tr><tr><td><span class='dot' style='background:#65c7a2'></span>Qwen3.6 FP8 · thinking</td><td>33.3%</td><td>33.3%</td><td>91.7%</td><td><strong>52.8%</strong></td><td>485.9s</td><td>54,149</td><td>8</td><td>8</td></tr><tr><td><span class='dot' style='background:#e78a45'></span>Qwen3.8 FP8 · non-thinking</td><td>66.7%</td><td>66.7%</td><td>91.7%</td><td><strong>75.0%</strong></td><td>254.1s</td><td>5,007</td><td>0</td><td>0</td></tr><tr><td><span class='dot' style='background:#d26bd3'></span>Qwen3.8 FP8 · thinking-low</td><td>83.3%</td><td>83.3%</td><td>100.0%</td><td><strong>88.9%</strong></td><td>797.7s</td><td>15,772</td><td>0</td><td>0</td></tr></tbody></table></div></section>
-<section id='scores' class='report-section'><h2>分类对比</h2><div class='bars'><section class='bar-group'><h3>复杂 SQL</h3><div class='bar-line'><span>Qwen3.6 FP8 · non-thinking</span><div class='track'><i style='width:33.3%;background:#3c8fc9'></i></div><strong>33.3%</strong></div><div class='bar-line'><span>Qwen3.6 FP8 · thinking</span><div class='track'><i style='width:33.3%;background:#65c7a2'></i></div><strong>33.3%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · non-thinking</span><div class='track'><i style='width:66.7%;background:#e78a45'></i></div><strong>66.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · thinking-low</span><div class='track'><i style='width:83.3%;background:#d26bd3'></i></div><strong>83.3%</strong></div></section><section class='bar-group'><h3>Python</h3><div class='bar-line'><span>Qwen3.6 FP8 · non-thinking</span><div class='track'><i style='width:66.7%;background:#3c8fc9'></i></div><strong>66.7%</strong></div><div class='bar-line'><span>Qwen3.6 FP8 · thinking</span><div class='track'><i style='width:33.3%;background:#65c7a2'></i></div><strong>33.3%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · non-thinking</span><div class='track'><i style='width:66.7%;background:#e78a45'></i></div><strong>66.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · thinking-low</span><div class='track'><i style='width:83.3%;background:#d26bd3'></i></div><strong>83.3%</strong></div></section><section class='bar-group'><h3>故障分析</h3><div class='bar-line'><span>Qwen3.6 FP8 · non-thinking</span><div class='track'><i style='width:83.3%;background:#3c8fc9'></i></div><strong>83.3%</strong></div><div class='bar-line'><span>Qwen3.6 FP8 · thinking</span><div class='track'><i style='width:91.7%;background:#65c7a2'></i></div><strong>91.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · non-thinking</span><div class='track'><i style='width:91.7%;background:#e78a45'></i></div><strong>91.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · thinking-low</span><div class='track'><i style='width:100.0%;background:#d26bd3'></i></div><strong>100.0%</strong></div></section></div></section>
-<section id='method' class='report-section'><h2>方法与边界</h2><ul><li>两模型均使用 ModelScope 官方 FP8、同一 RTX 4090、同一固定 digest vLLM 0.19.0，CPU offload 为 0。</li><li>每组使用相同题目、最大 4096 输出 tokens 和 seed=42；non-thinking 与 thinking 分别使用官方推荐采样参数。</li><li>Qwen3.6 只有 thinking 开关；Qwen3.8 使用 reasoning_effort=low，两者不是相同强度的隐藏推理预算。</li><li>SQL 在 SQLite 内存库执行并精确比较结果；Python 在无网络、只读、非 root、128 MiB 容器执行；故障分析从固定 cause/action codes 选择并惩罚错误操作。</li><li>本集合用于本服务器湖仓工程选型，不替代大型公开 benchmark 或 48 小时压力测试。</li></ul></section>
-<section class='report-section' id='sql'><h2>复杂 SQL逐题证据</h2><details class='case'><summary><span>cdc_latest_live</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 0.0%</span></summary><div class='prompt'>SQLite table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT) contains change events. Return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 3.4s · stop</div><pre>```sql
+<div class='decision'><strong>选型结论</strong><div>默认推理选择 Qwen3.8-27B-FP8。普通请求保持 non-thinking；复杂 SQL、Python 与故障分析按请求启用 reasoning_effort=low。DeepSeek V4 Flash 以原生 thinking 完成同一题集，宏平均 66.7%、无截断，但其 endpoint 硬件与网络不同且成绩低于 Qwen3.8 thinking-low 的 88.9%，不改变本服务器默认选型。</div></div>
+<section id='summary' class='report-section'><h2>结果汇总</h2><div class='table-wrap'><table><thead><tr><th>处理组</th><th>SQL</th><th>Python</th><th>故障</th><th>宏平均</th><th>总耗时</th><th>输出 tokens</th><th>截断</th><th>空 final</th></tr></thead><tbody><tr><td><span class='dot' style='background:#3c8fc9'></span>Qwen3.6 FP8 · non-thinking</td><td>33.3%</td><td>66.7%</td><td>83.3%</td><td><strong>61.1%</strong></td><td>54.7s</td><td>5,581</td><td>0</td><td>0</td></tr><tr><td><span class='dot' style='background:#65c7a2'></span>Qwen3.6 FP8 · thinking</td><td>33.3%</td><td>33.3%</td><td>91.7%</td><td><strong>52.8%</strong></td><td>485.9s</td><td>54,149</td><td>8</td><td>8</td></tr><tr><td><span class='dot' style='background:#e78a45'></span>Qwen3.8 FP8 · non-thinking</td><td>66.7%</td><td>66.7%</td><td>91.7%</td><td><strong>75.0%</strong></td><td>254.1s</td><td>5,007</td><td>0</td><td>0</td></tr><tr><td><span class='dot' style='background:#d26bd3'></span>Qwen3.8 FP8 · thinking-low</td><td>83.3%</td><td>83.3%</td><td>100.0%</td><td><strong>88.9%</strong></td><td>797.7s</td><td>15,772</td><td>0</td><td>0</td></tr><tr><td><span class='dot' style='background:#d8ca63'></span>DeepSeek V4 Flash · thinking</td><td>66.7%</td><td>50.0%</td><td>83.3%</td><td><strong>66.7%</strong></td><td>245.5s</td><td>12,464</td><td>0</td><td>0</td></tr></tbody></table></div></section>
+<section id='scores' class='report-section'><h2>分类对比</h2><div class='bars'><section class='bar-group'><h3>复杂 SQL</h3><div class='bar-line'><span>Qwen3.6 FP8 · non-thinking</span><div class='track'><i style='width:33.3%;background:#3c8fc9'></i></div><strong>33.3%</strong></div><div class='bar-line'><span>Qwen3.6 FP8 · thinking</span><div class='track'><i style='width:33.3%;background:#65c7a2'></i></div><strong>33.3%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · non-thinking</span><div class='track'><i style='width:66.7%;background:#e78a45'></i></div><strong>66.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · thinking-low</span><div class='track'><i style='width:83.3%;background:#d26bd3'></i></div><strong>83.3%</strong></div><div class='bar-line'><span>DeepSeek V4 Flash · thinking</span><div class='track'><i style='width:66.7%;background:#d8ca63'></i></div><strong>66.7%</strong></div></section><section class='bar-group'><h3>Python</h3><div class='bar-line'><span>Qwen3.6 FP8 · non-thinking</span><div class='track'><i style='width:66.7%;background:#3c8fc9'></i></div><strong>66.7%</strong></div><div class='bar-line'><span>Qwen3.6 FP8 · thinking</span><div class='track'><i style='width:33.3%;background:#65c7a2'></i></div><strong>33.3%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · non-thinking</span><div class='track'><i style='width:66.7%;background:#e78a45'></i></div><strong>66.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · thinking-low</span><div class='track'><i style='width:83.3%;background:#d26bd3'></i></div><strong>83.3%</strong></div><div class='bar-line'><span>DeepSeek V4 Flash · thinking</span><div class='track'><i style='width:50.0%;background:#d8ca63'></i></div><strong>50.0%</strong></div></section><section class='bar-group'><h3>故障分析</h3><div class='bar-line'><span>Qwen3.6 FP8 · non-thinking</span><div class='track'><i style='width:83.3%;background:#3c8fc9'></i></div><strong>83.3%</strong></div><div class='bar-line'><span>Qwen3.6 FP8 · thinking</span><div class='track'><i style='width:91.7%;background:#65c7a2'></i></div><strong>91.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · non-thinking</span><div class='track'><i style='width:91.7%;background:#e78a45'></i></div><strong>91.7%</strong></div><div class='bar-line'><span>Qwen3.8 FP8 · thinking-low</span><div class='track'><i style='width:100.0%;background:#d26bd3'></i></div><strong>100.0%</strong></div><div class='bar-line'><span>DeepSeek V4 Flash · thinking</span><div class='track'><i style='width:83.3%;background:#d8ca63'></i></div><strong>83.3%</strong></div></section></div></section>
+<section id='method' class='report-section'><h2>方法与边界</h2><ul><li>四个 Qwen treatment 使用 ModelScope 官方 FP8、同一 RTX 4090、同一固定 digest vLLM 0.19.0，CPU offload 为 0。</li><li>DeepSeek 使用本机私有 `.env` 配置的 OpenAI-compatible endpoint 与原生 `thinking=true`；其硬件、网络与服务配置不同，不是与 Qwen 的同机延迟或吞吐 A/B。</li><li>每组使用相同题目、最大 4096 输出 tokens 和 seed=42；Qwen3.8 使用 reasoning_effort=low，Qwen3.6 只有开/关，DeepSeek 使用原生 thinking，隐藏推理预算并不等强。</li><li>SQL 在 SQLite 内存库执行并精确比较结果；Python 在无网络、只读、非 root、128 MiB 容器执行；故障分析从固定 cause/action codes 选择并惩罚错误操作。</li><li>本集合用于本服务器湖仓工程选型，不替代大型公开 benchmark 或 48 小时压力测试。</li></ul></section>
+<section class='report-section' id='sql'><h2>复杂 SQL逐题证据</h2><details class='case'><summary><span>cdc_latest_live</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 0.0% · DeepSeek V4 Flash · thinking 0.0%</span></summary><div class='prompt'>SQLite table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT) contains change events. Return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 3.4s · stop</div><pre>```sql
 WITH ranked AS (
     SELECT
         id,
@@ -378,7 +378,81 @@ This matches the requirements perfectly.
     ]
   ],
   &quot;error&quot;: null
-}</pre></details></article></div></details><details class='case'><summary><span>scd2_intervals</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT) contains SCD changes. Return (customer_id,status,valid_from,valid_to), where valid_to is the next effective_at for that customer or NULL, ordered by customer_id, valid_from. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 0.7s · stop</div><pre>```sql
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>0.0% · 11.9s · stop</div><pre>```sql
+WITH ranked AS (
+    SELECT id, value, op,
+           ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) as rn
+    FROM cdc
+)
+SELECT id, value
+FROM ranked
+WHERE rn = 1 AND op != &#x27;delete&#x27;
+ORDER BY id;
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to write SQL query for SQLite. Table cdc(id TEXT, event_time INT, seq INT, op TEXT, value TEXT). We need to return the latest non-deleted current row for every id as (id, value), ordered by id. A delete is effective only when it is the latest event. Break equal event_time ties by larger seq.
+
+Interpretation: For each id, we need to find the latest event based on (event_time, seq) ordering (larger event_time, then larger seq). If that latest event&#x27;s op is &#x27;delete&#x27;, then that id has no current row (so it should not appear in output). If op is not delete (presumably &#x27;insert&#x27; or &#x27;update&#x27;), then we return that row&#x27;s value.
+
+So we need to group by id, find the row with max(event_time, seq) but careful: we need the row that is latest in terms of (event_time, seq) lexicographically. In SQLite, we can use ORDER BY event_time DESC, seq DESC LIMIT 1 per group, but that&#x27;s not directly possible in a simple GROUP BY. We can use window functions or a subquery with ROW_NUMBER().
+
+Since SQLite supports window functions (version 3.25+), we can use ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) as rn, then filter rn=1 and op != &#x27;delete&#x27;.
+
+Alternatively, we can use a correlated subquery to get the latest event_time and seq for each id, then join back.
+
+Let&#x27;s write a query:
+
+WITH ranked AS (
+    SELECT id, value, op,
+           ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) as rn
+    FROM cdc
+)
+SELECT id, value
+FROM ranked
+WHERE rn = 1 AND op != &#x27;delete&#x27;
+ORDER BY id;
+
+That should work.
+
+But we need to consider if there are multiple events with same event_time and seq? Probably not, but if there are, the order is arbitrary. But we assume unique.
+
+Also, we need to return only id and value. If no non-deleted latest row, that id is omitted.
+
+Thus final answer is a single SQL code block.
+
+We&#x27;ll output:
+
+```sql
+WITH ranked AS (
+    SELECT id, value, op,
+           ROW_NUMBER() OVER (PARTITION BY id ORDER BY event_time DESC, seq DESC) as rn
+    FROM cdc
+)
+SELECT id, value
+FROM ranked
+WHERE rn = 1 AND op != &#x27;delete&#x27;
+ORDER BY id;
+```
+
+Make sure it&#x27;s valid SQLite. Yes.
+
+We can also use a subquery with NOT EXISTS but window is cleaner.
+
+Thus answer.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;actual&quot;: [
+    [
+      &quot;a&quot;,
+      &quot;new&quot;
+    ],
+    [
+      &quot;b&quot;,
+      null
+    ],
+    [
+      &quot;c&quot;,
+      &quot;v2&quot;
+    ]
+  ],
+  &quot;error&quot;: null
+}</pre></details></article></div></details><details class='case'><summary><span>scd2_intervals</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>SQLite table changes(customer_id TEXT, effective_at TEXT, status TEXT) contains SCD changes. Return (customer_id,status,valid_from,valid_to), where valid_to is the next effective_at for that customer or NULL, ordered by customer_id, valid_from. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 0.7s · stop</div><pre>```sql
 SELECT
     customer_id,
     status,
@@ -660,7 +734,90 @@ This should work perfectly. `LEAD()` gives the next row&#x27;s value within the 
     ]
   ],
   &quot;error&quot;: null
-}</pre></details></article></div></details><details class='case'><summary><span>sessionize_events</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>SQLite table events(user_id TEXT, minute INT) contains event timestamps in minutes. A new session starts when the gap from the previous event is greater than 30 minutes. Return (user_id,session_no,start_minute,end_minute,event_count), with session_no starting at 1 per user, ordered by user_id, session_no. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 2.2s · stop</div><pre>```sql
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 9.5s · stop</div><pre>```sql
+SELECT
+    customer_id,
+    status,
+    effective_at AS valid_from,
+    LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to
+FROM changes
+ORDER BY customer_id, valid_from;
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to write a SQL query for SQLite that uses the table changes(customer_id, effective_at, status) which contains SCD type 2 changes. We need to produce (customer_id, status, valid_from, valid_to) where valid_to is the next effective_at for that customer (the effective_at of the next change for the same customer) or NULL if it&#x27;s the latest. The output should be ordered by customer_id, valid_from.
+
+We need to return one SQL code block only. So we&#x27;ll write a SELECT statement with a window function (LEAD) to get the next effective_at.
+
+Assumptions: effective_at is a date/time string, but we can treat it as text for ordering. The table name is changes. The columns: customer_id, effective_at, status.
+
+We need to produce valid_from = effective_at, valid_to = next effective_at (or NULL).
+
+Order by customer_id, valid_from (which is effective_at).
+
+So query:
+
+SELECT customer_id, status, effective_at AS valid_from,
+       LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to
+FROM changes
+ORDER BY customer_id, valid_from;
+
+That&#x27;s it. But we should consider if there are multiple changes on the same effective_at? Possibly not, but if there are, we might need to handle ties. Usually SCD changes have unique effective_at per customer. We&#x27;ll assume that.
+
+Also, the output should be exactly the columns as specified.
+
+We&#x27;ll provide the SQL code block.
+
+We need to output only the SQL code block, no extra text.
+
+So final answer: ```sql ...```.
+
+But the instruction says &quot;Return one SQL code block only.&quot; So we&#x27;ll output just the code block.
+
+We&#x27;ll write:
+
+```sql
+SELECT
+    customer_id,
+    status,
+    effective_at AS valid_from,
+    LEAD(effective_at) OVER (PARTITION BY customer_id ORDER BY effective_at) AS valid_to
+FROM changes
+ORDER BY customer_id, valid_from;
+```
+
+That&#x27;s it.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;actual&quot;: [
+    [
+      &quot;a&quot;,
+      &quot;new&quot;,
+      &quot;2026-01-01&quot;,
+      &quot;2026-02-10&quot;
+    ],
+    [
+      &quot;a&quot;,
+      &quot;active&quot;,
+      &quot;2026-02-10&quot;,
+      &quot;2026-03-01&quot;
+    ],
+    [
+      &quot;a&quot;,
+      &quot;paused&quot;,
+      &quot;2026-03-01&quot;,
+      null
+    ],
+    [
+      &quot;b&quot;,
+      &quot;new&quot;,
+      &quot;2026-01-05&quot;,
+      &quot;2026-01-20&quot;
+    ],
+    [
+      &quot;b&quot;,
+      &quot;active&quot;,
+      &quot;2026-01-20&quot;,
+      null
+    ]
+  ],
+  &quot;error&quot;: null
+}</pre></details></article></div></details><details class='case'><summary><span>sessionize_events</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>SQLite table events(user_id TEXT, minute INT) contains event timestamps in minutes. A new session starts when the gap from the previous event is greater than 30 minutes. Return (user_id,session_no,start_minute,end_minute,event_count), with session_no starting at 1 per user, ordered by user_id, session_no. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 2.2s · stop</div><pre>```sql
 WITH ordered_events AS (
     SELECT
         user_id,
@@ -1290,7 +1447,116 @@ This looks correct. The output should be one SQL code block only.
     ]
   ],
   &quot;error&quot;: null
-}</pre></details></article></div></details><details class='case'><summary><span>rolling_revenue</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>SQLite table daily(day TEXT, revenue INT) has one row for each calendar day. Return each day and the inclusive three-row rolling revenue (current day and two preceding days), ordered by day. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 1.2s · stop</div><pre>```sql
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 18.1s · stop</div><pre>```sql
+WITH session_flags AS (
+  SELECT
+    user_id,
+    minute,
+    CASE
+      WHEN LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) IS NULL
+           OR minute - LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) &gt; 30
+      THEN 1
+      ELSE 0
+    END AS new_session
+  FROM events
+),
+session_numbers AS (
+  SELECT
+    user_id,
+    minute,
+    SUM(new_session) OVER (PARTITION BY user_id ORDER BY minute) AS session_no
+  FROM session_flags
+)
+SELECT
+  user_id,
+  session_no,
+  MIN(minute) AS start_minute,
+  MAX(minute) AS end_minute,
+  COUNT(*) AS event_count
+FROM session_numbers
+GROUP BY user_id, session_no
+ORDER BY user_id, session_no;
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to write SQL query for SQLite. Table events(user_id TEXT, minute INT). Need to define sessions: new session when gap &gt; 30 minutes. For each user, assign session_no starting at 1, ordered by minute. For each session, get start_minute (first event minute), end_minute (last event minute), event_count (number of events in session). Output ordered by user_id, session_no.
+
+We need to compute session boundaries. Approach: Use window functions to identify new sessions. For each event, compare with previous event&#x27;s minute for same user. If difference &gt; 30, then it&#x27;s a new session. Use LAG to get previous minute. Then use cumulative sum of flags to assign session numbers. Then group by user_id, session_no to get start, end, count.
+
+SQLite supports window functions. We&#x27;ll write a query.
+
+Steps:
+1. For each event, get previous minute per user ordered by minute (and maybe tie? assume minute is unique per user? If not, we need to handle ties. But likely minute is unique. We&#x27;ll assume not duplicate minutes per user. If duplicates, we need to decide order. We&#x27;ll use ROW_NUMBER or order by minute, but if same minute, they are same time? Possibly they are separate events? But gap is 0, so they belong to same session. We&#x27;ll order by minute, and if tie, we can use any order. But we need to ensure LAG works. We&#x27;ll use ORDER BY minute, maybe with ROW_NUMBER to break ties if needed. But for simplicity, assume minute is unique per user.
+
+2. Compute is_new_session = CASE WHEN minute - LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) &gt; 30 THEN 1 ELSE 0 END. For first event, LAG is NULL, so treat as 1 (start of session).
+
+3. Compute session_no = SUM(is_new_session) OVER (PARTITION BY user_id ORDER BY minute ROWS UNBOUNDED PRECEDING) - 1? Actually we want session_no starting at 1. If we sum flags, first event gets 1 (since is_new_session=1), second event if not new gets 0, sum remains 1, so session_no = sum. That works.
+
+4. Then group by user_id, session_no. Get MIN(minute) as start_minute, MAX(minute) as end_minute, COUNT(*) as event_count.
+
+5. Order by user_id, session_no.
+
+We&#x27;ll write the final SQL.
+
+Note: We need to handle the case where there are no events? Not needed.
+
+Let&#x27;s produce the code block.
+
+We&#x27;ll use a CTE or subquery.
+
+Final query:
+
+WITH events_with_session AS (
+  SELECT
+    user_id,
+    minute,
+    SUM(CASE WHEN minute - LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) &gt; 30 OR LAG(minute) OVER (PARTITION BY user_id ORDER BY minute) IS NULL THEN 1 ELSE 0 END) OVER (PARTITION BY user_id ORDER BY minute) AS session_no
+  FROM events
+)
+SELECT
+  user_id,
+  session_no,
+  MIN(minute) AS start_minute,
+  MAX(minute) AS end_minute,
+  COUNT(*) AS event_count
+FROM events_with_session
+GROUP BY user_id, session_no
+ORDER BY user_id, session_no;
+
+But we can optimize by using a single query with subquery for flags.
+
+We&#x27;ll produce that.
+
+Make sure to include the SQL code block only.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;actual&quot;: [
+    [
+      &quot;a&quot;,
+      1,
+      0,
+      40,
+      3
+    ],
+    [
+      &quot;a&quot;,
+      2,
+      71,
+      75,
+      2
+    ],
+    [
+      &quot;b&quot;,
+      1,
+      5,
+      5,
+      1
+    ],
+    [
+      &quot;b&quot;,
+      2,
+      36,
+      36,
+      1
+    ]
+  ],
+  &quot;error&quot;: null
+}</pre></details></article></div></details><details class='case'><summary><span>rolling_revenue</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>SQLite table daily(day TEXT, revenue INT) has one row for each calendar day. Return each day and the inclusive three-row rolling revenue (current day and two preceding days), ordered by day. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 1.2s · stop</div><pre>```sql
 SELECT
     d.day,
     (
@@ -1662,7 +1928,52 @@ This is straightforward. The `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` gives ex
     ]
   ],
   &quot;error&quot;: null
-}</pre></details></article></div></details><details class='case'><summary><span>recursive_hierarchy</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>SQLite table nodes(id TEXT,parent_id TEXT,amount INT) is a forest. Return (root_id,total_amount) for each root, including all descendant amounts, ordered by root_id. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 1.7s · stop</div><pre>```sql
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 8.5s · stop</div><pre>```sql
+SELECT day,
+       SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue
+FROM daily
+ORDER BY day;
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to write SQL query for SQLite. Table daily(day TEXT, revenue INT). Need to return each day and the inclusive three-row rolling revenue (current day and two preceding days), ordered by day. So for each day, sum revenue of that day and the two previous days (by day order). The day is TEXT, but presumably in date format like &#x27;YYYY-MM-DD&#x27; so we can order by day. We need to handle missing days? The problem says &quot;one row for each calendar day&quot; so no missing days. So we can use window functions with ROWS BETWEEN 2 PRECEDING AND CURRENT ROW. Or we can use self-join. Since it&#x27;s SQLite, window functions are supported from version 3.25.0. So we&#x27;ll use SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue. But we need inclusive three-row rolling revenue (current day and two preceding days). That&#x27;s exactly that.
+
+We need to output day and rolling_revenue, ordered by day.
+
+So query:
+
+SELECT day, SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_revenue FROM daily ORDER BY day;
+
+But careful: The window function will compute for each row, but for the first row it will sum only that row, for second row sum of first two, etc. That&#x27;s fine.
+
+Alternatively, we could use a self-join but window is simpler.
+
+We need to return one SQL code block only. So just the query.
+
+Make sure to use proper syntax. Also note that day is TEXT, but ordering by day works if format is YYYY-MM-DD. If not, might need to cast to date, but assume it&#x27;s fine.
+
+Thus final answer.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;actual&quot;: [
+    [
+      &quot;2026-01-01&quot;,
+      10
+    ],
+    [
+      &quot;2026-01-02&quot;,
+      30
+    ],
+    [
+      &quot;2026-01-03&quot;,
+      60
+    ],
+    [
+      &quot;2026-01-04&quot;,
+      90
+    ],
+    [
+      &quot;2026-01-05&quot;,
+      120
+    ]
+  ],
+  &quot;error&quot;: null
+}</pre></details></article></div></details><details class='case'><summary><span>recursive_hierarchy</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>SQLite table nodes(id TEXT,parent_id TEXT,amount INT) is a forest. Return (root_id,total_amount) for each root, including all descendant amounts, ordered by root_id. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 1.7s · stop</div><pre>```sql
 WITH RECURSIVE descendant_tree AS (
     SELECT id, parent_id, amount
     FROM nodes
@@ -2096,7 +2407,62 @@ This should work. The recursive CTE starts with all root nodes (where parent_id 
     ]
   ],
   &quot;error&quot;: null
-}</pre></details></article></div></details><details class='case'><summary><span>funnel_first_order</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>SQLite tables users(user_id TEXT,signup_day TEXT) and orders(user_id TEXT,order_day TEXT) are given. Return one row (users_total,converted_7d). A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 1.6s · stop</div><pre>```sql
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 9.7s · stop</div><pre>```sql
+WITH RECURSIVE tree AS (
+  SELECT id, id AS root_id, amount FROM nodes WHERE parent_id IS NULL
+  UNION ALL
+  SELECT n.id, t.root_id, n.amount FROM nodes n JOIN tree t ON n.parent_id = t.id
+)
+SELECT root_id, SUM(amount) AS total_amount FROM tree GROUP BY root_id ORDER BY root_id;
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to write a SQL query for SQLite that computes for each root node (node with no parent) the total amount including all descendants. The table is nodes(id, parent_id, amount). It&#x27;s a forest, so there are multiple trees. We need to return root_id and total_amount ordered by root_id.
+
+We need to handle recursive queries. SQLite supports WITH RECURSIVE. We can use a recursive CTE to traverse from each root down to all descendants, summing amounts.
+
+Approach: First find all roots: nodes where parent_id IS NULL (assuming forest roots have no parent). Then for each root, recursively get all descendant nodes, sum amounts.
+
+We can write a recursive CTE that starts from roots, then joins to children, accumulating the root id.
+
+Pseudo:
+
+WITH RECURSIVE tree AS (
+  SELECT id, id AS root_id, amount FROM nodes WHERE parent_id IS NULL
+  UNION ALL
+  SELECT n.id, t.root_id, n.amount FROM nodes n JOIN tree t ON n.parent_id = t.id
+)
+SELECT root_id, SUM(amount) AS total_amount FROM tree GROUP BY root_id ORDER BY root_id;
+
+But careful: The recursive CTE will traverse all descendants, but we also include the root&#x27;s amount. That&#x27;s fine.
+
+We need to ensure that we don&#x27;t have cycles? It&#x27;s a forest, so no cycles.
+
+Also, if there are nodes with parent_id not NULL but parent missing? Should be fine.
+
+We&#x27;ll produce one SQL code block.
+
+The answer should be just the SQL code, no explanation.
+
+I&#x27;ll output:
+
+WITH RECURSIVE tree AS (
+  SELECT id, id AS root_id, amount FROM nodes WHERE parent_id IS NULL
+  UNION ALL
+  SELECT n.id, t.root_id, n.amount FROM nodes n JOIN tree t ON n.parent_id = t.id
+)
+SELECT root_id, SUM(amount) AS total_amount FROM tree GROUP BY root_id ORDER BY root_id;
+
+That&#x27;s it.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;actual&quot;: [
+    [
+      &quot;a&quot;,
+      100
+    ],
+    [
+      &quot;x&quot;,
+      12
+    ]
+  ],
+  &quot;error&quot;: null
+}</pre></details></article></div></details><details class='case'><summary><span>funnel_first_order</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 0.0%</span></summary><div class='prompt'>SQLite tables users(user_id TEXT,signup_day TEXT) and orders(user_id TEXT,order_day TEXT) are given. Return one row (users_total,converted_7d). A user converts when their first order is on or after signup_day and no more than 7 days later. Orders before signup do not count and later orders cannot replace an earlier valid post-signup order. Return one SQL code block only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 1.6s · stop</div><pre>```sql
 SELECT
     COUNT(DISTINCT u.user_id) AS users_total,
     COUNT(DISTINCT CASE
@@ -2582,7 +2948,128 @@ Let me finalize this.
     ]
   ],
   &quot;error&quot;: null
-}</pre></details></article></div></details></section><section class='report-section' id='python'><h2>Python逐题证据</h2><details class='case'><summary><span>cdc_deduplicate</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Implement def current_rows(events). Each event is a dict with id, event_time, seq, op, value. Keep the latest by (event_time,seq), omit ids whose latest op is D, and return surviving dicts with only id and value ordered by id. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 3.0s · stop</div><pre>```python
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>0.0% · 26.4s · stop</div><pre>```sql
+WITH min_orders AS (
+    SELECT user_id, MIN(order_day) AS first_order_day
+    FROM orders
+    GROUP BY user_id
+)
+SELECT
+    COUNT(*) AS users_total,
+    COALESCE(SUM(
+        CASE
+            WHEN m.first_order_day &gt;= u.signup_day
+                 AND m.first_order_day &lt;= date(u.signup_day, &#x27;+7 days&#x27;)
+            THEN 1
+            ELSE 0
+        END
+    ), 0) AS converted_7d
+FROM users u
+LEFT JOIN min_orders m ON u.user_id = m.user_id;
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to write SQL query for SQLite. Tables: users(user_id, signup_day), orders(user_id, order_day). We need to compute users_total and converted_7d. A user converts if their first order (the earliest order) is on or after signup_day and within 7 days (i.e., order_day &gt;= signup_day and order_day &lt;= date(signup_day, &#x27;+7 days&#x27;)). But careful: &quot;Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.&quot; So we need to find the earliest order for each user. If that earliest order is before signup, then the user does not convert, even if they have later orders after signup. If the earliest order is after signup but more than 7 days later, they don&#x27;t convert. If the earliest order is after signup and within 7 days, they convert.
+
+So for each user, we need to get the minimum order_day. Then check if min_order_day &gt;= signup_day and min_order_day &lt;= date(signup_day, &#x27;+7 days&#x27;). Then count.
+
+We need to output one row with users_total (total number of users) and converted_7d (count of users meeting condition).
+
+Edge cases: users with no orders? They don&#x27;t convert. users_total includes all users. So we need left join from users to orders? Actually we need to consider all users. So we can do a left join and then compute min order per user, but careful: if user has no orders, min is NULL, so they don&#x27;t convert.
+
+We can use a subquery to get min order per user, then join with users.
+
+Alternatively, we can use a correlated subquery or a CTE.
+
+Let&#x27;s write:
+
+SELECT
+  (SELECT COUNT(*) FROM users) AS users_total,
+  (SELECT COUNT(*) FROM users u WHERE EXISTS (
+    SELECT 1 FROM orders o WHERE o.user_id = u.user_id
+    AND o.order_day &gt;= u.signup_day
+    AND o.order_day &lt;= date(u.signup_day, &#x27;+7 days&#x27;)
+    AND o.order_day = (SELECT MIN(order_day) FROM orders o2 WHERE o2.user_id = u.user_id)
+  )) AS converted_7d;
+
+But that&#x27;s not efficient. Better to compute min order per user first.
+
+We can do:
+
+WITH min_orders AS (
+  SELECT user_id, MIN(order_day) AS first_order_day
+  FROM orders
+  GROUP BY user_id
+)
+SELECT
+  (SELECT COUNT(*) FROM users) AS users_total,
+  (SELECT COUNT(*) FROM users u JOIN min_orders m ON u.user_id = m.user_id
+   WHERE m.first_order_day &gt;= u.signup_day
+     AND m.first_order_day &lt;= date(u.signup_day, &#x27;+7 days&#x27;)
+  ) AS converted_7d;
+
+But note: if a user has orders before signup, their min order_day might be before signup, so they won&#x27;t be counted. That&#x27;s correct.
+
+But what if a user has an order before signup and also an order after signup? The min order is before signup, so they don&#x27;t convert. That matches the requirement: &quot;Orders before signup do not count and later orders cannot replace an earlier valid post-signup order.&quot; So indeed, if the earliest order is before signup, they don&#x27;t convert even if later orders are valid. So our logic is correct.
+
+But we must also consider that the first order after signup might be the min order if no orders before signup. So our condition is fine.
+
+We also need to handle date comparisons. In SQLite, dates are stored as text in ISO format (YYYY-MM-DD) for comparisons to work lexicographically. We&#x27;ll assume that.
+
+We also need to handle the case where signup_day and order_day are text. Using date() function to add days.
+
+We&#x27;ll output one row with two columns.
+
+Let&#x27;s write the final query.
+
+We&#x27;ll use a CTE to compute first order per user.
+
+Also, we need to count users_total as total number of users.
+
+We can combine into a single SELECT with subqueries.
+
+Alternatively, we can do:
+
+SELECT
+  COUNT(*) AS users_total,
+  SUM(CASE WHEN m.first_order_day IS NOT NULL
+            AND m.first_order_day &gt;= u.signup_day
+            AND m.first_order_day &lt;= date(u.signup_day, &#x27;+7 days&#x27;)
+       THEN 1 ELSE 0 END) AS converted_7d
+FROM users u
+LEFT JOIN min_orders m ON u.user_id = m.user_id;
+
+This is more efficient.
+
+We&#x27;ll use that.
+
+So final SQL:
+
+WITH min_orders AS (
+  SELECT user_id, MIN(order_day) AS first_order_day
+  FROM orders
+  GROUP BY user_id
+)
+SELECT
+  COUNT(*) AS users_total,
+  COALESCE(SUM(CASE WHEN m.first_order_day &gt;= u.signup_day
+                    AND m.first_order_day &lt;= date(u.signup_day, &#x27;+7 days&#x27;)
+               THEN 1 ELSE 0 END), 0) AS converted_7d
+FROM users u
+LEFT JOIN min_orders m ON u.user_id = m.user_id;
+
+But note: if m.first_order_day is NULL, the CASE will evaluate to FALSE (since NULL comparison yields NULL, which is not TRUE), so it will count 0. So we don&#x27;t need COALESCE for SUM, because SUM ignores NULLs, but if all are NULL, SUM returns NULL, so we need COALESCE to output 0. Actually SUM over a CASE that returns 0 for NULL will return 0 if there are no matches, but if all rows have NULL first_order_day, the CASE returns 0 (since NULL &gt;= something is NULL, not TRUE, so it goes to ELSE 0). So SUM will sum 0s, giving 0. So no need for COALESCE. But to be safe, we can use COALESCE.
+
+We also need to ensure that we count all users, even those without orders. The LEFT JOIN ensures that.
+
+So final answer.
+
+We&#x27;ll output one SQL code block.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;actual&quot;: [
+    [
+      4,
+      1
+    ]
+  ],
+  &quot;error&quot;: null
+}</pre></details></article></div></details></section><section class='report-section' id='python'><h2>Python逐题证据</h2><details class='case'><summary><span>cdc_deduplicate</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Implement def current_rows(events). Each event is a dict with id, event_time, seq, op, value. Keep the latest by (event_time,seq), omit ids whose latest op is D, and return surviving dicts with only id and value ordered by id. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 3.0s · stop</div><pre>```python
 def current_rows(events):
     &quot;&quot;&quot;
     Process events to return the current state of each id.
@@ -2888,7 +3375,33 @@ This should work. Let me verify the logic:
 This looks correct and clean.
 </pre></details><details class='nested'><summary>评分细节</summary><pre>{
   &quot;executor_tail&quot;: &quot;bf0f6e4767f84b95be621501e932152b[[{\&quot;id\&quot;:\&quot;a\&quot;,\&quot;value\&quot;:\&quot;y\&quot;}],[{\&quot;id\&quot;:\&quot;a\&quot;,\&quot;value\&quot;:\&quot;y\&quot;}]]\n&quot;
-}</pre></details></article></div></details><details class='case'><summary><span>stable_toposort</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 0.0%</span></summary><div class='prompt'>Implement def stable_toposort(graph). graph maps a node to its dependencies. Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for a missing dependency or cycle. Do not mutate the input. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 9.1s · stop</div><pre>```python
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 5.9s · stop</div><pre>```python
+def current_rows(events):
+    latest = {}
+    for event in events:
+        eid = event[&#x27;id&#x27;]
+        key = (event[&#x27;event_time&#x27;], event[&#x27;seq&#x27;])
+        if eid not in latest or key &gt; latest[eid][0]:
+            latest[eid] = (key, event[&#x27;op&#x27;], event[&#x27;value&#x27;])
+    result = []
+    for eid, (key, op, value) in latest.items():
+        if op != &#x27;D&#x27;:
+            result.append({&#x27;id&#x27;: eid, &#x27;value&#x27;: value})
+    result.sort(key=lambda x: x[&#x27;id&#x27;])
+    return result
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to implement a function `current_rows(events)` that takes a list of event dicts. Each event has keys: id, event_time, seq, op, value. We need to keep the latest event for each id, based on (event_time, seq) - presumably higher event_time and higher seq means more recent. We need to omit ids whose latest op is &#x27;D&#x27; (delete). Then return a list of dicts with only &#x27;id&#x27; and &#x27;value&#x27;, ordered by id.
+
+We need to output Python code only. So we&#x27;ll write a function.
+
+Edge cases: events may not be sorted. We need to find the latest per id. Use a dict to store best event per id, comparing (event_time, seq) tuples. Then after processing all, filter out those with op == &#x27;D&#x27;, and then sort by id.
+
+Return list of dicts: {&#x27;id&#x27;: id, &#x27;value&#x27;: value}.
+
+Implement.
+
+Let&#x27;s write code.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;executor_tail&quot;: &quot;e50bfa87342d4e94a4a465ac399e3388[[{\&quot;id\&quot;:\&quot;a\&quot;,\&quot;value\&quot;:\&quot;y\&quot;}],[{\&quot;id\&quot;:\&quot;a\&quot;,\&quot;value\&quot;:\&quot;y\&quot;}]]\n&quot;
+}</pre></details></article></div></details><details class='case'><summary><span>stable_toposort</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 0.0% · DeepSeek V4 Flash · thinking 0.0%</span></summary><div class='prompt'>Implement def stable_toposort(graph). graph maps a node to its dependencies. Return a dependency-first order, using original dict insertion order whenever multiple nodes are ready. Raise ValueError for a missing dependency or cycle. Do not mutate the input. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 9.1s · stop</div><pre>```python
 def stable_toposort(graph):
     &quot;&quot;&quot;
     Perform a topological sort on the given graph.
@@ -3425,7 +3938,97 @@ One more thing: the problem says &quot;Do not mutate the input.&quot; I&#x27;m n
 I think this solution is complete and correct.
 </pre></details><details class='nested'><summary>评分细节</summary><pre>{
   &quot;executor_tail&quot;: &quot;f4fa74594fc241ba85fa66a96396bedc[[\&quot;lint\&quot;,\&quot;test\&quot;,\&quot;compile\&quot;,\&quot;package\&quot;,\&quot;publish\&quot;,\&quot;docs\&quot;],[[\&quot;a\&quot;,\&quot;b\&quot;],{\&quot;b\&quot;:[\&quot;a\&quot;],\&quot;a\&quot;:[]}],null]\n&quot;
-}</pre></details></article></div></details><details class='case'><summary><span>schema_drift</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Implement def schema_drift(expected, actual). Inputs are nested dicts whose leaves are type strings. Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 13.0s · stop</div><pre>```python
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>0.0% · 20.1s · stop</div><pre>```python
+import heapq
+
+def stable_toposort(graph):
+    &quot;&quot;&quot;
+    Perform a stable topological sort of a dependency graph.
+
+    Parameters:
+        graph (dict): Mapping from node to an iterable of its dependencies.
+
+    Returns:
+        list: Nodes in dependency-first order, stable with respect to
+              the original insertion order of the keys.
+
+    Raises:
+        ValueError: If a dependency is missing or a cycle exists.
+    &quot;&quot;&quot;
+    if not graph:
+        return []
+
+    # Assign an index to each node based on insertion order.
+    node_index = {node: i for i, node in enumerate(graph)}
+
+    # Build indegree and dependents.
+    indegree = {node: 0 for node in graph}
+    dependents = {node: [] for node in graph}
+
+    for node, deps in graph.items():
+        for dep in deps:
+            if dep not in graph:
+                raise ValueError(f&quot;Missing dependency: {dep} required by {node}&quot;)
+            indegree[node] += 1
+            dependents[dep].append(node)
+
+    # Initialize ready nodes (indegree 0) using a min-heap by index.
+    ready_heap = []
+    for node, deg in indegree.items():
+        if deg == 0:
+            heapq.heappush(ready_heap, (node_index[node], node))
+
+    result = []
+    while ready_heap:
+        _, node = heapq.heappop(ready_heap)
+        result.append(node)
+        for dependent in dependents[node]:
+            indegree[dependent] -= 1
+            if indegree[dependent] == 0:
+                heapq.heappush(ready_heap, (node_index[dependent], dependent))
+
+    if len(result) != len(graph):
+        raise ValueError(&quot;Cycle detected in the dependency graph&quot;)
+
+    return result
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to implement stable_toposort(graph). The graph is a dict mapping node to its dependencies (list or iterable). We need to return a list of nodes in dependency-first order. Use original dict insertion order whenever multiple nodes are ready. That means we need to maintain the order of nodes as they appear in the dict keys. When multiple nodes become ready (i.e., all dependencies satisfied), we should pick them in the order they appear in the original dict insertion order. Also handle missing dependency (node not in graph) and cycles.
+
+We must not mutate input.
+
+We need to return Python code only. So we&#x27;ll write a function definition.
+
+Approach: We&#x27;ll use Kahn&#x27;s algorithm with a priority based on insertion order. Since we need original dict insertion order, we can assign an index to each node based on its position in graph keys. Then when we have a set of nodes with zero indegree (ready), we choose the one with smallest index.
+
+We need to track dependencies: each node has dependencies; we need to compute reverse dependencies (dependents) for decrementing.
+
+We&#x27;ll also detect missing dependency: if a node&#x27;s dependency is not in graph, raise ValueError.
+
+Cycle detection: if we cannot process all nodes, raise ValueError.
+
+Implementation steps:
+
+1. Validate input: graph is dict, keys are hashable, values are iterable of dependencies.
+2. Create a mapping from node to index (position in graph keys) for tie-breaking.
+3. Build indegree: number of dependencies for each node. But careful: dependencies might be repeated? Usually not, but we can handle by counting unique dependencies? Probably not needed. We&#x27;ll count each dependency occurrence, but if duplicates, indegree will be &gt;1 and we need to decrement for each occurrence. That&#x27;s fine.
+4. Build dependents: dict mapping dependency -&gt; list of nodes that depend on it.
+5. For each node, for each dep in graph[node]: if dep not in graph: raise ValueError. Also add node to dependents[dep].
+6. Initialize ready queue: nodes with indegree 0. We&#x27;ll use a min-heap based on index, but we need to pop in order of index. Since we need to pick the smallest index among ready nodes, we can use a heap with (index, node). But we also need to add new ready nodes as we process.
+7. Process: while heap not empty, pop smallest index node, add to result, for each dependent, decrement indegree, if becomes 0, push to heap.
+8. After loop, if len(result) != len(graph): cycle -&gt; raise ValueError.
+
+Edge cases: empty graph -&gt; return [].
+
+We must not mutate input, so we create copies.
+
+Let&#x27;s write code.
+
+We&#x27;ll use heapq.
+
+Potential issues: nodes might not be hashable? Usually they are. We&#x27;ll assume.
+
+Now produce final answer.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;executor_tail&quot;: &quot;17f594c7880943cc8e15b38c09139fc9[[\&quot;lint\&quot;,\&quot;test\&quot;,\&quot;compile\&quot;,\&quot;package\&quot;,\&quot;publish\&quot;,\&quot;docs\&quot;],[[\&quot;a\&quot;,\&quot;b\&quot;],{\&quot;b\&quot;:[\&quot;a\&quot;],\&quot;a\&quot;:[]}],null]\n&quot;
+}</pre></details></article></div></details><details class='case'><summary><span>schema_drift</span><span>Qwen3.6 FP8 · non-thinking 0.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 0.0%</span></summary><div class='prompt'>Implement def schema_drift(expected, actual). Inputs are nested dicts whose leaves are type strings. Return sorted dotted paths for missing fields, extra fields, or fields whose type differs. A missing/extra nested object reports its leaf paths. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>0.0% · 13.0s · stop</div><pre>```python
 def schema_drift(expected, actual):
     &quot;&quot;&quot;
     Compare two nested dicts with type string leaves.
@@ -4137,7 +4740,231 @@ This looks correct. Let me also consider edge cases:
 I think this solution is correct. Let me finalize it.
 </pre></details><details class='nested'><summary>评分细节</summary><pre>{
   &quot;executor_tail&quot;: &quot;54b567ca499d48fc9e5d16c33d652560[[\&quot;profile.age\&quot;,\&quot;profile.city\&quot;],[\&quot;a.b\&quot;,\&quot;a.c\&quot;],[\&quot;x.y\&quot;]]\n&quot;
-}</pre></details></article></div></details><details class='case'><summary><span>bounded_batches</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Implement def bounded_batches(items, max_rows). items is an iterable of (partition,row_count). Preserve order and return a list of batches, each a list of items, whose total rows does not exceed max_rows. An item larger than max_rows must be alone. Reject max_rows &lt;= 0. Consume the iterable once. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 2.5s · stop</div><pre>```python
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>0.0% · 63.7s · stop</div><pre>```python
+def schema_drift(expected, actual):
+    &quot;&quot;&quot;
+    Compare two nested dict schemas and return sorted dotted paths for
+    missing fields, extra fields, or fields whose type differs.
+    &quot;&quot;&quot;
+    missing = set()
+    extra = set()
+    mismatch = set()
+
+    def get_leaves(d, prefix):
+        &quot;&quot;&quot;Yield all leaf paths under dict d, prefixed by prefix.&quot;&quot;&quot;
+        for k, v in d.items():
+            new_prefix = f&quot;{prefix}.{k}&quot; if prefix else k
+            if isinstance(v, dict):
+                yield from get_leaves(v, new_prefix)
+            else:
+                yield new_prefix
+
+    def compare(exp, act, path):
+        &quot;&quot;&quot;Recursively compare expected and actual at the given path.&quot;&quot;&quot;
+        for key in exp:
+            new_path = f&quot;{path}.{key}&quot; if path else key
+            if key not in act:
+                # Missing subtree: report all leaf paths
+                for leaf in get_leaves(exp[key], new_path):
+                    missing.add(leaf)
+            else:
+                exp_val = exp[key]
+                act_val = act[key]
+                if isinstance(exp_val, dict) and isinstance(act_val, dict):
+                    compare(exp_val, act_val, new_path)
+                elif isinstance(exp_val, str) and isinstance(act_val, str):
+                    if exp_val != act_val:
+                        mismatch.add(new_path)
+                else:
+                    # One is dict, the other is string -&gt; type mismatch
+                    mismatch.add(new_path)
+
+        for key in act:
+            new_path = f&quot;{path}.{key}&quot; if path else key
+            if key not in exp:
+                # Extra subtree: report all leaf paths
+                for leaf in get_leaves(act[key], new_path):
+                    extra.add(leaf)
+
+    compare(expected, actual, &quot;&quot;)
+    return sorted(missing | extra | mismatch)
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to implement a function `schema_drift(expected, actual)` that compares two nested dictionaries where leaves are type strings (like &quot;int&quot;, &quot;str&quot;, etc.). The function should return a sorted list of dotted paths for missing fields, extra fields, or fields whose type differs. For missing/extra nested objects, report its leaf paths.
+
+Interpretation: Given expected schema and actual schema, both are dicts with nested dicts and leaves as type strings. We need to find:
+
+- Missing fields: paths that exist in expected but not in actual.
+- Extra fields: paths that exist in actual but not in expected.
+- Type mismatches: paths where both exist but the type string differs.
+
+For nested objects, if a whole subtree is missing or extra, we should report the leaf paths (i.e., all leaf paths under that subtree). For example, if expected has &quot;a&quot; as a dict with &quot;b&quot; and &quot;c&quot;, but actual doesn&#x27;t have &quot;a&quot; at all, then we report &quot;a.b&quot; and &quot;a.c&quot; as missing. Similarly for extra.
+
+If a subtree is present but some inner fields are missing, we report those specific leaf paths.
+
+We need to return a sorted list of dotted paths, presumably with some indication of what kind of drift? The problem statement says &quot;Return sorted dotted paths for missing fields, extra fields, or fields whose type differs.&quot; It doesn&#x27;t specify to include a label; it just says return the paths. So we return a list of strings, each being a dotted path. But we need to distinguish between missing, extra, and type mismatch? The problem says &quot;Return sorted dotted paths for missing fields, extra fields, or fields whose type differs.&quot; That could be interpreted as: return all such paths, but we don&#x27;t need to label them. However, if a path is both missing and extra? Not possible. But we need to ensure we don&#x27;t duplicate paths. For example, if expected has &quot;a.b&quot; and actual has &quot;a.c&quot;, then &quot;a.b&quot; is missing and &quot;a.c&quot; is extra. We return both.
+
+But what about type mismatch? If expected has &quot;a.b&quot; as &quot;int&quot; and actual has &quot;a.b&quot; as &quot;str&quot;, we return &quot;a.b&quot;.
+
+Now, the tricky part: &quot;A missing/extra nested object reports its leaf paths.&quot; So if expected has &quot;a&quot; as a dict with leaves &quot;a.b&quot; and &quot;a.c&quot;, and actual doesn&#x27;t have &quot;a&quot;, we report &quot;a.b&quot; and &quot;a.c&quot; as missing, not &quot;a&quot;. Similarly for extra.
+
+So the algorithm: recursively traverse both dicts. At each level, we have a prefix path. We compare keys.
+
+For each key in expected:
+- If key not in actual: then we need to report all leaf paths under expected[key] as missing. If expected[key] is a dict (i.e., not a leaf type string), we recursively get all leaf paths under it and prefix with current path. If it&#x27;s a leaf (string), then just the path itself.
+- If key in actual: then we compare the values. If both are dicts, recurse. If both are strings (leaf types), compare them; if different, report path as type mismatch. If one is dict and the other is string (or vice versa), that&#x27;s a structural mismatch. How to handle? The problem says leaves are type strings, so a dict represents a nested object, a string represents a leaf. If expected has dict and actual has string, that means the structure differs. We need to report something. Since it&#x27;s not a leaf path? But the problem says &quot;fields whose type differs&quot; - but here the type is not just a string, it&#x27;s a structure. Possibly we should treat it as a type mismatch? But the leaf type is a string, but the field is not a leaf. I think we should report the path as a mismatch, but what path? The path itself? But the problem says &quot;A missing/extra nested object reports its leaf paths.&quot; That&#x27;s for missing/extra. For type mismatch, it says &quot;fields whose type differs&quot; - that could be leaf fields or maybe also structural mismatches? The problem statement is a bit ambiguous. Let&#x27;s think.
+
+The input is nested dicts with leaves as type strings. So the schema is a tree where internal nodes are dicts, leaves are strings. If expected has a dict at path &quot;a&quot; and actual has a string at &quot;a&quot;, that is a mismatch. But is &quot;a&quot; a leaf? No, it&#x27;s not a leaf in expected, but it is a leaf in actual. The problem says &quot;fields whose type differs&quot; - here the field &quot;a&quot; exists in both but its &quot;type&quot; is different: one is a dict, the other is a string. So we should report &quot;a&quot; as a type mismatch. But the problem also says &quot;A missing/extra nested object reports its leaf paths.&quot; That is only for missing/extra, not for type mismatches. So for type mismatch, we report the path itself, even if it&#x27;s not a leaf. However, if we have a nested object that is partially missing, we report leaf paths. So I&#x27;ll treat structural mismatch (dict vs string) as a type mismatch on that path.
+
+But what about if expected has a dict and actual has a dict but with different keys? That&#x27;s handled by recursion, reporting missing/extra leaf paths.
+
+So algorithm:
+
+Define a helper function `collect_leaves(d, prefix)` that yields all leaf paths in a dict (assuming leaves are strings). For a dict, iterate items, if value is dict, recurse, else yield prefix + key.
+
+Then main function:
+
+Initialize result set.
+
+Define recursive function `compare(exp, act, path)`:
+- For each key in exp:
+  - new_path = path + &quot;.&quot; + key if path else key
+  - if key not in act:
+    - For each leaf in collect_leaves(exp[key], new_path): add to missing set.
+  - else:
+    - if isinstance(exp[key], dict) and isinstance(act[key], dict):
+      - compare(exp[key], act[key], new_path)
+    - elif isinstance(exp[key], str) and isinstance(act[key], str):
+      - if exp[key] != act[key]: add new_path to type_mismatch set.
+    - else: # one is dict, other is string
+      - add new_path to type_mismatch set.
+
+- For each key in act:
+  - new_path = path + &quot;.&quot; + key if path else key
+  - if key not in exp:
+    - For each leaf in collect_leaves(act[key], new_path): add to extra set.
+
+After traversal, combine all sets and return sorted list.
+
+But note: If expected has &quot;a&quot; as dict and actual has &quot;a&quot; as string, we add &quot;a&quot; to type_mismatch. But we also might have already added something from missing/extra? For example, if expected has &quot;a.b&quot; and actual has &quot;a&quot; as string, then in the loop for exp, key &quot;a&quot; is present, but not both dicts, so we add &quot;a&quot; to mismatch. But we haven&#x27;t added &quot;a.b&quot; as missing because we didn&#x27;t recurse. That&#x27;s fine because the structural mismatch is at &quot;a&quot;. Similarly, if actual has &quot;a.c&quot; but &quot;a&quot; is string, we don&#x27;t add &quot;a.c&quot; as extra because we don&#x27;t recurse. So it&#x27;s consistent.
+
+But what about the case where expected has &quot;a&quot; as dict and actual has &quot;a&quot; as dict, but actual is missing some keys? We recurse and add missing leaf paths. Good.
+
+Edge case: If expected has &quot;a&quot; as dict and actual has &quot;a&quot; as dict, but actual has extra keys, we add extra leaf paths.
+
+Now, we need to ensure we don&#x27;t double-count paths. For example, if expected has &quot;a.b&quot; and actual has &quot;a&quot; as string, we add &quot;a&quot; as mismatch. But we don&#x27;t add &quot;a.b&quot; as missing because we don&#x27;t recurse. That&#x27;s fine.
+
+But what if expected has &quot;a&quot; as dict and actual has &quot;a&quot; as dict, but actual has &quot;a.b&quot; as string while expected has &quot;a.b&quot; as dict? Then in recursion, at &quot;a.b&quot;, we see exp[&quot;a.b&quot;] is dict, act[&quot;a.b&quot;] is string, so we add &quot;a.b&quot; as mismatch. That&#x27;s correct.
+
+Now, we need to collect leaves for missing/extra. We&#x27;ll define a helper that yields all leaf paths under a given subtree. Since leaves are type strings, a dict may contain nested dicts. We&#x27;ll recursively traverse.
+
+Implementation details:
+
+- Use sets to avoid duplicates.
+- Sort the final list.
+
+Let&#x27;s write code.
+
+We&#x27;ll define `schema_drift(expected, actual)`.
+
+We&#x27;ll use a nested function `get_leaves(d, prefix)` that returns a list of leaf paths. But we can generate on the fly.
+
+Alternatively, we can write a generator.
+
+Let&#x27;s code.
+
+We&#x27;ll need to handle empty dicts: if a dict is empty, it has no leaves. So if expected has &quot;a&quot; as empty dict and actual doesn&#x27;t have &quot;a&quot;, then missing leaf paths? There are none. So nothing to report. That&#x27;s fine.
+
+Now, we&#x27;ll implement.
+
+Testing with examples:
+
+1. expected = {&quot;a&quot;: &quot;int&quot;}, actual = {&quot;a&quot;: &quot;str&quot;} -&gt; type mismatch -&gt; [&quot;a&quot;]
+
+2. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}}, actual = {} -&gt; missing leaf &quot;a.b&quot; -&gt; [&quot;a.b&quot;]
+
+3. expected = {}, actual = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}} -&gt; extra leaf &quot;a.b&quot; -&gt; [&quot;a.b&quot;]
+
+4. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}}, actual = {&quot;a&quot;: {&quot;b&quot;: &quot;str&quot;}} -&gt; type mismatch &quot;a.b&quot; -&gt; [&quot;a.b&quot;]
+
+5. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;, &quot;c&quot;: &quot;str&quot;}}, actual = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}} -&gt; missing &quot;a.c&quot; -&gt; [&quot;a.c&quot;]
+
+6. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}}, actual = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;, &quot;c&quot;: &quot;str&quot;}} -&gt; extra &quot;a.c&quot; -&gt; [&quot;a.c&quot;]
+
+7. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}}, actual = {&quot;a&quot;: &quot;str&quot;} -&gt; type mismatch &quot;a&quot; -&gt; [&quot;a&quot;]
+
+8. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}}, actual = {&quot;a&quot;: {&quot;b&quot;: {&quot;c&quot;: &quot;int&quot;}}} -&gt; at &quot;a.b&quot;, exp is string, act is dict -&gt; mismatch &quot;a.b&quot; -&gt; [&quot;a.b&quot;]
+
+9. expected = {&quot;a&quot;: {&quot;b&quot;: &quot;int&quot;}}, actual = {&quot;a&quot;: {&quot;b&quot;: &quot;str&quot;, &quot;c&quot;: &quot;int&quot;}} -&gt; mismatch &quot;a.b&quot;, extra &quot;a.c&quot; -&gt; [&quot;a.b&quot;, &quot;a.c&quot;] sorted.
+
+Now, we need to ensure that when we have missing/extra nested objects, we report leaf paths. For example, expected = {&quot;a&quot;: {&quot;b&quot;: {&quot;c&quot;: &quot;int&quot;}}}, actual = {} -&gt; missing leaf &quot;a.b.c&quot; -&gt; [&quot;a.b.c&quot;].
+
+Our algorithm: for key &quot;a&quot; not in act, we collect leaves under exp[&quot;a&quot;] which is {&quot;b&quot;: {&quot;c&quot;: &quot;int&quot;}} -&gt; leaf &quot;a.b.c&quot;. Good.
+
+Now, we must be careful about the path building. We&#x27;ll use a list of parts and join with &quot;.&quot;. Or we can build string incrementally.
+
+We&#x27;ll implement `get_leaves` as a generator that yields full dotted paths.
+
+We&#x27;ll write:
+
+def get_leaves(d, prefix):
+    for k, v in d.items():
+        new_prefix = f&quot;{prefix}.{k}&quot; if prefix else k
+        if isinstance(v, dict):
+            yield from get_leaves(v, new_prefix)
+        else:
+            yield new_prefix
+
+Now, in compare function, we&#x27;ll use sets.
+
+We&#x27;ll define:
+
+missing = set()
+extra = set()
+mismatch = set()
+
+def compare(exp, act, path):
+    for key in exp:
+        new_path = f&quot;{path}.{key}&quot; if path else key
+        if key not in act:
+            for leaf in get_leaves(exp[key], new_path):
+                missing.add(leaf)
+        else:
+            exp_val = exp[key]
+            act_val = act[key]
+            if isinstance(exp_val, dict) and isinstance(act_val, dict):
+                compare(exp_val, act_val, new_path)
+            elif isinstance(exp_val, str) and isinstance(act_val, str):
+                if exp_val != act_val:
+                    mismatch.add(new_path)
+            else:
+                mismatch.add(new_path)
+
+    for key in act:
+        new_path = f&quot;{path}.{key}&quot; if path else key
+        if key not in exp:
+            for leaf in get_leaves(act[key], new_path):
+                extra.add(leaf)
+
+Then combine: result = sorted(missing | extra | mismatch)
+
+Return result.
+
+Edge case: If a key is present in both but one is dict and the other is string, we add mismatch. But what about if the dict is empty? Then it&#x27;s still a dict vs string, so mismatch.
+
+Now, test with example where expected has &quot;a&quot; as dict with &quot;b&quot;, actual has &quot;a&quot; as dict with &quot;b&quot; and &quot;c&quot;. We&#x27;ll get extra &quot;a.c&quot;. Good.
+
+Now, consider case where expected has &quot;a&quot; as dict with &quot;b&quot;, actual has &quot;a&quot; as dict with &quot;c&quot;. We get missing &quot;a.b&quot; and extra &quot;a.c&quot;. Good.
+
+Now, what about if expected has &quot;a&quot; as dict with &quot;b&quot; and actual has &quot;a&quot; as dict with &quot;b&quot; but also &quot;b&quot; is dict in expected and string in actual? That&#x27;s handled.
+
+Now, we need to ensure we don&#x27;t have duplicate paths from different sources. Using sets handles that.
+
+Now, we need to return Python code only. So we&#x27;ll output the function definition.
+
+We&#x27;ll also include necessary imports? None needed.
+
+Now, let&#x27;s produce final answer.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;executor_tail&quot;: &quot;Traceback (most recent call last):\n  File \&quot;&lt;string&gt;\&quot;, line 4, in &lt;module&gt;\n  File \&quot;&lt;string&gt;\&quot;, line 4, in &lt;listcomp&gt;\n  File \&quot;&lt;string&gt;\&quot;, line 1, in &lt;module&gt;\n  File \&quot;&lt;submission&gt;\&quot;, line 46, in schema_drift\n  File \&quot;&lt;submission&gt;\&quot;, line 31, in compare\n  File \&quot;&lt;submission&gt;\&quot;, line 43, in compare\n  File \&quot;&lt;submission&gt;\&quot;, line 12, in get_leaves\nAttributeError: &#x27;str&#x27; object has no attribute &#x27;items&#x27;\n&quot;
+}</pre></details></article></div></details><details class='case'><summary><span>bounded_batches</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Implement def bounded_batches(items, max_rows). items is an iterable of (partition,row_count). Preserve order and return a list of batches, each a list of items, whose total rows does not exceed max_rows. An item larger than max_rows must be alone. Reject max_rows &lt;= 0. Consume the iterable once. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 2.5s · stop</div><pre>```python
 def bounded_batches(items, max_rows):
     if max_rows &lt;= 0:
         raise ValueError(&quot;max_rows must be positive&quot;)
@@ -4554,7 +5381,49 @@ I think the solution is correct. Let me also make sure we only consume the itera
 One more thought: should I use `raise ValueError` or some other exception? ValueError seems most appropriate for an invalid argument value.
 </pre></details><details class='nested'><summary>评分细节</summary><pre>{
   &quot;executor_tail&quot;: &quot;dc40db6c2c7f43809035b7d1ba6c33e7[[[[\&quot;a\&quot;,4],[\&quot;b\&quot;,6]],[[\&quot;c\&quot;,7]],[[\&quot;d\&quot;,15]],[[\&quot;e\&quot;,2]]],[[[\&quot;a\&quot;,3],[\&quot;b\&quot;,3]],[[\&quot;c\&quot;,3]]]]\n&quot;
-}</pre></details></article></div></details><details class='case'><summary><span>merge_intervals_payload</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Implement def merge_payload_ranges(items). Each item is (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start &gt; end. Do not mutate input. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 7.2s · stop</div><pre>```python
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 8.5s · stop</div><pre>```python
+def bounded_batches(items, max_rows):
+    if max_rows &lt;= 0:
+        raise ValueError(&quot;max_rows must be positive&quot;)
+    batches = []
+    current_batch = []
+    current_total = 0
+    for item, row_count in items:
+        if row_count &gt; max_rows:
+            if current_batch:
+                batches.append(current_batch)
+                current_batch = []
+                current_total = 0
+            batches.append([(item, row_count)])
+        else:
+            if current_total + row_count &gt; max_rows:
+                batches.append(current_batch)
+                current_batch = []
+                current_total = 0
+            current_batch.append((item, row_count))
+            current_total += row_count
+    if current_batch:
+        batches.append(current_batch)
+    return batches
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to implement a function `bounded_batches(items, max_rows)` that takes an iterable of tuples (partition, row_count) and returns a list of batches (each batch is a list of items) such that:
+
+- Order is preserved.
+- Each batch&#x27;s total row_count &lt;= max_rows.
+- If an item has row_count &gt; max_rows, it must be alone in its batch.
+- max_rows must be &gt; 0, else raise an error (reject).
+- Consume the iterable once.
+
+We need to output Python code only. So I&#x27;ll write the function.
+
+Implementation approach: iterate over items, accumulate items into current batch and current total rows. For each item, if row_count &gt; max_rows: if current batch is not empty, close it (append to batches), then start a new batch with just this item, close it immediately. Else (row_count &lt;= max_rows): check if adding to current batch would exceed max_rows; if so, close current batch and start new one. Then add item to current batch. At end, if current batch not empty, close it.
+
+Edge cases: max_rows &lt;= 0 -&gt; raise ValueError. items could be empty -&gt; return empty list.
+
+We&#x27;ll use a list for batches and a list for current batch.
+
+Let&#x27;s code.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;executor_tail&quot;: &quot;2df2f99aba1a446392386e3a1f4aba44[[[[\&quot;a\&quot;,4],[\&quot;b\&quot;,6]],[[\&quot;c\&quot;,7]],[[\&quot;d\&quot;,15]],[[\&quot;e\&quot;,2]]],[[[\&quot;a\&quot;,3],[\&quot;b\&quot;,3]],[[\&quot;c\&quot;,3]]]]\n&quot;
+}</pre></details></article></div></details><details class='case'><summary><span>merge_intervals_payload</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 0.0% · Qwen3.8 FP8 · non-thinking 0.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 0.0%</span></summary><div class='prompt'>Implement def merge_payload_ranges(items). Each item is (start,end,payload). Sort by start/end. Merge overlapping or touching ranges only when payloads are equal. Return lists [start,end,payload]. Reject start &gt; end. Do not mutate input. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 7.2s · stop</div><pre>```python
 def merge_payload_ranges(items):
     &quot;&quot;&quot;
     Merge overlapping or touching ranges only when payloads are equal.
@@ -5199,7 +6068,73 @@ Hmm, actually &quot;touching&quot; in the context of ranges usually means they s
 Final solution:
 </pre></details><details class='nested'><summary>评分细节</summary><pre>{
   &quot;executor_tail&quot;: &quot;f6c6ae3cadc547fbba55cf2fc590d5a3[[[1,7,\&quot;a\&quot;],[7,10,\&quot;b\&quot;]],[],[[[1,1,\&quot;x\&quot;],[2,3,\&quot;x\&quot;]],[[2,3,\&quot;x\&quot;],[1,1,\&quot;x\&quot;]]]]\n&quot;
-}</pre></details></article></div></details><details class='case'><summary><span>watermark_commit</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Implement def committable_windows(events, watermark). events is an iterable of dicts with window, event_time, value. Drop late events with event_time &lt;= watermark. For remaining events, return a dict mapping window to values in input order, with window keys inserted in first-seen order. Consume the iterable once and do not mutate events. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 2.6s · stop</div><pre>```python
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>0.0% · 14.3s · stop</div><pre>```python
+def merge_payload_ranges(items):
+    # Validate input and create a copy
+    validated = []
+    for item in items:
+        start, end, payload = item
+        if start &gt; end:
+            raise ValueError(&quot;start must be &lt;= end&quot;)
+        validated.append([start, end, payload])
+
+    if not validated:
+        return []
+
+    # Sort by start, then end
+    validated.sort(key=lambda x: (x[0], x[1]))
+
+    result = []
+    for start, end, payload in validated:
+        if not result:
+            result.append([start, end, payload])
+            continue
+
+        last_start, last_end, last_payload = result[-1]
+        # Check if we can merge: same payload and intervals overlap or touch
+        if payload == last_payload and start &lt;= last_end + 1:
+            # Merge: update end to max
+            result[-1][1] = max(last_end, end)
+        else:
+            result.append([start, end, payload])
+
+    return result
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to implement a function merge_payload_ranges(items) that takes a list of tuples (start, end, payload). It should:
+
+- Validate that start &lt;= end for each item, else reject (presumably raise an error? The instruction says &quot;Reject start &gt; end.&quot; Probably raise ValueError or similar).
+- Sort by start, then end.
+- Merge overlapping or touching ranges only when payloads are equal. Overlapping means start &lt;= previous_end? Actually &quot;overlapping or touching&quot; means if current.start &lt;= previous.end + 1? Or just &lt;= previous.end? Touching means adjacent (end+1 == start). Typically merging intervals: if current.start &lt;= previous.end, they overlap; if current.start == previous.end+1, they touch. The instruction says &quot;overlapping or touching ranges only when payloads are equal&quot;. So we merge if they have same payload and the intervals are contiguous (i.e., current.start &lt;= previous_end + 1). But careful: If we have [1,3] and [4,5] with same payload, they touch (3+1=4), so we merge to [1,5]. If [1,3] and [3,5], they overlap at 3, merge. So condition: current.start &lt;= previous_end + 1.
+
+- Return list of [start, end, payload] (lists, not tuples). The output should be sorted.
+
+- Do not mutate input.
+
+We&#x27;ll implement.
+
+Edge cases: empty list -&gt; return empty list.
+
+Validation: if any start &gt; end, raise ValueError.
+
+Implementation steps:
+
+1. Validate each item: if start &gt; end: raise ValueError.
+2. Create a list of tuples (start, end, payload) from items (maybe copy to avoid mutation).
+3. Sort by start, then end.
+4. Initialize result list.
+5. Iterate through sorted items:
+   - If result is empty, append current as list.
+   - Else, get last merged interval from result (last element). Compare:
+     - If payloads are equal and current.start &lt;= last.end + 1: merge: update last.end = max(last.end, current.end) (since sorted by start, current.start &gt;= last.start, so we just take max end).
+     - Else: append new interval.
+6. Return result.
+
+We&#x27;ll output code only.
+
+Make sure to use type hints? Not required. Just Python code.
+
+Let&#x27;s write.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;executor_tail&quot;: &quot;4a1c762668f14e8b9d2efd30195591ea[[[1,7,\&quot;a\&quot;],[7,10,\&quot;b\&quot;]],[],[[[1,3,\&quot;x\&quot;]],[[2,3,\&quot;x\&quot;],[1,1,\&quot;x\&quot;]]]]\n&quot;
+}</pre></details></article></div></details><details class='case'><summary><span>watermark_commit</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Implement def committable_windows(events, watermark). events is an iterable of dicts with window, event_time, value. Drop late events with event_time &lt;= watermark. For remaining events, return a dict mapping window to values in input order, with window keys inserted in first-seen order. Consume the iterable once and do not mutate events. Return Python code only.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 2.6s · stop</div><pre>```python
 def committable_windows(events, watermark):
     &quot;&quot;&quot;
     Process events and return a dict mapping window to list of values.
@@ -5504,7 +6439,53 @@ This:
 This looks correct and clean.
 </pre></details><details class='nested'><summary>评分细节</summary><pre>{
   &quot;executor_tail&quot;: &quot;1727c46f6ff540c6a6c02e19e304f4f3[{\&quot;w1\&quot;:[\&quot;a\&quot;,\&quot;c\&quot;]},{\&quot;x\&quot;:[1],\&quot;y\&quot;:[2]}]\n&quot;
-}</pre></details></article></div></details></section><section class='report-section' id='incident'><h2>故障分析逐题证据</h2><details class='case'><summary><span>cgroup_oom</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 kernel: Memory cgroup out of memory: Killed process worker; EV2 memory.current=1073741824 and memory.max=1073741824; EV3 service restarted 14 times; host MemAvailable=48 GiB.
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 9.7s · stop</div><pre>```python
+def committable_windows(events, watermark):
+    result = {}
+    for event in events:
+        if event[&#x27;event_time&#x27;] &gt; watermark:
+            window = event[&#x27;window&#x27;]
+            value = event[&#x27;value&#x27;]
+            if window not in result:
+                result[window] = []
+            result[window].append(value)
+    return result
+```</pre><details class='nested'><summary>reasoning</summary><pre>We need to implement a function `committable_windows(events, watermark)` that takes an iterable of dicts, each with keys &#x27;window&#x27;, &#x27;event_time&#x27;, &#x27;value&#x27;. We need to filter out events where event_time &lt;= watermark (i.e., drop late events). For the remaining events, we return a dict mapping window to a list of values in input order, with window keys inserted in first-seen order. We must consume the iterable once, not mutate events, and return Python code only.
+
+The function signature: def committable_windows(events, watermark): ...
+
+We need to produce the code. The problem statement says &quot;Return Python code only.&quot; So we output the function definition.
+
+We should consider edge cases: events may be empty, watermark may be None? Probably watermark is a timestamp. We assume event_time and watermark are comparable.
+
+Implementation: iterate through events, for each event, check if event_time &gt; watermark (since we drop &lt;=). If true, then we need to add the value to the appropriate window list. We need to maintain order of windows: first-seen order. So we can use a dict that preserves insertion order (Python 3.7+). For each valid event, if window not in dict, create a new list with the value; else append to existing list.
+
+We must not mutate the input events, so we just read from them.
+
+Return the dict.
+
+Edge cases: if no valid events, return empty dict.
+
+Implementation:
+
+def committable_windows(events, watermark):
+    result = {}
+    for event in events:
+        if event[&#x27;event_time&#x27;] &gt; watermark:
+            window = event[&#x27;window&#x27;]
+            value = event[&#x27;value&#x27;]
+            if window not in result:
+                result[window] = []
+            result[window].append(value)
+    return result
+
+That&#x27;s it. But we need to ensure we don&#x27;t mutate events. We don&#x27;t.
+
+We should output the code as a string. The instruction says &quot;Return Python code only.&quot; So we output the function definition.
+
+Let&#x27;s produce the final answer.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;executor_tail&quot;: &quot;e6f344283ee34258b3f80cdbbcdfc705[{\&quot;w1\&quot;:[\&quot;a\&quot;,\&quot;c\&quot;]},{\&quot;x\&quot;:[1],\&quot;y\&quot;:[2]}]\n&quot;
+}</pre></details></article></div></details></section><section class='report-section' id='incident'><h2>故障分析逐题证据</h2><details class='case'><summary><span>cgroup_oom</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 kernel: Memory cgroup out of memory: Killed process worker; EV2 memory.current=1073741824 and memory.max=1073741824; EV3 service restarted 14 times; host MemAvailable=48 GiB.
 Choose root_cause from [&#x27;host_memory_exhaustion&#x27;, &#x27;cgroup_memory_limit&#x27;, &#x27;disk_pressure&#x27;] and exactly two highest-priority action_codes from [&#x27;memory_max&#x27;, &#x27;swap_zero&#x27;, &#x27;restart_backoff&#x27;, &#x27;delete_logs&#x27;].
 Return JSON only: {&quot;root_cause&quot;:&quot;...&quot;,&quot;action_codes&quot;:[&quot;...&quot;],&quot;explanation&quot;:&quot;brief evidence-based explanation&quot;}.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 1.1s · stop</div><pre>{
   &quot;root_cause&quot;: &quot;cgroup_memory_limit&quot;,
@@ -5683,7 +6664,19 @@ The two highest priority actions are:
   &quot;cause&quot;: true,
   &quot;correct_actions&quot;: 2,
   &quot;wrong_actions&quot;: 0
-}</pre></details></article></div></details><details class='case'><summary><span>gpu_cpu_spill</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 50.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 inference log: insufficient GPU memory, moving 9.5 GiB layers to CPU; EV2 container RSS rose from 7 to 61 GiB; EV3 kernel invoked OOM killer; EV4 GPU had another process using 18 GiB.
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 4.6s · stop</div><pre>{&quot;root_cause&quot;:&quot;cgroup_memory_limit&quot;,&quot;action_codes&quot;:[&quot;memory_max&quot;,&quot;restart_backoff&quot;],&quot;explanation&quot;:&quot;EV1 and EV2 show the cgroup hit its memory limit (current=max=1GiB), causing OOM kills. Host has ample memory (48GiB), ruling out host exhaustion. Service restarts 14 times indicate need for backoff policy, while raising memory.max addresses the limit.&quot;}</pre><details class='nested'><summary>reasoning</summary><pre>我们根据证据分析：EV1显示cgroup OOM，EV2显示memory.current等于memory.max，说明cgroup达到限制。EV3服务重启14次，host有48GiB可用，所以不是主机内存耗尽。根因是cgroup内存限制。行动：提高memory.max（memory_max）和调整重启退避（restart_backoff）？但swap_zero可能相关，但证据没有提到swap。delete_logs不相关。所以选memory_max和restart_backoff。</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;parsed&quot;: {
+    &quot;root_cause&quot;: &quot;cgroup_memory_limit&quot;,
+    &quot;action_codes&quot;: [
+      &quot;memory_max&quot;,
+      &quot;restart_backoff&quot;
+    ],
+    &quot;explanation&quot;: &quot;EV1 and EV2 show the cgroup hit its memory limit (current=max=1GiB), causing OOM kills. Host has ample memory (48GiB), ruling out host exhaustion. Service restarts 14 times indicate need for backoff policy, while raising memory.max addresses the limit.&quot;
+  },
+  &quot;cause&quot;: true,
+  &quot;correct_actions&quot;: 2,
+  &quot;wrong_actions&quot;: 0
+}</pre></details></article></div></details><details class='case'><summary><span>gpu_cpu_spill</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 50.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 inference log: insufficient GPU memory, moving 9.5 GiB layers to CPU; EV2 container RSS rose from 7 to 61 GiB; EV3 kernel invoked OOM killer; EV4 GPU had another process using 18 GiB.
 Choose root_cause from [&#x27;gpu_to_cpu_offload&#x27;, &#x27;model_corruption&#x27;, &#x27;network_loss&#x27;] and exactly two highest-priority action_codes from [&#x27;disable_cpu_offload&#x27;, &#x27;container_memory_limit&#x27;, &#x27;vram_guard&#x27;, &#x27;increase_swap&#x27;].
 Return JSON only: {&quot;root_cause&quot;:&quot;...&quot;,&quot;action_codes&quot;:[&quot;...&quot;],&quot;explanation&quot;:&quot;brief evidence-based explanation&quot;}.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 1.2s · stop</div><pre>{
 &quot;root_cause&quot;: &quot;gpu_to_cpu_offload&quot;,
@@ -5851,7 +6844,23 @@ These two together prevent both the root cause and the triggering condition.
   &quot;cause&quot;: true,
   &quot;correct_actions&quot;: 2,
   &quot;wrong_actions&quot;: 0
-}</pre></details></article></div></details><details class='case'><summary><span>disk_inode_pressure</span><span>Qwen3.6 FP8 · non-thinking 50.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 50.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 9.7s · stop</div><pre>{
+  &quot;root_cause&quot;: &quot;gpu_to_cpu_offload&quot;,
+  &quot;action_codes&quot;: [&quot;disable_cpu_offload&quot;, &quot;vram_guard&quot;],
+  &quot;explanation&quot;: &quot;GPU memory shortage due to another process (18 GiB) triggered offloading of 9.5 GiB layers to CPU, causing container RSS to spike from 7 to 61 GiB and invoking the OOM killer. Disabling CPU offload prevents memory pressure, and a VRAM guard would avoid contention from other processes.&quot;
+}</pre><details class='nested'><summary>reasoning</summary><pre>We need to analyze the evidence. EV1: insufficient GPU memory, moving layers to CPU. EV2: container RSS rose from 7 to 61 GiB, indicating memory usage increased due to offloading. EV3: kernel invoked OOM killer, likely due to memory pressure. EV4: another process using 18 GiB GPU memory, causing GPU memory shortage. Root cause: GPU memory insufficient due to other process, leading to offload to CPU, which then caused CPU memory exhaustion and OOM. So root cause is gpu_to_cpu_offload? But that is a consequence. The root cause is actually GPU memory contention, but the options are only those three. Among them, gpu_to_cpu_offload is the direct cause of OOM because offloading increased memory usage. However, the offload was triggered by insufficient GPU memory due to another process. But the question says &quot;analyze only this synthetic evidence&quot; and choose root cause from list. The evidence shows that offload happened, then memory increased, then OOM. So root cause is gpu_to_cpu_offload. Actions: disable_cpu_offload would prevent that, and vram_guard to protect GPU memory. container_memory_limit might help but not directly. increase_swap might not help. So best actions: disable_cpu_offload and vram_guard. Explanation: offloading to CPU caused memory spike and OOM, so disable offload and guard VRAM to prevent other processes from consuming GPU memory.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;parsed&quot;: {
+    &quot;root_cause&quot;: &quot;gpu_to_cpu_offload&quot;,
+    &quot;action_codes&quot;: [
+      &quot;disable_cpu_offload&quot;,
+      &quot;vram_guard&quot;
+    ],
+    &quot;explanation&quot;: &quot;GPU memory shortage due to another process (18 GiB) triggered offloading of 9.5 GiB layers to CPU, causing container RSS to spike from 7 to 61 GiB and invoking the OOM killer. Disabling CPU offload prevents memory pressure, and a VRAM guard would avoid contention from other processes.&quot;
+  },
+  &quot;cause&quot;: true,
+  &quot;correct_actions&quot;: 2,
+  &quot;wrong_actions&quot;: 0
+}</pre></details></article></div></details><details class='case'><summary><span>disk_inode_pressure</span><span>Qwen3.6 FP8 · non-thinking 50.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 50.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 50.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.
 Choose root_cause from [&#x27;combined_disk_pressure&#x27;, &#x27;database_deadlock&#x27;, &#x27;cpu_throttle&#x27;] and exactly two highest-priority action_codes from [&#x27;bounded_cache_cleanup&#x27;, &#x27;restart_file_owner&#x27;, &#x27;protect_current_data&#x27;, &#x27;recursive_delete_root&#x27;].
 Return JSON only: {&quot;root_cause&quot;:&quot;...&quot;,&quot;action_codes&quot;:[&quot;...&quot;],&quot;explanation&quot;:&quot;brief evidence-based explanation&quot;}.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>50.0% · 1.1s · stop</div><pre>{
 &quot;root_cause&quot;: &quot;combined_disk_pressure&quot;,
@@ -6040,7 +7049,19 @@ So my two choices: `restart_file_owner` and `bounded_cache_cleanup`.
   &quot;cause&quot;: true,
   &quot;correct_actions&quot;: 2,
   &quot;wrong_actions&quot;: 0
-}</pre></details></article></div></details><details class='case'><summary><span>db_pool_saturation</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 pool active=40 max=40 wait_p95=2100ms; EV2 database CPU=28%, locks=0, connection count=45/500; EV3 request latency tracks pool wait.
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>50.0% · 7.1s · stop</div><pre>{&quot;root_cause&quot;:&quot;combined_disk_pressure&quot;,&quot;action_codes&quot;:[&quot;protect_current_data&quot;,&quot;restart_file_owner&quot;],&quot;explanation&quot;:&quot;EV1/EV2 show high block and inode usage, EV3 indicates deleted-but-open files consuming ~3GB, and EV4 confirms ENOSPC. Protect current data first, then restart the file owner to release held space.&quot;}</pre><details class='nested'><summary>reasoning</summary><pre>我们根据证据：EV1文件系统块95%使用，EV2 inode 97%使用，EV3删除但打开的文件总大小3221225472字节（约3GB），EV4应用报告ENOSPC（磁盘空间不足）。根因是磁盘压力，但具体是combined_disk_pressure（结合块和inode压力）。动作：保护当前数据（protect_current_data）和清理有界缓存（bounded_cache_cleanup）？但删除但打开的文件可能占用空间，需要重启文件所有者来释放？但动作码中只有restart_file_owner，但优先级？根据常见处理，ENOSPC时先保护数据，然后清理缓存或重启所有者。但题目要求两个最高优先级动作。可能选择protect_current_data和restart_file_owner？但bounded_cache_cleanup也是清理。证据中EV3删除但打开的文件，重启所有者可以释放。所以选择restart_file_owner和protect_current_data。根因是combined_disk_pressure。解释：块和inode均高，且有删除但打开的文件占用空间，导致ENOSPC。</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;parsed&quot;: {
+    &quot;root_cause&quot;: &quot;combined_disk_pressure&quot;,
+    &quot;action_codes&quot;: [
+      &quot;protect_current_data&quot;,
+      &quot;restart_file_owner&quot;
+    ],
+    &quot;explanation&quot;: &quot;EV1/EV2 show high block and inode usage, EV3 indicates deleted-but-open files consuming ~3GB, and EV4 confirms ENOSPC. Protect current data first, then restart the file owner to release held space.&quot;
+  },
+  &quot;cause&quot;: true,
+  &quot;correct_actions&quot;: 1,
+  &quot;wrong_actions&quot;: 1
+}</pre></details></article></div></details><details class='case'><summary><span>db_pool_saturation</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 pool active=40 max=40 wait_p95=2100ms; EV2 database CPU=28%, locks=0, connection count=45/500; EV3 request latency tracks pool wait.
 Choose root_cause from [&#x27;client_pool_saturation&#x27;, &#x27;database_cpu_saturation&#x27;, &#x27;lock_contention&#x27;] and exactly two highest-priority action_codes from [&#x27;bounded_pool_increase&#x27;, &#x27;statement_timeout&#x27;, &#x27;observe_wait_p95&#x27;, &#x27;disable_timeout&#x27;].
 Return JSON only: {&quot;root_cause&quot;:&quot;...&quot;,&quot;action_codes&quot;:[&quot;...&quot;],&quot;explanation&quot;:&quot;brief evidence-based explanation&quot;}.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 1.2s · stop</div><pre>{
   &quot;root_cause&quot;: &quot;client_pool_saturation&quot;,
@@ -6206,7 +7227,19 @@ I&#x27;ll go with `bounded_pool_increase` and `observe_wait_p95`.
   &quot;cause&quot;: true,
   &quot;correct_actions&quot;: 2,
   &quot;wrong_actions&quot;: 0
-}</pre></details></article></div></details><details class='case'><summary><span>iceberg_commit_conflict</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds.
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 6.0s · stop</div><pre>{&quot;root_cause&quot;:&quot;client_pool_saturation&quot;,&quot;action_codes&quot;:[&quot;bounded_pool_increase&quot;,&quot;observe_wait_p95&quot;],&quot;explanation&quot;:&quot;EV1 shows pool at max capacity (40/40) with high wait_p95, and EV3 confirms latency tracks pool waits. Database CPU is low (28%) and no locks, ruling out DB saturation or contention. Thus, the client pool is the bottleneck; increasing the pool bound and observing wait_p95 are the immediate priorities.&quot;}</pre><details class='nested'><summary>reasoning</summary><pre>We need to analyze the synthetic evidence. EV1: pool active=40 max=40, wait_p95=2100ms. This indicates pool is fully saturated, causing waits. EV2: database CPU=28%, locks=0, connection count=45/500. Database not CPU saturated, no locks, connections low. EV3: request latency tracks pool wait. So root cause is client pool saturation. Actions: bounded_pool_increase to increase pool size, and observe_wait_p95 to monitor. But also statement_timeout? Since pool is saturated, increasing pool might help, but also need to observe. The highest priority actions: bounded_pool_increase and observe_wait_p95. Disable_timeout not appropriate. So answer.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;parsed&quot;: {
+    &quot;root_cause&quot;: &quot;client_pool_saturation&quot;,
+    &quot;action_codes&quot;: [
+      &quot;bounded_pool_increase&quot;,
+      &quot;observe_wait_p95&quot;
+    ],
+    &quot;explanation&quot;: &quot;EV1 shows pool at max capacity (40/40) with high wait_p95, and EV3 confirms latency tracks pool waits. Database CPU is low (28%) and no locks, ruling out DB saturation or contention. Thus, the client pool is the bottleneck; increasing the pool bound and observing wait_p95 are the immediate priorities.&quot;
+  },
+  &quot;cause&quot;: true,
+  &quot;correct_actions&quot;: 2,
+  &quot;wrong_actions&quot;: 0
+}</pre></details></article></div></details><details class='case'><summary><span>iceberg_commit_conflict</span><span>Qwen3.6 FP8 · non-thinking 100.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds.
 Choose root_cause from [&#x27;optimistic_commit_conflict&#x27;, &#x27;catalog_unavailable&#x27;, &#x27;corrupt_manifest&#x27;] and exactly two highest-priority action_codes from [&#x27;bounded_commit_retry&#x27;, &#x27;refresh_snapshot&#x27;, &#x27;idempotent_write&#x27;, &#x27;delete_metadata&#x27;].
 Return JSON only: {&quot;root_cause&quot;:&quot;...&quot;,&quot;action_codes&quot;:[&quot;...&quot;],&quot;explanation&quot;:&quot;brief evidence-based explanation&quot;}.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>100.0% · 0.9s · stop</div><pre>{
 &quot;root_cause&quot;: &quot;optimistic_commit_conflict&quot;,
@@ -6376,7 +7409,19 @@ So the two highest-priority actions are `refresh_snapshot` and `bounded_commit_r
   &quot;cause&quot;: true,
   &quot;correct_actions&quot;: 2,
   &quot;wrong_actions&quot;: 0
-}</pre></details></article></div></details><details class='case'><summary><span>spark_shuffle_skew</span><span>Qwen3.6 FP8 · non-thinking 50.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 median task duration=20s, max=1080s; EV2 one partition has 62% of rows for key UNKNOWN; EV3 executors have free memory and no GC pause; EV4 stage waits for one task.
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>100.0% · 5.5s · stop</div><pre>{&quot;root_cause&quot;:&quot;optimistic_commit_conflict&quot;,&quot;action_codes&quot;:[&quot;bounded_commit_retry&quot;,&quot;refresh_snapshot&quot;],&quot;explanation&quot;:&quot;EV1-2 show two writers read the same snapshot 812, then writer A commits 813. EV3 writer B fails with ValidationException due to conflicting files, indicating a classic optimistic concurrency conflict. EV4 confirms that retrying after refreshing the snapshot resolves the issue, so the root cause is optimistic commit conflict, with retry and snapshot refresh as the highest-priority actions.&quot;}</pre><details class='nested'><summary>reasoning</summary><pre>我们根据证据：EV1两个写入者读取快照812，EV2写入者A提交快照813，EV3写入者B失败ValidationException: conflicting files，EV4重试刷新快照后成功。这是典型的乐观并发冲突，因为两个写入者基于同一快照，一个先提交，另一个冲突。根因是optimistic_commit_conflict。行动代码：bounded_commit_retry（重试）和refresh_snapshot（刷新快照）是合适的。idempotent_write不适用，delete_metadata不适用。所以答案。</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;parsed&quot;: {
+    &quot;root_cause&quot;: &quot;optimistic_commit_conflict&quot;,
+    &quot;action_codes&quot;: [
+      &quot;bounded_commit_retry&quot;,
+      &quot;refresh_snapshot&quot;
+    ],
+    &quot;explanation&quot;: &quot;EV1-2 show two writers read the same snapshot 812, then writer A commits 813. EV3 writer B fails with ValidationException due to conflicting files, indicating a classic optimistic concurrency conflict. EV4 confirms that retrying after refreshing the snapshot resolves the issue, so the root cause is optimistic commit conflict, with retry and snapshot refresh as the highest-priority actions.&quot;
+  },
+  &quot;cause&quot;: true,
+  &quot;correct_actions&quot;: 2,
+  &quot;wrong_actions&quot;: 0
+}</pre></details></article></div></details><details class='case'><summary><span>spark_shuffle_skew</span><span>Qwen3.6 FP8 · non-thinking 50.0% · Qwen3.6 FP8 · thinking 100.0% · Qwen3.8 FP8 · non-thinking 100.0% · Qwen3.8 FP8 · thinking-low 100.0% · DeepSeek V4 Flash · thinking 50.0%</span></summary><div class='prompt'>Analyze only this synthetic evidence: EV1 median task duration=20s, max=1080s; EV2 one partition has 62% of rows for key UNKNOWN; EV3 executors have free memory and no GC pause; EV4 stage waits for one task.
 Choose root_cause from [&#x27;shuffle_key_skew&#x27;, &#x27;executor_memory_shortage&#x27;, &#x27;scheduler_outage&#x27;] and exactly two highest-priority action_codes from [&#x27;salt_hot_key&#x27;, &#x27;adaptive_skew_join&#x27;, &#x27;repartition_by_distribution&#x27;, &#x27;increase_all_memory&#x27;].
 Return JSON only: {&quot;root_cause&quot;:&quot;...&quot;,&quot;action_codes&quot;:[&quot;...&quot;],&quot;explanation&quot;:&quot;brief evidence-based explanation&quot;}.</div><div class='answers'><article><h4>Qwen3.6 FP8 · non-thinking</h4><div class='metrics'>50.0% · 1.1s · stop</div><pre>{
 &quot;root_cause&quot;: &quot;shuffle_key_skew&quot;,
@@ -6542,4 +7587,16 @@ The two highest-priority actions are `salt_hot_key` and `adaptive_skew_join`. Th
   &quot;cause&quot;: true,
   &quot;correct_actions&quot;: 2,
   &quot;wrong_actions&quot;: 0
+}</pre></details></article><article><h4>DeepSeek V4 Flash · thinking</h4><div class='metrics'>50.0% · 6.4s · stop</div><pre>{&quot;root_cause&quot;:&quot;shuffle_key_skew&quot;,&quot;action_codes&quot;:[&quot;salt_hot_key&quot;,&quot;repartition_by_distribution&quot;],&quot;explanation&quot;:&quot;EV2 shows a single key (UNKNOWN) holding 62% of rows, causing severe partition imbalance. EV1&#x27;s max task duration (1080s) vs median (20s) indicates a straggler task, and EV4 confirms the stage waits on that task. EV3 rules out memory issues, so the root cause is shuffle key skew. Salt the hot key and repartition by distribution to balance partitions.&quot;}</pre><details class='nested'><summary>reasoning</summary><pre>We need to analyze the evidence. EV1: median task duration 20s, max 1080s - indicates some tasks take much longer, suggesting skew. EV2: one partition has 62% of rows for key UNKNOWN - clear data skew on a key. EV3: executors have free memory and no GC pause - so not memory shortage. EV4: stage waits for one task - that task is likely the straggler due to skew. So root cause is shuffle_key_skew. Actions: salt_hot_key and repartition_by_distribution are appropriate. adaptive_skew_join is for joins, not mentioned. increase_all_memory not needed. So action_codes: [&quot;salt_hot_key&quot;, &quot;repartition_by_distribution&quot;] exactly two. Explanation: evidence points to key skew causing long tail.</pre></details><details class='nested'><summary>评分细节</summary><pre>{
+  &quot;parsed&quot;: {
+    &quot;root_cause&quot;: &quot;shuffle_key_skew&quot;,
+    &quot;action_codes&quot;: [
+      &quot;salt_hot_key&quot;,
+      &quot;repartition_by_distribution&quot;
+    ],
+    &quot;explanation&quot;: &quot;EV2 shows a single key (UNKNOWN) holding 62% of rows, causing severe partition imbalance. EV1&#x27;s max task duration (1080s) vs median (20s) indicates a straggler task, and EV4 confirms the stage waits on that task. EV3 rules out memory issues, so the root cause is shuffle key skew. Salt the hot key and repartition by distribution to balance partitions.&quot;
+  },
+  &quot;cause&quot;: true,
+  &quot;correct_actions&quot;: 1,
+  &quot;wrong_actions&quot;: 1
 }</pre></details></article></div></details></section></main></body></html>

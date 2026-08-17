@@ -13,6 +13,12 @@ Claude Code 执行的聚焦评测结果。
 Compose 默认使用 `{"thinking":false}`，通过 additive override 将其替换为
 `{"thinking":true}`，便于清晰审计和回退。
 
+2026-08-17 已使用私有 OpenAI-compatible endpoint 对 `deepseek-v4-flash-0731` 的原生
+`thinking=true` 补跑 18 道湖仓 SQL/Python/故障分析题。结果、逐题输出及与 Qwen 的
+边界说明位于
+[`../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html`](../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html)。
+该补充服务的硬件和网络配置不同于 RTX 4090 Qwen，报告不作跨端点性能排序。
+
 ## 架构
 
 ```text

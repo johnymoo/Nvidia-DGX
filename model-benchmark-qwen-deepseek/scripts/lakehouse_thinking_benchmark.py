@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sqlite3
 import statistics
@@ -119,7 +120,7 @@ def score_incident(case: dict, response: str) -> tuple[float, dict]:
     return score, {"parsed": value, "cause": cause_ok, "correct_actions": correct_actions, "wrong_actions": wrong_actions}
 
 
-def request(base_url: str, model: str, prompt: str, mode: str, max_tokens: int) -> dict:
+def request(base_url: str, model: str, prompt: str, mode: str, max_tokens: int, api_key: str | None = None) -> dict:
     body = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -130,6 +131,10 @@ def request(base_url: str, model: str, prompt: str, mode: str, max_tokens: int) 
         body.update({"temperature": 0.7, "top_p": 0.8, "presence_penalty": 1.5})
         body["chat_template_kwargs"] = {"enable_thinking": False}
         body["top_k"] = 20
+    elif mode == "deepseek-thinking":
+        body.update({"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0})
+        body["chat_template_kwargs"] = {"thinking": True}
+        body["top_k"] = 20
     else:
         body.update({"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0})
         body["chat_template_kwargs"] = {"enable_thinking": True}
@@ -137,7 +142,10 @@ def request(base_url: str, model: str, prompt: str, mode: str, max_tokens: int) 
         if mode == "qwen38-low":
             body["reasoning_effort"] = "low"
     started = time.monotonic()
-    req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(), headers=headers)
     with urllib.request.urlopen(req, timeout=900) as response:
         payload = json.load(response)
     choice = payload["choices"][0]
@@ -175,29 +183,33 @@ def main() -> int:
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--tag", required=True)
-    parser.add_argument("--mode", choices=["off", "qwen36-thinking", "qwen38-low"], required=True)
+    parser.add_argument("--mode", choices=["off", "qwen36-thinking", "qwen38-low", "deepseek-thinking"], required=True)
+    parser.add_argument("--api-key-env", help="Name of an environment variable containing an optional OpenAI-compatible API key")
     parser.add_argument("--max-tokens", type=int, default=4096)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.max_tokens < 256:
         parser.error("--max-tokens must be at least 256")
+    api_key = os.environ.get(args.api_key_env) if args.api_key_env else None
+    if args.api_key_env and not api_key:
+        parser.error(f"environment variable {args.api_key_env} is empty")
 
     rows = []
     for case in SQL_CASES:
-        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens)
+        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens, api_key)
         passed, detail = execute_sql(case, row["response"])
         rows.append({"id": case["id"], "category": "sql", "prompt": case["prompt"], "expected": case["expected"], "score": float(passed), "passed": passed, "detail": detail, **row})
         print(json.dumps({"id": case["id"], "score": float(passed), "seconds": row["seconds"]}), flush=True)
 
     for case_id, prompt, checks in PYTHON_CASES:
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens)
+        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key)
         passed, executor_tail = run_code(extract_block(row["response"], "python"), checks)
         rows.append({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row})
         print(json.dumps({"id": case_id, "score": float(passed), "seconds": row["seconds"]}), flush=True)
 
     for case in INCIDENT_CASES:
         prompt = incident_prompt(case)
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens)
+        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key)
         score, detail = score_incident(case, row["response"])
         rows.append({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row})
         print(json.dumps({"id": case["id"], "score": score, "seconds": row["seconds"]}), flush=True)
@@ -213,7 +225,13 @@ def main() -> int:
         "mode": args.mode,
         "seed": 42,
         "max_tokens": args.max_tokens,
-        "sampling": "official precise-coding thinking parameters" if args.mode != "off" else "official non-thinking parameters",
+        "sampling": (
+            "DeepSeek native thinking with controlled sampling"
+            if args.mode == "deepseek-thinking"
+            else "official precise-coding thinking parameters"
+            if args.mode != "off"
+            else "official non-thinking parameters"
+        ),
         "categories": categories,
         "macro_score": statistics.fmean(value["score"] for value in categories.values()),
         "total_seconds": sum(row["seconds"] for row in rows),

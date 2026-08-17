@@ -70,10 +70,31 @@ performance JSON ---------------------------+
 | Qwen3.6 thinking | 33.3% | 33.3% | 91.7% | 52.8% | 485.9s | 8 / 8 |
 | Qwen3.8 non-thinking | 66.7% | 66.7% | 91.7% | 75.0% | 254.1s | 0 / 0 |
 | Qwen3.8 thinking-low | 83.3% | 83.3% | 100.0% | 88.9% | 797.7s | 0 / 0 |
+| DeepSeek V4 Flash thinking | 66.7% | 50.0% | 83.3% | 66.7% | 245.5s | 0 / 0 |
 
 默认推理选择 Qwen3.8-27B-FP8。普通请求保持 non-thinking；复杂 SQL、Python 和
 故障分析按请求开启 `reasoning_effort=low`。完整逐题报告见
-[`report/lakehouse-thinking.html`](report/lakehouse-thinking.html)。
+[`report/lakehouse-thinking.html`](report/lakehouse-thinking.html)。DeepSeek 使用私有
+`.env` 中的 OpenAI-compatible endpoint 与原生 `thinking=true`；其硬件和网络不同，
+245.5 秒总耗时不参与与 RTX 4090 Qwen 的性能比较。
+
+使用私有 OpenAI-compatible 环境变量重跑 DeepSeek thinking treatment：
+
+```bash
+set -a
+. /path/to/private/.env
+set +a
+python3 scripts/lakehouse_thinking_benchmark.py \
+  --base-url "$OPENAI_BASE_URL" \
+  --model "$MODEL" \
+  --tag deepseek-v4-flash-0731-thinking \
+  --mode deepseek-thinking \
+  --api-key-env OPENAI_API_KEY \
+  --max-tokens 4096 \
+  --output /tmp/lakehouse-deepseek-thinking.json
+```
+
+`--api-key-env` 只读取进程环境；不要将 endpoint 或 token 写入 JSON、HTML 或 Git。
 
 ## 文件清单
 
@@ -83,13 +104,14 @@ performance JSON ---------------------------+
 | `scripts/compare_quality.py` | 校验题目身份并计算三模型类别分数和宏平均 |
 | `scripts/generate_html_report.py` | 生成包含配置、图表、题目和原始回答的单文件 HTML |
 | `scripts/lakehouse_thinking_benchmark.py` | 运行可执行 SQL、隐藏测试 Python 和编码化故障分析 |
-| `scripts/generate_lakehouse_report.py` | 生成四组逐题对比 HTML |
+| `scripts/generate_lakehouse_report.py` | 生成 Qwen 与 DeepSeek 逐题对比 HTML |
 | `data/*-quality.json` | 三个模型的逐题原始输出和客观验证结果 |
 | `data/performance-comparison.json` | 两个 Qwen 配置的同机性能比较 |
 | `data/deepseek-performance.json` | DeepSeek 双 GB10 性能结果 |
 | `data/quality-comparison.json` | 从三份质量 JSON 重建的汇总 |
+| `data/lakehouse-*.json` | 五个 treatment 的逐题原始输出与客观评分 |
 | [`report/index.html`](./report/index.html) | 2026-08-16 已完成评测的冻结 HTML 基线报告 |
-| [`report/lakehouse-thinking.html`](./report/lakehouse-thinking.html) | 2026-08-17 Qwen3.6/Qwen3.8 同机 thinking 对比 |
+| [`report/lakehouse-thinking.html`](./report/lakehouse-thinking.html) | 2026-08-17 Qwen 同机 thinking 与 DeepSeek 补充对比 |
 | [`report/README.md`](./report/README.md) | 报告哈希、输入身份和可直接复用条件 |
 
 `report/index.html` 是为后续同题集直接参考而保留的冻结证据快照；普通重新
@@ -152,6 +174,7 @@ python3 scripts/generate_lakehouse_report.py \
   --q36-thinking data/lakehouse-qwen36-thinking.json \
   --q38-off data/lakehouse-qwen38-off.json \
   --q38-thinking data/lakehouse-qwen38-thinking-low.json \
+  --deepseek-thinking data/lakehouse-deepseek-thinking.json \
   --recommendation '默认 Qwen3.8；复杂请求按需开启 reasoning_effort=low。' \
   --output report/generated/lakehouse-thinking.html
 ```

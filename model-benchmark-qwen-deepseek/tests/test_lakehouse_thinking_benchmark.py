@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import importlib.util
+import io
 import sys
 import unittest
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "lakehouse_thinking_benchmark.py"
@@ -49,6 +51,23 @@ class LakehouseThinkingBenchmarkTests(unittest.TestCase):
         self.assertEqual(BENCH.score_incident(case, perfect)[0], 1.0)
         self.assertLess(BENCH.score_incident(case, noisy)[0], 1.0)
         self.assertEqual(BENCH.score_incident(case, "not json")[0], 0.0)
+
+    def test_deepseek_thinking_request_uses_native_switch_and_optional_auth(self) -> None:
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                self.close()
+
+        payload = {"choices": [{"message": {"content": "ok", "reasoning": "r"}, "finish_reason": "stop"}], "usage": {"completion_tokens": 2}}
+        with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(json.dumps(payload).encode())) as urlopen:
+            BENCH.request("http://example.test/v1", "deepseek-v4-flash-0731", "test", "deepseek-thinking", 256, "test-key")
+        request = urlopen.call_args.args[0]
+        body = json.loads(request.data)
+        self.assertEqual(body["chat_template_kwargs"], {"thinking": True})
+        self.assertEqual(body["top_k"], 20)
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
 
     def test_report_input_validation(self) -> None:
         value = {

@@ -35,3 +35,14 @@ final content。Qwen3.8 thinking-low 达到 SQL 5/6、Python 5/6、故障分析 
 默认部署选择 Qwen3.8-27B-FP8：普通请求 non-thinking，复杂 SQL/Python 和故障分析
 按请求开启 `reasoning_effort=low`。Qwen3.6 不进入长期运行组合。图片能力沿用前一轮
 Qwen3.8 实测；embedding 继续由 CPU-only Ollama 运行 BGE-M3，与生成模型隔离。
+
+## DeepSeek V4 Flash 补充
+
+使用私有 `.env` 配置的 `deepseek-v4-flash-0731` OpenAI-compatible endpoint，以
+原生 `chat_template_kwargs.thinking=true` 跑同一 18 题，得到 SQL 66.7%、Python 50.0%、
+故障分析 83.3%、宏平均 66.7%，无截断和空 final。该 endpoint 的硬件、网络及服务配置
+不同于 RTX 4090 Qwen 部署，不能将其 245.5 秒总耗时作为跨硬件性能排序。
+
+在这一固定题集上，DeepSeek thinking 未超过 Qwen3.8 thinking-low 的 88.9%，因此不改变
+本服务器默认 Qwen3.8 的选择。它保留为不同硬件部署的已验证备选服务，而非本机生成模型
+替换依据。
