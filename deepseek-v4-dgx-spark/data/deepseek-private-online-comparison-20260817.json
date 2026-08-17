@@ -2,7 +2,7 @@
   "schema_version": 1,
   "status": "passed",
   "benchmark_date": "2026-08-17",
-  "scope": "quick decision benchmark; two quality runs per effort and five focused agent tasks",
+  "scope": "completed-result benchmark; Private High n=2, Private Max 384K n=1, online quality n=2, and five focused agent tasks",
   "quality": {
     "private_flash": {
       "high": {
@@ -14,60 +14,20 @@
           "python": 0.833333,
           "incident": 0.875
         }
-      }
-    },
-    "private_flash_bounded_4k": {
-      "high": {
-        "runs": 2,
-        "macro_score": 0.930556,
-        "stdev": 0.058925,
-        "categories": {
-          "sql": 1.0,
-          "python": 0.916667,
-          "incident": 0.875
-        }
       },
       "max": {
-        "runs": 2,
-        "macro_score": 0.694444,
-        "stdev": 0.117851,
-        "categories": {
-          "sql": 0.75,
-          "python": 0.416666,
-          "incident": 0.916667
-        }
-      }
-    },
-    "private_flash_legacy_requested": {
-      "high": {
-        "runs": 2,
-        "macro_score": 0.902778,
-        "stdev": 0.019642,
+        "runs": 1,
+        "macro_score": 0.944444,
+        "stdev": null,
         "categories": {
           "sql": 1.0,
-          "python": 0.833333,
-          "incident": 0.875
-        }
-      },
-      "low": {
-        "runs": 2,
-        "macro_score": 0.833333,
-        "stdev": 0.0,
-        "categories": {
-          "sql": 1.0,
-          "python": 0.666667,
+          "python": 1.0,
           "incident": 0.833333
-        }
-      },
-      "max": {
-        "runs": 2,
-        "macro_score": 0.875,
-        "stdev": 0.098209,
-        "categories": {
-          "sql": 1.0,
-          "python": 0.833333,
-          "incident": 0.791667
-        }
+        },
+        "max_tokens": 393216,
+        "completed_finals": 18,
+        "length_truncations": 0,
+        "errors": 0
       }
     },
     "online_flash": {
@@ -133,28 +93,6 @@
           "incident": 0.958333
         }
       }
-    }
-  },
-  "private_bounded_4k_telemetry": {
-    "high": {
-      "requests": 36,
-      "completed_finals": 36,
-      "final_coverage": 1.0,
-      "completed_final_score": 0.930556,
-      "length_truncations": 0,
-      "empty_finals": 0,
-      "errors": 0,
-      "completion_tokens_mean_per_run": 15063.5
-    },
-    "max": {
-      "requests": 36,
-      "completed_finals": 26,
-      "final_coverage": 0.722222,
-      "completed_final_score": 0.961538,
-      "length_truncations": 10,
-      "empty_finals": 10,
-      "errors": 0,
-      "completion_tokens_mean_per_run": 29496.0
     }
   },
   "private_route_ab_384k": {
@@ -255,6 +193,168 @@
       "estimated_api_cost_usd": {
         "off_peak_all_input_cache_miss": 0.240682,
         "peak_all_input_cache_miss": 0.481364
+      }
+    }
+  },
+  "full_suite_performance": {
+    "task_count_per_run": 18,
+    "ttft_available": false,
+    "response_time_definition": "request dispatch to complete response",
+    "effective_token_rate_definition": "sum(completion_tokens) / sum(response_seconds); not decode TPS",
+    "comparison_limit": "quality runs used mixed stream modes and execution schedules; descriptive telemetry only",
+    "treatments": {
+      "private-high": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          false
+        ],
+        "mean_response_seconds": 32.586444,
+        "p95_response_seconds": 117.617,
+        "max_response_seconds": 193.017,
+        "total_completion_tokens": 28184,
+        "effective_e2e_completion_tokens_per_second": 24.024987,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "private-max": {
+        "runs": 1,
+        "requests": 18,
+        "concurrency_per_run": [
+          2
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 403.737611,
+        "p95_response_seconds": 3031.181,
+        "max_response_seconds": 3031.181,
+        "total_completion_tokens": 145263,
+        "effective_e2e_completion_tokens_per_second": 19.988642,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "private-max-direct-vllm": {
+        "runs": 1,
+        "requests": 18,
+        "concurrency_per_run": [
+          2
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 378.402722,
+        "p95_response_seconds": 1636.337,
+        "max_response_seconds": 1636.337,
+        "total_completion_tokens": 132040,
+        "effective_e2e_completion_tokens_per_second": 19.385578,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "online-flash-low": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 6.949139,
+        "p95_response_seconds": 17.028,
+        "max_response_seconds": 20.552,
+        "total_completion_tokens": 24899,
+        "effective_e2e_completion_tokens_per_second": 99.528719,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "online-flash-high": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 62.358972,
+        "p95_response_seconds": 316.553,
+        "max_response_seconds": 531.972,
+        "total_completion_tokens": 246062,
+        "effective_e2e_completion_tokens_per_second": 109.608214,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "online-flash-max": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 79.549944,
+        "p95_response_seconds": 350.454,
+        "max_response_seconds": 392.506,
+        "total_completion_tokens": 304543,
+        "effective_e2e_completion_tokens_per_second": 106.342347,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "online-pro-low": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 33.481472,
+        "p95_response_seconds": 106.03,
+        "max_response_seconds": 130.764,
+        "total_completion_tokens": 76794,
+        "effective_e2e_completion_tokens_per_second": 63.711854,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "online-pro-high": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 78.452278,
+        "p95_response_seconds": 255.238,
+        "max_response_seconds": 598.289,
+        "total_completion_tokens": 193339,
+        "effective_e2e_completion_tokens_per_second": 68.455983,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
+      },
+      "online-pro-max": {
+        "runs": 2,
+        "requests": 36,
+        "concurrency_per_run": [
+          1
+        ],
+        "stream_modes": [
+          true
+        ],
+        "mean_response_seconds": 100.673472,
+        "p95_response_seconds": 372.783,
+        "max_response_seconds": 399.319,
+        "total_completion_tokens": 240862,
+        "effective_e2e_completion_tokens_per_second": 66.458531,
+        "ttft_seconds": null,
+        "ttft_collection": "not_recorded_by_quality_harness"
       }
     }
   },
@@ -378,39 +478,30 @@
       "legacy_quality_requests_in_portal_access_log": 108,
       "legacy_latency_requests_in_portal_access_log": 4,
       "verified_high_quality_requests": 36,
-      "bounded_high_max_quality_requests": 72,
+      "verified_max_384k_quality_requests": 18,
+      "direct_vllm_max_384k_quality_requests": 18,
       "verified_high_max_latency_requests": 8,
       "latency_request_contract": "one warmup plus three measured requests"
     }
   },
   "private_effort_contract": {
-    "portal_requires_allowed_openai_params": [
-      "reasoning_effort"
-    ],
+    "portal_requires_allowed_openai_params": false,
+    "portal_fix_verified_without_per_request_override": true,
     "legacy_requested_efforts_effective_effort": "high",
     "legacy_reason": "LiteLLM drop_params removed reasoning_effort for the generic OpenAI-compatible deployment",
-    "verified_same_max_tokens": 32768,
-    "verified_max_quality_status": "completed_with_4k_bound",
-    "verified_max_quality_pilot": {
-      "parallel_requests": 2,
-      "same_max_tokens_as_high": 32768,
-      "client_bound_seconds": 900,
-      "completed_matrix_runs": 0,
-      "portal_status_on_client_cancel": [
-        499,
-        499
-      ]
-    },
-    "bounded_quality_matrix": {
-      "max_tokens": 4096,
-      "runs_per_effort": 2,
-      "requests_per_effort": 36,
-      "concurrency_per_effort": 3,
-      "paired_total_concurrency": 6,
-      "high_final_coverage": 1.0,
-      "max_final_coverage": 0.722222,
-      "high_completed_final_score": 0.930556,
-      "max_completed_final_score": 0.961538
+    "verified_quality_configurations": {
+      "high": {
+        "max_tokens": 32768,
+        "runs": 2,
+        "completed_finals": 36
+      },
+      "max": {
+        "max_tokens": 393216,
+        "runs": 1,
+        "completed_finals": 18,
+        "length_truncations": 0,
+        "errors": 0
+      }
     },
     "direct_tokenize_probe": {
       "high_prompt_tokens": 11,
@@ -424,7 +515,6 @@
     "pro_adjudication": "8fcd810c8db24550a997a661ee1be911ff03994fb8bd2400fa446fe02c1ee59d",
     "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1",
     "verified_private_adjudication": "c6554c2c1c8d1d4339b5ef94e2c91df97c00d6c6246beea4dd8733f28b5dc0d3",
-    "bounded_private_adjudication": "7de330257ea3663b29aec20bed6a69bb972bd0daf44cc3f42a2711882898baac",
     "route_ab_portal": "023f2dadb956fddb4f440e3808296770561eb5f3f6808e1b81644a1e92aff950",
     "route_ab_direct_vllm": "a1d4a5e6bb348d6c45e16f426fff954a2cf284d99b7654339a140428a9efd578"
   }

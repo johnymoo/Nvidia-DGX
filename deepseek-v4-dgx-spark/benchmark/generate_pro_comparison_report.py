@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import statistics
 from pathlib import Path
 from typing import Any
@@ -49,10 +50,6 @@ def pro_group(tag: str) -> str:
 
 def verified_private_group(tag: str) -> str:
     return next(value for value in ("high", "max") if f"-verified-{value}-" in tag)
-
-
-def bounded_private_group(tag: str) -> str:
-    return next(value for value in ("high", "max") if f"-bounded-{value}-" in tag)
 
 
 def aggregate_runs(runs: list[dict], group_function) -> dict[str, dict]:
@@ -102,32 +99,55 @@ def raw_telemetry(paths: list[Path]) -> dict[str, dict]:
     return result
 
 
-def bounded_private_telemetry(paths: list[Path]) -> dict[str, dict]:
-    grouped: dict[str, list[dict]] = {}
-    for path in paths:
-        value = load(path)
-        grouped.setdefault(bounded_private_group(value["tag"]), []).append(value)
-    result = {}
-    for effort, runs in grouped.items():
-        cases = [case for run in runs for case in run["cases"]]
-        completed = [
-            case for case in cases
-            if case.get("finish_reason") == "stop" and bool(case.get("response"))
-        ]
-        result[effort] = {
-            "requests": len(cases),
-            "completed_finals": len(completed),
-            "final_coverage": len(completed) / len(cases),
-            "completed_final_score": mean([float(case["score"]) for case in completed]),
-            "length_truncations": sum(case.get("finish_reason") == "length" for case in cases),
-            "empty_finals": sum(not case.get("response") for case in cases),
-            "errors": sum(case.get("finish_reason") == "error" for case in cases),
-            "completion_tokens_mean_per_run": mean([
-                sum(int(case.get("usage", {}).get("completion_tokens", 0)) for case in run["cases"])
-                for run in runs
-            ]),
-        }
+def adjudicated_source_paths(path: Path, raw_dir: Path, group_function, groups: set[str]) -> dict[str, list[Path]]:
+    result = {group: [] for group in groups}
+    for run in load(path)["runs"]:
+        group = group_function(run["tag"])
+        if group in result:
+            source = raw_dir / run["source_file"]
+            if not source.is_file():
+                raise RuntimeError(f"Missing benchmark source: {source}")
+            result[group].append(source)
+    if any(not paths for paths in result.values()):
+        raise RuntimeError(f"Missing completed benchmark group in {path}")
     return result
+
+
+def nearest_rank(values: list[float], percentile: float) -> float:
+    ordered = sorted(values)
+    return ordered[max(0, math.ceil(percentile * len(ordered)) - 1)]
+
+
+def full_suite_telemetry(paths: list[Path]) -> dict:
+    runs = [load(path) for path in paths]
+    cases = []
+    concurrency = set()
+    stream_modes = set()
+    for run in runs:
+        if run.get("status") != "passed" or len(run.get("cases") or []) != 18:
+            raise RuntimeError(f"Full-suite telemetry requires a completed 18-case run: {run.get('tag')}")
+        cases.extend(run["cases"])
+        request_config = run.get("request_config") or {}
+        concurrency.add(int(run.get("concurrency") or request_config.get("concurrency") or 1))
+        stream_modes.add(bool(request_config.get("stream")))
+    seconds = [float(case["seconds"]) for case in cases]
+    completion_tokens = [int(case.get("usage", {}).get("completion_tokens", 0)) for case in cases]
+    if any(value <= 0 for value in seconds):
+        raise RuntimeError("Full-suite response times must be positive")
+    total_seconds = sum(seconds)
+    return {
+        "runs": len(runs),
+        "requests": len(cases),
+        "concurrency_per_run": sorted(concurrency),
+        "stream_modes": sorted(stream_modes),
+        "mean_response_seconds": mean(seconds),
+        "p95_response_seconds": nearest_rank(seconds, 0.95),
+        "max_response_seconds": max(seconds),
+        "total_completion_tokens": sum(completion_tokens),
+        "effective_e2e_completion_tokens_per_second": sum(completion_tokens) / total_seconds,
+        "ttft_seconds": None,
+        "ttft_collection": "not_recorded_by_quality_harness",
+    }
 
 
 def route_ab_summary(portal_path: Path, direct_path: Path) -> dict:
@@ -233,18 +253,47 @@ def main() -> int:
     verified_private = aggregate_runs(load(verified_path)["runs"], verified_private_group)
     if set(verified_private) != {"high"} or verified_private["high"]["runs"] != 2:
         raise RuntimeError("verified private High matrix must contain two completed runs")
-    bounded_path = root / "model-benchmark-qwen-deepseek/data/lakehouse-private-effort-bounded-4k-adjudicated.json"
-    bounded_raw_paths = sorted((root / "model-benchmark-qwen-deepseek/data/lakehouse-private-effort-bounded-4k").glob("private-*.json"))
-    bounded_private = aggregate_runs(load(bounded_path)["runs"], bounded_private_group)
-    if set(bounded_private) != {"high", "max"} or any(row["runs"] != 2 for row in bounded_private.values()):
-        raise RuntimeError("bounded private High/Max matrix must contain two completed runs per effort")
-    bounded_telemetry = bounded_private_telemetry(bounded_raw_paths)
     route_ab_dir = root / "model-benchmark-qwen-deepseek/data/lakehouse-private-route-ab-384k"
     route_ab_portal_path = route_ab_dir / "portal-fixed-max-384k-r1.json"
     route_ab_direct_path = route_ab_dir / "direct-vllm-max-384k-r1.json"
     route_ab = route_ab_summary(route_ab_portal_path, route_ab_direct_path)
+    private_quality = dict(verified_private)
+    private_quality["max"] = {
+        "runs": 1,
+        "macro_score": route_ab["portal"]["macro_score"],
+        "stdev": None,
+        "categories": route_ab["portal"]["categories"],
+        "max_tokens": route_ab["max_tokens"],
+        "completed_finals": route_ab["portal"]["completed_finals"],
+        "length_truncations": route_ab["portal"]["length_truncations"],
+        "errors": route_ab["portal"]["errors"],
+    }
     pro = aggregate_runs(load(pro_path)["runs"], pro_group)
     telemetry = raw_telemetry(pro_raw_paths)
+    existing_sources = adjudicated_source_paths(
+        existing_path,
+        existing_path.parent / "lakehouse-parameter-matrix",
+        source_group,
+        {"online-low", "online-high", "online-max"},
+    )
+    verified_sources = adjudicated_source_paths(
+        verified_path,
+        verified_path.parent / "lakehouse-private-effort-verified",
+        verified_private_group,
+        {"high"},
+    )
+    pro_sources = adjudicated_source_paths(pro_path, project / "data/online-pro-matrix", pro_group, {"low", "high", "max"})
+    full_suite = {
+        "private-high": full_suite_telemetry(verified_sources["high"]),
+        "private-max": full_suite_telemetry([route_ab_portal_path]),
+        "private-max-direct-vllm": full_suite_telemetry([route_ab_direct_path]),
+        "online-flash-low": full_suite_telemetry(existing_sources["online-low"]),
+        "online-flash-high": full_suite_telemetry(existing_sources["online-high"]),
+        "online-flash-max": full_suite_telemetry(existing_sources["online-max"]),
+        "online-pro-low": full_suite_telemetry(pro_sources["low"]),
+        "online-pro-high": full_suite_telemetry(pro_sources["high"]),
+        "online-pro-max": full_suite_telemetry(pro_sources["max"]),
+    }
     agent = sanitize_agent(args.agent_result.resolve())
     agent_path = project / "data/online-pro-agent-focus-20260817.json"
     agent_path.write_text(json.dumps(normalize(agent), indent=2, ensure_ascii=False) + "\n")
@@ -271,17 +320,22 @@ def main() -> int:
         "schema_version": 1,
         "status": "passed",
         "benchmark_date": "2026-08-17",
-        "scope": "quick decision benchmark; two quality runs per effort and five focused agent tasks",
+        "scope": "completed-result benchmark; Private High n=2, Private Max 384K n=1, online quality n=2, and five focused agent tasks",
         "quality": {
-            "private_flash": verified_private,
-            "private_flash_bounded_4k": bounded_private,
-            "private_flash_legacy_requested": {key.removeprefix("private-"): value for key, value in existing.items() if key.startswith("private-")},
+            "private_flash": private_quality,
             "online_flash": {key.removeprefix("online-"): value for key, value in existing.items() if key.startswith("online-")},
             "online_pro": pro,
         },
-        "private_bounded_4k_telemetry": bounded_telemetry,
         "private_route_ab_384k": route_ab,
         "online_pro_telemetry": telemetry,
+        "full_suite_performance": {
+            "task_count_per_run": 18,
+            "ttft_available": False,
+            "response_time_definition": "request dispatch to complete response",
+            "effective_token_rate_definition": "sum(completion_tokens) / sum(response_seconds); not decode TPS",
+            "comparison_limit": "quality runs used mixed stream modes and execution schedules; descriptive telemetry only",
+            "treatments": full_suite,
+        },
         "latency": latency,
         "agent_focus": agent,
         "private_route": {
@@ -300,34 +354,26 @@ def main() -> int:
                 "legacy_quality_requests_in_portal_access_log": 108,
                 "legacy_latency_requests_in_portal_access_log": 4,
                 "verified_high_quality_requests": 36,
-                "bounded_high_max_quality_requests": 72,
+                "verified_max_384k_quality_requests": 18,
+                "direct_vllm_max_384k_quality_requests": 18,
                 "verified_high_max_latency_requests": 8,
                 "latency_request_contract": "one warmup plus three measured requests",
             },
         },
         "private_effort_contract": {
-            "portal_requires_allowed_openai_params": ["reasoning_effort"],
+            "portal_requires_allowed_openai_params": False,
+            "portal_fix_verified_without_per_request_override": True,
             "legacy_requested_efforts_effective_effort": "high",
             "legacy_reason": "LiteLLM drop_params removed reasoning_effort for the generic OpenAI-compatible deployment",
-            "verified_same_max_tokens": 32768,
-            "verified_max_quality_status": "completed_with_4k_bound",
-            "verified_max_quality_pilot": {
-                "parallel_requests": 2,
-                "same_max_tokens_as_high": 32768,
-                "client_bound_seconds": 900,
-                "completed_matrix_runs": 0,
-                "portal_status_on_client_cancel": [499, 499],
-            },
-            "bounded_quality_matrix": {
-                "max_tokens": 4096,
-                "runs_per_effort": 2,
-                "requests_per_effort": 36,
-                "concurrency_per_effort": 3,
-                "paired_total_concurrency": 6,
-                "high_final_coverage": bounded_telemetry["high"]["final_coverage"],
-                "max_final_coverage": bounded_telemetry["max"]["final_coverage"],
-                "high_completed_final_score": bounded_telemetry["high"]["completed_final_score"],
-                "max_completed_final_score": bounded_telemetry["max"]["completed_final_score"],
+            "verified_quality_configurations": {
+                "high": {"max_tokens": 32768, "runs": 2, "completed_finals": 36},
+                "max": {
+                    "max_tokens": route_ab["max_tokens"],
+                    "runs": 1,
+                    "completed_finals": route_ab["portal"]["completed_finals"],
+                    "length_truncations": route_ab["portal"]["length_truncations"],
+                    "errors": route_ab["portal"]["errors"],
+                },
             },
             "direct_tokenize_probe": {
                 "high_prompt_tokens": 11,
@@ -341,7 +387,6 @@ def main() -> int:
             "pro_adjudication": sha256(pro_path),
             "agent_evidence": sha256(agent_path),
             "verified_private_adjudication": sha256(verified_path),
-            "bounded_private_adjudication": sha256(bounded_path),
             "route_ab_portal": sha256(route_ab_portal_path),
             "route_ab_direct_vllm": sha256(route_ab_direct_path),
         },
@@ -353,8 +398,7 @@ def main() -> int:
     quality_rows = []
     labels = [
         ("private-high", "Private Flash high / 32K", verified_private["high"]),
-        ("private-bounded-high", "Private Flash high / bounded 4K", bounded_private["high"]),
-        ("private-bounded-max", "Private Flash max / bounded 4K", bounded_private["max"]),
+        ("private-max", "Private Flash max / 384K", private_quality["max"]),
         ("online-low", "Online Flash low / 32K", existing["online-low"]),
         ("online-high", "Online Flash high / 256K", existing["online-high"]),
         ("online-max", "Online Flash max / 384K", existing["online-max"]),
@@ -363,9 +407,10 @@ def main() -> int:
         ("pro-max", "Online Pro max / 384K", pro["max"]),
     ]
     for _key, label, row in labels:
+        stdev = f"{row['stdev'] * 100:.1f}pp" if row["stdev"] is not None else "N/A"
         quality_rows.append(
             f"| {label} | {pct(row['macro_score'])} | {pct(row['categories']['sql'])} | "
-            f"{pct(row['categories']['python'])} | {pct(row['categories']['incident'])} | {row['stdev'] * 100:.1f}pp |"
+            f"{pct(row['categories']['python'])} | {pct(row['categories']['incident'])} | {row['runs']} | {stdev} |"
         )
     latency_rows = []
     for name, label in (
@@ -380,6 +425,25 @@ def main() -> int:
         latency_rows.append(
             f"| {label} | {row['ttft_seconds']:.3f}s | {row['response_seconds']:.3f}s | "
             f"{row['decode_tokens_per_second']:.1f} | {row['completion_tokens']:.0f} |"
+        )
+    full_suite_rows = []
+    for name, label in (
+        ("private-high", "Private Flash high / 32K"),
+        ("private-max", "Private Flash max / 384K · Portal"),
+        ("private-max-direct-vllm", "Private Flash max / 384K · Direct vLLM"),
+        ("online-flash-low", "Online Flash low / 32K"),
+        ("online-flash-high", "Online Flash high / 256K"),
+        ("online-flash-max", "Online Flash max / 384K"),
+        ("online-pro-low", "Online Pro low / 32K"),
+        ("online-pro-high", "Online Pro high / 256K"),
+        ("online-pro-max", "Online Pro max / 384K"),
+    ):
+        row = full_suite[name]
+        concurrency = "/".join(str(value) for value in row["concurrency_per_run"])
+        full_suite_rows.append(
+            f"| {label} | {row['requests']} | {concurrency} | {row['mean_response_seconds']:.1f}s | "
+            f"{row['p95_response_seconds']:.1f}s | {row['max_response_seconds']:.1f}s | "
+            f"{row['effective_e2e_completion_tokens_per_second']:.1f} | 未采集 |"
         )
     agent_rows = []
     for row in agent["tasks"]:
@@ -412,11 +476,8 @@ def main() -> int:
   平均输出 {telemetry['max']['completion_tokens_mean'] / 1000:.1f}K token，约为 low 的
   {telemetry['max']['completion_tokens_mean'] / telemetry['low']['completion_tokens_mean']:.1f} 倍，并出现分钟级尾延迟。
 - **旧 Private max 质量分数无效。** LLM Portal 当时静默丢弃 `reasoning_effort`，所以旧
-  87.5% 只是 effective-high 的重复波动，不是 Max 结果。显式透传后，在 High/Max 相同 4K
-  上限的有界 A/B 中，High 为 {pct(bounded_private['high']['macro_score'])} 且 0/36 截断；True Max
-  全请求分为 {pct(bounded_private['max']['macro_score'])}，10/36 截断。Max 的 26 个完整 final
-  得分 {pct(bounded_telemetry['max']['completed_final_score'])}，说明下降来自 final 覆盖率，不是
-  已完成答案的质量变差。
+  87.5% 只是 effective-high 的重复波动，不是 Max 结果。Issue #46 修复后，无 per-request
+  override 的 Portal Max 探针已与 direct vLLM 的 prompt usage、reasoning 和 final 哈希完全一致。
 - **把 Private Max 上限提高到 384K 后，截断消失但尾延迟极高。** 修复后的 Portal 为
   {pct(route_ab['portal']['macro_score'])}，direct vLLM 为 {pct(route_ab['direct_vllm']['macro_score'])}；
   两边均 18/18 final、0 截断、0 错误，16/18 题可执行分一致。Portal 最慢题耗时
@@ -428,12 +489,12 @@ def main() -> int:
 
 ## 精度
 
-下表只保留 effort 契约已验证的处理组，每组 n=2。Private 与 Pro 使用 v2 harness 的完整
-18 题；Online Flash 保留 PR 32 的 v1 裁决结果。4K 行是相同输出上限下的 High/Max 因果 A/B；
-32K Private High 是不受本轮截断影响的能力基线。分数以可执行 grader 为主，不使用模型自评。
+下表只保留已完整完成且 effort 契约已验证的处理组。Private High 与 online 各 effort 为 n=2；
+Private Max 384K 为 n=1。Private 与 Pro 使用 v2 harness 的完整 18 题；Online Flash 保留 PR 32
+的 v1 裁决结果。分数以可执行 grader 为主，不使用模型自评。
 
-| 处理组 | 宏平均 | SQL | Python | 故障诊断 | 两轮标准差 |
-|---|---:|---:|---:|---:|---:|
+| 处理组 | 宏平均 | SQL | Python | 故障诊断 | 运行次数 | 标准差 |
+|---|---:|---:|---:|---:|---:|---:|
 {chr(10).join(quality_rows)}
 
 旧矩阵请求了 Private low/high/max，但 LiteLLM 将该 deployment 识别为 generic OpenAI-compatible，
@@ -442,24 +503,8 @@ def main() -> int:
 远低于 32K/256K/384K 上限。因此旧 83.3%/90.3%/87.5% 差异既不是 Max 效果，也不是截断造成，
 只能视为重复波动。
 
-按 LiteLLM 官方方式加入 `allowed_openai_params=["reasoning_effort"]` 后，直接模板探针从 High 的
-11 prompt tokens 变为 Max 的 90 tokens，证明 Max 已真实到达 vLLM。Private high 在相同 32K
-输出上限下重跑两轮并完成。32K True Max pilot 在 15 分钟客户端边界内未完成，因此补做相同
-`max_tokens=4096` 的 High/Max 有界矩阵，各两轮、每轮 18 题、每组并发 3，总并发不超过 vLLM
-`max-num-seqs=6`。
-
-| Private 4K 指标 | High | True Max |
-|---|---:|---:|
-| 全请求可执行分 | {pct(bounded_private['high']['macro_score'])} | {pct(bounded_private['max']['macro_score'])} |
-| final 覆盖率 | {pct(bounded_telemetry['high']['final_coverage'])} | {pct(bounded_telemetry['max']['final_coverage'])} |
-| 完整 final 得分 | {pct(bounded_telemetry['high']['completed_final_score'])} | {pct(bounded_telemetry['max']['completed_final_score'])} |
-| length 截断 | {bounded_telemetry['high']['length_truncations']}/36 | {bounded_telemetry['max']['length_truncations']}/36 |
-| 空 final | {bounded_telemetry['high']['empty_finals']}/36 | {bounded_telemetry['max']['empty_finals']}/36 |
-| HTTP/网络错误 | {bounded_telemetry['high']['errors']}/36 | {bounded_telemetry['max']['errors']}/36 |
-
-因此“Max 比 High 精度差”的说法不准确：在 4K 产品边界下，Max 的**任务成功率**更低；但只看
-成功返回的 final，Max 并未低于 High。若产品必须使用 Max，需要提高输出预算或实现 reasoning
-预算/超时保护，并把空 final 当作显式失败处理。
+旧矩阵只用于解释历史契约错误，不进入上表或机器可读 `quality`。当前 Private 的正式质量配置
+只有 High/32K（n=2）和 Max/384K（n=1），两者均为 18/18 完整 final。
 
 ## Private Max 384K 与路由一致性
 
@@ -478,6 +523,19 @@ seed 42、`max_tokens=393216`，Portal 与 SSH tunnel direct vLLM 各并发 2 �
 逐题 finish reason 与 prompt token 数均为 18/18 一致，可执行分 16/18 一致；final 与 reasoning
 文本哈希均为 0/18 一致。结论是 **Portal 路由语义已经与 direct vLLM 对齐**，2.8pp 分差来自
 True Max 单轮采样波动，不能解释为 Portal 改写答案。该 A/B 每条路径 n=1，不声明统计显著性。
+
+## 18 题完整工作负载性能
+
+质量 harness 为每题保存了从请求发出到完整响应结束的 wall time 和 completion tokens，但没有保存
+首个 SSE delta 的时间戳；Private High 当时还是非流式请求。因此下表的 TTFT 无法事后恢复，
+“有效 E2E tok/s”定义为 `sum(completion_tokens) / sum(response_seconds)`，不是扣除 TTFT 后的 decode TPS。
+
+| 处理组 | 请求数 | 每轮并发 | 平均 response | P95 response | 最大 response | 有效 E2E tok/s | TTFT |
+|---|---:|---:|---:|---:|---:|---:|---:|
+{chr(10).join(full_suite_rows)}
+
+这些是实际 18 题运行的描述性 telemetry，但各矩阵的 stream mode、执行时段和并行调度不完全相同，
+不能当作严格的跨服务吞吐 A/B。下面的独立短请求实验才提供同一测量定义下的 TTFT 和 decode TPS。
 
 ## 短请求性能
 
@@ -522,7 +580,7 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 | 场景 | 建议 |
 |---|---|
 | 私密代码、内网数据、稳定日常 SQL/Python/故障诊断 | private Flash high |
-| Private max | 4K final 覆盖率 {pct(bounded_telemetry['max']['final_coverage'])}；384K 可达 100%，但单题最长 {route_ab['portal']['max_case_seconds'] / 60:.1f} 分钟，仅按请求启用 |
+| Private max | 384K 为 18/18 final，但单题最长 {route_ab['portal']['max_case_seconds'] / 60:.1f} 分钟，仅按请求启用 |
 | 简单低延迟请求且允许出网 | online Flash low |
 | 复杂任务、private 首次失败、需要更高一次成功率 | online Pro high |
 | 极难任务且能接受分钟级尾延迟和约 3 倍 low token | Pro max，仅按请求启用 |
@@ -532,7 +590,7 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 
 | 维度 | 本轮纳入 | 未覆盖 | 状态 |
 |---|---|---|---|
-| 可执行精度 | Private High 32K；High/True Max 4K；True Max 384K Portal/direct；Online Flash/Pro | 384K 路由 A/B 仅 n=1 | 主要边界完整 |
+| 可执行精度 | Private High 32K；True Max 384K Portal/direct；Online Flash/Pro | Private Max 384K 与 route A/B 仅 n=1 | 主要边界完整 |
 | 串行 SSE 性能 | Verified Private high/max；Online Flash low；Online Pro low/high/max | Online Flash high/max | 主要路径完整 |
 | Token 与 API 成本 | Online Pro low/high/max | Private 无 API 账单；Flash 未统一计价 | 范围内完整 |
 | Agent 聚焦任务 | Online Pro high；Online/Private 历史基线 | 不是九组 effort 全矩阵 | 部分 |
@@ -546,16 +604,14 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 - Online Flash alias：`deepseek-v4-flash` → `DeepSeek-V4-Flash-0731`。
 - Online Pro alias：`deepseek-v4-pro` → `DeepSeek-V4-Pro-0813`。
 - Private 请求经 LLM Portal 转发，不是客户端直连 vLLM。Portal access log 记录旧质量矩阵
-  108 次请求和旧性能 4 次请求；修正后另有 High 32K 质量 36 次、High/Max 4K 质量 72 次、
-  High/Max 性能 8 次请求。
+  108 次请求和旧性能 4 次请求；正式完成配置另有 High 32K 质量 36 次、Max 384K Portal/direct
+  各 18 次、High/Max 性能 8 次请求。
 - LiteLLM 官方文档说明 `drop_params=true` 会丢弃不支持参数，`allowed_openai_params` 可显式透传；
   旧 Portal deployment 因此丢弃 `reasoning_effort`。Issue #46 修复后，不带 per-request override 的
   Portal/direct Max 探针 prompt usage 与输出哈希一致。
 - 修正后 Private High/Max 性能均为 client → Portal → vLLM 的端到端指标，不是裸引擎延迟。
 - 官方上下文 1M、最大输出 384K、effort 为 low/high/max；默认 high。
 - Pro 六个质量 treatment 共 108 请求，0 HTTP/网络错误、0 空 final、0 length 截断。
-- Private 4K High/True Max 共 72 请求，0 HTTP/网络错误；High 0 截断，True Max 10 个 length
-  截断且对应 10 个空 final。
 - Private 384K route A/B 共 36 请求，Portal/direct 均 18/18 stop、0 截断、0 错误；逐题 score
   16/18 一致。Portal 最长请求 3031 秒，证明修复后的 SSE 路径跨过旧 600 秒网关边界。
 - Agent 聚焦题的脱敏逐题证据见 `data/online-pro-agent-focus-20260817.json`；原始 sandbox、
@@ -563,9 +619,8 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 - Pro Python 原始评分时固定 sandbox 镜像不可用；保存的完整 final 随后在不可变 ECR Python
   digest 中重新执行。原始 JSON 未覆盖，裁决见
   `data/online-pro-matrix-adjudicated.json`。
-- Private 4K High/Max 的 Python final 也在相同不可变 ECR digest 中重新执行；裁决产物为
-  `model-benchmark-qwen-deepseek/data/lakehouse-private-effort-bounded-4k-adjudicated.json`。
-- 本报告是快速决策 benchmark：每组 n=2、Agent 每题 n=1，不宣称统计显著性。
+- 本报告是快速决策 benchmark：Private Max 384K route A/B 与 Agent 每题 n=1，其余质量组 n=2，
+  不宣称统计显著性。
 
 官方资料：[Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode)、
 [Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing)、
