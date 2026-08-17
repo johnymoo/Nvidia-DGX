@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/johnymoo/Nvidia-DGX/benchmarks/schemas/recipe.schema.json",
+  "title": "NVIDIA deployment recipe",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "model_family",
+    "model_id",
+    "hardware_id",
+    "runtime_id",
+    "profile_id",
+    "modality",
+    "maturity",
+    "operations",
+    "evidence",
+    "limitations",
+    "invalidation_conditions"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$"},
+    "model_family": {"type": "string"},
+    "model_id": {"type": "string"},
+    "hardware_id": {"type": "string"},
+    "runtime_id": {"type": "string"},
+    "profile_id": {"type": "string"},
+    "modality": {
+      "enum": ["text-generation", "multimodal-generation", "media-generation", "embedding", "application"]
+    },
+    "maturity": {"enum": ["Verified", "Reference", "Archived"]},
+    "default": {"type": "boolean"},
+    "source_paths": {"type": "array", "items": {"type": "string"}},
+    "operations": {"type": "object"},
+    "benchmark_suites": {"type": "array", "items": {"type": "string"}},
+    "requirements": {"type": "object"},
+    "evidence": {
+      "type": "object",
+      "required": ["receipts", "benchmarks"],
+      "properties": {
+        "receipts": {"type": "array", "items": {"type": "string"}},
+        "benchmarks": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "invalidation_conditions": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

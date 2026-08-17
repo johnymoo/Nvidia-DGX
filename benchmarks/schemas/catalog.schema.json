@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/johnymoo/Nvidia-DGX/benchmarks/schemas/catalog.schema.json",
+  "title": "Recipe catalog",
+  "type": "object",
+  "required": ["schema_version", "recipes"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": ["string", "null"]},
+    "recipes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "metadata_path", "model_family", "hardware_id", "runtime_id", "maturity"]
+      }
+    }
+  },
+  "additionalProperties": false
+}

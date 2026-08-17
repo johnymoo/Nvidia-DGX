@@ -1,0 +1,28 @@
+{
+  "id": "performance-v1",
+  "version": "1.0.0",
+  "modalities": ["text-generation", "multimodal-generation"],
+  "required_client_metrics": [
+    "ttft_seconds",
+    "first_final_token_seconds",
+    "response_time_seconds",
+    "decode_tokens_per_second",
+    "output_tokens_per_second_e2e",
+    "aggregate_tokens_per_second",
+    "prompt_tokens",
+    "completion_tokens",
+    "reasoning_tokens",
+    "cached_tokens",
+    "errors",
+    "distributions"
+  ],
+  "definitions": {
+    "ttft_seconds": "request dispatch to first non-empty streaming delta",
+    "first_final_token_seconds": "request dispatch to first final-answer token for reasoning models",
+    "response_time_seconds": "request dispatch to stream completion",
+    "decode_tokens_per_second": "tokens after the first streamed token divided by the interval from first to last non-empty delta",
+    "output_tokens_per_second_e2e": "completion tokens divided by response time",
+    "aggregate_tokens_per_second": "concurrent batch completion tokens divided by batch wall time"
+  },
+  "distribution_fields": ["min", "mean", "p50", "p95", "p99", "max"]
+}

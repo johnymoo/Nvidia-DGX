@@ -1,0 +1,25 @@
+{
+  "id": "media-performance-v1",
+  "version": "1.0.0",
+  "modalities": ["media-generation"],
+  "required_client_metrics": [
+    "time_to_first_artifact_seconds",
+    "response_time_seconds",
+    "artifact_count",
+    "artifact_duration_seconds",
+    "artifact_resolution",
+    "errors",
+    "distributions"
+  ],
+  "not_applicable": [
+    "ttft_seconds",
+    "first_final_token_seconds",
+    "decode_tokens_per_second",
+    "output_tokens_per_second_e2e",
+    "aggregate_tokens_per_second",
+    "prompt_tokens",
+    "completion_tokens",
+    "reasoning_tokens",
+    "cached_tokens"
+  ]
+}

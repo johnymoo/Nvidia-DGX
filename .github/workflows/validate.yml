@@ -1,0 +1,25 @@
+name: Validate repository
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  no-host-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fixture tests
+        run: python -m unittest discover -s tests -v
+      - name: Catalog and repository validation
+        run: python lab validate
+      - name: Generated files are current
+        run: python lab generate --check
