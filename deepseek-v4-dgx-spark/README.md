@@ -18,6 +18,8 @@ benchmark。结论是 private Flash high 适合作为默认私有线路；复杂
 Pro high；max 只按请求启用。完整精度、短请求性能、token 成本、Agent 聚焦结果和适用边界见
 [`BENCHMARK-COMPARISON-20260817.md`](BENCHMARK-COMPARISON-20260817.md)，可视化网站见
 [`BENCHMARK-COMPARISON-20260817.html`](BENCHMARK-COMPARISON-20260817.html)。
+本轮 private benchmark 经 LLM Portal 转发到双 GB10 vLLM，并非客户端直连；报告中的 private
+TTFT 是包含反向代理、Portal 兼容层和 WireGuard 的端到端指标。
 
 2026-08-17 已使用私有 OpenAI-compatible endpoint 对 `deepseek-v4-flash-0731` 的原生
 `thinking=true` 补跑 18 道湖仓 SQL/Python/故障分析题。结果、逐题输出及与 Qwen 的

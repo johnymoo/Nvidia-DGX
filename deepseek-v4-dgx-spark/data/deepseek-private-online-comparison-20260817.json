@@ -234,6 +234,24 @@
       }
     ]
   },
+  "private_route": {
+    "direct_vllm": false,
+    "endpoint_label": "private-llm-portal",
+    "path": [
+      "benchmark-client",
+      "synology-reverse-proxy",
+      "llm-portal-edge",
+      "litellm-compat",
+      "wireguard",
+      "private-vllm"
+    ],
+    "latency_scope": "client-to-portal-to-vllm end-to-end",
+    "verification": {
+      "quality_requests_in_portal_access_log": 108,
+      "latency_requests_in_portal_access_log": 4,
+      "latency_request_contract": "one warmup plus three measured requests"
+    }
+  },
   "private_effort_contract": {
     "low_equals_high": true,
     "low_prompt_sha256": "f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0",

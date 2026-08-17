@@ -169,6 +169,24 @@ def main() -> int:
         "online_pro_telemetry": telemetry,
         "latency": latency,
         "agent_focus": agent,
+        "private_route": {
+            "direct_vllm": False,
+            "endpoint_label": "private-llm-portal",
+            "path": [
+                "benchmark-client",
+                "synology-reverse-proxy",
+                "llm-portal-edge",
+                "litellm-compat",
+                "wireguard",
+                "private-vllm",
+            ],
+            "latency_scope": "client-to-portal-to-vllm end-to-end",
+            "verification": {
+                "quality_requests_in_portal_access_log": 108,
+                "latency_requests_in_portal_access_log": 4,
+                "latency_request_contract": "one warmup plus three measured requests",
+            },
+        },
         "private_effort_contract": {
             "low_equals_high": True,
             "low_prompt_sha256": "f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0",
@@ -187,6 +205,7 @@ def main() -> int:
 
     quality_rows = []
     labels = [
+        ("private-low", "Private Flash low* / 32K", existing["private-low"]),
         ("private-high", "Private Flash high / 256K", existing["private-high"]),
         ("private-max", "Private Flash max / 384K", existing["private-max"]),
         ("online-low", "Online Flash low / 32K", existing["online-low"]),
@@ -235,7 +254,8 @@ def main() -> int:
 
 - **双 GB10 private Flash 适合作为默认私有工程推理线路。** 在 18 道可执行湖仓题上，
   private high 平均 {pct(existing['private-high']['macro_score'])}，与 online Flash high 的
-  {pct(existing['online-high']['macro_score'])} 接近；数据不离开私网，TTFT 也明显更低。
+  {pct(existing['online-high']['macro_score'])} 接近；本轮通过 LLM Portal 转发至 private vLLM，
+  客户端观测的端到端 TTFT 也明显更低。
 - **需要最高成功率时升级到 online Pro high。** Pro high 平均
   {pct(pro['high']['macro_score'])}，比 private high 高
   {(pro['high']['macro_score'] - existing['private-high']['macro_score']) * 100:.1f}pp；本轮一轮 18/18，
@@ -243,13 +263,16 @@ def main() -> int:
 - **不要把 max 设为默认。** Pro max 平均 {pct(pro['max']['macro_score'])}，没有超过 high，
   平均输出 {telemetry['max']['completion_tokens_mean'] / 1000:.1f}K token，约为 low 的
   {telemetry['max']['completion_tokens_mean'] / telemetry['low']['completion_tokens_mean']:.1f} 倍，并出现分钟级尾延迟。
+- **Private max 已测试，但没有改善质量。** 两轮宏平均为
+  {pct(existing['private-max']['macro_score'])}，低于 private high，且标准差为
+  {existing['private-max']['stdev'] * 100:.1f}pp。
 - **Pro 不保证 Agent 工作流单调更好。** 在一个刻意聚焦历史 private 弱项的 5 题集合中，
   Pro high 只完整通过 1/5；历史 online Flash 为 4/5，private Flash 为 2/5。该集合有选择偏差，
   只能说明升级前仍需按真实 Agent workflow 验证。
 
 ## 精度
 
-所有处理组都生成 18 道 SQL、Python 和故障诊断题，每组 n=2。PR 32 的 Flash/private
+九个观测组都生成 18 道 SQL、Python 和故障诊断题，每组 n=2。PR 32 的 Flash/private
 使用 v1 题面，其中一题 CDC 因未定义 I/U/D 在独立裁决时排除，最终按 17 题计分；Pro 使用
 已修正的 v2 harness，按完整 18 题计分。分数以可执行 grader 为主，不使用模型自评。
 
@@ -257,7 +280,7 @@ def main() -> int:
 |---|---:|---:|---:|---:|---:|
 {chr(10).join(quality_rows)}
 
-Private 当前运行时不能独立测试 low：vLLM `deepseek_v4` tokenizer 将 low 和 high 都映射为
+`*` Private 当前运行时不能独立测试 low：vLLM `deepseek_v4` tokenizer 将 low 和 high 都映射为
 high。实测同一消息的 low/high prompt SHA-256 均为
 `f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0`；max 才产生不同前缀。
 因此 PR 32 中 private-low 与 private-high 的差异应解释为重复运行波动和不同输出上限，
@@ -265,7 +288,9 @@ high。实测同一消息的 low/high prompt SHA-256 均为
 
 ## 短请求性能
 
-每组 1 次预热、3 次串行 SSE 测量。TTFT 是首个 reasoning/content delta；TPS 为 API
+每组 1 次预热、3 次串行 SSE 测量。Private 测量路径是 benchmark client → Synology 反向代理
+→ LLM Portal edge/LiteLLM/compat → WireGuard → private vLLM，不是客户端直连 vLLM。
+TTFT 是客户端收到首个 reasoning/content delta 的端到端时间；TPS 为 API
 completion tokens 除以 TTFT 后生成时间。不同 effort 生成长度不同，因此响应时间不是固定
 token 数吞吐 A/B。
 
@@ -273,7 +298,8 @@ token 数吞吐 A/B。
 |---|---:|---:|---:|---:|
 {chr(10).join(latency_rows)}
 
-Private high 的 TTFT 为 {latency['private-high']['ttft_seconds']:.3f}s，适合交互式内网 Agent；
+Private high 经 LLM Portal 的端到端 TTFT 为 {latency['private-high']['ttft_seconds']:.3f}s，
+适合交互式内网 Agent，但不能解释为裸 vLLM engine latency；
 online Pro high 在本题上的端到端时间为 {latency['online-pro-high']['response_seconds']:.3f}s，
 与 private high 的 {latency['private-high']['response_seconds']:.3f}s 接近，但其网络、调度和硬件
 不可控。Pro 质量矩阵为缩短总时长采用并发执行，其中 `total_seconds` 不用于性能比较。
@@ -302,10 +328,20 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 | 场景 | 建议 |
 |---|---|
 | 私密代码、内网数据、稳定日常 SQL/Python/故障诊断 | private Flash high |
+| Private max | 两轮 87.5%，未超过 high；本轮未单独测延迟与 Agent，不建议默认启用 |
 | 简单低延迟请求且允许出网 | online Flash low |
 | 复杂任务、private 首次失败、需要更高一次成功率 | online Pro high |
 | 极难任务且能接受分钟级尾延迟和约 3 倍 low token | Pro max，仅按请求启用 |
 | 终端脚本、长文约束、复杂 Agent 工具链 | 先跑工作流级验收，不按模型名直接升级 |
+
+## 测试覆盖矩阵
+
+| 维度 | 本轮纳入 | 未覆盖 | 状态 |
+|---|---|---|---|
+| 可执行精度 | Private / Online Flash / Online Pro：low、high、max | Private low 非独立 prompt | 完整 |
+| 串行 SSE 性能 | Private high；Online Flash low；Online Pro low/high/max | Private low/max；Online Flash high/max | 部分 |
+| Token 与 API 成本 | Online Pro low/high/max | Private 无 API 账单；Flash 未统一计价 | 范围内完整 |
+| Agent 聚焦任务 | Online Pro high；Online/Private 历史基线 | 不是九组 effort 全矩阵 | 部分 |
 
 Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP=2、最大并发序列 6；online
 服务则引入数据出境、动态 alias、网络和供应商调度风险。两类线路应保留自动回退策略，不能
@@ -315,6 +351,9 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 
 - Online Flash alias：`deepseek-v4-flash` → `DeepSeek-V4-Flash-0731`。
 - Online Pro alias：`deepseek-v4-pro` → `DeepSeek-V4-Pro-0813`。
+- Private 请求经 LLM Portal 转发，不是客户端直连 vLLM。Portal access log 在质量矩阵对应
+  时段记录 108 次请求；性能测量对应 4 次成功请求，与 1 次预热加 3 次测量完全一致。
+- Private 的 0.252s TTFT 是 client → Portal → vLLM 的端到端指标，不是裸引擎延迟。
 - 官方上下文 1M、最大输出 384K、effort 为 low/high/max；默认 high。
 - Pro 六个质量 treatment 共 108 请求，0 HTTP/网络错误、0 空 final、0 length 截断。
 - Agent 聚焦题的脱敏逐题证据见 `data/online-pro-agent-focus-20260817.json`；原始 sandbox、
