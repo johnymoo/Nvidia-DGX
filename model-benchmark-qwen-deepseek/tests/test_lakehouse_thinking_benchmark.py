@@ -4,6 +4,7 @@ import io
 import sys
 import unittest
 import json
+import urllib.error
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -68,6 +69,70 @@ class LakehouseThinkingBenchmarkTests(unittest.TestCase):
         self.assertEqual(body["chat_template_kwargs"], {"thinking": True})
         self.assertEqual(body["top_k"], 20)
         self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
+
+    def test_online_deepseek_request_uses_official_effort_contract(self) -> None:
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                self.close()
+
+        payload = {"choices": [{"message": {"content": "ok", "reasoning_content": "r"}, "finish_reason": "stop"}], "usage": {"completion_tokens": 2}}
+        with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(json.dumps(payload).encode())) as urlopen:
+            BENCH.request(
+                "http://example.test/v1",
+                "deepseek-v4-flash",
+                "test",
+                "deepseek-thinking",
+                256,
+                "test-key",
+                deepseek_contract="online-api",
+                deepseek_effort="low",
+                deepseek_sampling="official-api",
+            )
+        body = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(body["thinking"], {"type": "enabled"})
+        self.assertEqual(body["reasoning_effort"], "low")
+        self.assertNotIn("chat_template_kwargs", body)
+        self.assertNotIn("presence_penalty", body)
+
+    def test_compact_row_hashes_full_reasoning_without_changing_score_input(self) -> None:
+        compacted = BENCH.compact_row({"response": "answer", "reasoning": "abcdef"}, 3, 3)
+        self.assertTrue(compacted["response_evidence"]["storage_truncated"])
+        self.assertTrue(compacted["reasoning_evidence"]["storage_truncated"])
+        self.assertEqual(compacted["reasoning_evidence"]["chars"], 6)
+        self.assertIn("full_sha256=", compacted["reasoning"])
+
+    def test_http_error_is_recorded_as_a_scored_request_failure(self) -> None:
+        with patch.object(BENCH.urllib.request, "urlopen", side_effect=urllib.error.HTTPError("http://example.test", 504, "Gateway Time-out", {}, None)):
+            result = BENCH.request("http://example.test/v1", "model", "test", "off", 256)
+        self.assertEqual(result["finish_reason"], "error")
+        self.assertEqual(result["error"]["status"], 504)
+
+    def test_streaming_request_collects_reasoning_content_and_usage(self) -> None:
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                self.close()
+
+        events = b"\n".join(
+            [
+                b'data: {"choices":[{"delta":{"reasoning_content":"think"},"finish_reason":null}]}',
+                b'data: {"choices":[{"delta":{"reasoning_content":"ing","content":"ok"},"finish_reason":"stop"}]}',
+                b'data: {"choices":[],"usage":{"completion_tokens":3}}',
+                b"data: [DONE]",
+            ]
+        ) + b"\n"
+        with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(events)) as urlopen:
+            result = BENCH.request("http://example.test/v1", "model", "test", "off", 256, stream=True)
+        body = json.loads(urlopen.call_args.args[0].data)
+        self.assertTrue(body["stream"])
+        self.assertEqual(result["reasoning"], "thinking")
+        self.assertEqual(result["response"], "ok")
+        self.assertEqual(result["usage"]["completion_tokens"], 3)
 
     def test_report_input_validation(self) -> None:
         value = {

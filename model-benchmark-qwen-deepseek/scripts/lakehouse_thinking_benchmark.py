@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sqlite3
 import statistics
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -120,7 +122,20 @@ def score_incident(case: dict, response: str) -> tuple[float, dict]:
     return score, {"parsed": value, "cause": cause_ok, "correct_actions": correct_actions, "wrong_actions": wrong_actions}
 
 
-def request(base_url: str, model: str, prompt: str, mode: str, max_tokens: int, api_key: str | None = None) -> dict:
+def request(
+    base_url: str,
+    model: str,
+    prompt: str,
+    mode: str,
+    max_tokens: int,
+    api_key: str | None = None,
+    *,
+    deepseek_contract: str = "private-vllm",
+    deepseek_effort: str | None = None,
+    deepseek_sampling: str = "historical",
+    request_timeout: int = 900,
+    stream: bool = False,
+) -> dict:
     body = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -132,22 +147,88 @@ def request(base_url: str, model: str, prompt: str, mode: str, max_tokens: int, 
         body["chat_template_kwargs"] = {"enable_thinking": False}
         body["top_k"] = 20
     elif mode == "deepseek-thinking":
-        body.update({"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0})
-        body["chat_template_kwargs"] = {"thinking": True}
-        body["top_k"] = 20
+        if deepseek_contract == "online-api":
+            if deepseek_sampling != "official-api":
+                raise ValueError("online-api DeepSeek thinking requires --deepseek-sampling official-api")
+            body["thinking"] = {"type": "enabled"}
+        elif deepseek_contract == "private-vllm":
+            if deepseek_sampling == "historical":
+                body.update({"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0})
+                body["top_k"] = 20
+            elif deepseek_sampling == "official-local-general":
+                body.update({"temperature": 1.0, "top_p": 1.0})
+            elif deepseek_sampling == "official-local-agent":
+                body.update({"temperature": 1.0, "top_p": 0.95})
+            else:
+                raise ValueError(f"Unsupported private DeepSeek sampling profile: {deepseek_sampling}")
+            body["chat_template_kwargs"] = {"thinking": True}
+        else:
+            raise ValueError(f"Unsupported DeepSeek contract: {deepseek_contract}")
+        if deepseek_effort:
+            body["reasoning_effort"] = deepseek_effort
     else:
         body.update({"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0})
         body["chat_template_kwargs"] = {"enable_thinking": True}
         body["top_k"] = 20
         if mode == "qwen38-low":
             body["reasoning_effort"] = "low"
+    if stream:
+        body["stream"] = True
+        body["stream_options"] = {"include_usage": True}
     started = time.monotonic()
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(), headers=headers)
-    with urllib.request.urlopen(req, timeout=900) as response:
-        payload = json.load(response)
+    try:
+        with urllib.request.urlopen(req, timeout=request_timeout) as response:
+            if stream:
+                content_parts: list[str] = []
+                reasoning_parts: list[str] = []
+                finish_reason = None
+                usage: dict = {}
+                for raw_line in response:
+                    line = raw_line.decode("utf-8", errors="replace").strip()
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    event = json.loads(data)
+                    if event.get("usage"):
+                        usage = event["usage"]
+                    for choice in event.get("choices") or []:
+                        delta = choice.get("delta") or {}
+                        content_parts.append(delta.get("content") or "")
+                        reasoning_parts.append(delta.get("reasoning") or delta.get("reasoning_content") or "")
+                        if choice.get("finish_reason") is not None:
+                            finish_reason = choice["finish_reason"]
+                return {
+                    "response": "".join(content_parts),
+                    "reasoning": "".join(reasoning_parts),
+                    "finish_reason": finish_reason,
+                    "usage": usage,
+                    "seconds": round(time.monotonic() - started, 3),
+                }
+            payload = json.load(response)
+    except urllib.error.HTTPError as exc:
+        return {
+            "response": "",
+            "reasoning": "",
+            "finish_reason": "error",
+            "usage": {},
+            "error": {"type": "http", "status": exc.code, "reason": str(exc.reason)},
+            "seconds": round(time.monotonic() - started, 3),
+        }
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return {
+            "response": "",
+            "reasoning": "",
+            "finish_reason": "error",
+            "usage": {},
+            "error": {"type": type(exc).__name__, "reason": str(exc.reason if isinstance(exc, urllib.error.URLError) else exc)},
+            "seconds": round(time.monotonic() - started, 3),
+        }
     choice = payload["choices"][0]
     message = choice["message"]
     return {
@@ -175,7 +256,31 @@ def summarize(rows: list[dict], category: str) -> dict:
         "completion_tokens": sum(row["usage"].get("completion_tokens", 0) for row in selected),
         "length_truncations": sum(row["finish_reason"] == "length" for row in selected),
         "empty_finals": sum(not row["response"] for row in selected),
+        "errors": sum(row.get("error") is not None for row in selected),
     }
+
+
+def compact_text(value: str, max_chars: int) -> tuple[str, dict]:
+    digest = hashlib.sha256(value.encode()).hexdigest()
+    metadata = {
+        "chars": len(value),
+        "sha256": digest,
+        "storage_truncated": False,
+    }
+    if max_chars <= 0 or len(value) <= max_chars:
+        return value, metadata
+    metadata["storage_truncated"] = True
+    suffix = f"\n\n[stored prefix truncated; full_sha256={digest}; full_chars={len(value)}]"
+    return value[: max(0, max_chars - len(suffix))] + suffix, metadata
+
+
+def compact_row(row: dict, max_response_chars: int, max_reasoning_chars: int) -> dict:
+    compacted = dict(row)
+    for field, max_chars in (("response", max_response_chars), ("reasoning", max_reasoning_chars)):
+        value = str(compacted.get(field) or "")
+        compacted[field], metadata = compact_text(value, max_chars)
+        compacted[f"{field}_evidence"] = metadata
+    return compacted
 
 
 def main() -> int:
@@ -186,52 +291,85 @@ def main() -> int:
     parser.add_argument("--mode", choices=["off", "qwen36-thinking", "qwen38-low", "deepseek-thinking"], required=True)
     parser.add_argument("--api-key-env", help="Name of an environment variable containing an optional OpenAI-compatible API key")
     parser.add_argument("--max-tokens", type=int, default=4096)
+    parser.add_argument("--request-timeout", type=int, default=900)
+    parser.add_argument("--stream", action="store_true", help="Use server-sent event streaming for the request")
+    parser.add_argument("--deepseek-contract", choices=["private-vllm", "online-api"], default="private-vllm")
+    parser.add_argument("--deepseek-effort", choices=["low", "high", "max"])
+    parser.add_argument("--deepseek-sampling", choices=["historical", "official-api", "official-local-general", "official-local-agent"], default="historical")
+    parser.add_argument("--repeat", type=int, default=1)
+    parser.add_argument("--expected-runs", type=int, default=1)
+    parser.add_argument("--treatment", help="Stable treatment label used when aggregating matrix results")
+    parser.add_argument("--endpoint-label", help="Safe endpoint identifier recorded in output instead of --base-url")
+    parser.add_argument("--max-response-chars", type=int, default=0, help="Store a prefix of final content; zero stores all content")
+    parser.add_argument("--max-reasoning-chars", type=int, default=0, help="Store a prefix of reasoning; zero stores all content")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.max_tokens < 256:
         parser.error("--max-tokens must be at least 256")
+    if args.request_timeout < 30:
+        parser.error("--request-timeout must be at least 30 seconds")
+    if args.repeat < 1:
+        parser.error("--repeat must be at least 1")
+    if args.expected_runs < 1:
+        parser.error("--expected-runs must be at least 1")
+    if args.max_response_chars < 0 or args.max_reasoning_chars < 0:
+        parser.error("evidence character limits cannot be negative")
+    if args.mode != "deepseek-thinking" and args.deepseek_effort:
+        parser.error("--deepseek-effort is only valid for --mode deepseek-thinking")
     api_key = os.environ.get(args.api_key_env) if args.api_key_env else None
     if args.api_key_env and not api_key:
         parser.error(f"environment variable {args.api_key_env} is empty")
 
     rows = []
     for case in SQL_CASES:
-        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens, api_key)
+        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
         passed, detail = execute_sql(case, row["response"])
-        rows.append({"id": case["id"], "category": "sql", "prompt": case["prompt"], "expected": case["expected"], "score": float(passed), "passed": passed, "detail": detail, **row})
+        rows.append(compact_row({"id": case["id"], "category": "sql", "prompt": case["prompt"], "expected": case["expected"], "score": float(passed), "passed": passed, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case["id"], "score": float(passed), "seconds": row["seconds"]}), flush=True)
 
     for case_id, prompt, checks in PYTHON_CASES:
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key)
+        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
         passed, executor_tail = run_code(extract_block(row["response"], "python"), checks)
-        rows.append({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row})
+        rows.append(compact_row({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case_id, "score": float(passed), "seconds": row["seconds"]}), flush=True)
 
     for case in INCIDENT_CASES:
         prompt = incident_prompt(case)
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key)
+        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
         score, detail = score_incident(case, row["response"])
-        rows.append({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row})
+        rows.append(compact_row({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case["id"], "score": score, "seconds": row["seconds"]}), flush=True)
 
     categories = {name: summarize(rows, name) for name in ("sql", "python", "incident")}
     result = {
-        "schema_version": 1,
+        "schema_version": 2,
         "harness_id": HARNESS_ID,
         "status": "passed",
         "tag": args.tag,
+        "treatment": args.treatment or args.tag,
         "model": args.model,
-        "base_url": args.base_url,
+        "base_url": args.endpoint_label or args.base_url,
         "mode": args.mode,
         "seed": 42,
+        "repeat": args.repeat,
+        "expected_runs": args.expected_runs,
         "max_tokens": args.max_tokens,
         "sampling": (
-            "DeepSeek native thinking with controlled sampling"
+            f"DeepSeek {args.deepseek_contract}; {args.deepseek_sampling}; effort={args.deepseek_effort or 'default'}"
             if args.mode == "deepseek-thinking"
             else "official precise-coding thinking parameters"
             if args.mode != "off"
             else "official non-thinking parameters"
         ),
+        "request_config": {
+            "deepseek_contract": args.deepseek_contract if args.mode == "deepseek-thinking" else None,
+            "deepseek_effort": args.deepseek_effort if args.mode == "deepseek-thinking" else None,
+            "deepseek_sampling": args.deepseek_sampling if args.mode == "deepseek-thinking" else None,
+            "max_response_chars": args.max_response_chars,
+            "max_reasoning_chars": args.max_reasoning_chars,
+            "request_timeout_seconds": args.request_timeout,
+            "stream": args.stream,
+        },
         "categories": categories,
         "macro_score": statistics.fmean(value["score"] for value in categories.values()),
         "total_seconds": sum(row["seconds"] for row in rows),

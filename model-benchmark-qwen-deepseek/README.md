@@ -79,6 +79,20 @@ performance JSON ---------------------------+
 online DS 都使用 `.env` 中的 OpenAI-compatible 变量和原生 `thinking=true`；其硬件、
 网络和网关不同，245.5 秒与 296.6 秒总耗时均不参与与 RTX 4090 Qwen 的性能比较。
 
+### 2026-08-17 参数矩阵（DeepSeek n=2）
+
+新的 [`report/lakehouse-parameter-matrix.html`](report/lakehouse-parameter-matrix.html) 将
+Qwen 选型、DeepSeek 质量、成本、重复波动和逐次证据分开显示；完整结论、可复现命令和
+NAS Ubuntu 网关 504 诊断见
+[`report/LAKEHOUSE-PARAMETER-MATRIX-20260817.md`](report/LAKEHOUSE-PARAMETER-MATRIX-20260817.md)。
+
+- 同一 RTX 4090：`Qwen3.8-27B-FP8 / low / 32K` 为 88.9%，高于
+  `Qwen3.6-35B-A3B-FP8 / thinking / 28K` 的 75.0%，因此仍为主推理默认。
+- private `deepseek-v4-flash-0731` 选 `high / 256K`（79.2%、5m03s、13.1K token）；
+  online 的 `max / 384K` 虽达到 87.5%，但约 23m52s 和 152.3K token，不能作默认。
+- online 改用 SSE 后两轮 108 次请求均无 HTTP/网络错误。旧的非流式长请求 504 指向
+  NAS Ubuntu Nginx 的上游读取超时；具体修复参数在上述结论文档。
+
 使用私有 OpenAI-compatible 环境变量重跑 DeepSeek thinking treatment：
 
 ```bash
@@ -122,6 +136,8 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 | `scripts/generate_html_report.py` | 生成包含配置、图表、题目和原始回答的单文件 HTML |
 | `scripts/lakehouse_thinking_benchmark.py` | 运行可执行 SQL、隐藏测试 Python 和编码化故障分析 |
 | `scripts/generate_lakehouse_report.py` | 生成 Qwen 与 DeepSeek 逐题对比 HTML |
+| `scripts/run_deepseek_parameter_matrix.sh` | 运行 private/online DS 的 low、high、max 参数矩阵；支持 `DEEPSEEK_MATRIX_REPEATS` |
+| `scripts/generate_parameter_matrix_report.py` | 生成按质量、成本、稳定性分区的参数矩阵报告 |
 | `data/*-quality.json` | 三个模型的逐题原始输出和客观验证结果 |
 | `data/performance-comparison.json` | 两个 Qwen 配置的同机性能比较 |
 | `data/deepseek-performance.json` | DeepSeek 双 GB10 性能结果 |
@@ -129,6 +145,7 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 | `data/lakehouse-*.json` | 六个 treatment 的逐题原始输出与客观评分 |
 | [`report/index.html`](./report/index.html) | 2026-08-16 已完成评测的冻结 HTML 基线报告 |
 | [`report/lakehouse-thinking.html`](./report/lakehouse-thinking.html) | 2026-08-17 Qwen 同机 thinking 与 DeepSeek 补充对比 |
+| [`report/lakehouse-parameter-matrix.html`](./report/lakehouse-parameter-matrix.html) | DS 参数矩阵的可视化汇总（n=2） |
 | [`report/README.md`](./report/README.md) | 报告哈希、输入身份和可直接复用条件 |
 
 `report/index.html` 是为后续同题集直接参考而保留的冻结证据快照；普通重新

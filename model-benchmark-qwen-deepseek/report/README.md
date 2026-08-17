@@ -60,3 +60,14 @@ RTX 4090 上完成的四组 Qwen 对比，以及私有与 online OpenAI-compatib
 | `data/lakehouse-qwen38-thinking-low.json` | `5f29e5dbcd8eb16c15701dc0041b30b3c0405f580997e2a2e604aa7def60a137` |
 | `data/lakehouse-deepseek-thinking.json` | `7af977fdbdd6fec8e3d74a78749fdf89da044e78a656d94291c491b9aa120710` |
 | `data/lakehouse-online-deepseek-thinking.json` | `249d98e244f13b0f50edbf54991d54b7b02096f522517dc281ada267f985d169` |
+
+## 湖仓参数矩阵
+
+[`lakehouse-parameter-matrix.html`](./lakehouse-parameter-matrix.html) 是 2026-08-17 的
+DeepSeek `low / 32K`、`high / 256K`、`max / 384K` 参数矩阵。private 固定为
+`deepseek-v4-flash-0731`，online 为动态 `deepseek-v4-flash`；每个 DS 处理组完成两次独立运行。
+
+- Report SHA-256：`f0f96a9aa3135594c4136f22fa6077cb255e0607002e04abd36da1de5c22f925`
+- Harness：`lakehouse-thinking-v1`，每次 18 题；online 用 SSE，private 保持 vLLM 非流式请求。
+- 决策与 NAS Ubuntu Nginx 504 诊断见
+  [`LAKEHOUSE-PARAMETER-MATRIX-20260817.md`](./LAKEHOUSE-PARAMETER-MATRIX-20260817.md)。
