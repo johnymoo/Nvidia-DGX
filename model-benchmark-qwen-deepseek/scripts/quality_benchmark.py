@@ -113,7 +113,7 @@ def run_code(code: str, checks: list[tuple[str, object]]) -> tuple[bool, str]:
         "PYTHON_SANDBOX_IMAGE",
         "python@sha256:a630a63cdb314e2d138a2fca3e375e319e8568346ffafac5b980f888630ac4f1",
     )
-    command = ["docker", "run", "--rm", "--network", "none", "--read-only", "--memory", "128m", "--cpus", "1", "--pids-limit", "64", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534", "--tmpfs", "/tmp:rw,noexec,nosuid,size=16m", "-e", f"SUBMISSION={base64.b64encode(code.encode()).decode()}", "-e", f"EXPRESSIONS={base64.b64encode(json.dumps([item[0] for item in checks]).encode()).decode()}", "-e", f"MARKER={marker}", image, "python", "-I", "-c", runner]
+    command = ["docker", "run", "--pull=never", "--rm", "--network", "none", "--read-only", "--memory", "128m", "--cpus", "1", "--pids-limit", "64", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534", "--tmpfs", "/tmp:rw,noexec,nosuid,size=16m", "-e", f"SUBMISSION={base64.b64encode(code.encode()).decode()}", "-e", f"EXPRESSIONS={base64.b64encode(json.dumps([item[0] for item in checks]).encode()).decode()}", "-e", f"MARKER={marker}", image, "python", "-I", "-c", runner]
     completed = subprocess.run(command, text=True, capture_output=True, timeout=20, check=False)
     detail = (completed.stdout + completed.stderr)[-2000:]
     matched = re.search(rf"(?m)^{marker}(.+)$", completed.stdout)

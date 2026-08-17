@@ -7,7 +7,8 @@ REPO_DIR=$(cd -- "${PROJECT_DIR}/.." && pwd)
 HARNESS=${REPO_DIR}/model-benchmark-qwen-deepseek/scripts/lakehouse_thinking_benchmark.py
 LATENCY_HARNESS=${REPO_DIR}/model-benchmark-qwen-deepseek/scripts/inference_latency_benchmark.py
 OUTPUT_DIR=${1:-${PROJECT_DIR}/data/online-pro-matrix}
-BASE_URL=${ONLINE_DS_BASE_URL:-https://coding.onlyservice.io/v1}
+BASE_URL=${ONLINE_DS_BASE_URL:-}
+ALLOW_EXTERNAL=${ONLINE_DS_ALLOW_EXTERNAL:-false}
 API_KEY_ENV=${ONLINE_DS_API_KEY_ENV:-CLAUDE_DS_TOKEN}
 MODEL=${ONLINE_DS_PRO_MODEL:-deepseek-v4-pro}
 REPEATS=${ONLINE_DS_PRO_REPEATS:-2}
@@ -17,6 +18,8 @@ PARALLEL_QUALITY=${ONLINE_DS_PRO_PARALLEL_QUALITY:-false}
   echo "Benchmark harnesses are missing" >&2
   exit 2
 }
+[[ -n "${BASE_URL}" ]] || { echo "ONLINE_DS_BASE_URL is required" >&2; exit 2; }
+[[ "${ALLOW_EXTERNAL}" == true ]] || { echo "Set ONLINE_DS_ALLOW_EXTERNAL=true to run the external benchmark" >&2; exit 2; }
 [[ "${REPEATS}" =~ ^[1-9][0-9]*$ ]] || {
   echo "ONLINE_DS_PRO_REPEATS must be a positive integer" >&2
   exit 2

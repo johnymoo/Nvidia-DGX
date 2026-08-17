@@ -41,7 +41,7 @@ class InferenceLatencyBenchmarkTests(unittest.TestCase):
             self.assertEqual(body["reasoning_effort"], effort)
             self.assertEqual(body["allowed_openai_params"], ["reasoning_effort"])
 
-    @mock.patch.object(MODULE.time, "perf_counter", side_effect=[1.0, 1.2, 2.2])
+    @mock.patch.object(MODULE.time, "perf_counter", side_effect=[1.0, 1.2, 2.0, 2.2])
     @mock.patch.object(MODULE.urllib.request, "urlopen")
     def test_stream_metrics_include_reasoning_ttft(self, urlopen, _clock) -> None:
         events = [
@@ -55,7 +55,7 @@ class InferenceLatencyBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["first_token_kind"], "reasoning")
         self.assertAlmostEqual(result["ttft_seconds"], 0.2)
         self.assertAlmostEqual(result["response_seconds"], 1.2)
-        self.assertAlmostEqual(result["decode_tokens_per_second"], 20.0)
+        self.assertAlmostEqual(result["decode_tokens_per_second"], 23.75)
 
     def test_summary_reports_sample_statistics(self) -> None:
         runs = [

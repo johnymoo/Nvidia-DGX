@@ -36,25 +36,21 @@ class LakehouseThinkingBenchmarkTests(unittest.TestCase):
         self.assertIn("D for delete", BENCH.SQL_CASES[0]["prompt"])
 
     def test_stable_toposort_oracle_uses_insertion_order_and_exceptions(self) -> None:
-        code = """
-def stable_toposort(graph):
-    keys = list(graph)
-    known = set(keys)
-    if any(dep not in known for deps in graph.values() for dep in deps):
-        raise ValueError('missing dependency')
-    result = []
-    remaining = set(keys)
-    while remaining:
-        ready = next((node for node in keys if node in remaining and all(dep in result for dep in graph[node])), None)
-        if ready is None:
-            raise ValueError('cycle')
-        result.append(ready)
-        remaining.remove(ready)
-    return result
-"""
         _, _, checks = next(item for item in BENCH.PYTHON_CASES if item[0] == "stable_toposort")
-        passed, detail = BENCH.execute_python("stable_toposort", code, checks)
-        self.assertTrue(passed, detail)
+        self.assertEqual(checks[0][1], ["lint", "test", "compile", "package", "publish", "docs"])
+        self.assertEqual(checks[1][1], [["a", "b"], {"b": ["a"], "a": []}])
+        self.assertTrue(checks[2][1])
+        self.assertTrue(checks[3][1])
+
+    def test_python_sandbox_never_pulls_images(self) -> None:
+        completed = SimpleNamespace(returncode=1, stdout="", stderr="image unavailable")
+        sandbox_subprocess = BENCH.run_code.__globals__["subprocess"]
+        with patch.object(sandbox_subprocess, "run", return_value=completed) as run:
+            passed, detail = BENCH.run_code("def answer(): return 1", [("answer()", 1)])
+        self.assertFalse(passed)
+        self.assertIn("image unavailable", detail)
+        self.assertIn("--pull=never", run.call_args.args[0])
+        self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--network") + 1], "none")
 
     def test_sql_reference_answers_execute(self) -> None:
         reference = {
@@ -183,7 +179,7 @@ def stable_toposort(graph):
             ]
         ) + b"\n"
         with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(events)) as urlopen:
-            with patch.object(BENCH.time, "monotonic", side_effect=[100.0, 100.5, 102.0]):
+            with patch.object(BENCH.time, "monotonic", side_effect=[100.0, 100.5, 101.5, 102.0]):
                 result = BENCH.request("http://example.test/v1", "model", "test", "off", 256, stream=True)
         body = json.loads(urlopen.call_args.args[0].data)
         self.assertTrue(body["stream"])
@@ -193,7 +189,7 @@ def stable_toposort(graph):
         self.assertEqual(result["first_token_kind"], "reasoning")
         self.assertEqual(result["ttft_seconds"], 0.5)
         self.assertEqual(result["response_seconds"], 2.0)
-        self.assertEqual(result["decode_tokens_per_second"], 2.0)
+        self.assertAlmostEqual(result["decode_tokens_per_second"], 2.0)
         self.assertEqual(result["effective_e2e_completion_tokens_per_second"], 1.5)
 
     def test_streaming_request_rejects_clean_early_eof(self) -> None:

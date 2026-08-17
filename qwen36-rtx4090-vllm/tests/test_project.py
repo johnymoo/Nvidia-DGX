@@ -25,6 +25,8 @@ class ProjectTests(unittest.TestCase):
 
     def test_images_and_model_identity_are_pinned(self) -> None:
         config = (ROOT / "config" / "qwen36.env.example").read_text()
+        self.assertIn("PUBLISH_HOST=127.0.0.1", config)
+        self.assertIn("ALLOW_UNAUTHENTICATED_LAN=false", config)
         for key in ("MODELSCOPE_IMAGE", "VLLM_IMAGE"):
             self.assertRegex(config, rf"(?m)^{key}=.+@sha256:[0-9a-f]{{64}}$")
         for key in (
@@ -45,6 +47,11 @@ class ProjectTests(unittest.TestCase):
     def test_shell_scripts_use_strict_mode(self) -> None:
         for path in sorted((ROOT / "scripts").glob("*.sh")):
             self.assertIn("set -euo pipefail", path.read_text(), path.name)
+
+    def test_non_loopback_binding_requires_explicit_opt_in(self) -> None:
+        common = (ROOT / "scripts" / "common.sh").read_text()
+        self.assertIn("ALLOW_UNAUTHENTICATED_LAN", common)
+        self.assertIn("Non-loopback API binding requires", common)
 
     def test_receipts_pass_and_are_sanitized(self) -> None:
         forbidden = re.compile(r"/(?:home|Users)/|192\.168\.|10\.\d+\.\d+\.\d+")

@@ -20,9 +20,9 @@ chmod +x scripts/*.sh
 ./scripts/status.sh
 ```
 
-默认监听 `0.0.0.0:8005`，模型 ID 为 `qwen3.8-27b`，另保留精确变体 ID
-`qwen3.8-27b-ud-q4-k-xl`。该端点没有内置 TLS 或租户认证，只应暴露在受控 LAN；
-公网访问必须经过认证反向代理。
+默认监听 `127.0.0.1:8005`，模型 ID 为 `qwen3.8-27b`，另保留精确变体 ID
+`qwen3.8-27b-ud-q4-k-xl`。无认证 LAN 暴露必须同时修改 `PUBLISH_HOST` 并显式设置
+`ALLOW_UNAUTHENTICATED_LAN=true`；公网访问必须经过认证反向代理。
 
 ```bash
 curl -fsS http://127.0.0.1:8005/v1/chat/completions \

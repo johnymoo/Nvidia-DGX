@@ -211,6 +211,7 @@ def request(
                 usage: dict = {}
                 saw_done = False
                 first_token_at = None
+                last_token_at = None
                 first_token_kind = None
                 for raw_line in response:
                     line = raw_line.decode("utf-8", errors="replace").strip()
@@ -227,9 +228,12 @@ def request(
                         delta = choice.get("delta") or {}
                         content = delta.get("content") or ""
                         reasoning = delta.get("reasoning") or delta.get("reasoning_content") or ""
-                        if first_token_at is None and (reasoning or content):
-                            first_token_at = time.monotonic()
-                            first_token_kind = "reasoning" if reasoning else "content"
+                        if reasoning or content:
+                            token_at = time.monotonic()
+                            if first_token_at is None:
+                                first_token_at = token_at
+                                first_token_kind = "reasoning" if reasoning else "content"
+                            last_token_at = token_at
                         content_parts.append(content)
                         reasoning_parts.append(reasoning)
                         if choice.get("finish_reason") is not None:
@@ -237,8 +241,9 @@ def request(
                 completed = time.monotonic()
                 response_seconds = completed - started
                 completion_tokens = int(usage.get("completion_tokens", 0))
+                decode_tokens = max(completion_tokens - 1, 0)
                 ttft_seconds = first_token_at - started if first_token_at is not None else None
-                decode_seconds = completed - first_token_at if first_token_at is not None else None
+                decode_seconds = last_token_at - first_token_at if first_token_at is not None and last_token_at is not None else None
                 result = {
                     "response": "".join(content_parts),
                     "reasoning": "".join(reasoning_parts),
@@ -248,8 +253,8 @@ def request(
                     "ttft_seconds": round(ttft_seconds, 6) if ttft_seconds is not None else None,
                     "response_seconds": round(response_seconds, 6),
                     "decode_seconds": round(decode_seconds, 6) if decode_seconds is not None else None,
-                    "decode_tokens_per_second": round(completion_tokens / decode_seconds, 6)
-                    if completion_tokens and decode_seconds and decode_seconds > 0 else None,
+                    "decode_tokens_per_second": round(decode_tokens / decode_seconds, 6)
+                    if decode_tokens and decode_seconds and decode_seconds > 0 else None,
                     "effective_e2e_completion_tokens_per_second": round(completion_tokens / response_seconds, 6)
                     if completion_tokens and response_seconds > 0 else None,
                     "first_token_kind": first_token_kind,

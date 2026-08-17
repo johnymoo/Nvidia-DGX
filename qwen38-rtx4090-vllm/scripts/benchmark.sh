@@ -14,4 +14,3 @@ python3 "${PROJECT_DIR}/../model-benchmark-qwen-deepseek/scripts/quality_benchma
   --base-url "http://127.0.0.1:${PORT}/v1" --model "${MODEL_ALIAS}" \
   --tag qwen38-rtx4090-fp8-thinking-low --thinking low --max-token-multiplier 4 \
   --output "${OUTPUT_ROOT}/quality-thinking-low.json"
-

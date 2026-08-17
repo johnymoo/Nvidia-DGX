@@ -12,4 +12,3 @@ docker run --rm --network host --memory 4g --memory-swap 4g \
   "pip install --no-cache-dir modelscope==1.38.1 && modelscope download --model '${MODELSCOPE_MODEL}' --revision '${MODELSCOPE_REVISION}' --local_dir '/models/$(basename -- "${MODEL_ROOT}")' --max-workers 16"
 verify_model
 echo "Verified ModelScope snapshot: ${MODEL_ROOT}"
-

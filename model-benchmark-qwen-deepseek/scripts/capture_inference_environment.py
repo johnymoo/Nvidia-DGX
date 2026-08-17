@@ -25,6 +25,20 @@ LOCAL_MODELS = {
     },
 }
 
+CPU_FIELDS = {
+    "Architecture:",
+    "CPU(s):",
+    "Model name:",
+    "Thread(s) per core:",
+    "Core(s) per socket:",
+    "Socket(s):",
+    "L1d cache:",
+    "L1i cache:",
+    "L2 cache:",
+    "L3 cache:",
+    "NUMA node(s):",
+}
+
 
 def command(*args: str) -> str:
     return subprocess.run(args, check=True, capture_output=True, text=True).stdout.strip()
@@ -129,7 +143,7 @@ def main() -> int:
             os_release[key] = value.strip('"')
     gpu_fields = command(
         "nvidia-smi",
-        "--query-gpu=name,pci.bus_id,driver_version,memory.total,power.limit",
+        "--query-gpu=name,driver_version,memory.total,power.limit",
         "--format=csv,noheader,nounits",
     ).split(", ")
     memory = command("free", "-b").splitlines()
@@ -139,11 +153,13 @@ def main() -> int:
         "schema_version": 1,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "host": {
-            "hostname": platform.node(),
             "os": os_release.get("PRETTY_NAME"),
             "kernel": platform.release(),
             "architecture": platform.machine(),
-            "cpu": json.loads(command("lscpu", "-J"))["lscpu"],
+            "cpu": [
+                item for item in json.loads(command("lscpu", "-J"))["lscpu"]
+                if item.get("field") in CPU_FIELDS
+            ],
             "logical_cpus": os.cpu_count(),
             "memory_total_bytes": int(mem_values[1]),
             "swap_total_bytes": int(swap_values[1]),
@@ -151,10 +167,9 @@ def main() -> int:
             "python_version": platform.python_version(),
             "gpu": {
                 "name": gpu_fields[0],
-                "pci_bus_id": gpu_fields[1],
-                "driver_version": gpu_fields[2],
-                "memory_total_mib": int(gpu_fields[3]),
-                "power_limit_w": float(gpu_fields[4]),
+                "driver_version": gpu_fields[1],
+                "memory_total_mib": int(gpu_fields[2]),
+                "power_limit_w": float(gpu_fields[3]),
             },
         },
         "local_deployments": {name: local_model_snapshot(item) for name, item in LOCAL_MODELS.items()},

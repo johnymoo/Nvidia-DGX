@@ -70,6 +70,7 @@ def stream_request(
     )
     started = time.perf_counter()
     first_token_at = None
+    last_token_at = None
     first_token_kind = None
     content_parts: list[str] = []
     reasoning_parts: list[str] = []
@@ -93,9 +94,12 @@ def stream_request(
                     delta = choice.get("delta") or {}
                     reasoning = delta.get("reasoning") or delta.get("reasoning_content") or ""
                     content = delta.get("content") or ""
-                    if first_token_at is None and (reasoning or content):
-                        first_token_at = time.perf_counter()
-                        first_token_kind = "reasoning" if reasoning else "content"
+                    if reasoning or content:
+                        token_at = time.perf_counter()
+                        if first_token_at is None:
+                            first_token_at = token_at
+                            first_token_kind = "reasoning" if reasoning else "content"
+                        last_token_at = token_at
                     reasoning_parts.append(reasoning)
                     content_parts.append(content)
                     if choice.get("finish_reason") is not None:
@@ -120,14 +124,15 @@ def stream_request(
     ttft = first_token_at - started
     e2e = completed - started
     completion_tokens = int(usage.get("completion_tokens", 0))
-    decode_seconds = max(e2e - ttft, 1e-9)
+    decode_tokens = max(completion_tokens - 1, 0)
+    decode_seconds = max((last_token_at or first_token_at) - first_token_at, 0.0)
     content = "".join(content_parts)
     reasoning = "".join(reasoning_parts)
     return {
         "ttft_seconds": round(ttft, 6),
         "response_seconds": round(e2e, 6),
         "decode_seconds": round(decode_seconds, 6),
-        "decode_tokens_per_second": round(completion_tokens / decode_seconds, 6) if completion_tokens else None,
+        "decode_tokens_per_second": round(decode_tokens / decode_seconds, 6) if decode_tokens and decode_seconds else None,
         "first_token_kind": first_token_kind,
         "finish_reason": finish_reason,
         "usage": usage,
@@ -219,7 +224,7 @@ def main() -> int:
             "transport": "OpenAI-compatible SSE streaming",
             "ttft": "request dispatch to first non-empty reasoning or content delta",
             "response_time": "request dispatch to SSE completion",
-            "decode_tps": "completion_tokens / (response_time - TTFT)",
+            "decode_tps": "tokens after the first streamed token / (last non-empty delta time - first non-empty delta time)",
             "prompt": PROMPT,
             "seed": 42,
             "max_tokens": args.max_tokens,

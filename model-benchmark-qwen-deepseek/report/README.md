@@ -97,7 +97,7 @@ DeepSeek `low / 32K`、`high / 256K`、`max / 384K` 参数矩阵，并补充标�
 | 补充输入 | SHA-256 |
 |---|---|
 | `data/lakehouse-parameter-matrix-adjudicated.json` | `105b97acd0fb8882b8672cac31c80e2da4513244186e52f945636e5914f8d4d3` |
-| `data/inference-environment-20260817.json` | `3d94668beba6fce4521f357d309a615f6e6eb3f56fbc0c2fb3932c36655950ef` |
+| `data/inference-environment-20260817.json` | `fb84f73a1ef44a16408e81f60f738d96dad92782e0372a8051f11c6a116b4650` |
 | `data/inference-performance/qwen38-low.json` | `bbd9ccc170b04a2171d71f52f611889f62f145cf0eb8fbc3866d0748de549bed` |
 | `data/inference-performance/qwen36-thinking.json` | `762986623158495015a8acdfcbb1352d7eabbffa20897f89e0f6b78030626e80` |
 | `data/inference-performance/private-ds-high.json` | `086ff0824dbfba39036a5f254223d157003cd36504d9f4b2378940b09149d38e` |

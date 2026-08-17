@@ -10,4 +10,3 @@ compose ps
 curl -fsS "http://127.0.0.1:${PORT}/v1/models"
 docker inspect "${CONTAINER_NAME}" --format 'memory={{.HostConfig.Memory}} swap={{.HostConfig.MemorySwap}} restart={{.HostConfig.RestartPolicy.Name}} devices={{json .HostConfig.DeviceRequests}}'
 nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu --format=csv,noheader
-

@@ -17,4 +17,3 @@ for _ in $(seq 1 180); do
 done
 compose logs --tail 200 qwen38 >&2 || true
 exit 1
-

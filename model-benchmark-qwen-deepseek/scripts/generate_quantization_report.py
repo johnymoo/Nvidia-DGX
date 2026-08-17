@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import argparse
 import json
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "qwen38-quantization"
 OUTPUT = ROOT / "report" / "qwen38-quantization.html"
+SUMMARY = DATA / "summary.json"
 
 
 def load(name: str) -> dict:
@@ -24,6 +26,10 @@ def metric_bar(label: str, value: float, maximum: float, color: str, suffix: str
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, default=OUTPUT)
+    parser.add_argument("--summary-output", type=Path, default=SUMMARY)
+    args = parser.parse_args()
     keys = ("fp8", "q4", "q4_mtp2", "q6")
     quality_files = {
         "fp8": "fp8-quality-r1.json",
@@ -106,7 +112,8 @@ def main() -> int:
             "mtp2_response_seconds": short_mtp2["summary"]["response_seconds"]["mean"],
         },
     }
-    (DATA / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
+    args.summary_output.parent.mkdir(parents=True, exist_ok=True)
+    args.summary_output.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
 
     max_tps = max(row["tps"] for row in rows)
     max_response = max(row["response"] for row in rows)
@@ -208,8 +215,9 @@ def main() -> int:
 <section id="evidence"><h2>原始证据身份</h2><div class="table-wrap"><table class="sources"><thead><tr><th>文件</th><th>SHA-256</th></tr></thead><tbody>{''.join(source_hashes)}</tbody></table></div></section>
 <footer>结论只覆盖本页记录的 RTX 4090、模型 revision、运行时 commit、上下文与采样参数。并发 2/4、KV 量化替代方案与 48 小时压力测试仍待后续独立验证。</footer>
 </main></body></html>"""
-    OUTPUT.write_text(document)
-    print(json.dumps({"output": str(OUTPUT), "selected": "UD-Q4_K_XL + MTP2", "profiles": rows}, ensure_ascii=False))
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(document)
+    print(json.dumps({"output": str(args.output), "selected": "UD-Q4_K_XL + MTP2", "profiles": rows}, ensure_ascii=False))
     return 0
 
 

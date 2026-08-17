@@ -1,6 +1,6 @@
 # Qwen3.8-27B-FP8 on 48 GiB RTX 4090
 
-本项目提供 Qwen3.8-27B-FP8 在单张 48 GiB RTX 4090 上的可复现部署：从
+本项目提供 Qwen3.8-27B-FP8 在单张 48 GiB RTX 4090 上的参考部署：从
 ModelScope 下载原生 FP8 多模态权重到 `/data/models`，使用固定 digest 的 vLLM
 0.19.0 启动 OpenAI-compatible API，并执行 PR #29 的同题质量测试及补充性能、
 湖仓代码、数学推理和图表识别测试。
@@ -18,14 +18,14 @@ ModelScope 下载原生 FP8 多模态权重到 `/data/models`，使用固定 dig
 | CPU offload | 0 GiB |
 | 宿主内存 | 16 GiB hard limit，memory-swap 与其相同 |
 | 默认模式 | non-thinking；每个请求可显式开启 thinking |
-| API | `0.0.0.0:8005/v1` |
+| API | 默认 `127.0.0.1:8005/v1` |
 
 模型权重约占 28.51 GiB 显存，空闲服务总显存占用约 43.4 GiB，保留约 5 GiB
 余量。vLLM 编译缓存写入 `/var/cache/vllm`；首次冷启动主要受 `/data` HDD 权重
 读取和视觉 warmup 影响。
 
-端口默认监听所有接口且没有认证。只应在可信网络使用，正式跨网访问需在前面增加
-认证反向代理和 TLS。
+服务默认只监听 loopback。无认证 LAN 暴露必须同时修改 `PUBLISH_HOST` 并显式设置
+`ALLOW_UNAUTHENTICATED_LAN=true`；跨网访问应使用认证反向代理和 TLS。
 
 ## 下载与启动
 
@@ -38,9 +38,10 @@ cp config/qwen38.env.example config/qwen38.env
 ./scripts/start.sh
 ```
 
-下载脚本使用固定 Python 镜像和 `modelscope==1.38.1`。ModelScope 当前只发布
-`master` 分支，因此部署身份不单独依赖分支名：脚本同时验证关键配置文件 SHA-256、
-模型 architecture、FP8 quantization、66 个索引权重文件和未完成文件状态。
+下载脚本使用固定 Python 镜像和 `modelscope==1.38.1`。现有证据只记录 ModelScope
+`master` 与关键元数据哈希；脚本验证 architecture、FP8 quantization、66 个索引权重
+文件和未完成文件状态，但没有完整权重分片哈希清单。因此该下载路径是 Reference，
+不能据此声称未来的 `master` 与 2026-08-16 实测快照逐字节相同。
 
 常用生命周期命令：
 

@@ -359,7 +359,9 @@ def main() -> int:
         "online-pro-high": full_suite_telemetry(pro_sources["high"]),
         "online-pro-max": full_suite_telemetry(pro_sources["max"]),
     }
-    agent = sanitize_agent(args.agent_result.resolve())
+    agent_raw_path = args.agent_result.resolve()
+    agent_raw_sha256 = sha256(agent_raw_path)
+    agent = sanitize_agent(agent_raw_path)
     agent_path = project / "data/online-pro-agent-focus-20260817.json"
     agent_path.write_text(json.dumps(normalize(agent), indent=2, ensure_ascii=False) + "\n")
 
@@ -404,6 +406,12 @@ def main() -> int:
         },
         "latency": latency,
         "agent_focus": agent,
+        "agent_focus_provenance": {
+            "raw_input_sha256": agent_raw_sha256,
+            "raw_input_committed": False,
+            "sanitizer": "sanitize_agent:v1",
+            "qualification": "committed agent evidence is a sanitized derivative; raw sandbox artifacts are not published",
+        },
         "private_route": {
             "direct_vllm": False,
             "endpoint_label": "private-llm-portal",

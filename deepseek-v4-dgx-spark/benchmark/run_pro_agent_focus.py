@@ -71,12 +71,15 @@ def main() -> int:
     parser.add_argument("--toolchain", type=Path, required=True)
     parser.add_argument("--source-state", type=Path, required=True)
     parser.add_argument("--artifact-root", type=Path, required=True)
-    parser.add_argument("--base-url", default="https://coding.onlyservice.io")
+    parser.add_argument("--base-url", required=True)
+    parser.add_argument("--allow-external", action="store_true")
     parser.add_argument("--parallelism", type=int, default=5)
     args = parser.parse_args()
     args.toolchain = args.toolchain.resolve()
     args.source_state = args.source_state.resolve()
     args.artifact_root = args.artifact_root.resolve()
+    if not args.allow_external:
+        parser.error("--allow-external is required for the online benchmark")
     if not os.environ.get("CLAUDE_DS_TOKEN"):
         parser.error("CLAUDE_DS_TOKEN is required")
     if args.parallelism < 1:
@@ -154,7 +157,7 @@ def main() -> int:
         attempts = list(executor.map(run_task, SELECTED))
     result = {
         "schema_version": 1,
-        "status": "passed" if all(item["agent_status"] == "completed" for item in attempts) else "completed_with_errors",
+        "status": "passed" if all(item["task_status"] == "passed" for item in attempts) else "completed_with_failures",
         "model": "deepseek-v4-pro",
         "reasoning_effort": "high (official API default)",
         "claude_code_version": manifest["claude_code_version"],
@@ -167,7 +170,7 @@ def main() -> int:
     }
     write_json(args.artifact_root / "result.json", result)
     print(json.dumps({"output": str(args.artifact_root / "result.json"), "passed": result["passed"]}))
-    return 0
+    return 0 if result["status"] == "passed" else 1
 
 
 if __name__ == "__main__":

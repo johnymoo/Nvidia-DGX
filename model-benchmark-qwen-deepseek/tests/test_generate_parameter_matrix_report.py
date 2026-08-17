@@ -43,12 +43,13 @@ class ParameterMatrixReportTests(unittest.TestCase):
             for repeat in (1, 2):
                 (root / f"run-{repeat}.json").write_text(json.dumps(sample_run(repeat)))
             output = root / "matrix.html"
-            subprocess.run(
+            completed = subprocess.run(
                 [sys.executable, str(SCRIPT), "--input-dir", str(root), "--recommendation", "test", "--output", str(output)],
-                check=True,
+                check=False,
                 capture_output=True,
                 text=True,
             )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
             document = output.read_text()
             self.assertIn("private DS / low", document)
             self.assertIn("50.0%", document)

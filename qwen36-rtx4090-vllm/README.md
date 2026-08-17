@@ -1,6 +1,6 @@
 # Qwen3.6-35B-A3B-FP8 on 48 GiB RTX 4090
 
-本项目提供 Qwen3.6-35B-A3B-FP8 在单张 48 GiB RTX 4090 上的可复现
+本项目提供 Qwen3.6-35B-A3B-FP8 在单张 48 GiB RTX 4090 上的参考
 vLLM 部署，用于和 Qwen3.8-27B-FP8 做同机湖仓推理对比。模型从 ModelScope
 下载到 `/data/models`，服务严格禁用 CPU offload，并给宿主内存和 swap 设置相同
 的 16 GiB hard limit。
@@ -18,14 +18,14 @@ vLLM 部署，用于和 Qwen3.8-27B-FP8 做同机湖仓推理对比。模型从 
 | CPU offload | 0 GiB |
 | 宿主内存 | 16 GiB hard limit，memory-swap 与其相同 |
 | 默认模式 | non-thinking；请求可显式开启 thinking |
-| API | `0.0.0.0:8006/v1` |
+| API | 默认 `127.0.0.1:8006/v1` |
 
 2026-08-17 实机冷启动成功。vLLM 报告模型加载占用 34.23 GiB，健康空闲服务
 总显存占用 45,329 MiB，物理余量 3,171 MiB；KV cache 为 114,048 tokens。
 启动没有 CPU offload，32K context 可用。
 
-端口默认监听所有接口且没有认证。只应在可信网络使用，跨网访问需增加认证反向
-代理和 TLS。
+服务默认只监听 loopback。无认证 LAN 暴露必须同时修改 `PUBLISH_HOST` 并显式设置
+`ALLOW_UNAUTHENTICATED_LAN=true`；跨网访问应使用认证反向代理和 TLS。
 
 ## 下载与启动
 
@@ -41,6 +41,10 @@ cp config/qwen36.env.example config/qwen36.env
 下载脚本固定 `modelscope==1.38.1`，并验证关键文件 SHA-256、
 `Qwen3_5MoeForConditionalGeneration` architecture、FP8 quantization、256 experts、
 每 token 8 experts、42 个权重文件和未完成文件状态。
+
+现有证据只记录 ModelScope `master`、关键元数据哈希和权重分片存在性，没有完整
+权重分片哈希清单。该下载路径应视为 Reference，不能据此声称未来的 `master` 与
+2026-08-17 实测快照逐字节相同。
 
 常用生命周期命令：
 
