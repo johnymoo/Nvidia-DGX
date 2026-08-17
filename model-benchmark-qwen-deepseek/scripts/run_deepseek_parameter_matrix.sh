@@ -49,6 +49,7 @@ run_treatment() {
        and .request_config.deepseek_effort == $effort
        and .request_config.deepseek_contract == $contract
        and .request_config.deepseek_sampling == $sampling
+       and (.request_config.force_reasoning_effort_passthrough // false) == ($contract == "private-vllm")
        and (.request_config.stream // false) == $stream' \
       "${output}" >/dev/null; then
       echo "skip validated ${name}"
@@ -60,6 +61,9 @@ run_treatment() {
   local stream_args=()
   if [[ "${stream}" == "true" ]]; then
     stream_args+=(--stream)
+  fi
+  if [[ "${contract}" == "private-vllm" ]]; then
+    stream_args+=(--force-reasoning-effort-passthrough)
   fi
   python3 "${SCRIPT_DIR}/lakehouse_thinking_benchmark.py" \
     --base-url "${base_url}" \

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "timestamp": "2026-08-17T05:44:21.553472+00:00",
-  "endpoint": "private-dgx-spark",
+  "timestamp": "2026-08-17T09:14:39.935477+00:00",
+  "endpoint": "private-llm-portal",
   "model": "deepseek-v4-flash-0731",
   "profile": "deepseek-private-high",
   "method": {
@@ -22,87 +22,87 @@
     "successful_runs": 3,
     "errors": 0,
     "ttft_seconds": {
-      "mean": 0.25233466666666665,
-      "min": 0.250446,
-      "max": 0.253668,
-      "stdev": 0.001681254690204116
+      "mean": 0.2700926666666667,
+      "min": 0.269109,
+      "max": 0.270591,
+      "stdev": 0.0008519051199126295
     },
     "response_seconds": {
-      "mean": 13.499171666666667,
-      "min": 11.162042,
-      "max": 16.052647,
-      "stdev": 2.4524698575355286
+      "mean": 12.900217666666668,
+      "min": 12.226345,
+      "max": 14.138605,
+      "stdev": 1.0738678613131754
     },
     "decode_tokens_per_second": {
-      "mean": 35.472870666666665,
-      "min": 34.000526,
-      "max": 37.60571,
-      "stdev": 1.8911710187038444
+      "mean": 32.590574,
+      "min": 32.486381,
+      "max": 32.665065,
+      "stdev": 0.09297122978104376
     },
-    "completion_tokens_mean": 470.3333333333333
+    "completion_tokens_mean": 411.6666666666667
   },
   "runs": [
     {
-      "ttft_seconds": 0.25289,
-      "response_seconds": 13.282826,
-      "decode_seconds": 13.029936,
-      "decode_tokens_per_second": 37.60571,
+      "ttft_seconds": 0.270578,
+      "response_seconds": 14.138605,
+      "decode_seconds": 13.868027,
+      "decode_tokens_per_second": 32.665065,
       "first_token_kind": "reasoning",
       "finish_reason": "stop",
       "usage": {
-        "completion_tokens": 490,
+        "completion_tokens": 453,
         "prompt_tokens": 41,
-        "total_tokens": 531,
+        "total_tokens": 494,
         "completion_tokens_details": {
-          "reasoning_tokens": 314
+          "reasoning_tokens": 257
         }
       },
-      "content_chars": 743,
-      "reasoning_chars": 1254,
-      "content_sha256": "c4f57a2cf1ad7d2fbae602e132d22693fd778e1cbf6bebf2ca829437a074b505",
-      "reasoning_sha256": "52f7fa19d5af05ba0380f3bf0119cb939a43ec3987cdeab4f6d49cd14f0fff50",
+      "content_chars": 860,
+      "reasoning_chars": 1176,
+      "content_sha256": "69e52a6cbfd0212533d3a94c7e546a74eb901b69f678f6982f29b23c8ad0e0b9",
+      "reasoning_sha256": "88615272619f7622692f3df2dcce68e7a6260433dd46bd3f586b1a2648b8215c",
       "run": 1
     },
     {
-      "ttft_seconds": 0.253668,
-      "response_seconds": 16.052647,
-      "decode_seconds": 15.798979,
-      "decode_tokens_per_second": 34.812376,
+      "ttft_seconds": 0.270591,
+      "response_seconds": 12.226345,
+      "decode_seconds": 11.955754,
+      "decode_tokens_per_second": 32.620276,
       "first_token_kind": "reasoning",
       "finish_reason": "stop",
       "usage": {
-        "completion_tokens": 550,
+        "completion_tokens": 390,
         "prompt_tokens": 41,
-        "total_tokens": 591,
+        "total_tokens": 431,
         "completion_tokens_details": {
-          "reasoning_tokens": 375
+          "reasoning_tokens": 133
         }
       },
-      "content_chars": 725,
-      "reasoning_chars": 1549,
-      "content_sha256": "56dd10ae4e877dfc351de07570bbb021007d5381abda992ad15061e3d9369a3b",
-      "reasoning_sha256": "b409283af3c86a6db34ff0393c68edf0ca5eedae93d8b0844d0e0f27931b3a6b",
+      "content_chars": 1114,
+      "reasoning_chars": 588,
+      "content_sha256": "b50dfddcbe1ccdc87093d9a3d4daf6d7f5da0048e687d4a5e22c9759de8380f0",
+      "reasoning_sha256": "90cd3a85232f9a820305ca4e63f22432a4a6e604c891de407bd8ab155e8cc7a4",
       "run": 2
     },
     {
-      "ttft_seconds": 0.250446,
-      "response_seconds": 11.162042,
-      "decode_seconds": 10.911596,
-      "decode_tokens_per_second": 34.000526,
+      "ttft_seconds": 0.269109,
+      "response_seconds": 12.335703,
+      "decode_seconds": 12.066595,
+      "decode_tokens_per_second": 32.486381,
       "first_token_kind": "reasoning",
       "finish_reason": "stop",
       "usage": {
-        "completion_tokens": 371,
+        "completion_tokens": 392,
         "prompt_tokens": 41,
-        "total_tokens": 412,
+        "total_tokens": 433,
         "completion_tokens_details": {
-          "reasoning_tokens": 218
+          "reasoning_tokens": 184
         }
       },
-      "content_chars": 718,
-      "reasoning_chars": 970,
-      "content_sha256": "391eb00efd033b02e6836391e451c1b572ed2d34f14dca8c5a1cf26c71ee5898",
-      "reasoning_sha256": "de5026599edb32f3c9ff54850d8f4a09ea3f309191272489eff222837f028e4f",
+      "content_chars": 894,
+      "reasoning_chars": 827,
+      "content_sha256": "bf4b1b23c5357dddd0b15426599a69caa41349ae735769ed0407e80b3658da60",
+      "reasoning_sha256": "d01cd538c941914509d4beeb4156515eab8bebb251d47fe189fb7b69dbc5e17c",
       "run": 3
     }
   ]

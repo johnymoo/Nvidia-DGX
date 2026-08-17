@@ -34,9 +34,13 @@ def request_body(model: str, profile: str, max_tokens: int) -> dict:
         body["chat_template_kwargs"] = {"enable_thinking": True}
         if profile == "qwen38-low":
             body["reasoning_effort"] = "low"
-    elif profile == "deepseek-private-high":
-        body.update({"temperature": 1.0, "top_p": 1.0, "reasoning_effort": "high"})
+    elif profile.startswith("deepseek-private-"):
+        effort = profile.removeprefix("deepseek-private-")
+        if effort not in {"high", "max"}:
+            raise ValueError(f"unsupported private DeepSeek effort: {effort}")
+        body.update({"temperature": 1.0, "top_p": 1.0, "reasoning_effort": effort})
         body["chat_template_kwargs"] = {"thinking": True}
+        body["allowed_openai_params"] = ["reasoning_effort"]
     elif profile.startswith("deepseek-online-"):
         effort = profile.removeprefix("deepseek-online-")
         if effort not in {"low", "high", "max"}:
@@ -172,6 +176,7 @@ def main() -> int:
             "qwen36-thinking",
             "qwen38-low",
             "deepseek-private-high",
+            "deepseek-private-max",
             "deepseek-online-low",
             "deepseek-online-high",
             "deepseek-online-max",

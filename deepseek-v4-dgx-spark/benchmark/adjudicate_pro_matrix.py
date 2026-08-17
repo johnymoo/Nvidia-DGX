@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import argparse
@@ -82,11 +83,13 @@ def main() -> int:
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--sandbox-image", required=True)
+    parser.add_argument("--glob", default="online-pro-*.json")
+    parser.add_argument("--expected-runs", type=int, default=6)
     args = parser.parse_args()
     os.environ["PYTHON_SANDBOX_IMAGE"] = args.sandbox_image
-    paths = sorted(args.input_dir.glob("online-pro-*.json"))
-    if len(paths) != 6:
-        parser.error(f"expected 6 Pro matrix files, found {len(paths)}")
+    paths = sorted(args.input_dir.glob(args.glob))
+    if len(paths) != args.expected_runs:
+        parser.error(f"expected {args.expected_runs} matrix files matching {args.glob!r}, found {len(paths)}")
     result = {
         "schema_version": 1,
         "status": "passed",

@@ -121,6 +121,29 @@ def stable_toposort(graph):
         self.assertNotIn("chat_template_kwargs", body)
         self.assertNotIn("presence_penalty", body)
 
+    def test_private_portal_can_force_effort_passthrough(self) -> None:
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                self.close()
+
+        payload = {"choices": [{"message": {"content": "ok", "reasoning": "r"}, "finish_reason": "stop"}], "usage": {"completion_tokens": 2}}
+        with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(json.dumps(payload).encode())) as urlopen:
+            BENCH.request(
+                "http://example.test/v1",
+                "deepseek-v4-flash-0731",
+                "test",
+                "deepseek-thinking",
+                256,
+                deepseek_effort="max",
+                force_reasoning_effort_passthrough=True,
+            )
+        body = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(body["reasoning_effort"], "max")
+        self.assertEqual(body["allowed_openai_params"], ["reasoning_effort"])
+
     def test_compact_row_hashes_full_reasoning_without_changing_score_input(self) -> None:
         compacted = BENCH.compact_row({"response": "answer", "reasoning": "abcdef"}, 3, 3)
         self.assertTrue(compacted["response_evidence"]["storage_truncated"])

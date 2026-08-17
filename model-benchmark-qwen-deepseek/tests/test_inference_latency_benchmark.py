@@ -34,10 +34,12 @@ class InferenceLatencyBenchmarkTests(unittest.TestCase):
             self.assertNotIn("temperature", body)
 
     def test_private_profile_uses_local_sampling(self) -> None:
-        body = MODULE.request_body("ds", "deepseek-private-high", 2048)
-        self.assertEqual(body["chat_template_kwargs"], {"thinking": True})
-        self.assertEqual(body["temperature"], 1.0)
-        self.assertEqual(body["reasoning_effort"], "high")
+        for effort in ("high", "max"):
+            body = MODULE.request_body("ds", f"deepseek-private-{effort}", 2048)
+            self.assertEqual(body["chat_template_kwargs"], {"thinking": True})
+            self.assertEqual(body["temperature"], 1.0)
+            self.assertEqual(body["reasoning_effort"], effort)
+            self.assertEqual(body["allowed_openai_params"], ["reasoning_effort"])
 
     @mock.patch.object(MODULE.time, "perf_counter", side_effect=[1.0, 1.2, 2.2])
     @mock.patch.object(MODULE.urllib.request, "urlopen")

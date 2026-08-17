@@ -150,6 +150,7 @@ def request(
     deepseek_contract: str = "private-vllm",
     deepseek_effort: str | None = None,
     deepseek_sampling: str = "historical",
+    force_reasoning_effort_passthrough: bool = False,
     request_timeout: int = 900,
     stream: bool = False,
 ) -> dict:
@@ -183,6 +184,8 @@ def request(
             raise ValueError(f"Unsupported DeepSeek contract: {deepseek_contract}")
         if deepseek_effort:
             body["reasoning_effort"] = deepseek_effort
+            if force_reasoning_effort_passthrough:
+                body["allowed_openai_params"] = ["reasoning_effort"]
     else:
         body.update({"temperature": 1.0, "top_p": 0.95, "presence_penalty": 0.0})
         body["chat_template_kwargs"] = {"enable_thinking": True}
@@ -323,6 +326,11 @@ def main() -> int:
     parser.add_argument("--stream", action="store_true", help="Use server-sent event streaming for the request")
     parser.add_argument("--deepseek-contract", choices=["private-vllm", "online-api"], default="private-vllm")
     parser.add_argument("--deepseek-effort", choices=["low", "high", "max"])
+    parser.add_argument(
+        "--force-reasoning-effort-passthrough",
+        action="store_true",
+        help="Tell a LiteLLM proxy to forward reasoning_effort to an OpenAI-compatible upstream",
+    )
     parser.add_argument("--deepseek-sampling", choices=["historical", "official-api", "official-local-general", "official-local-agent"], default="historical")
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--expected-runs", type=int, default=1)
@@ -350,20 +358,20 @@ def main() -> int:
 
     rows = []
     for case in SQL_CASES:
-        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
+        row = request(args.base_url, args.model, case["prompt"], args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough, request_timeout=args.request_timeout, stream=args.stream)
         passed, detail = execute_sql(case, row["response"])
         rows.append(compact_row({"id": case["id"], "category": "sql", "prompt": case["prompt"], "expected": case["expected"], "score": float(passed), "passed": passed, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case["id"], "score": float(passed), "seconds": row["seconds"]}), flush=True)
 
     for case_id, prompt, checks in PYTHON_CASES:
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
+        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough, request_timeout=args.request_timeout, stream=args.stream)
         passed, executor_tail = execute_python(case_id, row["response"], checks)
         rows.append(compact_row({"id": case_id, "category": "python", "prompt": prompt, "score": float(passed), "passed": passed, "detail": {"executor_tail": executor_tail}, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case_id, "score": float(passed), "seconds": row["seconds"]}), flush=True)
 
     for case in INCIDENT_CASES:
         prompt = incident_prompt(case)
-        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, request_timeout=args.request_timeout, stream=args.stream)
+        row = request(args.base_url, args.model, prompt, args.mode, args.max_tokens, api_key, deepseek_contract=args.deepseek_contract, deepseek_effort=args.deepseek_effort, deepseek_sampling=args.deepseek_sampling, force_reasoning_effort_passthrough=args.force_reasoning_effort_passthrough, request_timeout=args.request_timeout, stream=args.stream)
         score, detail = score_incident(case, row["response"])
         rows.append(compact_row({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case["id"], "score": score, "seconds": row["seconds"]}), flush=True)
@@ -393,6 +401,7 @@ def main() -> int:
             "deepseek_contract": args.deepseek_contract if args.mode == "deepseek-thinking" else None,
             "deepseek_effort": args.deepseek_effort if args.mode == "deepseek-thinking" else None,
             "deepseek_sampling": args.deepseek_sampling if args.mode == "deepseek-thinking" else None,
+            "force_reasoning_effort_passthrough": args.force_reasoning_effort_passthrough,
             "max_response_chars": args.max_response_chars,
             "max_reasoning_chars": args.max_reasoning_chars,
             "request_timeout_seconds": args.request_timeout,

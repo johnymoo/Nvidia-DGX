@@ -7,6 +7,18 @@
     "private_flash": {
       "high": {
         "runs": 2,
+        "macro_score": 0.875,
+        "stdev": 0.019642,
+        "categories": {
+          "sql": 0.916667,
+          "python": 0.833333,
+          "incident": 0.875
+        }
+      }
+    },
+    "private_flash_legacy_requested": {
+      "high": {
+        "runs": 2,
         "macro_score": 0.902778,
         "stdev": 0.019642,
         "categories": {
@@ -138,10 +150,16 @@
   },
   "latency": {
     "private-high": {
-      "ttft_seconds": 0.252335,
-      "response_seconds": 13.499172,
-      "decode_tokens_per_second": 35.472871,
-      "completion_tokens": 470.333333
+      "ttft_seconds": 0.270093,
+      "response_seconds": 12.900218,
+      "decode_tokens_per_second": 32.590574,
+      "completion_tokens": 411.666667
+    },
+    "private-max": {
+      "ttft_seconds": 0.478864,
+      "response_seconds": 12.250842,
+      "decode_tokens_per_second": 36.659658,
+      "completion_tokens": 435.333333
     },
     "online-flash-low": {
       "ttft_seconds": 2.415694,
@@ -247,20 +265,42 @@
     ],
     "latency_scope": "client-to-portal-to-vllm end-to-end",
     "verification": {
-      "quality_requests_in_portal_access_log": 108,
-      "latency_requests_in_portal_access_log": 4,
+      "legacy_quality_requests_in_portal_access_log": 108,
+      "legacy_latency_requests_in_portal_access_log": 4,
+      "verified_high_quality_requests": 36,
+      "verified_high_max_latency_requests": 8,
       "latency_request_contract": "one warmup plus three measured requests"
     }
   },
   "private_effort_contract": {
-    "low_equals_high": true,
-    "low_prompt_sha256": "f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0",
-    "high_prompt_sha256": "f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0",
-    "max_prompt_sha256": "289b341131ccacbac40dd051a01c4b61989671915e61bbb236ee62bab7427b65"
+    "portal_requires_allowed_openai_params": [
+      "reasoning_effort"
+    ],
+    "legacy_requested_efforts_effective_effort": "high",
+    "legacy_reason": "LiteLLM drop_params removed reasoning_effort for the generic OpenAI-compatible deployment",
+    "verified_same_max_tokens": 32768,
+    "verified_max_quality_status": "not_completed_due_unbounded_generation",
+    "verified_max_quality_pilot": {
+      "parallel_requests": 2,
+      "same_max_tokens_as_high": 32768,
+      "client_bound_seconds": 900,
+      "completed_matrix_runs": 0,
+      "portal_status_on_client_cancel": [
+        499,
+        499
+      ]
+    },
+    "direct_tokenize_probe": {
+      "high_prompt_tokens": 11,
+      "max_prompt_tokens": 90,
+      "high_token_sha256": "90e0facd84ffde0e1e47dbd7be797e53a0484f95254dcfe9fa513b7c2e047649",
+      "max_token_sha256": "95763d174402e9db0be89de0dcbab745d838f4cc3fc382ad6a99b5e03f1201b8"
+    }
   },
   "source_sha256": {
     "existing_adjudication": "105b97acd0fb8882b8672cac31c80e2da4513244186e52f945636e5914f8d4d3",
     "pro_adjudication": "8fcd810c8db24550a997a661ee1be911ff03994fb8bd2400fa446fe02c1ee59d",
-    "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1"
+    "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1",
+    "verified_private_adjudication": "c6554c2c1c8d1d4339b5ef94e2c91df97c00d6c6246beea4dd8733f28b5dc0d3"
   }
 }
