@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "benchmark_date": "2026-08-17",
+  "scope": "quick decision benchmark; two quality runs per effort and five focused agent tasks",
+  "quality": {
+    "private_flash": {
+      "high": {
+        "runs": 2,
+        "macro_score": 0.902778,
+        "stdev": 0.019642,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.833333,
+          "incident": 0.875
+        }
+      },
+      "low": {
+        "runs": 2,
+        "macro_score": 0.833333,
+        "stdev": 0.0,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.666667,
+          "incident": 0.833333
+        }
+      },
+      "max": {
+        "runs": 2,
+        "macro_score": 0.875,
+        "stdev": 0.098209,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.833333,
+          "incident": 0.791667
+        }
+      }
+    },
+    "online_flash": {
+      "high": {
+        "runs": 2,
+        "macro_score": 0.916667,
+        "stdev": 0.039284,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.833333,
+          "incident": 0.916667
+        }
+      },
+      "low": {
+        "runs": 2,
+        "macro_score": 0.902778,
+        "stdev": 0.019642,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.833333,
+          "incident": 0.875
+        }
+      },
+      "max": {
+        "runs": 2,
+        "macro_score": 0.958333,
+        "stdev": 0.019642,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.916667,
+          "incident": 0.958333
+        }
+      }
+    },
+    "online_pro": {
+      "high": {
+        "runs": 2,
+        "macro_score": 0.972222,
+        "stdev": 0.039284,
+        "categories": {
+          "sql": 1.0,
+          "python": 1.0,
+          "incident": 0.916667
+        }
+      },
+      "low": {
+        "runs": 2,
+        "macro_score": 0.888889,
+        "stdev": 0.039284,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.833333,
+          "incident": 0.833333
+        }
+      },
+      "max": {
+        "runs": 2,
+        "macro_score": 0.958333,
+        "stdev": 0.058925,
+        "categories": {
+          "sql": 1.0,
+          "python": 0.916667,
+          "incident": 0.958333
+        }
+      }
+    }
+  },
+  "online_pro_telemetry": {
+    "high": {
+      "prompt_tokens_mean": 3143.0,
+      "completion_tokens_mean": 96669.5,
+      "errors": 0,
+      "empty_finals": 0,
+      "length_truncations": 0,
+      "estimated_api_cost_usd": {
+        "off_peak_all_input_cache_miss": 0.19348,
+        "peak_all_input_cache_miss": 0.38696
+      }
+    },
+    "low": {
+      "prompt_tokens_mean": 1721.0,
+      "completion_tokens_mean": 38397.0,
+      "errors": 0,
+      "empty_finals": 0,
+      "length_truncations": 0,
+      "estimated_api_cost_usd": {
+        "off_peak_all_input_cache_miss": 0.077162,
+        "peak_all_input_cache_miss": 0.154324
+      }
+    },
+    "max": {
+      "prompt_tokens_mean": 3377.0,
+      "completion_tokens_mean": 120431.0,
+      "errors": 0,
+      "empty_finals": 0,
+      "length_truncations": 0,
+      "estimated_api_cost_usd": {
+        "off_peak_all_input_cache_miss": 0.240682,
+        "peak_all_input_cache_miss": 0.481364
+      }
+    }
+  },
+  "latency": {
+    "private-high": {
+      "ttft_seconds": 0.252335,
+      "response_seconds": 13.499172,
+      "decode_tokens_per_second": 35.472871,
+      "completion_tokens": 470.333333
+    },
+    "online-flash-low": {
+      "ttft_seconds": 2.415694,
+      "response_seconds": 8.061635,
+      "decode_tokens_per_second": 87.928061,
+      "completion_tokens": 492.666667
+    },
+    "online-pro-low": {
+      "ttft_seconds": 2.268662,
+      "response_seconds": 6.711457,
+      "decode_tokens_per_second": 45.889908,
+      "completion_tokens": 204.0
+    },
+    "online-pro-high": {
+      "ttft_seconds": 3.766172,
+      "response_seconds": 13.407764,
+      "decode_tokens_per_second": 48.15711,
+      "completion_tokens": 464.666667
+    },
+    "online-pro-max": {
+      "ttft_seconds": 2.051077,
+      "response_seconds": 10.780797,
+      "decode_tokens_per_second": 45.953507,
+      "completion_tokens": 401.0
+    }
+  },
+  "agent_focus": {
+    "model": "deepseek-v4-pro",
+    "reasoning_effort": "high (official API default)",
+    "claude_code_version": "2.1.207",
+    "parallelism": 5,
+    "passed": 1,
+    "task_count": 5,
+    "thinking_block_count": 73,
+    "tasks": [
+      {
+        "task_id": "ndjson-stream-decoder",
+        "status": "failed",
+        "agent_status": "completed",
+        "hidden_passed": 7,
+        "hidden_total": 8,
+        "thinking_blocks": 15,
+        "elapsed_seconds": 183.769,
+        "historical_online_flash_status": "passed",
+        "historical_private_flash_status": "passed"
+      },
+      {
+        "task_id": "terminal-log-frequency",
+        "status": "failed",
+        "agent_status": "completed",
+        "hidden_passed": 0,
+        "hidden_total": 1,
+        "thinking_blocks": 21,
+        "elapsed_seconds": 612.989,
+        "historical_online_flash_status": "passed",
+        "historical_private_flash_status": "passed"
+      },
+      {
+        "task_id": "ops-oom-cgroup",
+        "status": "failed",
+        "agent_status": "completed",
+        "hidden_passed": 1,
+        "hidden_total": 2,
+        "thinking_blocks": 7,
+        "elapsed_seconds": 249.81,
+        "historical_online_flash_status": "failed",
+        "historical_private_flash_status": "failed"
+      },
+      {
+        "task_id": "writing-zh-incident",
+        "status": "failed",
+        "agent_status": "completed",
+        "hidden_passed": 0,
+        "hidden_total": 4,
+        "thinking_blocks": 20,
+        "elapsed_seconds": 315.336,
+        "historical_online_flash_status": "passed",
+        "historical_private_flash_status": "failed"
+      },
+      {
+        "task_id": "typescript-lru-ttl",
+        "status": "passed",
+        "agent_status": "completed",
+        "hidden_passed": 1,
+        "hidden_total": 1,
+        "thinking_blocks": 10,
+        "elapsed_seconds": 145.489,
+        "historical_online_flash_status": "passed",
+        "historical_private_flash_status": "failed"
+      }
+    ]
+  },
+  "private_effort_contract": {
+    "low_equals_high": true,
+    "low_prompt_sha256": "f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0",
+    "high_prompt_sha256": "f0c87d80359c231133820e076d1b5c6dcf61fcee3d09905b0a26eddc4c211de0",
+    "max_prompt_sha256": "289b341131ccacbac40dd051a01c4b61989671915e61bbb236ee62bab7427b65"
+  },
+  "source_sha256": {
+    "existing_adjudication": "105b97acd0fb8882b8672cac31c80e2da4513244186e52f945636e5914f8d4d3",
+    "pro_adjudication": "8fcd810c8db24550a997a661ee1be911ff03994fb8bd2400fa446fe02c1ee59d",
+    "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1"
+  }
+}

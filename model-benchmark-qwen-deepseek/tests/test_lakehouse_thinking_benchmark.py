@@ -7,6 +7,7 @@ import json
 import urllib.error
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -132,6 +133,15 @@ def stable_toposort(graph):
             result = BENCH.request("http://example.test/v1", "model", "test", "off", 256)
         self.assertEqual(result["finish_reason"], "error")
         self.assertEqual(result["error"]["status"], 504)
+
+    def test_python_sandbox_image_can_be_pinned_for_adjudication(self) -> None:
+        function_globals = BENCH.run_code.__globals__
+        completed = SimpleNamespace(returncode=1, stdout="", stderr="expected test failure")
+        with patch.dict(function_globals["os"].environ, {"PYTHON_SANDBOX_IMAGE": "registry.example/python@sha256:test"}):
+            with patch.object(function_globals["subprocess"], "run", return_value=completed) as run:
+                passed, _detail = BENCH.run_code("def value(): return 1", [("value()", 1)])
+        self.assertFalse(passed)
+        self.assertIn("registry.example/python@sha256:test", run.call_args.args[0])
 
     def test_streaming_request_collects_reasoning_content_and_usage(self) -> None:
         class Response(io.BytesIO):

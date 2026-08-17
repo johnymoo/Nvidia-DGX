@@ -27,10 +27,11 @@ class FakeResponse:
 
 class InferenceLatencyBenchmarkTests(unittest.TestCase):
     def test_online_profile_uses_native_thinking_contract(self) -> None:
-        body = MODULE.request_body("ds", "deepseek-online-low", 2048)
-        self.assertEqual(body["thinking"], {"type": "enabled"})
-        self.assertEqual(body["reasoning_effort"], "low")
-        self.assertNotIn("temperature", body)
+        for effort in ("low", "high", "max"):
+            body = MODULE.request_body("ds", f"deepseek-online-{effort}", 2048)
+            self.assertEqual(body["thinking"], {"type": "enabled"})
+            self.assertEqual(body["reasoning_effort"], effort)
+            self.assertNotIn("temperature", body)
 
     def test_private_profile_uses_local_sampling(self) -> None:
         body = MODULE.request_body("ds", "deepseek-private-high", 2048)

@@ -1,0 +1,66 @@
+{
+  "model": "deepseek-v4-pro",
+  "reasoning_effort": "high (official API default)",
+  "claude_code_version": "2.1.207",
+  "parallelism": 5,
+  "passed": 1,
+  "task_count": 5,
+  "thinking_block_count": 73,
+  "tasks": [
+    {
+      "task_id": "ndjson-stream-decoder",
+      "status": "failed",
+      "agent_status": "completed",
+      "hidden_passed": 7,
+      "hidden_total": 8,
+      "thinking_blocks": 15,
+      "elapsed_seconds": 183.769,
+      "historical_online_flash_status": "passed",
+      "historical_private_flash_status": "passed"
+    },
+    {
+      "task_id": "terminal-log-frequency",
+      "status": "failed",
+      "agent_status": "completed",
+      "hidden_passed": 0,
+      "hidden_total": 1,
+      "thinking_blocks": 21,
+      "elapsed_seconds": 612.989,
+      "historical_online_flash_status": "passed",
+      "historical_private_flash_status": "passed"
+    },
+    {
+      "task_id": "ops-oom-cgroup",
+      "status": "failed",
+      "agent_status": "completed",
+      "hidden_passed": 1,
+      "hidden_total": 2,
+      "thinking_blocks": 7,
+      "elapsed_seconds": 249.81,
+      "historical_online_flash_status": "failed",
+      "historical_private_flash_status": "failed"
+    },
+    {
+      "task_id": "writing-zh-incident",
+      "status": "failed",
+      "agent_status": "completed",
+      "hidden_passed": 0,
+      "hidden_total": 4,
+      "thinking_blocks": 20,
+      "elapsed_seconds": 315.336,
+      "historical_online_flash_status": "passed",
+      "historical_private_flash_status": "failed"
+    },
+    {
+      "task_id": "typescript-lru-ttl",
+      "status": "passed",
+      "agent_status": "completed",
+      "hidden_passed": 1,
+      "hidden_total": 1,
+      "thinking_blocks": 10,
+      "elapsed_seconds": 145.489,
+      "historical_online_flash_status": "passed",
+      "historical_private_flash_status": "failed"
+    }
+  ]
+}

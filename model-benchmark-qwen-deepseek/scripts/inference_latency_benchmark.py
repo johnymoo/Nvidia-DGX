@@ -37,8 +37,11 @@ def request_body(model: str, profile: str, max_tokens: int) -> dict:
     elif profile == "deepseek-private-high":
         body.update({"temperature": 1.0, "top_p": 1.0, "reasoning_effort": "high"})
         body["chat_template_kwargs"] = {"thinking": True}
-    elif profile == "deepseek-online-low":
-        body.update({"thinking": {"type": "enabled"}, "reasoning_effort": "low"})
+    elif profile.startswith("deepseek-online-"):
+        effort = profile.removeprefix("deepseek-online-")
+        if effort not in {"low", "high", "max"}:
+            raise ValueError(f"unsupported online DeepSeek effort: {effort}")
+        body.update({"thinking": {"type": "enabled"}, "reasoning_effort": effort})
     else:
         raise ValueError(f"unsupported profile: {profile}")
     return body
@@ -165,7 +168,14 @@ def main() -> int:
     parser.add_argument("--model", required=True)
     parser.add_argument(
         "--profile",
-        choices=["qwen36-thinking", "qwen38-low", "deepseek-private-high", "deepseek-online-low"],
+        choices=[
+            "qwen36-thinking",
+            "qwen38-low",
+            "deepseek-private-high",
+            "deepseek-online-low",
+            "deepseek-online-high",
+            "deepseek-online-max",
+        ],
         required=True,
     )
     parser.add_argument("--api-key-env")
