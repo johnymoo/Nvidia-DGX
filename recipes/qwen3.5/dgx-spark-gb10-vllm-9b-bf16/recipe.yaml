@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.5.gb10.vllm-9b-bf16",
+  "model_family": "qwen3.5",
+  "model_id": "Qwen3.5-9B",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "vllm",
+  "profile_id": "bf16-nightly",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": ["../dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md", "../dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/CONFIG.md"],
+  "operations": {},
+  "benchmark_suites": ["legacy-qwen3.5-speed"],
+  "evidence": {"receipts": [], "benchmarks": ["../dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md"]},
+  "limitations": ["Shared historical guide only; no pinned image digest or deployment receipt."],
+  "invalidation_conditions": ["Model, vLLM nightly image, context, or GB10 software changes."]
+}

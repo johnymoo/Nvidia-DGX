@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "minimax-h3.gb10.comfyui-trained-max-15s",
+  "model_family": "minimax-h3",
+  "model_id": "MiniMax-H3",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "comfyui",
+  "profile_id": "trained-max-362-frames-512x320",
+  "modality": "media-generation",
+  "maturity": "Verified",
+  "default": true,
+  "source_paths": ["README.md", "execution/"],
+  "operations": {"accept": ["test-recipe.sh"], "benchmark": ["execution/minimax-h3-benchmark/run-benchmark.sh"]},
+  "benchmark_suites": ["media-performance-v1@1", "legacy-minimax-h3-nine-case"],
+  "evidence": {"receipts": ["BENCHMARK-RESULTS.md"], "benchmarks": ["benchmark-results.json"]},
+  "limitations": ["Media results are excluded from token-TPS ranking.", "Generated media and raw host logs are intentionally not committed."],
+  "invalidation_conditions": ["Any weight, ComfyUI, workflow, resolution, frame-count, sampling-step, or hardware change."]
+}

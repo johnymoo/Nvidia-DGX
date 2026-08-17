@@ -1,4 +1,624 @@
 {
   "schema_version": 1,
-  "recipes": []
+  "recipes": [
+    {
+      "schema_version": 1,
+      "id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on",
+      "model_family": "deepseek-v4",
+      "model_id": "DeepSeek-V4-Flash-0731",
+      "hardware_id": "dgx-spark-gb10-pair",
+      "runtime_id": "vllm-patch4",
+      "profile_id": "thinking-on-tp2",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "docker-compose.thinking-on.yml",
+        "docker-compose.yml",
+        "benchmark/",
+        "data/"
+      ],
+      "operations": {
+        "benchmark": [
+          "benchmark/run.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-deepseek-agent-route-comparison"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "BENCHMARK-RESULTS.md",
+          "benchmark-results-20260812.json"
+        ]
+      },
+      "limitations": [
+        "Model weights and private runtime receipt are not published.",
+        "Historical metrics do not declare an active canonical suite."
+      ],
+      "invalidation_conditions": [
+        "Checkpoint, Patch4 image, tensor-parallel topology, thinking mode, or gateway route changes."
+      ],
+      "metadata_path": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "minimax-h3.gb10.comfyui-trained-max-15s",
+      "model_family": "minimax-h3",
+      "model_id": "MiniMax-H3",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "comfyui",
+      "profile_id": "trained-max-362-frames-512x320",
+      "modality": "media-generation",
+      "maturity": "Verified",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "execution/"
+      ],
+      "operations": {
+        "accept": [
+          "test-recipe.sh"
+        ],
+        "benchmark": [
+          "execution/minimax-h3-benchmark/run-benchmark.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "media-performance-v1@1",
+        "legacy-minimax-h3-nine-case"
+      ],
+      "evidence": {
+        "receipts": [
+          "BENCHMARK-RESULTS.md"
+        ],
+        "benchmarks": [
+          "benchmark-results.json"
+        ]
+      },
+      "limitations": [
+        "Media results are excluded from token-TPS ranking.",
+        "Generated media and raw host logs are intentionally not committed."
+      ],
+      "invalidation_conditions": [
+        "Any weight, ComfyUI, workflow, resolution, frame-count, sampling-step, or hardware change."
+      ],
+      "metadata_path": "recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.5.gb10.llamacpp-9b-q4-k-m-8k",
+      "model_family": "qwen3.5",
+      "model_id": "Qwen3.5-9B",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "llama.cpp",
+      "profile_id": "q4-k-m-8k",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "CONFIG.md",
+        "benchmark.sh"
+      ],
+      "operations": {
+        "benchmark": [
+          "benchmark.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-qwen3.5-speed"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "README.md",
+          "CONFIG.md"
+        ]
+      },
+      "limitations": [
+        "Runtime and model artifacts are not pinned by a committed receipt.",
+        "Historical throughput lacks canonical TTFT and cache fields."
+      ],
+      "invalidation_conditions": [
+        "Model conversion, quantization, llama.cpp build, context, or GB10 software changes."
+      ],
+      "metadata_path": "recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.5.gb10.vllm-9b-bf16",
+      "model_family": "qwen3.5",
+      "model_id": "Qwen3.5-9B",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "vllm",
+      "profile_id": "bf16-nightly",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": false,
+      "source_paths": [
+        "../dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md",
+        "../dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/CONFIG.md"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.5-speed"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "../dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md"
+        ]
+      },
+      "limitations": [
+        "Shared historical guide only; no pinned image digest or deployment receipt."
+      ],
+      "invalidation_conditions": [
+        "Model, vLLM nightly image, context, or GB10 software changes."
+      ],
+      "metadata_path": "recipes/qwen3.5/dgx-spark-gb10-vllm-9b-bf16/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.gb10.llamacpp-35b-a3b-q4-k-s-128k",
+      "model_family": "qwen3.6",
+      "model_id": "Qwen3.6-35B-A3B-UD-Q4_K_S",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "llama.cpp",
+      "profile_id": "q4-k-s-128k",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": false,
+      "source_paths": [
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/deploy-llamacpp.sh",
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/README.md"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.6-runtime-comparison"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/BENCHMARK-RESULTS.md"
+        ]
+      },
+      "limitations": [
+        "Shared historical guide; llama.cpp build and GGUF receipt are incomplete."
+      ],
+      "invalidation_conditions": [
+        "GGUF, llama.cpp build, context, KV cache, or GB10 software changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/dgx-spark-gb10-llamacpp-35b-a3b-q4-k-s-128k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.gb10.vllm-27b-nvfp4-native-mtp2-128k",
+      "model_family": "qwen3.6",
+      "model_id": "unsloth/Qwen3.6-27B-NVFP4",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "vllm",
+      "profile_id": "native-nvfp4-mtp2-128k",
+      "modality": "multimodal-generation",
+      "maturity": "Reference",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "CONFIG.md",
+        "docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native-mtp2.yml",
+        "benchmark_outputs/"
+      ],
+      "operations": {
+        "benchmark": [
+          "run_full_mtp2_benchmark.py"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-qwen3.6-mtp2-matrix"
+      ],
+      "evidence": {
+        "receipts": [
+          "UNSLOTH-QWEN36-27B-NVFP4-NATIVE-FP4-RESULTS.md"
+        ],
+        "benchmarks": [
+          "UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md",
+          "benchmark_outputs/"
+        ]
+      },
+      "limitations": [
+        "Historical result definitions are legacy and do not declare performance-v1.",
+        "The served model alias differs from the checkpoint identity."
+      ],
+      "invalidation_conditions": [
+        "Checkpoint, image digest, MTP depth, context, alias, or GB10 runtime changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.gb10.vllm-27b-nvfp4-native-no-mtp-32k",
+      "model_family": "qwen3.6",
+      "model_id": "unsloth/Qwen3.6-27B-NVFP4",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "vllm",
+      "profile_id": "native-nvfp4-no-mtp-32k",
+      "modality": "multimodal-generation",
+      "maturity": "Archived",
+      "default": false,
+      "source_paths": [
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/docker-compose-vllm-qwen36-27b-unsloth-nvfp4-native.yml",
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/benchmark_outputs/single-stream-nomtp-20260716-070601.json"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.6-mtp-ab"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/UNSLOTH-QWEN36-27B-NVFP4-MTP2-BENCHMARK-RESULTS.md"
+        ]
+      },
+      "limitations": [
+        "Archived control profile; use the shared historical guide."
+      ],
+      "invalidation_conditions": [
+        "Checkpoint, image, context, or no-MTP control configuration changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-no-mtp-32k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.gb10.vllm-35b-a3b-fp8-256k",
+      "model_family": "qwen3.6",
+      "model_id": "Qwen3.6-35B-A3B-FP8",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "vllm",
+      "profile_id": "fp8-256k",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": false,
+      "source_paths": [
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/docker-compose-vllm-fp8.yml",
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/BENCHMARK-RESULTS.md"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.6-runtime-comparison"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/BENCHMARK-RESULTS.md"
+        ]
+      },
+      "limitations": [
+        "Shared historical assets; no canonical deployment receipt."
+      ],
+      "invalidation_conditions": [
+        "Model, image, context, or GB10 software changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/dgx-spark-gb10-vllm-35b-a3b-fp8-256k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.gb10.vllm-35b-a3b-nvfp4-mtp3-256k",
+      "model_family": "qwen3.6",
+      "model_id": "Qwen3.6-35B-A3B-NVFP4",
+      "hardware_id": "dgx-spark-gb10",
+      "runtime_id": "vllm",
+      "profile_id": "nvfp4-mtp3-256k",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": false,
+      "source_paths": [
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/docker-compose-vllm-nvfp4-nightly-aarch64.yml",
+        "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.6-runtime-comparison"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md"
+        ]
+      },
+      "limitations": [
+        "Shared historical assets; no canonical deployment receipt."
+      ],
+      "invalidation_conditions": [
+        "Model, image, MTP, context, or GB10 software changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/dgx-spark-gb10-vllm-35b-a3b-nvfp4-mtp3-256k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.rtx4090-48gb.ollama-27b-q4-k-m-128k",
+      "model_family": "qwen3.6",
+      "model_id": "qwen3.6:27b",
+      "hardware_id": "rtx4090-48gb",
+      "runtime_id": "ollama-0.20.2",
+      "profile_id": "q4-k-m-128k-p1",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "compose.yaml",
+        "benchmark_ollama_qwen36.py"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.6-ollama-single-stream"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "benchmark_results_27b_q4_128k_20260723_235741.json"
+        ]
+      },
+      "limitations": [
+        "Historical result has legacy metrics and no canonical receipt bundle."
+      ],
+      "invalidation_conditions": [
+        "Ollama version, model package, context, parallelism, or GPU configuration changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/rtx4090-48gb-ollama-27b-q4-k-m-128k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.rtx4090-48gb.ollama-35b-a3b-q4-k-m-128k",
+      "model_family": "qwen3.6",
+      "model_id": "qwen3.6:35b-a3b",
+      "hardware_id": "rtx4090-48gb",
+      "runtime_id": "ollama-0.20.2",
+      "profile_id": "q4-k-m-128k-p1",
+      "modality": "text-generation",
+      "maturity": "Archived",
+      "default": false,
+      "source_paths": [
+        "../rtx4090-48gb-ollama-27b-q4-k-m-128k/README.md",
+        "../rtx4090-48gb-ollama-27b-q4-k-m-128k/compose.yaml"
+      ],
+      "operations": {},
+      "benchmark_suites": [
+        "legacy-qwen3.6-ollama-single-stream"
+      ],
+      "evidence": {
+        "receipts": [],
+        "benchmarks": [
+          "../rtx4090-48gb-ollama-27b-q4-k-m-128k/benchmark_results_128k_20260722_144200.json"
+        ]
+      },
+      "limitations": [
+        "Archived comparison profile sharing the 27B project files."
+      ],
+      "invalidation_conditions": [
+        "Ollama version, model package, context, parallelism, or GPU configuration changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/rtx4090-48gb-ollama-35b-a3b-q4-k-m-128k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.6.rtx4090-48gb.vllm-35b-a3b-fp8-32k-p2",
+      "model_family": "qwen3.6",
+      "model_id": "Qwen/Qwen3.6-35B-A3B-FP8",
+      "hardware_id": "rtx4090-48gb",
+      "runtime_id": "vllm-0.19.0",
+      "profile_id": "fp8-32k-p2",
+      "modality": "text-generation",
+      "maturity": "Reference",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "compose.yaml",
+        "scripts/",
+        "receipts/"
+      ],
+      "operations": {
+        "prepare": [
+          "scripts/download.sh"
+        ],
+        "start": [
+          "scripts/start.sh"
+        ],
+        "status": [
+          "scripts/status.sh"
+        ],
+        "benchmark": [
+          "scripts/benchmark.sh"
+        ],
+        "stop": [
+          "scripts/stop.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-lakehouse-18-case"
+      ],
+      "evidence": {
+        "receipts": [
+          "receipts/deployment-20260817.json"
+        ],
+        "benchmarks": [
+          "../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"
+        ]
+      },
+      "limitations": [
+        "Mutable ModelScope master lacked complete shard hashes, so this remains Reference."
+      ],
+      "invalidation_conditions": [
+        "Model snapshot, image digest, context, parallelism, thinking mode, or hardware changes."
+      ],
+      "metadata_path": "recipes/qwen3.6/rtx4090-48gb-vllm-35b-a3b-fp8-32k-p2/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.8.rtx3090-24gb.llamacpp-27b-q3-k-s-128k-p2",
+      "model_family": "qwen3.8",
+      "model_id": "Qwen3.8-27B-Q3_K_S",
+      "hardware_id": "rtx3090-24gb",
+      "runtime_id": "llama.cpp",
+      "profile_id": "q3-k-s-128k-p2",
+      "modality": "multimodal-generation",
+      "maturity": "Verified",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "config/",
+        "scripts/",
+        "receipts/"
+      ],
+      "operations": {
+        "prepare": [
+          "scripts/download.sh"
+        ],
+        "start": [
+          "scripts/start.sh"
+        ],
+        "status": [
+          "scripts/status.sh"
+        ],
+        "accept": [
+          "scripts/accept.sh"
+        ],
+        "stop": [
+          "scripts/stop.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-pr29-quality-performance"
+      ],
+      "evidence": {
+        "receipts": [
+          "receipts/deployment-20260815T144804Z.json"
+        ],
+        "benchmarks": [
+          "../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"
+        ]
+      },
+      "limitations": [
+        "Historical benchmark does not declare active performance-v1 and cannot enter Best Verified.",
+        "The recorded deployment is stopped; receipt reuse requires exact identity."
+      ],
+      "invalidation_conditions": [
+        "GGUF, mmproj, image digest, context, parallelism, KV cache, thinking mode, or hardware changes."
+      ],
+      "metadata_path": "recipes/qwen3.8/rtx3090-24gb-llamacpp-27b-q3-k-s-128k-p2/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.8.rtx4090-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-256k",
+      "model_family": "qwen3.8",
+      "model_id": "Qwen3.8-27B-UD-Q4_K_XL",
+      "hardware_id": "rtx4090-48gb",
+      "runtime_id": "llama.cpp",
+      "profile_id": "ud-q4-k-xl-mtp2-256k-p1",
+      "modality": "multimodal-generation",
+      "maturity": "Reference",
+      "default": true,
+      "source_paths": [
+        "README.md",
+        "config/",
+        "scripts/",
+        "receipts/"
+      ],
+      "operations": {
+        "prepare": [
+          "scripts/download.sh"
+        ],
+        "start": [
+          "scripts/start.sh"
+        ],
+        "status": [
+          "scripts/status.sh"
+        ],
+        "benchmark": [
+          "scripts/benchmark.sh"
+        ],
+        "stop": [
+          "scripts/stop.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-qwen3.8-quantization"
+      ],
+      "evidence": {
+        "receipts": [
+          "receipts/deployment-20260817.json"
+        ],
+        "benchmarks": [
+          "../../../benchmarks/legacy/qwen-deepseek-cross-model/data/qwen38-quantization/"
+        ]
+      },
+      "limitations": [
+        "Historical benchmark does not declare active performance-v1.",
+        "Concurrency and 48-hour soak remain unverified."
+      ],
+      "invalidation_conditions": [
+        "GGUF, mmproj, image digest, MTP, context, KV cache, parallelism, or hardware changes."
+      ],
+      "metadata_path": "recipes/qwen3.8/rtx4090-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-256k/recipe.yaml"
+    },
+    {
+      "schema_version": 1,
+      "id": "qwen3.8.rtx4090-48gb.vllm-27b-fp8-64k-p4",
+      "model_family": "qwen3.8",
+      "model_id": "Qwen/Qwen3.8-27B-FP8",
+      "hardware_id": "rtx4090-48gb",
+      "runtime_id": "vllm-0.19.0",
+      "profile_id": "fp8-64k-p4",
+      "modality": "multimodal-generation",
+      "maturity": "Reference",
+      "default": false,
+      "source_paths": [
+        "README.md",
+        "compose.yaml",
+        "config/",
+        "scripts/",
+        "receipts/"
+      ],
+      "operations": {
+        "prepare": [
+          "scripts/download.sh"
+        ],
+        "start": [
+          "scripts/start.sh"
+        ],
+        "status": [
+          "scripts/status.sh"
+        ],
+        "benchmark": [
+          "scripts/benchmark.sh"
+        ],
+        "stop": [
+          "scripts/stop.sh"
+        ]
+      },
+      "benchmark_suites": [
+        "legacy-pr29-quality-performance",
+        "legacy-lakehouse-18-case"
+      ],
+      "evidence": {
+        "receipts": [
+          "receipts/deployment-20260816.json"
+        ],
+        "benchmarks": [
+          "receipts/benchmark-20260816.json",
+          "../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"
+        ]
+      },
+      "limitations": [
+        "Mutable ModelScope master lacked complete shard hashes, so this remains Reference.",
+        "Historical metrics do not declare active performance-v1."
+      ],
+      "invalidation_conditions": [
+        "Model snapshot, image digest, context, parallelism, thinking mode, or hardware changes."
+      ],
+      "metadata_path": "recipes/qwen3.8/rtx4090-48gb-vllm-27b-fp8-64k-p4/recipe.yaml"
+    }
+  ]
 }

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.8.rtx4090-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-256k",
+  "model_family": "qwen3.8",
+  "model_id": "Qwen3.8-27B-UD-Q4_K_XL",
+  "hardware_id": "rtx4090-48gb",
+  "runtime_id": "llama.cpp",
+  "profile_id": "ud-q4-k-xl-mtp2-256k-p1",
+  "modality": "multimodal-generation",
+  "maturity": "Reference",
+  "default": true,
+  "source_paths": ["README.md", "config/", "scripts/", "receipts/"],
+  "operations": {"prepare": ["scripts/download.sh"], "start": ["scripts/start.sh"], "status": ["scripts/status.sh"], "benchmark": ["scripts/benchmark.sh"], "stop": ["scripts/stop.sh"]},
+  "benchmark_suites": ["legacy-qwen3.8-quantization"],
+  "evidence": {"receipts": ["receipts/deployment-20260817.json"], "benchmarks": ["../../../benchmarks/legacy/qwen-deepseek-cross-model/data/qwen38-quantization/"]},
+  "limitations": ["Historical benchmark does not declare active performance-v1.", "Concurrency and 48-hour soak remain unverified."],
+  "invalidation_conditions": ["GGUF, mmproj, image digest, MTP, context, KV cache, parallelism, or hardware changes."]
+}

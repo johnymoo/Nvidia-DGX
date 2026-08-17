@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.rtx4090-48gb.vllm-35b-a3b-fp8-32k-p2",
+  "model_family": "qwen3.6",
+  "model_id": "Qwen/Qwen3.6-35B-A3B-FP8",
+  "hardware_id": "rtx4090-48gb",
+  "runtime_id": "vllm-0.19.0",
+  "profile_id": "fp8-32k-p2",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": true,
+  "source_paths": ["README.md", "compose.yaml", "scripts/", "receipts/"],
+  "operations": {"prepare": ["scripts/download.sh"], "start": ["scripts/start.sh"], "status": ["scripts/status.sh"], "benchmark": ["scripts/benchmark.sh"], "stop": ["scripts/stop.sh"]},
+  "benchmark_suites": ["legacy-lakehouse-18-case"],
+  "evidence": {"receipts": ["receipts/deployment-20260817.json"], "benchmarks": ["../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"]},
+  "limitations": ["Mutable ModelScope master lacked complete shard hashes, so this remains Reference."],
+  "invalidation_conditions": ["Model snapshot, image digest, context, parallelism, thinking mode, or hardware changes."]
+}

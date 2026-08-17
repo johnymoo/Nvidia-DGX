@@ -1,0 +1,22 @@
+{
+  "timestamp": "20260618-061439",
+  "status": 200,
+  "api_url": "http://localhost:8004/v1/chat/completions",
+  "model": "qwen3.6-35b-fp8",
+  "wall_seconds": 19.257711539044976,
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 186,
+    "total_tokens": 2528,
+    "completion_tokens": 2342,
+    "prompt_tokens_details": null
+  },
+  "raw_path": "/home/YOUR_USERNAME/project/nvidia-dgx/qwen36-dgx-spark/benchmark_outputs/pelican-nvfp4-20260618-061439.json",
+  "svg_path": "/home/YOUR_USERNAME/project/nvidia-dgx/qwen36-dgx-spark/benchmark_outputs/pelican-nvfp4-20260618-061439.svg",
+  "png_path": "/home/YOUR_USERNAME/project/nvidia-dgx/qwen36-dgx-spark/benchmark_outputs/pelican-nvfp4-20260618-061439.png",
+  "render_returncode": 0,
+  "render_stdout": "",
+  "render_stderr": "[2648564:2648564:0618/061501.721096:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.ListActivatableNames: object_path= /org/freedesktop/DBus: org.freedesktop.DBus.Error.AccessDenied: An AppArmor policy prevents this sender from sending this message to this recipient; type=\"method_call\", sender=\":1.5630\" (uid=1000 pid=2648564 comm=\"/snap/chromium/3458/usr/lib/chromium-browser/chrom\" label=\"snap.chromium.chromium (enforce)\") interface=\"org.freedesktop.DBus\" member=\"ListActivatableNames\" error name=\"(unset)\" requested_reply=\"0\" destination=\"org.freedesktop.DBus\" (bus)\n[2648564:2648564:0618/061501.722314:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.ListActivatableNames: object_path= /org/freedesktop/DBus: org.freedesktop.DBus.Error.AccessDenied: An AppArmor policy prevents this sender from sending this message to this recipient; type=\"method_call\", sender=\":1.5630\" (uid=1000 pid=2648564 comm=\"/snap/chromium/3458/usr/lib/chromium-browser/chrom\" label=\"snap.chromium.chromium (enforce)\") interface=\"org.freedesktop.DBus\" member=\"ListActivatableNames\" error name=\"(unset)\" requested_reply=\"0\" destination=\"org.freedesktop.DBus\" (bus)\n21995 bytes written to file /home/YOUR_USERNAME/project/nvidia-dgx/qwen36-dgx-spark/benchmark_outputs/pelican-nvfp4-20260618-061439.png\n",
+  "content_chars": 4797,
+  "svg_chars": 4797
+}

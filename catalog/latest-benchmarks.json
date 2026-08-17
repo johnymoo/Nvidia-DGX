@@ -2,5 +2,362 @@
   "schema_version": 1,
   "policy_id": "best-verified-v1",
   "best_verified": [],
-  "reference_results": []
+  "reference_results": [
+    {
+      "result_id": "deepseek-v4-dual-gb10-reference-20260812",
+      "recipe_id": "deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on",
+      "hardware_id": "dgx-spark-gb10-pair",
+      "model_family": "deepseek-v4",
+      "model_id": "DeepSeek-V4-Flash-0731",
+      "runtime_id": "vllm-patch4",
+      "profile_id": "thinking-on-tp2",
+      "modality": "text-generation",
+      "suite": {
+        "id": "legacy-deepseek-agent-route-comparison",
+        "version": "2026-08-12"
+      },
+      "workload": {
+        "id": "legacy-cross-model-performance",
+        "concurrency": 1,
+        "cache_state": "unknown"
+      },
+      "metrics": {
+        "ttft_seconds": null,
+        "first_final_token_seconds": null,
+        "response_time_seconds": null,
+        "decode_tokens_per_second": {
+          "mean": 68.8,
+          "definition": "recorded single-stream mean"
+        },
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": {
+          "mean": 229.3,
+          "concurrency": 6,
+          "definition": "recorded concurrent aggregate"
+        },
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "status": "legacy"
+        },
+        "hardware": {
+          "class": "two NVIDIA DGX Spark / GB10"
+        }
+      },
+      "receipt": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/benchmark-results-20260812.json",
+      "report": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md",
+      "result_path": "results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812/result.json"
+    },
+    {
+      "result_id": "minimax-h3-gb10-reference-20260813",
+      "recipe_id": "minimax-h3.gb10.comfyui-trained-max-15s",
+      "hardware_id": "dgx-spark-gb10",
+      "model_family": "minimax-h3",
+      "model_id": "MiniMax-H3",
+      "runtime_id": "comfyui",
+      "profile_id": "trained-max-362-frames-512x320",
+      "modality": "media-generation",
+      "suite": {
+        "id": "legacy-minimax-h3-nine-case",
+        "version": "2026-08-13"
+      },
+      "workload": {
+        "id": "362-frames-512x320-six-steps",
+        "concurrency": 1,
+        "cache_state": "cold"
+      },
+      "metrics": {
+        "ttft_seconds": null,
+        "first_final_token_seconds": null,
+        "response_time_seconds": {
+          "mean": 130.5,
+          "definition": "approximate recorded bounded wall time"
+        },
+        "decode_tokens_per_second": null,
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": null,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "successful_cases": 9,
+          "total_cases": 9
+        },
+        "hardware": {
+          "class": "one NVIDIA DGX Spark / GB10",
+          "max_gpu_percent": 96
+        }
+      },
+      "receipt": "recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md",
+      "report": "recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md",
+      "result_path": "results/dgx-spark-gb10/minimax-h3/reference-20260813/result.json"
+    },
+    {
+      "result_id": "qwen3.5-9b-gb10-reference",
+      "recipe_id": "qwen3.5.gb10.llamacpp-9b-q4-k-m-8k",
+      "hardware_id": "dgx-spark-gb10",
+      "model_family": "qwen3.5",
+      "model_id": "Qwen3.5-9B",
+      "runtime_id": "llama.cpp",
+      "profile_id": "q4-k-m-8k",
+      "modality": "text-generation",
+      "suite": {
+        "id": "legacy-qwen3.5-speed",
+        "version": "1"
+      },
+      "workload": {
+        "id": "1000-token-generation",
+        "concurrency": 1,
+        "cache_state": "unknown"
+      },
+      "metrics": {
+        "ttft_seconds": null,
+        "first_final_token_seconds": null,
+        "response_time_seconds": {
+          "mean": 28.89
+        },
+        "decode_tokens_per_second": {
+          "mean": 34.6,
+          "definition": "recorded llama.cpp speed"
+        },
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": null,
+        "prompt_tokens": null,
+        "completion_tokens": {
+          "mean": 1000
+        },
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "status": "not recorded"
+        },
+        "hardware": {
+          "class": "NVIDIA DGX Spark / GB10"
+        }
+      },
+      "receipt": "recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md",
+      "report": "recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md",
+      "result_path": "results/dgx-spark-gb10/qwen3.5/reference-legacy/result.json"
+    },
+    {
+      "result_id": "qwen3.6-35b-nvfp4-gb10-reference-20260618",
+      "recipe_id": "qwen3.6.gb10.vllm-35b-a3b-nvfp4-mtp3-256k",
+      "hardware_id": "dgx-spark-gb10",
+      "model_family": "qwen3.6",
+      "model_id": "Qwen3.6-35B-A3B-NVFP4",
+      "runtime_id": "vllm",
+      "profile_id": "nvfp4-mtp3-256k",
+      "modality": "text-generation",
+      "suite": {
+        "id": "legacy-qwen3.6-runtime-comparison",
+        "version": "2026-06-18"
+      },
+      "workload": {
+        "id": "legacy-16-case-generation",
+        "concurrency": 1,
+        "cache_state": "unknown"
+      },
+      "metrics": {
+        "ttft_seconds": null,
+        "first_final_token_seconds": null,
+        "response_time_seconds": null,
+        "decode_tokens_per_second": {
+          "mean": 152.1,
+          "median": 159.2,
+          "min": 66.0,
+          "max": 179.0,
+          "definition": "recorded average generation throughput"
+        },
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": null,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "count": 0
+        },
+        "hardware": {
+          "class": "NVIDIA DGX Spark / GB10"
+        }
+      },
+      "receipt": "recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md",
+      "report": "recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md",
+      "result_path": "results/dgx-spark-gb10/qwen3.6/reference-20260618/result.json"
+    },
+    {
+      "result_id": "qwen3.6-35b-rtx4090-reference-20260817",
+      "recipe_id": "qwen3.6.rtx4090-48gb.vllm-35b-a3b-fp8-32k-p2",
+      "hardware_id": "rtx4090-48gb",
+      "model_family": "qwen3.6",
+      "model_id": "Qwen/Qwen3.6-35B-A3B-FP8",
+      "runtime_id": "vllm-0.19.0",
+      "profile_id": "fp8-32k-p2",
+      "modality": "text-generation",
+      "suite": {
+        "id": "legacy-lakehouse-inference-performance",
+        "version": "2026-08-17"
+      },
+      "workload": {
+        "id": "legacy-fixed-generation",
+        "concurrency": 1,
+        "cache_state": "unknown"
+      },
+      "metrics": {
+        "ttft_seconds": {
+          "mean": 0.08743
+        },
+        "first_final_token_seconds": null,
+        "response_time_seconds": {
+          "mean": 17.094655
+        },
+        "decode_tokens_per_second": {
+          "mean": 112.18763,
+          "definition": "legacy corrected stream decode field"
+        },
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": null,
+        "prompt_tokens": null,
+        "completion_tokens": {
+          "mean": 1908.0
+        },
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "count": 0,
+          "runs": 3
+        },
+        "hardware": {
+          "class": "NVIDIA RTX 4090 48 GB"
+        }
+      },
+      "receipt": "recipes/qwen3.6/rtx4090-48gb-vllm-35b-a3b-fp8-32k-p2/receipts/deployment-20260817.json",
+      "report": "benchmarks/legacy/qwen-deepseek-cross-model/report/lakehouse-thinking.html",
+      "result_path": "results/rtx4090-48gb/qwen3.6/reference-20260817/result.json"
+    },
+    {
+      "result_id": "qwen3.8-27b-rtx3090-reference-20260815",
+      "recipe_id": "qwen3.8.rtx3090-24gb.llamacpp-27b-q3-k-s-128k-p2",
+      "hardware_id": "rtx3090-24gb",
+      "model_family": "qwen3.8",
+      "model_id": "Qwen3.8-27B-Q3_K_S",
+      "runtime_id": "llama.cpp",
+      "profile_id": "q3-k-s-128k-p2",
+      "modality": "multimodal-generation",
+      "suite": {
+        "id": "legacy-pr29-quality-performance",
+        "version": "2026-08-15"
+      },
+      "workload": {
+        "id": "legacy-single-stream-generation",
+        "concurrency": 1,
+        "cache_state": "unknown"
+      },
+      "metrics": {
+        "ttft_seconds": null,
+        "first_final_token_seconds": null,
+        "response_time_seconds": null,
+        "decode_tokens_per_second": {
+          "mean": 30.1,
+          "definition": "recorded single-stream mean"
+        },
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": {
+          "mean": 50.8,
+          "definition": "recorded concurrent aggregate"
+        },
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "status": "legacy"
+        },
+        "hardware": {
+          "class": "NVIDIA RTX 3090 24 GB"
+        }
+      },
+      "receipt": "recipes/qwen3.8/rtx3090-24gb-llamacpp-27b-q3-k-s-128k-p2/receipts/deployment-20260815T144804Z.json",
+      "report": "benchmarks/legacy/qwen-deepseek-cross-model/README.md",
+      "result_path": "results/rtx3090-24gb/qwen3.8/reference-20260815/result.json"
+    },
+    {
+      "result_id": "qwen3.8-27b-rtx4090-reference-20260817",
+      "recipe_id": "qwen3.8.rtx4090-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-256k",
+      "hardware_id": "rtx4090-48gb",
+      "model_family": "qwen3.8",
+      "model_id": "Qwen3.8-27B-UD-Q4_K_XL",
+      "runtime_id": "llama.cpp",
+      "profile_id": "ud-q4-k-xl-mtp2-256k-p1",
+      "modality": "multimodal-generation",
+      "suite": {
+        "id": "legacy-qwen3.8-quantization",
+        "version": "2026-08-17"
+      },
+      "workload": {
+        "id": "legacy-q4-mtp2-single-stream",
+        "concurrency": 1,
+        "cache_state": "unknown"
+      },
+      "metrics": {
+        "ttft_seconds": null,
+        "first_final_token_seconds": null,
+        "response_time_seconds": null,
+        "decode_tokens_per_second": {
+          "mean": 94.33,
+          "definition": "recorded Q4 plus MTP2 generation throughput"
+        },
+        "output_tokens_per_second_e2e": null,
+        "aggregate_tokens_per_second": null,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "errors": {
+          "status": "legacy"
+        },
+        "hardware": {
+          "class": "NVIDIA RTX 4090 48 GB"
+        }
+      },
+      "receipt": "recipes/qwen3.8/rtx4090-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-256k/receipts/deployment-20260817.json",
+      "report": "benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.html",
+      "result_path": "results/rtx4090-48gb/qwen3.8/reference-20260817/result.json"
+    }
+  ],
+  "no_eligible_groups": [
+    {
+      "hardware_id": "dgx-spark-gb10",
+      "model_family": "qwen3.5",
+      "message": "No eligible Verified result is available for this hardware and model group."
+    },
+    {
+      "hardware_id": "dgx-spark-gb10",
+      "model_family": "qwen3.6",
+      "message": "No eligible Verified result is available for this hardware and model group."
+    },
+    {
+      "hardware_id": "dgx-spark-gb10-pair",
+      "model_family": "deepseek-v4",
+      "message": "No eligible Verified result is available for this hardware and model group."
+    },
+    {
+      "hardware_id": "rtx3090-24gb",
+      "model_family": "qwen3.8",
+      "message": "No eligible Verified result is available for this hardware and model group."
+    },
+    {
+      "hardware_id": "rtx4090-48gb",
+      "model_family": "qwen3.6",
+      "message": "No eligible Verified result is available for this hardware and model group."
+    },
+    {
+      "hardware_id": "rtx4090-48gb",
+      "model_family": "qwen3.8",
+      "message": "No eligible Verified result is available for this hardware and model group."
+    }
+  ]
 }

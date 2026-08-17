@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.8.rtx4090-48gb.vllm-27b-fp8-64k-p4",
+  "model_family": "qwen3.8",
+  "model_id": "Qwen/Qwen3.8-27B-FP8",
+  "hardware_id": "rtx4090-48gb",
+  "runtime_id": "vllm-0.19.0",
+  "profile_id": "fp8-64k-p4",
+  "modality": "multimodal-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": ["README.md", "compose.yaml", "config/", "scripts/", "receipts/"],
+  "operations": {"prepare": ["scripts/download.sh"], "start": ["scripts/start.sh"], "status": ["scripts/status.sh"], "benchmark": ["scripts/benchmark.sh"], "stop": ["scripts/stop.sh"]},
+  "benchmark_suites": ["legacy-pr29-quality-performance", "legacy-lakehouse-18-case"],
+  "evidence": {"receipts": ["receipts/deployment-20260816.json"], "benchmarks": ["receipts/benchmark-20260816.json", "../../../benchmarks/legacy/qwen-deepseek-cross-model/data/"]},
+  "limitations": ["Mutable ModelScope master lacked complete shard hashes, so this remains Reference.", "Historical metrics do not declare active performance-v1."],
+  "invalidation_conditions": ["Model snapshot, image digest, context, parallelism, thinking mode, or hardware changes."]
+}

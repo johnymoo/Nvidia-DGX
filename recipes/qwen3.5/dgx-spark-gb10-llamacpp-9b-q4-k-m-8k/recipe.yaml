@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.5.gb10.llamacpp-9b-q4-k-m-8k",
+  "model_family": "qwen3.5",
+  "model_id": "Qwen3.5-9B",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "llama.cpp",
+  "profile_id": "q4-k-m-8k",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": true,
+  "source_paths": ["README.md", "CONFIG.md", "benchmark.sh"],
+  "operations": {"benchmark": ["benchmark.sh"]},
+  "benchmark_suites": ["legacy-qwen3.5-speed"],
+  "evidence": {"receipts": [], "benchmarks": ["README.md", "CONFIG.md"]},
+  "limitations": ["Runtime and model artifacts are not pinned by a committed receipt.", "Historical throughput lacks canonical TTFT and cache fields."],
+  "invalidation_conditions": ["Model conversion, quantization, llama.cpp build, context, or GB10 software changes."]
+}

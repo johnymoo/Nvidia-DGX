@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.rtx4090-48gb.ollama-35b-a3b-q4-k-m-128k",
+  "model_family": "qwen3.6",
+  "model_id": "qwen3.6:35b-a3b",
+  "hardware_id": "rtx4090-48gb",
+  "runtime_id": "ollama-0.20.2",
+  "profile_id": "q4-k-m-128k-p1",
+  "modality": "text-generation",
+  "maturity": "Archived",
+  "default": false,
+  "source_paths": ["../rtx4090-48gb-ollama-27b-q4-k-m-128k/README.md", "../rtx4090-48gb-ollama-27b-q4-k-m-128k/compose.yaml"],
+  "operations": {},
+  "benchmark_suites": ["legacy-qwen3.6-ollama-single-stream"],
+  "evidence": {"receipts": [], "benchmarks": ["../rtx4090-48gb-ollama-27b-q4-k-m-128k/benchmark_results_128k_20260722_144200.json"]},
+  "limitations": ["Archived comparison profile sharing the 27B project files."],
+  "invalidation_conditions": ["Ollama version, model package, context, parallelism, or GPU configuration changes."]
+}

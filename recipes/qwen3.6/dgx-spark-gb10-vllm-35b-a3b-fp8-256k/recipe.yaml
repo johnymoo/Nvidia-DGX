@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.6.gb10.vllm-35b-a3b-fp8-256k",
+  "model_family": "qwen3.6",
+  "model_id": "Qwen3.6-35B-A3B-FP8",
+  "hardware_id": "dgx-spark-gb10",
+  "runtime_id": "vllm",
+  "profile_id": "fp8-256k",
+  "modality": "text-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/docker-compose-vllm-fp8.yml", "../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/BENCHMARK-RESULTS.md"],
+  "operations": {},
+  "benchmark_suites": ["legacy-qwen3.6-runtime-comparison"],
+  "evidence": {"receipts": [], "benchmarks": ["../dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/BENCHMARK-RESULTS.md"]},
+  "limitations": ["Shared historical assets; no canonical deployment receipt."],
+  "invalidation_conditions": ["Model, image, context, or GB10 software changes."]
+}

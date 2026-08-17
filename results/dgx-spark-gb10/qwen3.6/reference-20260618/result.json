@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "result_id": "qwen3.6-35b-nvfp4-gb10-reference-20260618",
+  "recipe_id": "qwen3.6.gb10.vllm-35b-a3b-nvfp4-mtp3-256k",
+  "suite": {"id": "legacy-qwen3.6-runtime-comparison", "version": "2026-06-18"},
+  "workload": {"id": "legacy-16-case-generation", "concurrency": 1, "cache_state": "unknown"},
+  "metrics": {
+    "ttft_seconds": null,
+    "first_final_token_seconds": null,
+    "response_time_seconds": null,
+    "decode_tokens_per_second": {"mean": 152.1, "median": 159.2, "min": 66.0, "max": 179.0, "definition": "recorded average generation throughput"},
+    "output_tokens_per_second_e2e": null,
+    "aggregate_tokens_per_second": null,
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "reasoning_tokens": null,
+    "cached_tokens": null,
+    "errors": {"count": 0},
+    "hardware": {"class": "NVIDIA DGX Spark / GB10"}
+  },
+  "receipt": "recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md",
+  "report": "recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md",
+  "maturity": "Reference",
+  "status": {"acceptance": "unknown", "reliability": "unknown", "safety": "unknown"},
+  "legacy_metric_definitions": true
+}
