@@ -19,6 +19,11 @@
   全请求分为 69.4%，10/36 截断。Max 的 26 个完整 final
   得分 96.2%，说明下降来自 final 覆盖率，不是
   已完成答案的质量变差。
+- **把 Private Max 上限提高到 384K 后，截断消失但尾延迟极高。** 修复后的 Portal 为
+  94.4%，direct vLLM 为 91.7%；
+  两边均 18/18 final、0 截断、0 错误，16/18 题可执行分一致。Portal 最慢题耗时
+  50.5 分钟、输出 63.7K tokens，
+  因此 384K 是能力验证配置，不适合作为默认产品预算。
 - **Pro 不保证 Agent 工作流单调更好。** 在一个刻意聚焦历史 private 弱项的 5 题集合中，
   Pro high 只完整通过 1/5；历史 online Flash 为 4/5，private Flash 为 2/5。该集合有选择偏差，
   只能说明升级前仍需按真实 Agent workflow 验证。
@@ -65,6 +70,24 @@
 因此“Max 比 High 精度差”的说法不准确：在 4K 产品边界下，Max 的**任务成功率**更低；但只看
 成功返回的 final，Max 并未低于 High。若产品必须使用 Max，需要提高输出预算或实现 reasoning
 预算/超时保护，并把空 final 当作显式失败处理。
+
+## Private Max 384K 与路由一致性
+
+Portal 修复后，不带 per-request `allowed_openai_params` override 的 Max 探针与 direct vLLM 均为
+87 prompt tokens、10 completion tokens，reasoning/final SHA-1 完全一致。随后以 SSE、相同 18 题、
+seed 42、`max_tokens=393216`，Portal 与 SSH tunnel direct vLLM 各并发 2 做一轮配对 A/B。
+
+| 384K True Max 指标 | Portal | Direct vLLM |
+|---|---:|---:|
+| 可执行宏平均 | 94.4% | 91.7% |
+| SQL / Python / 故障 | 100.0% / 100.0% / 83.3% | 100.0% / 83.3% / 91.7% |
+| final / 截断 / 错误 | 18/18 / 0 / 0 | 18/18 / 0 / 0 |
+| 总 completion tokens | 145.3K | 132.0K |
+| 最慢单题 | 50.5 分钟 / 63.7K tokens | 27.3 分钟 / 31.4K tokens |
+
+逐题 finish reason 与 prompt token 数均为 18/18 一致，可执行分 16/18 一致；final 与 reasoning
+文本哈希均为 0/18 一致。结论是 **Portal 路由语义已经与 direct vLLM 对齐**，2.8pp 分差来自
+True Max 单轮采样波动，不能解释为 Portal 改写答案。该 A/B 每条路径 n=1，不声明统计显著性。
 
 ## 短请求性能
 
@@ -120,7 +143,7 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 | 场景 | 建议 |
 |---|---|
 | 私密代码、内网数据、稳定日常 SQL/Python/故障诊断 | private Flash high |
-| Private max | 4K 下 final 覆盖率 72.2%；仅在能提高预算并处理空 final 时按请求启用 |
+| Private max | 4K final 覆盖率 72.2%；384K 可达 100%，但单题最长 50.5 分钟，仅按请求启用 |
 | 简单低延迟请求且允许出网 | online Flash low |
 | 复杂任务、private 首次失败、需要更高一次成功率 | online Pro high |
 | 极难任务且能接受分钟级尾延迟和约 3 倍 low token | Pro max，仅按请求启用 |
@@ -130,7 +153,7 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 
 | 维度 | 本轮纳入 | 未覆盖 | 状态 |
 |---|---|---|---|
-| 可执行精度 | Verified Private high 32K；Private High/True Max 4K；Online Flash/Pro | True Private Max 32K 未完成；旧 private low/max 不是有效 effort | 主要边界完整 |
+| 可执行精度 | Private High 32K；High/True Max 4K；True Max 384K Portal/direct；Online Flash/Pro | 384K 路由 A/B 仅 n=1 | 主要边界完整 |
 | 串行 SSE 性能 | Verified Private high/max；Online Flash low；Online Pro low/high/max | Online Flash high/max | 主要路径完整 |
 | Token 与 API 成本 | Online Pro low/high/max | Private 无 API 账单；Flash 未统一计价 | 范围内完整 |
 | Agent 聚焦任务 | Online Pro high；Online/Private 历史基线 | 不是九组 effort 全矩阵 | 部分 |
@@ -147,12 +170,15 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
   108 次请求和旧性能 4 次请求；修正后另有 High 32K 质量 36 次、High/Max 4K 质量 72 次、
   High/Max 性能 8 次请求。
 - LiteLLM 官方文档说明 `drop_params=true` 会丢弃不支持参数，`allowed_openai_params` 可显式透传；
-  live `get_supported_openai_params()` 也确认该 generic OpenAI deployment 默认不支持 `reasoning_effort`。
+  旧 Portal deployment 因此丢弃 `reasoning_effort`。Issue #46 修复后，不带 per-request override 的
+  Portal/direct Max 探针 prompt usage 与输出哈希一致。
 - 修正后 Private High/Max 性能均为 client → Portal → vLLM 的端到端指标，不是裸引擎延迟。
 - 官方上下文 1M、最大输出 384K、effort 为 low/high/max；默认 high。
 - Pro 六个质量 treatment 共 108 请求，0 HTTP/网络错误、0 空 final、0 length 截断。
 - Private 4K High/True Max 共 72 请求，0 HTTP/网络错误；High 0 截断，True Max 10 个 length
   截断且对应 10 个空 final。
+- Private 384K route A/B 共 36 请求，Portal/direct 均 18/18 stop、0 截断、0 错误；逐题 score
+  16/18 一致。Portal 最长请求 3031 秒，证明修复后的 SSE 路径跨过旧 600 秒网关边界。
 - Agent 聚焦题的脱敏逐题证据见 `data/online-pro-agent-focus-20260817.json`；原始 sandbox、
   stream 和绝对路径不提交。
 - Pro Python 原始评分时固定 sandbox 镜像不可用；保存的完整 final 随后在不可变 ECR Python

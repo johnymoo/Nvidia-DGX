@@ -157,6 +157,72 @@
       "completion_tokens_mean_per_run": 29496.0
     }
   },
+  "private_route_ab_384k": {
+    "max_tokens": 393216,
+    "reasoning_effort": "max",
+    "stream": true,
+    "portal_per_request_passthrough_override": false,
+    "concurrency_per_route": 2,
+    "runs_per_route": 1,
+    "portal": {
+      "endpoint_label": "portal-fixed",
+      "macro_score": 0.944444,
+      "categories": {
+        "sql": 1.0,
+        "python": 1.0,
+        "incident": 0.833333
+      },
+      "completed_finals": 18,
+      "length_truncations": 0,
+      "errors": 0,
+      "completion_tokens": 145263,
+      "max_case_seconds": 3031.181,
+      "max_case_completion_tokens": 63743
+    },
+    "direct_vllm": {
+      "endpoint_label": "direct-vllm",
+      "macro_score": 0.916667,
+      "categories": {
+        "sql": 1.0,
+        "python": 0.833333,
+        "incident": 0.916667
+      },
+      "completed_finals": 18,
+      "length_truncations": 0,
+      "errors": 0,
+      "completion_tokens": 132040,
+      "max_case_seconds": 1636.337,
+      "max_case_completion_tokens": 31377
+    },
+    "agreement": {
+      "cases": 18,
+      "finish_reason": 18,
+      "prompt_tokens": 18,
+      "executable_score": 16,
+      "final_sha256": 0,
+      "reasoning_sha256": 0,
+      "score_differences": [
+        {
+          "id": "merge_intervals_payload",
+          "portal_score": 1.0,
+          "direct_score": 0.0,
+          "finish_equal": true,
+          "prompt_tokens_equal": true,
+          "final_hash_equal": false,
+          "reasoning_hash_equal": false
+        },
+        {
+          "id": "disk_inode_pressure",
+          "portal_score": 0.5,
+          "direct_score": 1.0,
+          "finish_equal": true,
+          "prompt_tokens_equal": true,
+          "final_hash_equal": false,
+          "reasoning_hash_equal": false
+        }
+      ]
+    }
+  },
   "online_pro_telemetry": {
     "high": {
       "prompt_tokens_mean": 3143.0,
@@ -358,6 +424,8 @@
     "pro_adjudication": "8fcd810c8db24550a997a661ee1be911ff03994fb8bd2400fa446fe02c1ee59d",
     "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1",
     "verified_private_adjudication": "c6554c2c1c8d1d4339b5ef94e2c91df97c00d6c6246beea4dd8733f28b5dc0d3",
-    "bounded_private_adjudication": "7de330257ea3663b29aec20bed6a69bb972bd0daf44cc3f42a2711882898baac"
+    "bounded_private_adjudication": "7de330257ea3663b29aec20bed6a69bb972bd0daf44cc3f42a2711882898baac",
+    "route_ab_portal": "023f2dadb956fddb4f440e3808296770561eb5f3f6808e1b81644a1e92aff950",
+    "route_ab_direct_vllm": "a1d4a5e6bb348d6c45e16f426fff954a2cf284d99b7654339a140428a9efd578"
   }
 }

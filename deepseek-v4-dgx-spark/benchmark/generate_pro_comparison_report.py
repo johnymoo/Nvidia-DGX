@@ -130,6 +130,62 @@ def bounded_private_telemetry(paths: list[Path]) -> dict[str, dict]:
     return result
 
 
+def route_ab_summary(portal_path: Path, direct_path: Path) -> dict:
+    portal = load(portal_path)
+    direct = load(direct_path)
+    portal_cases = {case["id"]: case for case in portal["cases"]}
+    direct_cases = {case["id"]: case for case in direct["cases"]}
+    if set(portal_cases) != set(direct_cases) or len(portal_cases) != 18:
+        raise RuntimeError("Private route A/B must contain the same 18 cases")
+
+    def route_metrics(run: dict) -> dict:
+        cases = run["cases"]
+        return {
+            "endpoint_label": run["base_url"],
+            "macro_score": run["macro_score"],
+            "categories": {name: run["categories"][name]["score"] for name in ("sql", "python", "incident")},
+            "completed_finals": sum(case.get("finish_reason") == "stop" and bool(case.get("response")) for case in cases),
+            "length_truncations": sum(case.get("finish_reason") == "length" for case in cases),
+            "errors": sum(case.get("finish_reason") == "error" for case in cases),
+            "completion_tokens": sum(int(case.get("usage", {}).get("completion_tokens", 0)) for case in cases),
+            "max_case_seconds": max(float(case["seconds"]) for case in cases),
+            "max_case_completion_tokens": max(int(case.get("usage", {}).get("completion_tokens", 0)) for case in cases),
+        }
+
+    rows = []
+    for case_id in portal_cases:
+        portal_case = portal_cases[case_id]
+        direct_case = direct_cases[case_id]
+        rows.append({
+            "id": case_id,
+            "portal_score": portal_case["score"],
+            "direct_score": direct_case["score"],
+            "finish_equal": portal_case.get("finish_reason") == direct_case.get("finish_reason"),
+            "prompt_tokens_equal": portal_case.get("usage", {}).get("prompt_tokens") == direct_case.get("usage", {}).get("prompt_tokens"),
+            "final_hash_equal": portal_case["response_evidence"]["sha256"] == direct_case["response_evidence"]["sha256"],
+            "reasoning_hash_equal": portal_case["reasoning_evidence"]["sha256"] == direct_case["reasoning_evidence"]["sha256"],
+        })
+    return {
+        "max_tokens": portal["max_tokens"],
+        "reasoning_effort": portal["request_config"]["deepseek_effort"],
+        "stream": portal["request_config"]["stream"],
+        "portal_per_request_passthrough_override": portal["request_config"]["force_reasoning_effort_passthrough"],
+        "concurrency_per_route": portal["request_config"]["concurrency"],
+        "runs_per_route": 1,
+        "portal": route_metrics(portal),
+        "direct_vllm": route_metrics(direct),
+        "agreement": {
+            "cases": len(rows),
+            "finish_reason": sum(row["finish_equal"] for row in rows),
+            "prompt_tokens": sum(row["prompt_tokens_equal"] for row in rows),
+            "executable_score": sum(row["portal_score"] == row["direct_score"] for row in rows),
+            "final_sha256": sum(row["final_hash_equal"] for row in rows),
+            "reasoning_sha256": sum(row["reasoning_hash_equal"] for row in rows),
+            "score_differences": [row for row in rows if row["portal_score"] != row["direct_score"]],
+        },
+    }
+
+
 def sanitize_agent(path: Path) -> dict:
     value = load(path)
     tasks = []
@@ -183,6 +239,10 @@ def main() -> int:
     if set(bounded_private) != {"high", "max"} or any(row["runs"] != 2 for row in bounded_private.values()):
         raise RuntimeError("bounded private High/Max matrix must contain two completed runs per effort")
     bounded_telemetry = bounded_private_telemetry(bounded_raw_paths)
+    route_ab_dir = root / "model-benchmark-qwen-deepseek/data/lakehouse-private-route-ab-384k"
+    route_ab_portal_path = route_ab_dir / "portal-fixed-max-384k-r1.json"
+    route_ab_direct_path = route_ab_dir / "direct-vllm-max-384k-r1.json"
+    route_ab = route_ab_summary(route_ab_portal_path, route_ab_direct_path)
     pro = aggregate_runs(load(pro_path)["runs"], pro_group)
     telemetry = raw_telemetry(pro_raw_paths)
     agent = sanitize_agent(args.agent_result.resolve())
@@ -220,6 +280,7 @@ def main() -> int:
             "online_pro": pro,
         },
         "private_bounded_4k_telemetry": bounded_telemetry,
+        "private_route_ab_384k": route_ab,
         "online_pro_telemetry": telemetry,
         "latency": latency,
         "agent_focus": agent,
@@ -281,6 +342,8 @@ def main() -> int:
             "agent_evidence": sha256(agent_path),
             "verified_private_adjudication": sha256(verified_path),
             "bounded_private_adjudication": sha256(bounded_path),
+            "route_ab_portal": sha256(route_ab_portal_path),
+            "route_ab_direct_vllm": sha256(route_ab_direct_path),
         },
     }
     summary_path = project / "data/deepseek-private-online-comparison-20260817.json"
@@ -354,6 +417,11 @@ def main() -> int:
   全请求分为 {pct(bounded_private['max']['macro_score'])}，10/36 截断。Max 的 26 个完整 final
   得分 {pct(bounded_telemetry['max']['completed_final_score'])}，说明下降来自 final 覆盖率，不是
   已完成答案的质量变差。
+- **把 Private Max 上限提高到 384K 后，截断消失但尾延迟极高。** 修复后的 Portal 为
+  {pct(route_ab['portal']['macro_score'])}，direct vLLM 为 {pct(route_ab['direct_vllm']['macro_score'])}；
+  两边均 18/18 final、0 截断、0 错误，16/18 题可执行分一致。Portal 最慢题耗时
+  {route_ab['portal']['max_case_seconds'] / 60:.1f} 分钟、输出 {route_ab['portal']['max_case_completion_tokens'] / 1000:.1f}K tokens，
+  因此 384K 是能力验证配置，不适合作为默认产品预算。
 - **Pro 不保证 Agent 工作流单调更好。** 在一个刻意聚焦历史 private 弱项的 5 题集合中，
   Pro high 只完整通过 1/5；历史 online Flash 为 4/5，private Flash 为 2/5。该集合有选择偏差，
   只能说明升级前仍需按真实 Agent workflow 验证。
@@ -392,6 +460,24 @@ def main() -> int:
 因此“Max 比 High 精度差”的说法不准确：在 4K 产品边界下，Max 的**任务成功率**更低；但只看
 成功返回的 final，Max 并未低于 High。若产品必须使用 Max，需要提高输出预算或实现 reasoning
 预算/超时保护，并把空 final 当作显式失败处理。
+
+## Private Max 384K 与路由一致性
+
+Portal 修复后，不带 per-request `allowed_openai_params` override 的 Max 探针与 direct vLLM 均为
+87 prompt tokens、10 completion tokens，reasoning/final SHA-1 完全一致。随后以 SSE、相同 18 题、
+seed 42、`max_tokens=393216`，Portal 与 SSH tunnel direct vLLM 各并发 2 做一轮配对 A/B。
+
+| 384K True Max 指标 | Portal | Direct vLLM |
+|---|---:|---:|
+| 可执行宏平均 | {pct(route_ab['portal']['macro_score'])} | {pct(route_ab['direct_vllm']['macro_score'])} |
+| SQL / Python / 故障 | {pct(route_ab['portal']['categories']['sql'])} / {pct(route_ab['portal']['categories']['python'])} / {pct(route_ab['portal']['categories']['incident'])} | {pct(route_ab['direct_vllm']['categories']['sql'])} / {pct(route_ab['direct_vllm']['categories']['python'])} / {pct(route_ab['direct_vllm']['categories']['incident'])} |
+| final / 截断 / 错误 | {route_ab['portal']['completed_finals']}/18 / {route_ab['portal']['length_truncations']} / {route_ab['portal']['errors']} | {route_ab['direct_vllm']['completed_finals']}/18 / {route_ab['direct_vllm']['length_truncations']} / {route_ab['direct_vllm']['errors']} |
+| 总 completion tokens | {route_ab['portal']['completion_tokens'] / 1000:.1f}K | {route_ab['direct_vllm']['completion_tokens'] / 1000:.1f}K |
+| 最慢单题 | {route_ab['portal']['max_case_seconds'] / 60:.1f} 分钟 / {route_ab['portal']['max_case_completion_tokens'] / 1000:.1f}K tokens | {route_ab['direct_vllm']['max_case_seconds'] / 60:.1f} 分钟 / {route_ab['direct_vllm']['max_case_completion_tokens'] / 1000:.1f}K tokens |
+
+逐题 finish reason 与 prompt token 数均为 18/18 一致，可执行分 16/18 一致；final 与 reasoning
+文本哈希均为 0/18 一致。结论是 **Portal 路由语义已经与 direct vLLM 对齐**，2.8pp 分差来自
+True Max 单轮采样波动，不能解释为 Portal 改写答案。该 A/B 每条路径 n=1，不声明统计显著性。
 
 ## 短请求性能
 
@@ -436,7 +522,7 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 | 场景 | 建议 |
 |---|---|
 | 私密代码、内网数据、稳定日常 SQL/Python/故障诊断 | private Flash high |
-| Private max | 4K 下 final 覆盖率 {pct(bounded_telemetry['max']['final_coverage'])}；仅在能提高预算并处理空 final 时按请求启用 |
+| Private max | 4K final 覆盖率 {pct(bounded_telemetry['max']['final_coverage'])}；384K 可达 100%，但单题最长 {route_ab['portal']['max_case_seconds'] / 60:.1f} 分钟，仅按请求启用 |
 | 简单低延迟请求且允许出网 | online Flash low |
 | 复杂任务、private 首次失败、需要更高一次成功率 | online Pro high |
 | 极难任务且能接受分钟级尾延迟和约 3 倍 low token | Pro max，仅按请求启用 |
@@ -446,7 +532,7 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 
 | 维度 | 本轮纳入 | 未覆盖 | 状态 |
 |---|---|---|---|
-| 可执行精度 | Verified Private high 32K；Private High/True Max 4K；Online Flash/Pro | True Private Max 32K 未完成；旧 private low/max 不是有效 effort | 主要边界完整 |
+| 可执行精度 | Private High 32K；High/True Max 4K；True Max 384K Portal/direct；Online Flash/Pro | 384K 路由 A/B 仅 n=1 | 主要边界完整 |
 | 串行 SSE 性能 | Verified Private high/max；Online Flash low；Online Pro low/high/max | Online Flash high/max | 主要路径完整 |
 | Token 与 API 成本 | Online Pro low/high/max | Private 无 API 账单；Flash 未统一计价 | 范围内完整 |
 | Agent 聚焦任务 | Online Pro high；Online/Private 历史基线 | 不是九组 effort 全矩阵 | 部分 |
@@ -463,12 +549,15 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
   108 次请求和旧性能 4 次请求；修正后另有 High 32K 质量 36 次、High/Max 4K 质量 72 次、
   High/Max 性能 8 次请求。
 - LiteLLM 官方文档说明 `drop_params=true` 会丢弃不支持参数，`allowed_openai_params` 可显式透传；
-  live `get_supported_openai_params()` 也确认该 generic OpenAI deployment 默认不支持 `reasoning_effort`。
+  旧 Portal deployment 因此丢弃 `reasoning_effort`。Issue #46 修复后，不带 per-request override 的
+  Portal/direct Max 探针 prompt usage 与输出哈希一致。
 - 修正后 Private High/Max 性能均为 client → Portal → vLLM 的端到端指标，不是裸引擎延迟。
 - 官方上下文 1M、最大输出 384K、effort 为 low/high/max；默认 high。
 - Pro 六个质量 treatment 共 108 请求，0 HTTP/网络错误、0 空 final、0 length 截断。
 - Private 4K High/True Max 共 72 请求，0 HTTP/网络错误；High 0 截断，True Max 10 个 length
   截断且对应 10 个空 final。
+- Private 384K route A/B 共 36 请求，Portal/direct 均 18/18 stop、0 截断、0 错误；逐题 score
+  16/18 一致。Portal 最长请求 3031 秒，证明修复后的 SSE 路径跨过旧 600 秒网关边界。
 - Agent 聚焦题的脱敏逐题证据见 `data/online-pro-agent-focus-20260817.json`；原始 sandbox、
   stream 和绝对路径不提交。
 - Pro Python 原始评分时固定 sandbox 镜像不可用；保存的完整 final 随后在不可变 ECR Python
