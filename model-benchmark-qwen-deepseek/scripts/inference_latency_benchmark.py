@@ -30,7 +30,7 @@ def request_body(model: str, profile: str, max_tokens: int) -> dict:
         "stream_options": {"include_usage": True},
     }
     if profile in {"qwen36-thinking", "qwen38-low"}:
-        body.update({"temperature": 0.6, "top_p": 0.95, "top_k": 20, "presence_penalty": 0.0})
+        body.update({"temperature": 1.0, "top_p": 0.95, "top_k": 20, "presence_penalty": 0.0})
         body["chat_template_kwargs"] = {"enable_thinking": True}
         if profile == "qwen38-low":
             body["reasoning_effort"] = "low"

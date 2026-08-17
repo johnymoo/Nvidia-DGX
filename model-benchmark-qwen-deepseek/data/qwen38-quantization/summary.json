@@ -1,0 +1,77 @@
+{
+  "selected": "q4_mtp2",
+  "profiles": [
+    {
+      "key": "fp8",
+      "label": "FP8 / vLLM",
+      "business_passed": 18,
+      "vision_passed": 6,
+      "tps": 19.792862,
+      "ttft": 0.08342033333333333,
+      "response": 103.55506600000001,
+      "completion_tokens": 2048.0,
+      "final_answer": false,
+      "vram": 43439,
+      "startup": 198.553,
+      "model_bytes": 30890049500
+    },
+    {
+      "key": "q4",
+      "label": "UD-Q4 / llama.cpp",
+      "business_passed": 17,
+      "vision_passed": 6,
+      "tps": 46.505394,
+      "ttft": 0.23906166666666664,
+      "response": 23.225661000000002,
+      "completion_tokens": 1069.0,
+      "final_answer": true,
+      "vram": 22237,
+      "startup": 100.928,
+      "model_bytes": 17923394624
+    },
+    {
+      "key": "q4_mtp2",
+      "label": "UD-Q4 + MTP2",
+      "business_passed": 17,
+      "vision_passed": 6,
+      "tps": 94.32886,
+      "ttft": 0.20806099999999997,
+      "response": 11.986009000000001,
+      "completion_tokens": 1111.0,
+      "final_answer": true,
+      "vram": 23205,
+      "startup": 20.434,
+      "model_bytes": 17923394624
+    },
+    {
+      "key": "q6",
+      "label": "UD-Q6 / llama.cpp",
+      "business_passed": 17,
+      "vision_passed": 6,
+      "tps": 34.49089466666667,
+      "ttft": 0.23470833333333332,
+      "response": 28.67699933333333,
+      "completion_tokens": 981.0,
+      "final_answer": true,
+      "vram": 29437,
+      "startup": 181.33,
+      "model_bytes": 25924152384
+    }
+  ],
+  "quality_harness": "lakehouse-thinking-v2, 18 tasks, seed 42, thinking-low",
+  "vision_harness": "qwen38-quantization-vision-v1, 6 deterministic synthetic images",
+  "performance_harness": "1 warmup + 3 measured single-stream OpenAI SSE requests",
+  "deployment_validation": {
+    "business_passed": 17,
+    "vision_passed": 6,
+    "decode_tokens_per_second": 94.32886,
+    "response_seconds": 11.986009000000001
+  },
+  "short_output_ab": {
+    "max_tokens": 128,
+    "baseline_tps": 46.868257666666665,
+    "mtp2_tps": 77.126175,
+    "baseline_response_seconds": 2.930296,
+    "mtp2_response_seconds": 1.857467
+  }
+}

@@ -1,0 +1,42 @@
+# Qwen3.8-27B UD-Q4_K_XL on RTX 4090 48 GiB
+
+这是 RTX 4090 48 GiB 的默认 Qwen3.8 推理部署。2026-08-17 的同机测试中，
+Unsloth Dynamic `UD-Q4_K_XL` 与 `UD-Q6_K_XL` 都在 18 项湖仓 thinking-low
+基准中通过 17 项、在 6 项视觉基准中全部通过。Q4 基线达到 46.57 tok/s；启用
+GGUF 内置 MTP head 后达到 94.33 tok/s，质量仍为 17/18、视觉仍为 6/6。因此默认
+选择 Q4 + MTP2，而不是在未观察到质量收益时承担 Q6 的额外显存与延迟。
+
+固定配置：单张 48 GiB RTX 4090、65,536 context、单并发 slot、F16 KV、全 GPU
+offload、Flash Attention、MTP speculative decoding（n-max 2，p-min 0）和
+OpenAI-compatible API。权重和 `mmproj` 从 ModelScope 下载，
+以字节数与 SHA-256 固定；运行时使用固定 OCI digest。
+
+```bash
+cd qwen38-rtx4090-llamacpp
+cp config/qwen38.env.example config/qwen38.env
+chmod +x scripts/*.sh
+./scripts/download.sh
+./scripts/start.sh
+./scripts/status.sh
+```
+
+默认监听 `0.0.0.0:8005`，模型 ID 为 `qwen3.8-27b`，另保留精确变体 ID
+`qwen3.8-27b-ud-q4-k-xl`。该端点没有内置 TLS 或租户认证，只应暴露在受控 LAN；
+公网访问必须经过认证反向代理。
+
+```bash
+curl -fsS http://127.0.0.1:8005/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"qwen3.8-27b","messages":[{"role":"user","content":"Reply exactly READY"}],"max_tokens":32}' | jq
+./scripts/benchmark.sh
+./scripts/stop.sh
+```
+
+`--n-gpu-layers 999` 明确要求全 GPU 放置；48 GiB 主机内存 cgroup 上限用于限制异常
+资源增长。脚本不会停止其他容器，端口或容器名冲突时会拒绝启动。完整对比报告见
+[`../model-benchmark-qwen-deepseek/report/qwen38-quantization.html`](../model-benchmark-qwen-deepseek/report/qwen38-quantization.html)。
+
+MTP 主要优化单流 decode。当前 recipe 在本机 128-token 与约 1,100-token 输出中均有
+收益，但并发 2/4 与 48 小时压力测试仍待完成；增加并发、变更上下文、KV 类型或
+llama.cpp 镜像后必须重新评测。参数来源与社区数据见
+[`sudoingX/qwen38-mtp`](https://github.com/sudoingX/qwen38-mtp)。

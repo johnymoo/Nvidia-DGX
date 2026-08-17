@@ -40,6 +40,22 @@
 任一条件变化时，应重新生成质量 JSON、比较结果和 HTML，并使用新的报告
 哈希，不要覆盖本文件后继续沿用旧身份。
 
+## Qwen3.8 量化与 MTP2 选型
+
+[`qwen38-quantization.html`](./qwen38-quantization.html) 与
+[`qwen38-quantization.pdf`](./qwen38-quantization.pdf) 记录 RTX 4090 48 GiB 上四种配置的
+同机比较：FP8/vLLM、UD-Q4_K_XL 基线、UD-Q4_K_XL + MTP2、UD-Q6_K_XL。
+
+- 结论：默认部署 UD-Q4_K_XL + MTP2（draft-mtp、n-max 2、p-min 0）
+- 严格 A/B：46.57 → 94.33 tok/s；23.19 → 11.99 秒
+- 质量：17/18，和 Q4 基线失败同一项；视觉 6/6
+- 短输出：128-token TPS 46.87 → 77.13
+- 固定模型 revision：`f1bfb127c64f7072bdd2cad55f258b9c8b2910fe`
+- 固定 MTP 运行时：llama.cpp b10454 / `4df29be4f`
+- 边界：单流结果；并发 2/4、160K + Q4 KV 和 48 小时压力测试待补
+- HTML SHA-256：`deafecea21ff5581850325ac548d5e4323986c87138677e3269e006ac6121ebe`
+- PDF SHA-256：`a2e926fd11bcc23e9fe6838a36372bca161bf847b1c8f35ac4f14ce91678df99`
+
 ## 湖仓 Thinking 报告
 
 [`lakehouse-thinking.html`](./lakehouse-thinking.html) 包含 2026-08-17 在同一张 48 GiB

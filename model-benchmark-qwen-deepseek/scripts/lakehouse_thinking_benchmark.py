@@ -184,7 +184,7 @@ def request(
         if deepseek_effort:
             body["reasoning_effort"] = deepseek_effort
     else:
-        body.update({"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0})
+        body.update({"temperature": 1.0, "top_p": 0.95, "presence_penalty": 0.0})
         body["chat_template_kwargs"] = {"enable_thinking": True}
         body["top_k"] = 20
         if mode == "qwen38-low":

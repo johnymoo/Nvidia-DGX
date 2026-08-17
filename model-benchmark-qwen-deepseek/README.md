@@ -142,6 +142,8 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 | `scripts/generate_parameter_matrix_report.py` | 生成按质量、成本、稳定性分区的参数矩阵报告 |
 | `scripts/adjudicate_lakehouse_results.py` | 在不覆盖 v1 原始证据的前提下应用评分契约勘误 |
 | `scripts/inference_latency_benchmark.py` | 计量 SSE TTFT、端到端响应时间和解码 TPS |
+| `scripts/vision_quantization_benchmark.py` | 运行 Qwen3.8 量化候选的确定性图片识别回归 |
+| `scripts/generate_quantization_report.py` | 生成 FP8、Q4、Q4 + MTP2、Q6 四配置选型报告 |
 | `scripts/capture_inference_environment.py` | 采集脱敏的主机、模型、容器配置和服务启动证据 |
 | `data/*-quality.json` | 三个模型的逐题原始输出和客观验证结果 |
 | `data/performance-comparison.json` | 两个 Qwen 配置的同机性能比较 |
@@ -152,6 +154,8 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 | [`report/lakehouse-thinking.html`](./report/lakehouse-thinking.html) | 2026-08-17 Qwen 同机 thinking 与 DeepSeek 补充对比 |
 | [`report/lakehouse-parameter-matrix.html`](./report/lakehouse-parameter-matrix.html) | DS 参数矩阵的可视化汇总（n=2） |
 | [`report/lakehouse-parameter-matrix.pdf`](./report/lakehouse-parameter-matrix.pdf) | 嵌入 Noto CJK 中文字体的 A4 分享版 |
+| [`report/qwen38-quantization.html`](./report/qwen38-quantization.html) | RTX 4090 上 Qwen3.8 四种推理配置的交互式选型报告 |
+| [`report/qwen38-quantization.pdf`](./report/qwen38-quantization.pdf) | 嵌入 Noto CJK 中文字体的 Qwen3.8 选型分享版 |
 | [`report/README.md`](./report/README.md) | 报告哈希、输入身份和可直接复用条件 |
 
 `report/index.html` 是为后续同题集直接参考而保留的冻结证据快照；普通重新
@@ -218,6 +222,12 @@ python3 scripts/generate_lakehouse_report.py \
   --online-deepseek-thinking data/lakehouse-online-deepseek-thinking.json \
   --recommendation '默认 Qwen3.8；复杂请求按需开启 reasoning_effort=low。' \
   --output report/generated/lakehouse-thinking.html
+```
+
+重新生成 Qwen3.8 量化与 MTP2 报告：
+
+```bash
+python3 scripts/generate_quantization_report.py
 ```
 
 浏览器打开 `http://<服务器地址>:8766/`。不重新生成时，也可以直接查看已提交的

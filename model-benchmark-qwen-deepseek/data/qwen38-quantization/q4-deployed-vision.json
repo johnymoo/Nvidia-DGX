@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "harness_id": "qwen38-quantization-vision-v1",
+  "tag": "qwen38-q4-deployed-vision",
+  "model": "qwen3.8-27b",
+  "runtime": "llama.cpp-b10454",
+  "quantization": "UD-Q4_K_XL",
+  "thinking_mode": "off",
+  "passed": 6,
+  "total": 6,
+  "score": 1.0,
+  "cases": [
+    {
+      "id": "dominant_blue",
+      "expected": "blue",
+      "actual": "blue",
+      "passed": true,
+      "seconds": 0.306,
+      "response": "blue",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 46,
+        "total_tokens": 48,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "three_red_blocks",
+      "expected": "3",
+      "actual": "3",
+      "passed": true,
+      "seconds": 0.378,
+      "response": "3",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 46,
+        "total_tokens": 48,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "red_left_blue",
+      "expected": "left",
+      "actual": "left",
+      "passed": true,
+      "seconds": 0.336,
+      "response": "left",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 52,
+        "total_tokens": 54,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "green_top_left",
+      "expected": "green",
+      "actual": "green",
+      "passed": true,
+      "seconds": 0.335,
+      "response": "green",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 48,
+        "total_tokens": 50,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "middle_tallest",
+      "expected": "middle",
+      "actual": "middle",
+      "passed": true,
+      "seconds": 0.372,
+      "response": "middle",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 51,
+        "total_tokens": 53,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "two_blue_one_red",
+      "expected": "2",
+      "actual": "2",
+      "passed": true,
+      "seconds": 0.338,
+      "response": "2",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 46,
+        "total_tokens": 48,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  ]
+}
