@@ -71,12 +71,13 @@ performance JSON ---------------------------+
 | Qwen3.8 non-thinking | 66.7% | 66.7% | 91.7% | 75.0% | 254.1s | 0 / 0 |
 | Qwen3.8 thinking-low | 83.3% | 83.3% | 100.0% | 88.9% | 797.7s | 0 / 0 |
 | DeepSeek V4 Flash thinking | 66.7% | 50.0% | 83.3% | 66.7% | 245.5s | 0 / 0 |
+| Online DS Flash thinking | 66.7% | 33.3% | 91.7% | 63.9% | 296.6s | 5 / 5 |
 
 默认推理选择 Qwen3.8-27B-FP8。普通请求保持 non-thinking；复杂 SQL、Python 和
 故障分析按请求开启 `reasoning_effort=low`。完整逐题报告见
-[`report/lakehouse-thinking.html`](report/lakehouse-thinking.html)。DeepSeek 使用私有
-`.env` 中的 OpenAI-compatible endpoint 与原生 `thinking=true`；其硬件和网络不同，
-245.5 秒总耗时不参与与 RTX 4090 Qwen 的性能比较。
+[`report/lakehouse-thinking.html`](report/lakehouse-thinking.html)。私有 DeepSeek 与
+online DS 都使用 `.env` 中的 OpenAI-compatible 变量和原生 `thinking=true`；其硬件、
+网络和网关不同，245.5 秒与 296.6 秒总耗时均不参与与 RTX 4090 Qwen 的性能比较。
 
 使用私有 OpenAI-compatible 环境变量重跑 DeepSeek thinking treatment：
 
@@ -96,6 +97,22 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 
 `--api-key-env` 只读取进程环境；不要将 endpoint 或 token 写入 JSON、HTML 或 Git。
 
+重跑 online DS thinking treatment：
+
+```bash
+set -a
+. /path/to/private/.env
+set +a
+python3 scripts/lakehouse_thinking_benchmark.py \
+  --base-url "${DS_BASE_URL%/}/v1" \
+  --model "$DS_MODEL" \
+  --tag online-deepseek-v4-flash-thinking \
+  --mode deepseek-thinking \
+  --api-key-env DS_AUTH_TOKEN \
+  --max-tokens 4096 \
+  --output /tmp/lakehouse-online-deepseek-thinking.json
+```
+
 ## 文件清单
 
 | 路径 | 用途 |
@@ -109,7 +126,7 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 | `data/performance-comparison.json` | 两个 Qwen 配置的同机性能比较 |
 | `data/deepseek-performance.json` | DeepSeek 双 GB10 性能结果 |
 | `data/quality-comparison.json` | 从三份质量 JSON 重建的汇总 |
-| `data/lakehouse-*.json` | 五个 treatment 的逐题原始输出与客观评分 |
+| `data/lakehouse-*.json` | 六个 treatment 的逐题原始输出与客观评分 |
 | [`report/index.html`](./report/index.html) | 2026-08-16 已完成评测的冻结 HTML 基线报告 |
 | [`report/lakehouse-thinking.html`](./report/lakehouse-thinking.html) | 2026-08-17 Qwen 同机 thinking 与 DeepSeek 补充对比 |
 | [`report/README.md`](./report/README.md) | 报告哈希、输入身份和可直接复用条件 |
@@ -175,6 +192,7 @@ python3 scripts/generate_lakehouse_report.py \
   --q38-off data/lakehouse-qwen38-off.json \
   --q38-thinking data/lakehouse-qwen38-thinking-low.json \
   --deepseek-thinking data/lakehouse-deepseek-thinking.json \
+  --online-deepseek-thinking data/lakehouse-online-deepseek-thinking.json \
   --recommendation '默认 Qwen3.8；复杂请求按需开启 reasoning_effort=low。' \
   --output report/generated/lakehouse-thinking.html
 ```

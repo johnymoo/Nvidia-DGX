@@ -19,6 +19,10 @@ Compose 默认使用 `{"thinking":false}`，通过 additive override 将其替�
 [`../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html`](../model-benchmark-qwen-deepseek/report/lakehouse-thinking.html)。
 该补充服务的硬件和网络配置不同于 RTX 4090 Qwen，报告不作跨端点性能排序。
 
+同日还以 `.env` 的 `DS_` 前缀变量通过 online gateway 跑了相同 treatment。online DS
+thinking 宏平均为 63.9%，其中 5 题在 4,096-token 预算内没有 final；完整逐题证据也在
+同一报告中。online 与私有端点均不替代本双 DGX Spark 部署的独立性能基线。
+
 ## 架构
 
 ```text

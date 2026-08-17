@@ -46,3 +46,14 @@ Qwen3.8 实测；embedding 继续由 CPU-only Ollama 运行 BGE-M3，与生成�
 在这一固定题集上，DeepSeek thinking 未超过 Qwen3.8 thinking-low 的 88.9%，因此不改变
 本服务器默认 Qwen3.8 的选择。它保留为不同硬件部署的已验证备选服务，而非本机生成模型
 替换依据。
+
+## Online DS Flash 补充
+
+使用 `.env` 中的 `DS_BASE_URL`、`DS_MODEL` 与 `DS_AUTH_TOKEN` 通过网关 `/v1` 路径，
+以同一原生 `chat_template_kwargs.thinking=true` 跑 18 题。结果为 SQL 66.7%、Python
+33.3%、故障分析 91.7%、宏平均 63.9%；SQL 有 1 题、Python 有 4 题耗尽 4,096 tokens
+且没有 final content。
+
+online DS 与私有 DeepSeek 及 RTX 4090 Qwen 的硬件、网络和服务网关不同，296.6 秒
+总耗时不做性能排序。在本题集上，它同样低于 Qwen3.8 thinking-low 的 88.9%，不改变
+默认部署选择。

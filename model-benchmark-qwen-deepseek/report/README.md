@@ -43,10 +43,10 @@
 ## 湖仓 Thinking 报告
 
 [`lakehouse-thinking.html`](./lakehouse-thinking.html) 包含 2026-08-17 在同一张 48 GiB
-RTX 4090 上完成的四组 Qwen 对比，以及以私有 OpenAI-compatible endpoint 运行的
-DeepSeek-V4-Flash-0731 thinking 补充测试。
+RTX 4090 上完成的四组 Qwen 对比，以及私有与 online OpenAI-compatible endpoint 运行的
+两组 DeepSeek thinking 补充测试。
 
-- Report SHA-256：`5a6daf41e21422d21d9757acd35a6500323b582d7d2bb073f532326e1eb02eef`
+- Report SHA-256：`9aedb5e37602e77cf1cd900e9dc19cc1d4410aeb107b27501411674c029a88cb`
 - Harness：`lakehouse-thinking-v1`
 - 题目：18（SQL/Python/故障分析各 6）
 - 固定条件：seed 42、最大 4,096 输出 tokens；四组 Qwen 另固定为 vLLM 0.19.0、
@@ -59,3 +59,4 @@ DeepSeek-V4-Flash-0731 thinking 补充测试。
 | `data/lakehouse-qwen38-off.json` | `67b45703b979ecd9dd9e9ad947c0107296a21de0fbe9fe0df6e6c836bd48b78c` |
 | `data/lakehouse-qwen38-thinking-low.json` | `5f29e5dbcd8eb16c15701dc0041b30b3c0405f580997e2a2e604aa7def60a137` |
 | `data/lakehouse-deepseek-thinking.json` | `7af977fdbdd6fec8e3d74a78749fdf89da044e78a656d94291c491b9aa120710` |
+| `data/lakehouse-online-deepseek-thinking.json` | `249d98e244f13b0f50edbf54991d54b7b02096f522517dc281ada267f985d169` |
