@@ -62,10 +62,13 @@
   "vision_harness": "qwen38-quantization-vision-v1, 6 deterministic synthetic images",
   "performance_harness": "1 warmup + 3 measured single-stream OpenAI SSE requests",
   "deployment_validation": {
+    "context_size": 262144,
     "business_passed": 17,
     "vision_passed": 6,
-    "decode_tokens_per_second": 94.32886,
-    "response_seconds": 11.986009000000001
+    "decode_tokens_per_second": 93.44575466666667,
+    "response_seconds": 12.098971,
+    "long_prompt_tokens": 245034,
+    "long_context_retrieval": "passed"
   },
   "short_output_ab": {
     "max_tokens": 128,

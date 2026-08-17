@@ -18,6 +18,8 @@ class QuantizationReportTests(unittest.TestCase):
         self.assertIn("选择 UD-Q4_K_XL + MTP2", report)
         self.assertIn("94.33 tok/s", report)
         self.assertIn("短输出交叉验证", report)
+        self.assertIn("上下文档位实测", report)
+        self.assertIn("245,034", report)
         self.assertIn("准确率与任务时延", report)
         self.assertIn("Dynamic GGUF 不是单一位宽", report)
         self.assertIn("@page{size:A4 landscape", report)

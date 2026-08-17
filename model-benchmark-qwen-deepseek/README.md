@@ -143,6 +143,7 @@ python3 scripts/lakehouse_thinking_benchmark.py \
 | `scripts/adjudicate_lakehouse_results.py` | 在不覆盖 v1 原始证据的前提下应用评分契约勘误 |
 | `scripts/inference_latency_benchmark.py` | 计量 SSE TTFT、端到端响应时间和解码 TPS |
 | `scripts/vision_quantization_benchmark.py` | 运行 Qwen3.8 量化候选的确定性图片识别回归 |
+| `scripts/long_context_retrieval_benchmark.py` | 用首尾双校验码验证实际 128K/256K 长上下文召回 |
 | `scripts/generate_quantization_report.py` | 生成 FP8、Q4、Q4 + MTP2、Q6 四配置选型报告 |
 | `scripts/capture_inference_environment.py` | 采集脱敏的主机、模型、容器配置和服务启动证据 |
 | `data/*-quality.json` | 三个模型的逐题原始输出和客观验证结果 |

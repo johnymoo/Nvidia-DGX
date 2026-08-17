@@ -27,7 +27,7 @@
     "image_id": "sha256:78ca0c1b14cc293e801845745f22fb4b260e806021a01eb465d0805bf14e374e",
     "api_model": "qwen3.8-27b",
     "api": "http://0.0.0.0:8005/v1",
-    "context": 65536,
+    "context": 262144,
     "parallel": 1,
     "kv_cache": "F16",
     "gpu_layers": 999,
@@ -46,12 +46,12 @@
     "gpu": "NVIDIA GeForce RTX 4090",
     "driver": "580.173.02",
     "vram_total_mib": 49140,
-    "vram_idle_service_mib": 23205,
-    "vram_headroom_mib": 25295
+    "vram_idle_service_mib": 36645,
+    "vram_headroom_mib": 11855
   },
   "startup": {
     "definition": "final MTP2 container process start to listening",
-    "seconds": 4.025,
+    "seconds": 4.301,
     "page_cache_cleared": false,
     "qualification": "Warm page-cache deployment restart; not comparable to the cold-start candidate measurements"
   },
@@ -74,12 +74,24 @@
     "performance": {
       "warmup_runs": 1,
       "measured_runs": 3,
-      "decode_tokens_per_second_mean": 94.32886,
-      "ttft_seconds_mean": 0.20806099999999997,
-      "response_seconds_mean": 11.986009000000001,
+      "context": 262144,
+      "decode_tokens_per_second_mean": 93.44575466666667,
+      "ttft_seconds_mean": 0.20971833333333334,
+      "response_seconds_mean": 12.098971,
       "completion_tokens_mean": 1111,
       "final_answer_present": true,
-      "evidence_sha256": "0b3eab4ffddddba46b604f4d4b7acba263f569e36fe3e46c817b213617286a03"
+      "evidence_sha256": "61b74f4be13a6ee26336191b4c739c35242b4ba4198adae48a1be29ced883104"
+    },
+    "long_context": {
+      "status": "passed",
+      "allocated_context": 262144,
+      "prompt_tokens": 245034,
+      "completion_tokens": 26,
+      "response_seconds": 194.984852,
+      "prefill_tokens_per_second": 1261.58,
+      "deep_decode_tokens_per_second": 54.39,
+      "retrieval": "Both deterministic access codes near the beginning and end were returned exactly",
+      "evidence_sha256": "752b2e339273d469f443ff08b8f246843581438165ae1eb8941def5299fafd05"
     },
     "short_output_performance": {
       "max_tokens": 128,
@@ -94,13 +106,14 @@
   },
   "known_limits": [
     "MTP is primarily a single-stream optimization; concurrency 2 and 4 are not yet validated",
-    "The 160K context plus Q4 KV community recipe has not been mixed into this controlled 65K F16-KV deployment",
+    "A fully populated 245K prompt takes about 195 seconds; clients should trim actual input to the task",
+    "The 128K profile remains available when additional GPU headroom is more important than maximum context",
     "The server logs warn that no API key is configured; 0.0.0.0:8005 must remain on a controlled LAN or behind an authenticated proxy",
     "The 48-hour stress test remains deferred",
     "Changing the model artifact, llama.cpp image, context, KV type, or runtime arguments invalidates this receipt"
   ],
   "report": {
-    "html_sha256": "deafecea21ff5581850325ac548d5e4323986c87138677e3269e006ac6121ebe",
-    "pdf_sha256": "a2e926fd11bcc23e9fe6838a36372bca161bf847b1c8f35ac4f14ce91678df99"
+    "html_sha256": "480fb3d3816b3bc53f8248c2f46b49016a932a487bce82f3d7d4532ab57aba74",
+    "pdf_sha256": "799488d6fe935a2fe875c42536e11a6b76364ab62914e13d3054663e7bbd0a0c"
   }
 }

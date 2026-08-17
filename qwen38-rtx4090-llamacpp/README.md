@@ -6,7 +6,7 @@ Unsloth Dynamic `UD-Q4_K_XL` 与 `UD-Q6_K_XL` 都在 18 项湖仓 thinking-low
 GGUF 内置 MTP head 后达到 94.33 tok/s，质量仍为 17/18、视觉仍为 6/6。因此默认
 选择 Q4 + MTP2，而不是在未观察到质量收益时承担 Q6 的额外显存与延迟。
 
-固定配置：单张 48 GiB RTX 4090、65,536 context、单并发 slot、F16 KV、全 GPU
+固定配置：单张 48 GiB RTX 4090、262,144 context、单并发 slot、F16 KV、全 GPU
 offload、Flash Attention、MTP speculative decoding（n-max 2，p-min 0）和
 OpenAI-compatible API。权重和 `mmproj` 从 ModelScope 下载，
 以字节数与 SHA-256 固定；运行时使用固定 OCI digest。
@@ -37,6 +37,9 @@ curl -fsS http://127.0.0.1:8005/v1/chat/completions \
 [`../model-benchmark-qwen-deepseek/report/qwen38-quantization.html`](../model-benchmark-qwen-deepseek/report/qwen38-quantization.html)。
 
 MTP 主要优化单流 decode。当前 recipe 在本机 128-token 与约 1,100-token 输出中均有
-收益，但并发 2/4 与 48 小时压力测试仍待完成；增加并发、变更上下文、KV 类型或
+收益；245,034-token 实际提示也完成首尾双校验码精确召回。256K 档位空载占用
+36,645 MiB 显存，保留 11,855 MiB；如需为其他 GPU 服务保留更多余量，可将
+`CTX_SIZE` 调回 `131072`，该档位空载占用 27,685 MiB。并发 2/4 与 48 小时压力测试
+仍待完成；增加并发、变更上下文、KV 类型或
 llama.cpp 镜像后必须重新评测。参数来源与社区数据见
 [`sudoingX/qwen38-mtp`](https://github.com/sudoingX/qwen38-mtp)。

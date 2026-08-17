@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "timestamp": "2026-08-17T09:03:10.853024+00:00",
+  "model": "qwen3.8-27b",
+  "context_size": 262144,
+  "target_raw_tokens": 245000,
+  "measured_raw_tokens": 245022,
+  "prompt_tokens": 245034,
+  "completion_tokens": 26,
+  "prompt_bytes": 1181774,
+  "prompt_sha256": "5423a3b5c35d96b06a2ab5e83edb00281b806e40baf8e1f1d2d752b546052d0e",
+  "expected": "B-C1C3075002D1|E-C3FD5996FD69",
+  "content": "B-C1C3075002D1|E-C3FD5996FD69",
+  "finish_reason": "stop",
+  "response_seconds": 194.984852,
+  "method": "Two deterministic access codes placed near the beginning and end of a synthetic archive"
+}

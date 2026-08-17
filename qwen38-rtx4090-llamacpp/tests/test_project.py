@@ -16,6 +16,7 @@ class ProjectTests(unittest.TestCase):
         self.assertIn("SPEC_TYPE=draft-mtp", config)
         self.assertIn("SPEC_DRAFT_N_MAX=2", config)
         self.assertIn("SPEC_DRAFT_P_MIN=0", config)
+        self.assertIn("CTX_SIZE=262144", config)
 
     def test_runtime_disables_cpu_weight_offload(self) -> None:
         common = (ROOT / "scripts" / "common.sh").read_text()
