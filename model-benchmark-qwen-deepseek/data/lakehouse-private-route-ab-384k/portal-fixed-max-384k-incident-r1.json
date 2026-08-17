@@ -1,0 +1,401 @@
+{
+  "schema_version": 2,
+  "harness_id": "lakehouse-thinking-v2",
+  "status": "passed",
+  "tag": "private-portal-max-384k-incident-r1",
+  "treatment": "private DS Portal LAN / max / 384K / incident-only",
+  "model": "deepseek-v4-flash-0731",
+  "base_url": "portal-lan-fixed",
+  "mode": "deepseek-thinking",
+  "seed": 42,
+  "repeat": 1,
+  "expected_runs": 1,
+  "category_filter": "incident",
+  "concurrency": 2,
+  "max_tokens": 393216,
+  "sampling": "DeepSeek private-vllm; official-local-general; effort=max",
+  "request_config": {
+    "deepseek_contract": "private-vllm",
+    "deepseek_effort": "max",
+    "deepseek_sampling": "official-local-general",
+    "force_reasoning_effort_passthrough": false,
+    "max_response_chars": 32768,
+    "max_reasoning_chars": 32768,
+    "request_timeout_seconds": 14400,
+    "concurrency": 2,
+    "stream": true
+  },
+  "categories": {
+    "incident": {
+      "score": 0.9166666666666666,
+      "passed": 5,
+      "total": 6,
+      "mean_seconds": 16.0715,
+      "completion_tokens": 2968,
+      "ttft_seconds_mean": 0.523438,
+      "decode_tokens_per_second_mean": 34.7830405,
+      "effective_e2e_completion_tokens_per_second": 30.77912246315942,
+      "length_truncations": 0,
+      "empty_finals": 0,
+      "errors": 0
+    }
+  },
+  "performance": {
+    "requests": 6,
+    "ttft_available_requests": 6,
+    "ttft_seconds": {
+      "mean": 0.523438,
+      "p50": 0.5268295,
+      "p95": 0.541908,
+      "max": 0.541908
+    },
+    "response_seconds": {
+      "mean": 16.071248,
+      "p50": 10.150220999999998,
+      "p95": 38.115844,
+      "max": 38.115844
+    },
+    "decode_tokens_per_second": {
+      "mean": 34.7830405,
+      "p50": 33.370987,
+      "p95": 44.685442,
+      "max": 44.685442
+    },
+    "total_completion_tokens": 2968,
+    "effective_e2e_completion_tokens_per_second": 30.779605085222173
+  },
+  "macro_score": 0.9166666666666666,
+  "total_seconds": 96.429,
+  "cases": [
+    {
+      "id": "cgroup_oom",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 kernel: Memory cgroup out of memory: Killed process worker; EV2 memory.current=1073741824 and memory.max=1073741824; EV3 service restarted 14 times; host MemAvailable=48 GiB.\nChoose root_cause from ['host_memory_exhaustion', 'cgroup_memory_limit', 'disk_pressure'] and exactly two highest-priority action_codes from ['memory_max', 'swap_zero', 'restart_backoff', 'delete_logs'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "cgroup_memory_limit",
+        "action_codes": [
+          "memory_max",
+          "restart_backoff"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "cgroup_memory_limit",
+          "action_codes": [
+            "memory_max",
+            "restart_backoff"
+          ],
+          "explanation": "The cgroup hit its memory.max (1073741824) with current usage equal to the limit, triggering the kernel OOM kill of the worker. Host MemAvailable is high, so host exhaustion is not the cause. The service has restarted 14 times, so increasing the cgroup limit and adding restart backoff are the priority actions."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"cgroup_memory_limit\",\"action_codes\":[\"memory_max\",\"restart_backoff\"],\"explanation\":\"The cgroup hit its memory.max (1073741824) with current usage equal to the limit, triggering the kernel OOM kill of the worker. Host MemAvailable is high, so host exhaustion is not the cause. The service has restarted 14 times, so increasing the cgroup limit and adding restart backoff are the priority actions.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 kernel OOM killed worker in memory cgroup. EV2 memory.current=1073741824 and memory.max=1073741824 means cgroup at limit. EV3 service restarted 14 times. host MemAvailable=48 GiB indicates host has memory, so not host exhaustion. Root cause cgroup_memory_limit. Action codes: memory_max (increase limit) and restart_backoff? Need exactly two highest-priority action codes from list. Since cgroup limit, adjust memory_max. Also service restarted 14 times suggests need restart_backoff to avoid rapid restarts? Or swap_zero? Evidence no swap mention. delete_logs not relevant. So memory_max and restart_backoff. Explanation brief.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 259,
+        "prompt_tokens": 223,
+        "total_tokens": 482,
+        "completion_tokens_details": {
+          "reasoning_tokens": 154
+        }
+      },
+      "seconds": 8.285,
+      "ttft_seconds": 0.541908,
+      "response_seconds": 8.284937,
+      "decode_seconds": 7.743028,
+      "decode_tokens_per_second": 33.449445,
+      "effective_e2e_completion_tokens_per_second": 31.261555,
+      "first_token_kind": "reasoning",
+      "response_evidence": {
+        "chars": 412,
+        "sha256": "2bfdf0d02a2da5e345aee86e3c31c69073264f22de981c98b1a32a1d18fcd150",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 691,
+        "sha256": "a931641834c9cee731e8b0ca1d02bac330774be22e6657ca9712be289048f448",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "gpu_cpu_spill",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 inference log: insufficient GPU memory, moving 9.5 GiB layers to CPU; EV2 container RSS rose from 7 to 61 GiB; EV3 kernel invoked OOM killer; EV4 GPU had another process using 18 GiB.\nChoose root_cause from ['gpu_to_cpu_offload', 'model_corruption', 'network_loss'] and exactly two highest-priority action_codes from ['disable_cpu_offload', 'container_memory_limit', 'vram_guard', 'increase_swap'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "gpu_to_cpu_offload",
+        "action_codes": [
+          "disable_cpu_offload",
+          "vram_guard"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "gpu_to_cpu_offload",
+          "action_codes": [
+            "disable_cpu_offload",
+            "vram_guard"
+          ],
+          "explanation": "Insufficient GPU memory triggered offloading 9.5 GiB to CPU, causing container RSS to spike to 61 GiB and the kernel OOM killer to fire. Another process using 18 GiB GPU memory indicates GPU contention, so disabling offload and adding VRAM protection are the priority actions."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"gpu_to_cpu_offload\",\"action_codes\":[\"disable_cpu_offload\",\"vram_guard\"],\"explanation\":\"Insufficient GPU memory triggered offloading 9.5 GiB to CPU, causing container RSS to spike to 61 GiB and the kernel OOM killer to fire. Another process using 18 GiB GPU memory indicates GPU contention, so disabling offload and adding VRAM protection are the priority actions.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. Root cause: EV1 insufficient GPU memory, moving layers to CPU; EV2 container RSS rose from 7 to 61 GiB; EV3 kernel OOM killer; EV4 GPU had another process using 18 GiB. Root cause likely gpu_to_cpu_offload? Actually offload caused CPU memory ballooning and OOM. But root cause could be GPU memory contention due to another process, leading to offload, then OOM. Choose from options: gpu_to_cpu_offload, model_corruption, network_loss. The evidence directly indicates offload happened due to insufficient GPU memory. Root cause gpu_to_cpu_offload. Actions: disable_cpu_offload, vram_guard? Or container_memory_limit? Need exactly two highest-priority action_codes. Since offload caused container RSS to 61 GiB and OOM killer, actions should prevent offload and protect GPU memory. disable_cpu_offload directly prevents offload. vram_guard maybe prevents GPU contention? Also container_memory_limit would not help because OOM occurred due to container using memory; setting limit might cause earlier OOM but not fix. increase_swap bad. So actions: disable_cpu_offload, vram_guard. Explanation brief. Need JSON only.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 382,
+        "prompt_tokens": 232,
+        "total_tokens": 614,
+        "completion_tokens_details": {
+          "reasoning_tokens": 258
+        }
+      },
+      "seconds": 12.016,
+      "ttft_seconds": 0.541459,
+      "response_seconds": 12.015505,
+      "decode_seconds": 11.474046,
+      "decode_tokens_per_second": 33.292529,
+      "effective_e2e_completion_tokens_per_second": 31.792254,
+      "first_token_kind": "reasoning",
+      "response_evidence": {
+        "chars": 380,
+        "sha256": "c53a0e8555c811b73731bd9d7491541f4e44aa404505f07cf4a7bf772281b5a1",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 1172,
+        "sha256": "acffd1530c6e2d4895f3a24f01c7e0f5db441539401a53c7674f6b1b6988cc9a",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "disk_inode_pressure",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC.\nChoose root_cause from ['combined_disk_pressure', 'database_deadlock', 'cpu_throttle'] and exactly two highest-priority action_codes from ['bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "combined_disk_pressure",
+        "action_codes": [
+          "bounded_cache_cleanup",
+          "restart_file_owner"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "combined_disk_pressure",
+          "action_codes": [
+            "restart_file_owner",
+            "bounded_cache_cleanup"
+          ],
+          "explanation": "High block and inode usage plus deleted-but-open files totaling 3GB indicate combined filesystem pressure causing ENOSPC; restart the process holding deleted files to release space and clean bounded caches to reduce remaining pressure."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"combined_disk_pressure\",\"action_codes\":[\"restart_file_owner\",\"bounded_cache_cleanup\"],\"explanation\":\"High block and inode usage plus deleted-but-open files totaling 3GB indicate combined filesystem pressure causing ENOSPC; restart the process holding deleted files to release space and clean bounded caches to reduce remaining pressure.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. Need choose root_cause from options and exactly two highest-priority action_codes. Evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes (3GB); EV4 application reports ENOSPC. This indicates disk full due to deleted files still held open consuming space, plus inode pressure. Root cause likely combined_disk_pressure? Options: combined_disk_pressure, database_deadlock, cpu_throttle. It's disk pressure combined blocks/inodes/deleted open files. Action codes: bounded_cache_cleanup, restart_file_owner, protect_current_data, recursive_delete_root. Need exactly two highest-priority actions. Deleted-but-open files: identify owner and restart to release space. Also protect current data? ENOSPC means app can't write; need free space. Bounded cache cleanup might help but deleted open files main issue. Restart file owner releases deleted files. Protect current data ensures no data loss? The two highest: restart_file_owner, protect_current_data? Or bounded_cache_cleanup? Let's think.\n\nEvidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC. Root cause: combined disk pressure because both blocks and inodes, plus open deleted files. Action: restart_file_owner to release deleted-but-open files (3GB). Also bounded_cache_cleanup could free space if cache bounded? But \"bounded_cache_cleanup\" likely action for cache pressure. \"protect_current_data\" might be to avoid overwriting? Need choose exactly two highest-priority. The deleted files are held open by some process; restarting file owner releases them. Also ENOSPC means write failures; protect current data might involve stopping writes? But action codes likely from incident playbook: combined_disk_pressure -> bounded_cache_cleanup and restart_file_owner? Let's examine.\n\nQuestion: \"Analyze only this synthetic evidence: EV1 filesystem blocks 95% used; EV2 inodes 97% used; EV3 deleted-but-open files total 3221225472 bytes; EV4 application reports ENOSPC. Choose root_cause from ['combined_disk_pressure', 'database_deadlock', 'cpu_throttle'] and exactly two highest-priority action_codes from ['bounded_cache_cleanup', 'restart_file_owner', 'protect_current_data', 'recursive_delete_root']. Return JSON only...\"\n\nWe need infer correct mapping. EV1 and EV2 indicate both blocks and inodes high -> combined disk pressure. EV3 deleted open files 3GB suggests file handles holding space. EV4 ENOSPC. To resolve, restart_file_owner of deleted open files. Also bounded_cache_cleanup to free disk cache? But \"bounded_cache_cleanup\" maybe for cache files consuming blocks. Inodes 97% used indicates many small files? Could be cache cleanup. But highest priority: restart_file_owner (frees deleted open files immediately) and protect_current_data (prevent data loss during ENOSPC?) Need decide.\n\nLet's parse action codes:\n- bounded_cache_cleanup: clean bounded cache to free space/inodes.\n- restart_file_owner: restart process owning deleted-but-open files to release.\n- protect_current_data: ensure no further data corruption/loss, maybe backup/fsync.\n- recursive_delete_root: dangerous, delete root recursively? likely last resort and inappropriate.\n\nGiven deleted-but-open files, restart_file_owner is clear. For combined disk pressure due to blocks/inodes, bounded_cache_cleanup also relevant. Protect_current_data might not be an action to resolve ENOSPC but to safeguard. The question asks highest-priority action_codes. In incident response, when ENOSPC due to deleted open files, restart file owner is critical. Also cleanup bounded cache to relieve inode/block pressure. Protect current data could be a priority before restart? But action codes likely from set of remediation actions. \"bounded_cache_cleanup\" specifically addresses filesystem cache; EV1 blocks 95% used and EV2 inodes 97% used may be from cache accumulating. Deleting cache files can free both blocks and inodes. \"recursive_delete_root\" is always wrong. \"protect_current_data\" is not an action to mitigate disk pressure; it's a precaution. The evidence doesn't mention data corruption. So two highest: bounded_cache_cleanup, restart_file_owner. Explanation: Filesystem under combined block/inode pressure; deleted-but-open files consuming 3GB must be released by restarting owner, and cleanup cache to reduce further pressure.\n\nLet's craft JSON.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 1089,
+        "prompt_tokens": 220,
+        "total_tokens": 1309,
+        "completion_tokens_details": {
+          "reasoning_tokens": 936
+        }
+      },
+      "seconds": 38.116,
+      "ttft_seconds": 0.504902,
+      "response_seconds": 38.115844,
+      "decode_seconds": 37.610943,
+      "decode_tokens_per_second": 28.954339,
+      "effective_e2e_completion_tokens_per_second": 28.570796,
+      "first_token_kind": "reasoning",
+      "response_evidence": {
+        "chars": 353,
+        "sha256": "ca4dd069d44b6c021cc51843844227b54160809d18440a403cf7329a424c4ac7",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 4481,
+        "sha256": "d8bdd3142a60fd9e14ca43b0a502143abed852e2303924c3eb4ec63172dd6b2f",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "db_pool_saturation",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 pool active=40 max=40 wait_p95=2100ms; EV2 database CPU=28%, locks=0, connection count=45/500; EV3 request latency tracks pool wait.\nChoose root_cause from ['client_pool_saturation', 'database_cpu_saturation', 'lock_contention'] and exactly two highest-priority action_codes from ['bounded_pool_increase', 'statement_timeout', 'observe_wait_p95', 'disable_timeout'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "client_pool_saturation",
+        "action_codes": [
+          "bounded_pool_increase",
+          "observe_wait_p95"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "client_pool_saturation",
+          "action_codes": [
+            "bounded_pool_increase",
+            "observe_wait_p95"
+          ],
+          "explanation": "Connection pool is at max=40 with p95 wait 2100ms, while database CPU is low (28%), no locks, and connection count is well below capacity. Request latency tracking pool wait confirms the pool is the bottleneck, not the database."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"client_pool_saturation\",\"action_codes\":[\"bounded_pool_increase\",\"observe_wait_p95\"],\"explanation\":\"Connection pool is at max=40 with p95 wait 2100ms, while database CPU is low (28%), no locks, and connection count is well below capacity. Request latency tracking pool wait confirms the pool is the bottleneck, not the database.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 pool active=40 max=40 wait_p95=2100ms. EV2 database CPU=28%, locks=0, connection count=45/500. EV3 request latency tracks pool wait. Root cause: client_pool_saturation because pool maxed and wait high; DB CPU low, no locks. Actions: bounded_pool_increase to reduce pool saturation, observe_wait_p95? Actually action_codes exactly two highest-priority from list. Need choose two. Since pool saturation, increase pool bounded. Also observe_wait_p95? But EV3 already request latency tracks pool wait, so observing wait_p95 is less action. However list includes 'statement_timeout' maybe not relevant. 'disable_timeout' not. Two highest-priority: bounded_pool_increase and observe_wait_p95? Let's think: Synthetic evidence: pool active=40 max=40 wait_p95=2100ms; DB CPU low, locks=0, connections 45/500. Request latency tracks pool wait. Root cause is client pool saturation. Action: increase pool bound (bounded_pool_increase) to allow more concurrent requests? Also observe_wait_p95? But \"observe_wait_p95\" is monitoring, not action? The prompt asks action_codes from list. Exactly two highest-priority. Could be bounded_pool_increase and observe_wait_p95? But if pool saturated and DB has capacity, increase pool. Also observe wait p95 to monitor? However \"observe_wait_p95\" might be lower priority than statement_timeout? Let's parse options:\n\n- bounded_pool_increase: increase connection pool size with bound.\n- statement_timeout: set timeout for DB statements to avoid long queries.\n- observe_wait_p95: observe pool wait p95 metric.\n- disable_timeout: disable timeout.\n\nEV1 shows pool max 40 active 40 wait_p95 2100ms. EV2 DB CPU 28% low, locks 0, connections 45/500. EV3 latency tracks pool wait. This indicates pool size too small, DB not saturated. So root cause client_pool_saturation. Action: bounded_pool_increase. Also since we need exactly two action codes, what second? \"observe_wait_p95\" is likely one because wait_p95 is already observed? Actually EV1 includes wait_p95=2100ms, so observation already done. The action \"observe_wait_p95\" might be monitoring after change. But \"statement_timeout\" could mitigate if some statements slow causing pool saturation; but DB CPU low, locks 0, so not appropriate. \"disable_timeout\" counterproductive. Thus second best is \"observe_wait_p95\" because after increasing pool, need monitor wait p95 to confirm improvement. However \"observe_wait_p95\" is not an action to fix root cause but a monitoring action. The instruction: \"exactly two highest-priority action_codes\" from list. Since only bounded_pool_increase addresses root cause, we need pick one more. The two highest-priority after root cause: bounded_pool_increase and observe_wait_p95. Because statement_timeout/disable_timeout irrelevant. Let's craft explanation brief.\n\nNeed output JSON only. Ensure root_cause exactly string. action_codes array with two strings. Explanation concise.\n\n",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 797,
+        "prompt_tokens": 222,
+        "total_tokens": 1019,
+        "completion_tokens_details": {
+          "reasoning_tokens": 657
+        }
+      },
+      "seconds": 26.199,
+      "ttft_seconds": 0.4987,
+      "response_seconds": 26.198606,
+      "decode_seconds": 25.699907,
+      "decode_tokens_per_second": 31.011786,
+      "effective_e2e_completion_tokens_per_second": 30.421466,
+      "first_token_kind": "reasoning",
+      "response_evidence": {
+        "chars": 344,
+        "sha256": "7223f79586b447c12dbbb9898703dbc5bed1e62b38021b49537e93997c20f4a6",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 2959,
+        "sha256": "ff81ef59ac1b508e2dc5d51af6ceeb002d587adb6e2ebb3826f0f25a06f6b1c4",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "iceberg_commit_conflict",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds.\nChoose root_cause from ['optimistic_commit_conflict', 'catalog_unavailable', 'corrupt_manifest'] and exactly two highest-priority action_codes from ['bounded_commit_retry', 'refresh_snapshot', 'idempotent_write', 'delete_metadata'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "optimistic_commit_conflict",
+        "action_codes": [
+          "bounded_commit_retry",
+          "refresh_snapshot"
+        ]
+      },
+      "score": 1.0,
+      "passed": true,
+      "detail": {
+        "parsed": {
+          "root_cause": "optimistic_commit_conflict",
+          "action_codes": [
+            "refresh_snapshot",
+            "bounded_commit_retry"
+          ],
+          "explanation": "Writer B failed because Writer A committed snapshot 813 first, causing a conflicting-files validation error against snapshot 812. Refreshing to the latest snapshot and retrying succeeded, indicating an optimistic concurrency conflict rather than catalog or manifest corruption."
+        },
+        "cause": true,
+        "correct_actions": 2,
+        "wrong_actions": 0
+      },
+      "response": "{\"root_cause\":\"optimistic_commit_conflict\",\"action_codes\":[\"refresh_snapshot\",\"bounded_commit_retry\"],\"explanation\":\"Writer B failed because Writer A committed snapshot 813 first, causing a conflicting-files validation error against snapshot 812. Refreshing to the latest snapshot and retrying succeeded, indicating an optimistic concurrency conflict rather than catalog or manifest corruption.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 two writers read snapshot 812; EV2 writer A commits snapshot 813; EV3 writer B fails ValidationException: conflicting files; EV4 retry on refreshed snapshot succeeds. Root cause optimistic_commit_conflict. Actions: refresh_snapshot and bounded_commit_retry? Maybe idempotent_write? Evidence: retry on refreshed snapshot succeeds, so actions are refresh_snapshot and bounded_commit_retry. Need exactly two highest-priority action_codes. Explanation brief.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 201,
+        "prompt_tokens": 218,
+        "total_tokens": 419,
+        "completion_tokens_details": {
+          "reasoning_tokens": 100
+        }
+      },
+      "seconds": 5.924,
+      "ttft_seconds": 0.535499,
+      "response_seconds": 5.923559,
+      "decode_seconds": 5.388061,
+      "decode_tokens_per_second": 37.304702,
+      "effective_e2e_completion_tokens_per_second": 33.932301,
+      "first_token_kind": "reasoning",
+      "response_evidence": {
+        "chars": 396,
+        "sha256": "9f2a95ac2fba8ddeef7653c9ad2020bbc6076578889cae79b437b8acdceee977",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 517,
+        "sha256": "ab252a6aae229c959f2b3dee123c26241d04aa9def9d22dde031a60105a67306",
+        "storage_truncated": false
+      }
+    },
+    {
+      "id": "spark_shuffle_skew",
+      "category": "incident",
+      "prompt": "Analyze only this synthetic evidence: EV1 median task duration=20s, max=1080s; EV2 one partition has 62% of rows for key UNKNOWN; EV3 executors have free memory and no GC pause; EV4 stage waits for one task.\nChoose root_cause from ['shuffle_key_skew', 'executor_memory_shortage', 'scheduler_outage'] and exactly two highest-priority action_codes from ['salt_hot_key', 'adaptive_skew_join', 'repartition_by_distribution', 'increase_all_memory'].\nReturn JSON only: {\"root_cause\":\"...\",\"action_codes\":[\"...\"],\"explanation\":\"brief evidence-based explanation\"}.",
+      "expected": {
+        "root_cause": "shuffle_key_skew",
+        "action_codes": [
+          "adaptive_skew_join",
+          "salt_hot_key"
+        ]
+      },
+      "score": 0.5,
+      "passed": false,
+      "detail": {
+        "parsed": {
+          "root_cause": "shuffle_key_skew",
+          "action_codes": [
+            "salt_hot_key",
+            "repartition_by_distribution"
+          ],
+          "explanation": "EV2 shows a single UNKNOWN key holding 62% of rows, EV1 has a very high max duration vs median, and EV4 shows a stage waiting on one long task; free memory and no GC rule out memory shortage."
+        },
+        "cause": true,
+        "correct_actions": 1,
+        "wrong_actions": 1
+      },
+      "response": "{\"root_cause\":\"shuffle_key_skew\",\"action_codes\":[\"salt_hot_key\",\"repartition_by_distribution\"],\"explanation\":\"EV2 shows a single UNKNOWN key holding 62% of rows, EV1 has a very high max duration vs median, and EV4 shows a stage waiting on one long task; free memory and no GC rule out memory shortage.\"}",
+      "reasoning": "We need answer JSON only. Need analyze synthetic evidence. EV1 median task duration 20s, max 1080s. EV2 one partition has 62% of rows for key UNKNOWN. EV3 executors have free memory and no GC pause. EV4 stage waits for one task. Root cause likely shuffle_key_skew (data skew to unknown key). Not executor_memory_shortage because free memory and no GC. Not scheduler_outage because stage waits for one task due to skew. Actions: salt_hot_key and repartition_by_distribution? adaptive_skew_join is for joins, not mentioned. Need exactly two highest-priority action codes. Likely salt_hot_key and repartition_by_distribution. Explanation brief.",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 240,
+        "prompt_tokens": 233,
+        "total_tokens": 473,
+        "completion_tokens_details": {
+          "reasoning_tokens": 146
+        }
+      },
+      "seconds": 5.889,
+      "ttft_seconds": 0.51816,
+      "response_seconds": 5.889037,
+      "decode_seconds": 5.370877,
+      "decode_tokens_per_second": 44.685442,
+      "effective_e2e_completion_tokens_per_second": 40.753695,
+      "first_token_kind": "reasoning",
+      "response_evidence": {
+        "chars": 303,
+        "sha256": "cbf1cd1187227ab70e3258675e2427368c4f8205d3e3675a8c8da8656ab2d053",
+        "storage_truncated": false
+      },
+      "reasoning_evidence": {
+        "chars": 641,
+        "sha256": "f393254fbe2eb56d4886a6a2a06429e031a0ebee99d355792d1c24ffd63c2a08",
+        "storage_truncated": false
+      }
+    }
+  ]
+}

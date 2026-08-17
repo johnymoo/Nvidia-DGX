@@ -21,6 +21,10 @@
   两边均 18/18 final、0 截断、0 错误，16/18 题可执行分一致。Portal 最慢题耗时
   50.5 分钟、输出 63.7K tokens，
   因此 384K 是能力验证配置，不适合作为默认产品预算。
+- **Private Max 的故障低分不是稳定退化。** 完整 18 题轮的故障分为
+  83.3%，同配置 6 题专项复测为
+  91.7%，两次观测均值 87.5%。
+  两轮根因均 6/6 正确，失分来自精确 action-code 组合的采样波动。
 - **Pro 不保证 Agent 工作流单调更好。** 在一个刻意聚焦历史 private 弱项的 5 题集合中，
   Pro high 只完整通过 1/5；历史 online Flash 为 4/5，private Flash 为 2/5。该集合有选择偏差，
   只能说明升级前仍需按真实 Agent workflow 验证。
@@ -68,6 +72,38 @@ seed 42、`max_tokens=393216`，Portal 与 SSH tunnel direct vLLM 各并发 2 �
 逐题 finish reason 与 prompt token 数均为 18/18 一致，可执行分 16/18 一致；final 与 reasoning
 文本哈希均为 0/18 一致。结论是 **Portal 路由语义已经与 direct vLLM 对齐**，2.8pp 分差来自
 True Max 单轮采样波动，不能解释为 Portal 改写答案。该 A/B 每条路径 n=1，不声明统计显著性。
+
+## Private Max 故障专项复测
+
+只重跑 6 个故障诊断 case，一轮、并发 2、SSE、`max_tokens=393216`，不带 per-request
+`allowed_openai_params` override。公网域名当时解析到拒绝 TCP 443 的入口，因此本轮通过 LAN
+直达同一个 LLM Portal edge，再经 LiteLLM、WireGuard 到 private vLLM；本轮时序不包含公网/NAS
+入口，但模型、Portal 参数处理和后端均未绕过。
+
+- 专项得分 91.7%（5/6），上一完整轮为
+  83.3%（4/6），两次故障观测均值
+  87.5%。
+- 两轮 root cause 都是 6/6 正确。本轮唯一失分题 `spark_shuffle_skew` 选对根因和一个动作，
+  但第二动作选择 `repartition_by_distribution`，没有命中 rubric 指定的 `adaptive_skew_join`。
+- 6/6 final、0 截断、0 错误；TTFT 平均
+  0.523s，P95
+  0.542s；response 平均
+  16.071s，P95
+  38.116s；平均 decode
+  34.8 tok/s，有效 E2E
+  30.8 tok/s。
+
+| 故障 case | 得分 | 根因正确 | 正确动作 | TTFT | response | decode tok/s | E2E tok/s | completion |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `cgroup_oom` | 100.0% | 是 | 2/2 | 0.542s | 8.285s | 33.4 | 31.3 | 259 |
+| `gpu_cpu_spill` | 100.0% | 是 | 2/2 | 0.541s | 12.016s | 33.3 | 31.8 | 382 |
+| `disk_inode_pressure` | 100.0% | 是 | 2/2 | 0.505s | 38.116s | 29.0 | 28.6 | 1089 |
+| `db_pool_saturation` | 100.0% | 是 | 2/2 | 0.499s | 26.199s | 31.0 | 30.4 | 797 |
+| `iceberg_commit_conflict` | 100.0% | 是 | 2/2 | 0.535s | 5.924s | 37.3 | 33.9 | 201 |
+| `spark_shuffle_skew` | 50.0% | 是 | 1/2 | 0.518s | 5.889s | 44.7 | 40.8 | 240 |
+
+因此主质量表继续保留完整 18 题轮的 83.3%，不把专项结果拼接成虚假的第二轮宏平均；但边界结论应按
+两次故障观测理解：Private Max 没有稳定低于 High，动作代码的精确选择仍有波动。
 
 ## 18 题完整工作负载性能
 
@@ -154,8 +190,8 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 
 | 维度 | 本轮纳入 | 未覆盖 | 状态 |
 |---|---|---|---|
-| 可执行精度 | Private High 32K；True Max 384K Portal/direct；Online Flash/Pro | Private Max 384K 与 route A/B 仅 n=1 | 主要边界完整 |
-| 串行 SSE 性能 | Verified Private high/max；Online Flash low；Online Pro low/high/max | Online Flash high/max | 主要路径完整 |
+| 可执行精度 | Private High 32K；True Max 384K Portal/direct；Max 故障专项复测；Online Flash/Pro | Private Max 完整 18 题与 route A/B 仍仅 n=1 | 主要边界完整 |
+| SSE 性能 | Private Max 故障 6 题逐题指标；短请求 Private high/max、Online Flash low、Online Pro | 其余完整质量轮未采集 TTFT | 采集边界已标明 |
 | Token 与 API 成本 | Online Pro low/high/max | Private 无 API 账单；Flash 未统一计价 | 范围内完整 |
 | Agent 聚焦任务 | Online Pro high；Online/Private 历史基线 | 不是九组 effort 全矩阵 | 部分 |
 
@@ -169,7 +205,7 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 - Online Pro alias：`deepseek-v4-pro` → `DeepSeek-V4-Pro-0813`。
 - Private 请求经 LLM Portal 转发，不是客户端直连 vLLM。Portal access log 记录旧质量矩阵
   108 次请求和旧性能 4 次请求；正式完成配置另有 High 32K 质量 36 次、Max 384K Portal/direct
-  各 18 次、High/Max 性能 8 次请求。
+  各 18 次、Max 故障专项 6 次、High/Max 性能 8 次请求。
 - LiteLLM 官方文档说明 `drop_params=true` 会丢弃不支持参数，`allowed_openai_params` 可显式透传；
   旧 Portal deployment 因此丢弃 `reasoning_effort`。Issue #46 修复后，不带 per-request override 的
   Portal/direct Max 探针 prompt usage 与输出哈希一致。
@@ -178,13 +214,15 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 - Pro 六个质量 treatment 共 108 请求，0 HTTP/网络错误、0 空 final、0 length 截断。
 - Private 384K route A/B 共 36 请求，Portal/direct 均 18/18 stop、0 截断、0 错误；逐题 score
   16/18 一致。Portal 最长请求 3031 秒，证明修复后的 SSE 路径跨过旧 600 秒网关边界。
+- Private Max 故障专项复测通过 Portal LAN edge，6/6 root cause 正确、5/6 精确动作组合；公网
+  入口当时拒绝 TCP 443，所以该轮 TTFT/response 不包含公网或 Synology 入口延迟。
 - Agent 聚焦题的脱敏逐题证据见 `data/online-pro-agent-focus-20260817.json`；原始 sandbox、
   stream 和绝对路径不提交。
 - Pro Python 原始评分时固定 sandbox 镜像不可用；保存的完整 final 随后在不可变 ECR Python
   digest 中重新执行。原始 JSON 未覆盖，裁决见
   `data/online-pro-matrix-adjudicated.json`。
-- 本报告是快速决策 benchmark：Private Max 384K route A/B 与 Agent 每题 n=1，其余质量组 n=2，
-  不宣称统计显著性。
+- 本报告是快速决策 benchmark：Private Max 384K 完整轮、route A/B、故障专项和 Agent 每题 n=1，
+  其余质量组 n=2，不宣称统计显著性。
 
 官方资料：[Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode)、
 [Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing)、

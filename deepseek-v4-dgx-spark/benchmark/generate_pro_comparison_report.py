@@ -206,6 +206,66 @@ def route_ab_summary(portal_path: Path, direct_path: Path) -> dict:
     }
 
 
+def incident_validation_summary(path: Path, prior_score: float) -> dict:
+    run = load(path)
+    cases = run.get("cases") or []
+    request_config = run.get("request_config") or {}
+    if (
+        run.get("status") != "passed"
+        or run.get("category_filter") != "incident"
+        or len(cases) != 6
+        or run.get("max_tokens") != 393216
+        or request_config.get("deepseek_effort") != "max"
+        or request_config.get("force_reasoning_effort_passthrough") is not False
+        or request_config.get("stream") is not True
+    ):
+        raise RuntimeError("Private Max incident validation contract is incomplete")
+    if any(case.get("finish_reason") != "stop" or not case.get("response") for case in cases):
+        raise RuntimeError("Private Max incident validation must contain six completed finals")
+    performance = run.get("performance") or {}
+    if performance.get("ttft_available_requests") != 6:
+        raise RuntimeError("Private Max incident validation must contain TTFT for all cases")
+    score = float(run["categories"]["incident"]["score"])
+    return {
+        "route": "portal-lan-edge-to-litellm-to-wireguard-to-vllm",
+        "public_ingress_included": False,
+        "public_ingress_exclusion_reason": "public domain resolved to an address refusing TCP 443 during the rerun",
+        "runs": 1,
+        "requests": len(cases),
+        "max_tokens": run["max_tokens"],
+        "concurrency": run["concurrency"],
+        "stream": request_config["stream"],
+        "reasoning_effort": request_config["deepseek_effort"],
+        "per_request_passthrough_override": request_config["force_reasoning_effort_passthrough"],
+        "score": score,
+        "prior_full_suite_incident_score": prior_score,
+        "two_observation_mean_score": mean([prior_score, score]),
+        "root_cause_correct": sum(bool(case["detail"]["cause"]) for case in cases),
+        "exact_action_pair_correct": sum(case["score"] == 1.0 for case in cases),
+        "completed_finals": sum(case.get("finish_reason") == "stop" and bool(case.get("response")) for case in cases),
+        "length_truncations": sum(case.get("finish_reason") == "length" for case in cases),
+        "errors": sum(case.get("finish_reason") == "error" for case in cases),
+        "performance": performance,
+        "cases": [
+            {
+                "id": case["id"],
+                "score": case["score"],
+                "root_cause_correct": bool(case["detail"]["cause"]),
+                "correct_actions": case["detail"]["correct_actions"],
+                "wrong_actions": case["detail"]["wrong_actions"],
+                "ttft_seconds": case["ttft_seconds"],
+                "response_seconds": case["response_seconds"],
+                "decode_tokens_per_second": case["decode_tokens_per_second"],
+                "effective_e2e_completion_tokens_per_second": case["effective_e2e_completion_tokens_per_second"],
+                "completion_tokens": case["usage"]["completion_tokens"],
+                "reasoning_tokens": case["usage"].get("completion_tokens_details", {}).get("reasoning_tokens"),
+                "finish_reason": case["finish_reason"],
+            }
+            for case in cases
+        ],
+    }
+
+
 def sanitize_agent(path: Path) -> dict:
     value = load(path)
     tasks = []
@@ -257,6 +317,11 @@ def main() -> int:
     route_ab_portal_path = route_ab_dir / "portal-fixed-max-384k-r1.json"
     route_ab_direct_path = route_ab_dir / "direct-vllm-max-384k-r1.json"
     route_ab = route_ab_summary(route_ab_portal_path, route_ab_direct_path)
+    incident_validation_path = route_ab_dir / "portal-fixed-max-384k-incident-r1.json"
+    incident_validation = incident_validation_summary(
+        incident_validation_path,
+        float(route_ab["portal"]["categories"]["incident"]),
+    )
     private_quality = dict(verified_private)
     private_quality["max"] = {
         "runs": 1,
@@ -320,13 +385,14 @@ def main() -> int:
         "schema_version": 1,
         "status": "passed",
         "benchmark_date": "2026-08-17",
-        "scope": "completed-result benchmark; Private High n=2, Private Max 384K n=1, online quality n=2, and five focused agent tasks",
+        "scope": "completed-result benchmark; Private High n=2, Private Max 384K full-suite n=1 plus one six-case incident rerun, online quality n=2, and five focused agent tasks",
         "quality": {
             "private_flash": private_quality,
             "online_flash": {key.removeprefix("online-"): value for key, value in existing.items() if key.startswith("online-")},
             "online_pro": pro,
         },
         "private_route_ab_384k": route_ab,
+        "private_max_incident_validation": incident_validation,
         "online_pro_telemetry": telemetry,
         "full_suite_performance": {
             "task_count_per_run": 18,
@@ -355,6 +421,7 @@ def main() -> int:
                 "legacy_latency_requests_in_portal_access_log": 4,
                 "verified_high_quality_requests": 36,
                 "verified_max_384k_quality_requests": 18,
+                "verified_max_384k_incident_requests": incident_validation["requests"],
                 "direct_vllm_max_384k_quality_requests": 18,
                 "verified_high_max_latency_requests": 8,
                 "latency_request_contract": "one warmup plus three measured requests",
@@ -389,6 +456,7 @@ def main() -> int:
             "verified_private_adjudication": sha256(verified_path),
             "route_ab_portal": sha256(route_ab_portal_path),
             "route_ab_direct_vllm": sha256(route_ab_direct_path),
+            "private_max_incident_validation": sha256(incident_validation_path),
         },
     }
     summary_path = project / "data/deepseek-private-online-comparison-20260817.json"
@@ -445,6 +513,14 @@ def main() -> int:
             f"{row['p95_response_seconds']:.1f}s | {row['max_response_seconds']:.1f}s | "
             f"{row['effective_e2e_completion_tokens_per_second']:.1f} | 未采集 |"
         )
+    incident_rows = []
+    for row in incident_validation["cases"]:
+        incident_rows.append(
+            f"| `{row['id']}` | {pct(row['score'])} | {'是' if row['root_cause_correct'] else '否'} | "
+            f"{row['correct_actions']}/2 | {row['ttft_seconds']:.3f}s | {row['response_seconds']:.3f}s | "
+            f"{row['decode_tokens_per_second']:.1f} | "
+            f"{row['effective_e2e_completion_tokens_per_second']:.1f} | {row['completion_tokens']} |"
+        )
     agent_rows = []
     for row in agent["tasks"]:
         agent_rows.append(
@@ -483,6 +559,10 @@ def main() -> int:
   两边均 18/18 final、0 截断、0 错误，16/18 题可执行分一致。Portal 最慢题耗时
   {route_ab['portal']['max_case_seconds'] / 60:.1f} 分钟、输出 {route_ab['portal']['max_case_completion_tokens'] / 1000:.1f}K tokens，
   因此 384K 是能力验证配置，不适合作为默认产品预算。
+- **Private Max 的故障低分不是稳定退化。** 完整 18 题轮的故障分为
+  {pct(incident_validation['prior_full_suite_incident_score'])}，同配置 6 题专项复测为
+  {pct(incident_validation['score'])}，两次观测均值 {pct(incident_validation['two_observation_mean_score'])}。
+  两轮根因均 6/6 正确，失分来自精确 action-code 组合的采样波动。
 - **Pro 不保证 Agent 工作流单调更好。** 在一个刻意聚焦历史 private 弱项的 5 题集合中，
   Pro high 只完整通过 1/5；历史 online Flash 为 4/5，private Flash 为 2/5。该集合有选择偏差，
   只能说明升级前仍需按真实 Agent workflow 验证。
@@ -523,6 +603,33 @@ seed 42、`max_tokens=393216`，Portal 与 SSH tunnel direct vLLM 各并发 2 �
 逐题 finish reason 与 prompt token 数均为 18/18 一致，可执行分 16/18 一致；final 与 reasoning
 文本哈希均为 0/18 一致。结论是 **Portal 路由语义已经与 direct vLLM 对齐**，2.8pp 分差来自
 True Max 单轮采样波动，不能解释为 Portal 改写答案。该 A/B 每条路径 n=1，不声明统计显著性。
+
+## Private Max 故障专项复测
+
+只重跑 6 个故障诊断 case，一轮、并发 2、SSE、`max_tokens=393216`，不带 per-request
+`allowed_openai_params` override。公网域名当时解析到拒绝 TCP 443 的入口，因此本轮通过 LAN
+直达同一个 LLM Portal edge，再经 LiteLLM、WireGuard 到 private vLLM；本轮时序不包含公网/NAS
+入口，但模型、Portal 参数处理和后端均未绕过。
+
+- 专项得分 {pct(incident_validation['score'])}（5/6），上一完整轮为
+  {pct(incident_validation['prior_full_suite_incident_score'])}（4/6），两次故障观测均值
+  {pct(incident_validation['two_observation_mean_score'])}。
+- 两轮 root cause 都是 6/6 正确。本轮唯一失分题 `spark_shuffle_skew` 选对根因和一个动作，
+  但第二动作选择 `repartition_by_distribution`，没有命中 rubric 指定的 `adaptive_skew_join`。
+- 6/6 final、0 截断、0 错误；TTFT 平均
+  {incident_validation['performance']['ttft_seconds']['mean']:.3f}s，P95
+  {incident_validation['performance']['ttft_seconds']['p95']:.3f}s；response 平均
+  {incident_validation['performance']['response_seconds']['mean']:.3f}s，P95
+  {incident_validation['performance']['response_seconds']['p95']:.3f}s；平均 decode
+  {incident_validation['performance']['decode_tokens_per_second']['mean']:.1f} tok/s，有效 E2E
+  {incident_validation['performance']['effective_e2e_completion_tokens_per_second']:.1f} tok/s。
+
+| 故障 case | 得分 | 根因正确 | 正确动作 | TTFT | response | decode tok/s | E2E tok/s | completion |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+{chr(10).join(incident_rows)}
+
+因此主质量表继续保留完整 18 题轮的 83.3%，不把专项结果拼接成虚假的第二轮宏平均；但边界结论应按
+两次故障观测理解：Private Max 没有稳定低于 High，动作代码的精确选择仍有波动。
 
 ## 18 题完整工作负载性能
 
@@ -590,8 +697,8 @@ Claude Code 2.1.207、Pro high、5 个并行隔离 Git sandbox；共观察到
 
 | 维度 | 本轮纳入 | 未覆盖 | 状态 |
 |---|---|---|---|
-| 可执行精度 | Private High 32K；True Max 384K Portal/direct；Online Flash/Pro | Private Max 384K 与 route A/B 仅 n=1 | 主要边界完整 |
-| 串行 SSE 性能 | Verified Private high/max；Online Flash low；Online Pro low/high/max | Online Flash high/max | 主要路径完整 |
+| 可执行精度 | Private High 32K；True Max 384K Portal/direct；Max 故障专项复测；Online Flash/Pro | Private Max 完整 18 题与 route A/B 仍仅 n=1 | 主要边界完整 |
+| SSE 性能 | Private Max 故障 6 题逐题指标；短请求 Private high/max、Online Flash low、Online Pro | 其余完整质量轮未采集 TTFT | 采集边界已标明 |
 | Token 与 API 成本 | Online Pro low/high/max | Private 无 API 账单；Flash 未统一计价 | 范围内完整 |
 | Agent 聚焦任务 | Online Pro high；Online/Private 历史基线 | 不是九组 effort 全矩阵 | 部分 |
 
@@ -605,7 +712,7 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 - Online Pro alias：`deepseek-v4-pro` → `DeepSeek-V4-Pro-0813`。
 - Private 请求经 LLM Portal 转发，不是客户端直连 vLLM。Portal access log 记录旧质量矩阵
   108 次请求和旧性能 4 次请求；正式完成配置另有 High 32K 质量 36 次、Max 384K Portal/direct
-  各 18 次、High/Max 性能 8 次请求。
+  各 18 次、Max 故障专项 6 次、High/Max 性能 8 次请求。
 - LiteLLM 官方文档说明 `drop_params=true` 会丢弃不支持参数，`allowed_openai_params` 可显式透传；
   旧 Portal deployment 因此丢弃 `reasoning_effort`。Issue #46 修复后，不带 per-request override 的
   Portal/direct Max 探针 prompt usage 与输出哈希一致。
@@ -614,13 +721,15 @@ Private 还承担部署运维边界：两台 GB10 必须同时在线，当前 TP
 - Pro 六个质量 treatment 共 108 请求，0 HTTP/网络错误、0 空 final、0 length 截断。
 - Private 384K route A/B 共 36 请求，Portal/direct 均 18/18 stop、0 截断、0 错误；逐题 score
   16/18 一致。Portal 最长请求 3031 秒，证明修复后的 SSE 路径跨过旧 600 秒网关边界。
+- Private Max 故障专项复测通过 Portal LAN edge，6/6 root cause 正确、5/6 精确动作组合；公网
+  入口当时拒绝 TCP 443，所以该轮 TTFT/response 不包含公网或 Synology 入口延迟。
 - Agent 聚焦题的脱敏逐题证据见 `data/online-pro-agent-focus-20260817.json`；原始 sandbox、
   stream 和绝对路径不提交。
 - Pro Python 原始评分时固定 sandbox 镜像不可用；保存的完整 final 随后在不可变 ECR Python
   digest 中重新执行。原始 JSON 未覆盖，裁决见
   `data/online-pro-matrix-adjudicated.json`。
-- 本报告是快速决策 benchmark：Private Max 384K route A/B 与 Agent 每题 n=1，其余质量组 n=2，
-  不宣称统计显著性。
+- 本报告是快速决策 benchmark：Private Max 384K 完整轮、route A/B、故障专项和 Agent 每题 n=1，
+  其余质量组 n=2，不宣称统计显著性。
 
 官方资料：[Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode)、
 [Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing)、

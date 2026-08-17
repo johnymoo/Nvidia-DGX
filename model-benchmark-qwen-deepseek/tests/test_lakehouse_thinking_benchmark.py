@@ -183,12 +183,18 @@ def stable_toposort(graph):
             ]
         ) + b"\n"
         with patch.object(BENCH.urllib.request, "urlopen", return_value=Response(events)) as urlopen:
-            result = BENCH.request("http://example.test/v1", "model", "test", "off", 256, stream=True)
+            with patch.object(BENCH.time, "monotonic", side_effect=[100.0, 100.5, 102.0]):
+                result = BENCH.request("http://example.test/v1", "model", "test", "off", 256, stream=True)
         body = json.loads(urlopen.call_args.args[0].data)
         self.assertTrue(body["stream"])
         self.assertEqual(result["reasoning"], "thinking")
         self.assertEqual(result["response"], "ok")
         self.assertEqual(result["usage"]["completion_tokens"], 3)
+        self.assertEqual(result["first_token_kind"], "reasoning")
+        self.assertEqual(result["ttft_seconds"], 0.5)
+        self.assertEqual(result["response_seconds"], 2.0)
+        self.assertEqual(result["decode_tokens_per_second"], 2.0)
+        self.assertEqual(result["effective_e2e_completion_tokens_per_second"], 1.5)
 
     def test_streaming_request_rejects_clean_early_eof(self) -> None:
         class Response(io.BytesIO):
@@ -203,6 +209,19 @@ def stable_toposort(graph):
             result = BENCH.request("http://example.test/v1", "model", "test", "off", 256, stream=True)
         self.assertEqual(result["finish_reason"], "error")
         self.assertEqual(result["error"]["type"], "incomplete_stream")
+
+    def test_performance_summary_uses_recorded_stream_metrics(self) -> None:
+        rows = [
+            {"ttft_seconds": 0.5, "response_seconds": 2.0, "decode_tokens_per_second": 20.0, "usage": {"completion_tokens": 30}},
+            {"ttft_seconds": 1.0, "response_seconds": 4.0, "decode_tokens_per_second": 10.0, "usage": {"completion_tokens": 30}},
+        ]
+        summary = BENCH.summarize_performance(rows)
+        self.assertEqual(summary["requests"], 2)
+        self.assertEqual(summary["ttft_available_requests"], 2)
+        self.assertEqual(summary["ttft_seconds"]["mean"], 0.75)
+        self.assertEqual(summary["response_seconds"]["p95"], 4.0)
+        self.assertEqual(summary["decode_tokens_per_second"]["mean"], 15.0)
+        self.assertEqual(summary["effective_e2e_completion_tokens_per_second"], 10.0)
 
     def test_report_input_validation(self) -> None:
         value = {

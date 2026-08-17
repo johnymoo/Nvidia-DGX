@@ -2,7 +2,7 @@
   "schema_version": 1,
   "status": "passed",
   "benchmark_date": "2026-08-17",
-  "scope": "completed-result benchmark; Private High n=2, Private Max 384K n=1, online quality n=2, and five focused agent tasks",
+  "scope": "completed-result benchmark; Private High n=2, Private Max 384K full-suite n=1 plus one six-case incident rerun, online quality n=2, and five focused agent tasks",
   "quality": {
     "private_flash": {
       "high": {
@@ -160,6 +160,136 @@
         }
       ]
     }
+  },
+  "private_max_incident_validation": {
+    "route": "portal-lan-edge-to-litellm-to-wireguard-to-vllm",
+    "public_ingress_included": false,
+    "public_ingress_exclusion_reason": "public domain resolved to an address refusing TCP 443 during the rerun",
+    "runs": 1,
+    "requests": 6,
+    "max_tokens": 393216,
+    "concurrency": 2,
+    "stream": true,
+    "reasoning_effort": "max",
+    "per_request_passthrough_override": false,
+    "score": 0.916667,
+    "prior_full_suite_incident_score": 0.833333,
+    "two_observation_mean_score": 0.875,
+    "root_cause_correct": 6,
+    "exact_action_pair_correct": 5,
+    "completed_finals": 6,
+    "length_truncations": 0,
+    "errors": 0,
+    "performance": {
+      "requests": 6,
+      "ttft_available_requests": 6,
+      "ttft_seconds": {
+        "mean": 0.523438,
+        "p50": 0.526829,
+        "p95": 0.541908,
+        "max": 0.541908
+      },
+      "response_seconds": {
+        "mean": 16.071248,
+        "p50": 10.150221,
+        "p95": 38.115844,
+        "max": 38.115844
+      },
+      "decode_tokens_per_second": {
+        "mean": 34.78304,
+        "p50": 33.370987,
+        "p95": 44.685442,
+        "max": 44.685442
+      },
+      "total_completion_tokens": 2968,
+      "effective_e2e_completion_tokens_per_second": 30.779605
+    },
+    "cases": [
+      {
+        "id": "cgroup_oom",
+        "score": 1.0,
+        "root_cause_correct": true,
+        "correct_actions": 2,
+        "wrong_actions": 0,
+        "ttft_seconds": 0.541908,
+        "response_seconds": 8.284937,
+        "decode_tokens_per_second": 33.449445,
+        "effective_e2e_completion_tokens_per_second": 31.261555,
+        "completion_tokens": 259,
+        "reasoning_tokens": 154,
+        "finish_reason": "stop"
+      },
+      {
+        "id": "gpu_cpu_spill",
+        "score": 1.0,
+        "root_cause_correct": true,
+        "correct_actions": 2,
+        "wrong_actions": 0,
+        "ttft_seconds": 0.541459,
+        "response_seconds": 12.015505,
+        "decode_tokens_per_second": 33.292529,
+        "effective_e2e_completion_tokens_per_second": 31.792254,
+        "completion_tokens": 382,
+        "reasoning_tokens": 258,
+        "finish_reason": "stop"
+      },
+      {
+        "id": "disk_inode_pressure",
+        "score": 1.0,
+        "root_cause_correct": true,
+        "correct_actions": 2,
+        "wrong_actions": 0,
+        "ttft_seconds": 0.504902,
+        "response_seconds": 38.115844,
+        "decode_tokens_per_second": 28.954339,
+        "effective_e2e_completion_tokens_per_second": 28.570796,
+        "completion_tokens": 1089,
+        "reasoning_tokens": 936,
+        "finish_reason": "stop"
+      },
+      {
+        "id": "db_pool_saturation",
+        "score": 1.0,
+        "root_cause_correct": true,
+        "correct_actions": 2,
+        "wrong_actions": 0,
+        "ttft_seconds": 0.4987,
+        "response_seconds": 26.198606,
+        "decode_tokens_per_second": 31.011786,
+        "effective_e2e_completion_tokens_per_second": 30.421466,
+        "completion_tokens": 797,
+        "reasoning_tokens": 657,
+        "finish_reason": "stop"
+      },
+      {
+        "id": "iceberg_commit_conflict",
+        "score": 1.0,
+        "root_cause_correct": true,
+        "correct_actions": 2,
+        "wrong_actions": 0,
+        "ttft_seconds": 0.535499,
+        "response_seconds": 5.923559,
+        "decode_tokens_per_second": 37.304702,
+        "effective_e2e_completion_tokens_per_second": 33.932301,
+        "completion_tokens": 201,
+        "reasoning_tokens": 100,
+        "finish_reason": "stop"
+      },
+      {
+        "id": "spark_shuffle_skew",
+        "score": 0.5,
+        "root_cause_correct": true,
+        "correct_actions": 1,
+        "wrong_actions": 1,
+        "ttft_seconds": 0.51816,
+        "response_seconds": 5.889037,
+        "decode_tokens_per_second": 44.685442,
+        "effective_e2e_completion_tokens_per_second": 40.753695,
+        "completion_tokens": 240,
+        "reasoning_tokens": 146,
+        "finish_reason": "stop"
+      }
+    ]
   },
   "online_pro_telemetry": {
     "high": {
@@ -479,6 +609,7 @@
       "legacy_latency_requests_in_portal_access_log": 4,
       "verified_high_quality_requests": 36,
       "verified_max_384k_quality_requests": 18,
+      "verified_max_384k_incident_requests": 6,
       "direct_vllm_max_384k_quality_requests": 18,
       "verified_high_max_latency_requests": 8,
       "latency_request_contract": "one warmup plus three measured requests"
@@ -516,6 +647,7 @@
     "agent_evidence": "3271cc0c9f88f04bffe419e3e92c4aa9397dede650e16a2b54f5380f5b7d12c1",
     "verified_private_adjudication": "c6554c2c1c8d1d4339b5ef94e2c91df97c00d6c6246beea4dd8733f28b5dc0d3",
     "route_ab_portal": "023f2dadb956fddb4f440e3808296770561eb5f3f6808e1b81644a1e92aff950",
-    "route_ab_direct_vllm": "a1d4a5e6bb348d6c45e16f426fff954a2cf284d99b7654339a140428a9efd578"
+    "route_ab_direct_vllm": "a1d4a5e6bb348d6c45e16f426fff954a2cf284d99b7654339a140428a9efd578",
+    "private_max_incident_validation": "fab7672e11a67cdc0d31d4e28dcd40d92e0f4057446b78ec6e5c5b9ca8b2fdd3"
   }
 }

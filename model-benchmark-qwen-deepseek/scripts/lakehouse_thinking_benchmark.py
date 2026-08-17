@@ -5,6 +5,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import math
 import os
 import re
 import sqlite3
@@ -209,6 +210,8 @@ def request(
                 finish_reason = None
                 usage: dict = {}
                 saw_done = False
+                first_token_at = None
+                first_token_kind = None
                 for raw_line in response:
                     line = raw_line.decode("utf-8", errors="replace").strip()
                     if not line.startswith("data:"):
@@ -222,16 +225,34 @@ def request(
                         usage = event["usage"]
                     for choice in event.get("choices") or []:
                         delta = choice.get("delta") or {}
-                        content_parts.append(delta.get("content") or "")
-                        reasoning_parts.append(delta.get("reasoning") or delta.get("reasoning_content") or "")
+                        content = delta.get("content") or ""
+                        reasoning = delta.get("reasoning") or delta.get("reasoning_content") or ""
+                        if first_token_at is None and (reasoning or content):
+                            first_token_at = time.monotonic()
+                            first_token_kind = "reasoning" if reasoning else "content"
+                        content_parts.append(content)
+                        reasoning_parts.append(reasoning)
                         if choice.get("finish_reason") is not None:
                             finish_reason = choice["finish_reason"]
+                completed = time.monotonic()
+                response_seconds = completed - started
+                completion_tokens = int(usage.get("completion_tokens", 0))
+                ttft_seconds = first_token_at - started if first_token_at is not None else None
+                decode_seconds = completed - first_token_at if first_token_at is not None else None
                 result = {
                     "response": "".join(content_parts),
                     "reasoning": "".join(reasoning_parts),
                     "finish_reason": finish_reason,
                     "usage": usage,
-                    "seconds": round(time.monotonic() - started, 3),
+                    "seconds": round(response_seconds, 3),
+                    "ttft_seconds": round(ttft_seconds, 6) if ttft_seconds is not None else None,
+                    "response_seconds": round(response_seconds, 6),
+                    "decode_seconds": round(decode_seconds, 6) if decode_seconds is not None else None,
+                    "decode_tokens_per_second": round(completion_tokens / decode_seconds, 6)
+                    if completion_tokens and decode_seconds and decode_seconds > 0 else None,
+                    "effective_e2e_completion_tokens_per_second": round(completion_tokens / response_seconds, 6)
+                    if completion_tokens and response_seconds > 0 else None,
+                    "first_token_kind": first_token_kind,
                 }
                 if not saw_done or not usage or finish_reason is None:
                     result["finish_reason"] = "error"
@@ -263,12 +284,22 @@ def request(
         }
     choice = payload["choices"][0]
     message = choice["message"]
+    completed = time.monotonic()
+    response_seconds = completed - started
+    completion_tokens = int((payload.get("usage") or {}).get("completion_tokens", 0))
     return {
         "response": message.get("content") or "",
         "reasoning": message.get("reasoning") or message.get("reasoning_content") or "",
         "finish_reason": choice.get("finish_reason"),
         "usage": payload.get("usage") or {},
-        "seconds": round(time.monotonic() - started, 3),
+        "seconds": round(response_seconds, 3),
+        "ttft_seconds": None,
+        "response_seconds": round(response_seconds, 6),
+        "decode_seconds": None,
+        "decode_tokens_per_second": None,
+        "effective_e2e_completion_tokens_per_second": round(completion_tokens / response_seconds, 6)
+        if completion_tokens and response_seconds > 0 else None,
+        "first_token_kind": None,
     }
 
 
@@ -280,15 +311,53 @@ Return JSON only: {{"root_cause":"...","action_codes":["..."],"explanation":"bri
 
 def summarize(rows: list[dict], category: str) -> dict:
     selected = [row for row in rows if row["category"] == category]
+    ttft = [float(row["ttft_seconds"]) for row in selected if row.get("ttft_seconds") is not None]
+    decode_tps = [float(row["decode_tokens_per_second"]) for row in selected if row.get("decode_tokens_per_second") is not None]
+    completion_tokens = sum(row["usage"].get("completion_tokens", 0) for row in selected)
+    response_seconds = sum(row["seconds"] for row in selected)
     return {
         "score": sum(row["score"] for row in selected) / len(selected),
         "passed": sum(row["score"] == 1.0 for row in selected),
         "total": len(selected),
         "mean_seconds": statistics.fmean(row["seconds"] for row in selected),
-        "completion_tokens": sum(row["usage"].get("completion_tokens", 0) for row in selected),
+        "completion_tokens": completion_tokens,
+        "ttft_seconds_mean": statistics.fmean(ttft) if ttft else None,
+        "decode_tokens_per_second_mean": statistics.fmean(decode_tps) if decode_tps else None,
+        "effective_e2e_completion_tokens_per_second": completion_tokens / response_seconds if response_seconds else None,
         "length_truncations": sum(row["finish_reason"] == "length" for row in selected),
         "empty_finals": sum(not row["response"] for row in selected),
         "errors": sum(row.get("error") is not None for row in selected),
+    }
+
+
+def metric_summary(values: list[float]) -> dict | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    return {
+        "mean": statistics.fmean(ordered),
+        "p50": statistics.median(ordered),
+        "p95": ordered[max(0, math.ceil(0.95 * len(ordered)) - 1)],
+        "max": ordered[-1],
+    }
+
+
+def summarize_performance(rows: list[dict]) -> dict:
+    ttft = [float(row["ttft_seconds"]) for row in rows if row.get("ttft_seconds") is not None]
+    response = [
+        float(row["response_seconds"] if row.get("response_seconds") is not None else row["seconds"])
+        for row in rows
+    ]
+    decode_tps = [float(row["decode_tokens_per_second"]) for row in rows if row.get("decode_tokens_per_second") is not None]
+    completion_tokens = sum(int(row.get("usage", {}).get("completion_tokens", 0)) for row in rows)
+    return {
+        "requests": len(rows),
+        "ttft_available_requests": len(ttft),
+        "ttft_seconds": metric_summary(ttft),
+        "response_seconds": metric_summary(response),
+        "decode_tokens_per_second": metric_summary(decode_tps),
+        "total_completion_tokens": completion_tokens,
+        "effective_e2e_completion_tokens_per_second": completion_tokens / sum(response),
     }
 
 
@@ -336,6 +405,7 @@ def main() -> int:
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--expected-runs", type=int, default=1)
     parser.add_argument("--concurrency", type=int, default=1, help="Maximum concurrent model requests")
+    parser.add_argument("--category", choices=["all", "sql", "python", "incident"], default="all")
     parser.add_argument("--treatment", help="Stable treatment label used when aggregating matrix results")
     parser.add_argument("--endpoint-label", help="Safe endpoint identifier recorded in output instead of --base-url")
     parser.add_argument("--max-response-chars", type=int, default=0, help="Store a prefix of final content; zero stores all content")
@@ -372,6 +442,8 @@ def main() -> int:
         ("incident", case["id"], incident_prompt(case), case)
         for case in INCIDENT_CASES
     )
+    if args.category != "all":
+        request_specs = [spec for spec in request_specs if spec[0] == args.category]
 
     def run_model_request(spec: tuple[str, str, str, object]) -> dict:
         return request(
@@ -430,7 +502,11 @@ def main() -> int:
             rows.append(compact_row({"id": case["id"], "category": "incident", "prompt": prompt, "expected": {"root_cause": case["expected_cause"], "action_codes": sorted(case["expected_actions"])}, "score": score, "passed": score == 1.0, "detail": detail, **row}, args.max_response_chars, args.max_reasoning_chars))
         print(json.dumps({"id": case_id, "score": score, "seconds": row["seconds"]}), flush=True)
 
-    categories = {name: summarize(rows, name) for name in ("sql", "python", "incident")}
+    categories = {
+        name: summarize(rows, name)
+        for name in ("sql", "python", "incident")
+        if any(row["category"] == name for row in rows)
+    }
     result = {
         "schema_version": 2,
         "harness_id": HARNESS_ID,
@@ -443,6 +519,7 @@ def main() -> int:
         "seed": 42,
         "repeat": args.repeat,
         "expected_runs": args.expected_runs,
+        "category_filter": args.category,
         "concurrency": args.concurrency,
         "max_tokens": args.max_tokens,
         "sampling": (
@@ -464,6 +541,7 @@ def main() -> int:
             "stream": args.stream,
         },
         "categories": categories,
+        "performance": summarize_performance(rows),
         "macro_score": statistics.fmean(value["score"] for value in categories.values()),
         "total_seconds": sum(row["seconds"] for row in rows),
         "cases": rows,
