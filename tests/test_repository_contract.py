@@ -90,6 +90,15 @@ class RepositoryContractTests(unittest.TestCase):
         ).read_text()
         self.assertLess(solution.index("stat -c '%a'"), solution.index("stat -f '%Lp'"))
 
+    def test_jsonl_fixture_does_not_depend_on_awk_dialect(self) -> None:
+        solution = (
+            ROOT
+            / "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on"
+            / "benchmark/solutions/terminal-jsonl-aggregate/solve.sh"
+        ).read_text()
+        self.assertNotIn("awk '", solution)
+        self.assertIn("BASH_REMATCH", solution)
+
 
 if __name__ == "__main__":
     unittest.main()

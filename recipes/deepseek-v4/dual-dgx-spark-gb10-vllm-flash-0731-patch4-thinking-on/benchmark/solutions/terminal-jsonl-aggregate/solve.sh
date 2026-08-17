@@ -8,26 +8,30 @@ tmp=$(mktemp "${TMPDIR:-/tmp}/terminal-jsonl.XXXXXX")
 trap 'rm -f "$tmp"' EXIT
 rm -f aggregate.json
 
-if ! awk '
-function invalid() { print "invalid JSONL row " NR > "/dev/stderr"; bad=1; exit 2 }
-{
-  compact=$0; gsub(/[ \t\r]/, "", compact)
-  if (compact ~ /^\{"status":[0-9]+,"latency_ms":[0-9]+\}$/) {
-    value=compact; sub(/^\{"status":/, "", value); split(value, part, /,"latency_ms":/); status=part[1]; latency=part[2]; sub(/\}$/, "", latency)
-  } else if (compact ~ /^\{"latency_ms":[0-9]+,"status":[0-9]+\}$/) {
-    value=compact; sub(/^\{"latency_ms":/, "", value); split(value, part, /,"status":/); latency=part[1]; status=part[2]; sub(/\}$/, "", status)
-  } else invalid()
-  if (status ~ /^0/ || latency !~ /^(0|[1-9][0-9]*)$/ || status < 100 || status > 599) invalid()
-  rows++; status_count[int(status / 100) "xx"]++; latency_sum += latency
-  if (latency < 100) latency_count["lt_100"]++
-  else if (latency < 500) latency_count["100_499"]++
-  else latency_count["500_plus"]++
-}
-END {
-  if (!bad) printf "{\"rows\":%d,\"status_buckets\":{\"1xx\":%d,\"2xx\":%d,\"3xx\":%d,\"4xx\":%d,\"5xx\":%d},\"latency_buckets\":{\"lt_100\":%d,\"100_499\":%d,\"500_plus\":%d},\"latency_sum_ms\":%.0f}\n", rows, status_count["1xx"], status_count["2xx"], status_count["3xx"], status_count["4xx"], status_count["5xx"], latency_count["lt_100"], latency_count["100_499"], latency_count["500_plus"], latency_sum
-}
-' "$input" > "$tmp"; then
-  rm -f "$tmp"
-  exit 2
-fi
+rows=0 s1=0 s2=0 s3=0 s4=0 s5=0 lt100=0 from100=0 from500=0 latency_sum=0
+while IFS= read -r line || [[ -n $line ]]; do
+  compact=${line//$'\r'/}
+  compact=${compact//$'\t'/}
+  compact=${compact// /}
+  if [[ $compact =~ ^\{\"status\":([0-9]+),\"latency_ms\":([0-9]+)\}$ ]]; then
+    status=${BASH_REMATCH[1]}; latency=${BASH_REMATCH[2]}
+  elif [[ $compact =~ ^\{\"latency_ms\":([0-9]+),\"status\":([0-9]+)\}$ ]]; then
+    latency=${BASH_REMATCH[1]}; status=${BASH_REMATCH[2]}
+  else
+    printf 'invalid JSONL row %d\n' "$((rows + 1))" >&2
+    exit 2
+  fi
+  [[ $status =~ ^(0|[1-9][0-9]*)$ && $latency =~ ^(0|[1-9][0-9]*)$ ]] || exit 2
+  (( status >= 100 && status <= 599 )) || exit 2
+  ((rows += 1)); ((latency_sum += latency))
+  case $((status / 100)) in
+    1) ((s1 += 1));; 2) ((s2 += 1));; 3) ((s3 += 1));; 4) ((s4 += 1));; 5) ((s5 += 1));;
+  esac
+  if ((latency < 100)); then ((lt100 += 1))
+  elif ((latency < 500)); then ((from100 += 1))
+  else ((from500 += 1))
+  fi
+done < "$input"
+printf '{"rows":%d,"status_buckets":{"1xx":%d,"2xx":%d,"3xx":%d,"4xx":%d,"5xx":%d},"latency_buckets":{"lt_100":%d,"100_499":%d,"500_plus":%d},"latency_sum_ms":%d}\n' \
+  "$rows" "$s1" "$s2" "$s3" "$s4" "$s5" "$lt100" "$from100" "$from500" "$latency_sum" > "$tmp"
 mv "$tmp" aggregate.json
