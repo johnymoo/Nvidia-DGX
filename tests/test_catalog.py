@@ -14,6 +14,7 @@ from tools.catalog import (
     latest_benchmarks,
     read_json_object,
     recipe_catalog,
+    reference_results_fragment,
     render_readme,
 )
 
@@ -91,6 +92,11 @@ class CatalogTests(unittest.TestCase):
         self.assertIn("run-b", rendered)
         self.assertNotIn("\nold\n", rendered)
         self.assertEqual(render_readme("# No markers\n", {"best-verified": fragment}), "# No markers\n")
+
+    def test_reference_fragment_keeps_legacy_results_separate(self) -> None:
+        fragment = reference_results_fragment(latest_benchmarks(self.root))
+        self.assertIn("run-ref", fragment)
+        self.assertNotIn("run-b", fragment)
 
     def test_generated_outputs_are_stable(self) -> None:
         (self.root / "README.md").write_text("# Fixture\n")

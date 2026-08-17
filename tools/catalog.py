@@ -40,6 +40,10 @@ README_MARKERS = {
         "<!-- BEGIN GENERATED:recipes -->",
         "<!-- END GENERATED:recipes -->",
     ),
+    "reference-results": (
+        "<!-- BEGIN GENERATED:reference-results -->",
+        "<!-- END GENERATED:reference-results -->",
+    ),
 }
 
 
@@ -411,6 +415,28 @@ def best_verified_fragment(latest: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def reference_results_fragment(latest: dict[str, Any]) -> str:
+    lines = [
+        "| Hardware | Model | Runtime / profile | TTFT | Response | Decode TPS | Aggregate TPS | Evidence |",
+        "|---|---|---|---:|---:|---:|---:|---|",
+    ]
+    for item in latest["reference_results"]:
+        metrics = item["metrics"]
+        report = item.get("report") or item["result_path"]
+        lines.append(
+            f"| {_md(item['hardware_id'])} | {_md(item['model_id'])} | "
+            f"{_md(item['runtime_id'])} / {_md(item['profile_id'])} | "
+            f"{_md(dotted(metrics, 'ttft_seconds.mean'))} | "
+            f"{_md(dotted(metrics, 'response_time_seconds.mean'))} | "
+            f"{_md(dotted(metrics, 'decode_tokens_per_second.mean'))} | "
+            f"{_md(dotted(metrics, 'aggregate_tokens_per_second.mean'))} | "
+            f"[result]({_md(item['result_path'])}) / [source]({_md(report)}) |"
+        )
+    if len(lines) == 2:
+        lines.append("| - | - | - | - | - | - | - | No historical Reference result is cataloged. |")
+    return "\n".join(lines)
+
+
 def render_readme(readme: str, fragments: dict[str, str]) -> str:
     rendered = readme
     for name, fragment in fragments.items():
@@ -440,7 +466,11 @@ def generated_outputs(root: Path) -> dict[Path, str]:
         original = readme_path.read_text(encoding="utf-8")
         rendered = render_readme(
             original,
-            {"recipes": recipe_fragment(recipes), "best-verified": best_verified_fragment(latest)},
+            {
+                "recipes": recipe_fragment(recipes),
+                "best-verified": best_verified_fragment(latest),
+                "reference-results": reference_results_fragment(latest),
+            },
         )
         if rendered != original or any(marker[0] in original for marker in README_MARKERS.values()):
             outputs[readme_path] = rendered

@@ -1,0 +1,37 @@
+name: Deployment recipe
+description: Propose or report an exact model and hardware deployment profile
+title: "deploy: "
+labels: [deployment]
+body:
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware class
+      placeholder: rtx3090-24gb
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Exact model and quantization
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime and profile
+    validations:
+      required: true
+  - type: textarea
+    id: lifecycle
+    attributes:
+      label: Lifecycle and acceptance
+      description: Preparation, start, status, acceptance, benchmark, stop, and recovery evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: limitations
+    attributes:
+      label: Limitations and invalidation conditions
+    validations:
+      required: true

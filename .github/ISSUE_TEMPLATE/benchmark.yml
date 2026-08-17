@@ -1,0 +1,30 @@
+name: Benchmark result
+description: Submit or request a benchmark for an existing exact recipe
+title: "bench: "
+labels: [benchmark]
+body:
+  - type: input
+    id: recipe
+    attributes:
+      label: Recipe ID
+    validations:
+      required: true
+  - type: input
+    id: suite
+    attributes:
+      label: Suite ID and version
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics and workload
+      description: Include workload, cache state, concurrency, TTFT, response time, TPS, tokens, errors, and distributions.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Receipt, raw result, report, and invalidation conditions
+    validations:
+      required: true
