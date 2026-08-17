@@ -11,6 +11,13 @@ from scripts.verify_thinking import inspect_stream, verify_compose, verify_strea
 
 
 class VerifyThinkingTests(unittest.TestCase):
+    def test_all_compose_commands_report_prompt_cache_tokens(self) -> None:
+        flag = "--enable-prompt-tokens-details"
+        for filename in ("docker-compose.yml", "docker-compose.thinking-on.yml"):
+            with self.subTest(filename=filename):
+                compose = (PROJECT_ROOT / filename).read_text(encoding="utf-8")
+                self.assertEqual(compose.count(flag), 1)
+
     def test_compose_requires_thinking_on(self) -> None:
         payload = {
             "services": {
