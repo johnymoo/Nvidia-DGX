@@ -1,0 +1,8 @@
+{
+  "name": "dual-gb10-concept-visuals",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "three": "^0.179.1"
+  }
+}

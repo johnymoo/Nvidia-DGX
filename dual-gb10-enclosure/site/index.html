@@ -1,0 +1,1878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>双 GB10 散热方案对比</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="双 GB10 散热方案对比" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;双 GB10 散热方案对比&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed=&quot;true&quot;],
+    [aria-selected=&quot;true&quot;],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: 16px !important;
+  height: 16px !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;dual-gb10-airflow-options&quot;&gt;
+  &lt;div class=&quot;viz-controls&quot; aria-label=&quot;Design options&quot;&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; data-variant=&quot;open&quot; aria-pressed=&quot;true&quot;&gt;A 后部开放 · 193 mm&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-variant=&quot;rear60&quot; aria-pressed=&quot;false&quot;&gt;A+ 后置 60 mm · 218 mm&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-variant=&quot;top92&quot; aria-pressed=&quot;false&quot;&gt;B 顶部 92 mm · 205 mm&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-variant=&quot;dual60&quot; aria-pressed=&quot;false&quot;&gt;C 双 60 mm · 198 mm&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;viz-controls&quot; aria-label=&quot;View modes&quot;&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; data-view=&quot;assembled&quot; aria-pressed=&quot;true&quot;&gt;完成视图&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-view=&quot;airflow&quot; aria-pressed=&quot;false&quot;&gt;透视风道&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-view=&quot;rear&quot; aria-pressed=&quot;false&quot;&gt;后部接口&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-view=&quot;exploded&quot; aria-pressed=&quot;false&quot;&gt;爆炸图&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;viz-controls&quot; aria-label=&quot;Display side&quot;&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; data-display-side=&quot;left&quot; aria-pressed=&quot;true&quot;&gt;显示屏左侧&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn&quot; data-display-side=&quot;right&quot; aria-pressed=&quot;false&quot;&gt;显示屏右侧&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;gb10-stage&quot;&gt;
+    &lt;canvas role=&quot;img&quot; aria-label=&quot;Dual GB10 enclosure design comparison&quot;&gt;&lt;/canvas&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;text-small text-muted gb10-status&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;sr-only&quot; id=&quot;gb10-accessible-summary&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+  #dual-gb10-airflow-options {
+    width: 100%;
+    color: var(--foreground);
+  }
+
+  #dual-gb10-airflow-options .gb10-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 360px;
+  }
+
+  #dual-gb10-airflow-options canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  #dual-gb10-airflow-options .gb10-status {
+    min-height: 1.5em;
+    padding-block-start: 0.5rem;
+    text-align: center;
+  }
+
+  @media (max-width: 520px) {
+    #dual-gb10-airflow-options .gb10-stage {
+      aspect-ratio: 4 / 5;
+      min-height: 420px;
+    }
+  }
+&lt;/style&gt;
+
+&lt;script type=&quot;module&quot;&gt;
+  import * as THREE from &quot;https://esm.sh/three@0.179.1&quot;;
+  import { OrbitControls } from &quot;https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js&quot;;
+  import { RoundedBoxGeometry } from &quot;https://esm.sh/three@0.179.1/examples/jsm/geometries/RoundedBoxGeometry.js&quot;;
+
+  const root = document.getElementById(&quot;dual-gb10-airflow-options&quot;);
+  const stage = root.querySelector(&quot;.gb10-stage&quot;);
+  const canvas = root.querySelector(&quot;canvas&quot;);
+  const status = root.querySelector(&quot;.gb10-status&quot;);
+  const accessibleSummary = root.querySelector(&quot;#gb10-accessible-summary&quot;);
+
+  const variants = {
+    open: {
+      label: &quot;A 后部开放&quot;,
+      depth: 193,
+      height: 166,
+      rear: 158,
+      externalFans: &quot;前置 140 mm × 1&quot;,
+      description: &quot;接口齐平，GB10 原生风扇直接向后排风，基础方案&quot;,
+    },
+    rear60: {
+      label: &quot;A+ 后置 60 mm&quot;,
+      depth: 218,
+      height: 166,
+      rear: 158,
+      externalFans: &quot;前置 140 mm + 后置 60 mm&quot;,
+      description: &quot;中央半开放排风桥主动抽排，上下旁通保留原生排风能力，顶部带折叠软提手&quot;,
+    },
+    top92: {
+      label: &quot;B 顶部 92 mm&quot;,
+      depth: 205,
+      height: 190,
+      rear: 170,
+      externalFans: &quot;前置 140 mm + 顶部 92 mm&quot;,
+      description: &quot;中央排风腔转向上方，接口仍位于后部外侧&quot;,
+    },
+    dual60: {
+      label: &quot;C 双 60 mm&quot;,
+      depth: 198,
+      height: 181,
+      rear: 163,
+      externalFans: &quot;前置 140 mm + 顶部 60 mm × 2&quot;,
+      description: &quot;双独立排风支路，更紧凑但转速和噪声更高&quot;,
+    },
+  };
+
+  const state = { variant: &quot;open&quot;, view: &quot;assembled&quot;, displaySide: &quot;left&quot; };
+  const colors = {
+    shell: 0x25282b,
+    shellEdge: 0x41464b,
+    black: 0x0d0f10,
+    device: 0x17191b,
+    gold: 0xb9934d,
+    metal: 0x899198,
+    blue: 0x298fd3,
+    red: 0xe4543e,
+    port: 0x4cc3d9,
+  };
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 2000);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enablePan = false;
+  controls.minDistance = 240;
+  controls.maxDistance = 900;
+  controls.enableDamping = !window.matchMedia(&quot;(prefers-reduced-motion: reduce)&quot;).matches;
+  controls.dampingFactor = 0.08;
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x81878c, 2.2);
+  scene.add(hemi);
+  const key = new THREE.DirectionalLight(0xffffff, 4.1);
+  key.position.set(-280, 420, -330);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -420;
+  key.shadow.camera.right = 420;
+  key.shadow.camera.top = 420;
+  key.shadow.camera.bottom = -420;
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xd9ecf4, 2.1);
+  fill.position.set(320, 220, 280);
+  scene.add(fill);
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(1300, 1300),
+    new THREE.ShadowMaterial({ color: 0x49525a, opacity: 0.16 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  let modelRoot = new THREE.Group();
+  scene.add(modelRoot);
+  const cameraBase = new THREE.Vector3();
+  const cameraTarget = new THREE.Vector3();
+
+  function mat(color, opacity = 1, metalness = 0.05, roughness = 0.68) {
+    return new THREE.MeshStandardMaterial({
+      color,
+      opacity,
+      transparent: opacity &lt; 1,
+      depthWrite: opacity &gt;= 1,
+      metalness,
+      roughness,
+      side: opacity &lt; 1 ? THREE.DoubleSide : THREE.FrontSide,
+    });
+  }
+
+  function roundedBox(w, h, d, radius, material, position = [0, 0, 0]) {
+    const mesh = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 4, radius), material);
+    mesh.position.set(...position);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  function cylinder(radius, depth, material, position = [0, 0, 0], axis = &quot;z&quot;) {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, depth, 40), material);
+    if (axis === &quot;z&quot;) mesh.rotation.x = Math.PI / 2;
+    if (axis === &quot;x&quot;) mesh.rotation.z = Math.PI / 2;
+    mesh.position.set(...position);
+    mesh.castShadow = true;
+    return mesh;
+  }
+
+  function makeFan(size, thickness, horizontal = false, opacity = 1) {
+    const group = new THREE.Group();
+    const edge = Math.max(6, size * 0.064);
+    const frameMat = mat(colors.black, opacity, 0.04, 0.5);
+    const bladeMat = mat(0x111315, opacity &lt; 1 ? opacity * 0.82 : 1, 0.02, 0.38);
+    const half = size / 2 - edge / 2;
+    group.add(roundedBox(size, edge, thickness, 2, frameMat, [0, half, 0]));
+    group.add(roundedBox(size, edge, thickness, 2, frameMat, [0, -half, 0]));
+    group.add(roundedBox(edge, size - edge * 2, thickness, 2, frameMat, [half, 0, 0]));
+    group.add(roundedBox(edge, size - edge * 2, thickness, 2, frameMat, [-half, 0, 0]));
+    const bladeLength = size * 0.34;
+    const bladeRadius = size * 0.24;
+    for (let index = 0; index &lt; 9; index += 1) {
+      const angle = index * Math.PI * 2 / 9;
+      const blade = roundedBox(bladeLength, size * 0.085, 3, 3, bladeMat, [
+        bladeRadius * Math.cos(angle),
+        bladeRadius * Math.sin(angle),
+        -1,
+      ]);
+      blade.rotation.z = angle + 0.48;
+      group.add(blade);
+    }
+    group.add(cylinder(size * 0.12, Math.min(8, thickness), bladeMat, [0, 0, -2]));
+    if (horizontal) group.rotation.x = -Math.PI / 2;
+    return group;
+  }
+
+  function addWaveSlats(group, width, height, z, color, rows = 18, opacity = 1) {
+    const slatMat = mat(color, opacity, 0.12, 0.48);
+    for (let index = 0; index &lt; rows; index += 1) {
+      const y = -height / 2 + 6 + index * (height - 12) / (rows - 1);
+      const slat = roundedBox(width - 10, 2.2, 2.6, 0.7, slatMat, [0, y, z]);
+      slat.rotation.z = Math.sin(index / (rows - 1) * Math.PI * 2) * 0.09;
+      group.add(slat);
+    }
+  }
+
+  function makeDevice(side, opacity = 1, offset = new THREE.Vector3()) {
+    const group = new THREE.Group();
+    const x = side * 29.5;
+    const detailOpacity = opacity &lt; 0.2 ? 0.3 : opacity &lt; 1 ? 0.72 : 1;
+    group.add(roundedBox(51, 150, 150, 4, mat(colors.device, opacity, 0.08, 0.42), [x, 75, 75]));
+
+    const front = new THREE.Group();
+    front.position.set(x, 75, -0.9);
+    front.add(roundedBox(45, 144, 2.2, 2.5, mat(colors.gold, detailOpacity, 0.4, 0.35)));
+    addWaveSlats(front, 43, 140, -1.5, colors.black, 19, detailOpacity);
+    group.add(front);
+
+    const innerX = side * 16.75;
+    const outerX = side * 42.25;
+    const rearVent = new THREE.Group();
+    rearVent.position.set(innerX, 75, 150.9);
+    rearVent.add(roundedBox(23, 144, 2.2, 2, mat(colors.gold, detailOpacity, 0.4, 0.35)));
+    addWaveSlats(rearVent, 21, 138, 1.4, colors.black, 18, detailOpacity);
+    group.add(rearVent);
+
+    const ports = new THREE.Group();
+    ports.position.set(outerX, 75, 151.3);
+    ports.add(roundedBox(23, 144, 2.4, 2, mat(colors.gold, detailOpacity, 0.4, 0.35)));
+    [126, 109, 92, 72, 51, 28].forEach((py, index) =&gt; {
+      const widths = [8, 8, 8, 13, 16, 17];
+      ports.add(roundedBox(widths[index], index &gt; 3 ? 12 : 8, 3.2, 1, mat(colors.black, detailOpacity), [0, py - 75, 2]));
+    });
+    group.add(ports);
+    group.position.copy(offset);
+    return group;
+  }
+
+  function makeDisplay(side = -1, opacity = 1, offset = new THREE.Vector3()) {
+    const group = new THREE.Group();
+    group.add(roundedBox(10, 70, 78, 4, mat(colors.shell, opacity), [side * 78, 111, 29]));
+    const displayCanvas = document.createElement(&quot;canvas&quot;);
+    displayCanvas.width = 512;
+    displayCanvas.height = 384;
+    const context = displayCanvas.getContext(&quot;2d&quot;);
+    context.fillStyle = &quot;#071117&quot;;
+    context.fillRect(0, 0, 512, 384);
+    context.fillStyle = &quot;#80d7ff&quot;;
+    context.font = &quot;500 39px ui-monospace, monospace&quot;;
+    [&quot;GB10-1  54 C&quot;, &quot;GB10-2  57 C&quot;, &quot;FAN   980 RPM&quot;, &quot;AUTO&quot;].forEach((line, index) =&gt; {
+      context.fillText(line, 26, 64 + index * 78);
+    });
+    const texture = new THREE.CanvasTexture(displayCanvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(60, 44), new THREE.MeshBasicMaterial({ map: texture, transparent: opacity &lt; 1, opacity }));
+    screen.rotation.y = side &lt; 0 ? -Math.PI / 2 : Math.PI / 2;
+    screen.position.set(side * 83.2, 121, 27);
+    group.add(screen);
+    group.add(cylinder(7, 4, mat(colors.black, opacity), [side * 84, 84, 45], &quot;x&quot;));
+    group.position.copy(offset);
+    return group;
+  }
+
+  function makeFrontGrille(offset = new THREE.Vector3()) {
+    const group = new THREE.Group();
+    group.add(roundedBox(146, 146, 4, 4, mat(colors.black)));
+    addWaveSlats(group, 136, 132, -3, colors.shellEdge, 19);
+    const trim = mat(colors.gold, 1, 0.32, 0.4);
+    group.add(roundedBox(136, 2, 2, 0.6, trim, [0, 65, -4.6]));
+    group.add(roundedBox(136, 2, 2, 0.6, trim, [0, -65, -4.6]));
+    group.add(roundedBox(2, 128, 2, 0.6, trim, [65, 0, -4.6]));
+    group.add(roundedBox(2, 128, 2, 0.6, trim, [-65, 0, -4.6]));
+    group.position.copy(offset);
+    return group;
+  }
+
+  function makeShell(variant, opacity = 1, exploded = false) {
+    const group = new THREE.Group();
+    const front = -35;
+    const rear = variant.rear;
+    const depth = rear - front;
+    const shellMat = mat(colors.shell, opacity, 0.05, 0.7);
+    const edgeMat = mat(colors.shellEdge, opacity, 0.08, 0.58);
+    const sideOffset = exploded ? 92 : 0;
+    group.add(roundedBox(5, variant.height, depth, 2, shellMat, [-73.5 - sideOffset, variant.height / 2, (front + rear) / 2]));
+    group.add(roundedBox(5, variant.height, depth, 2, shellMat, [73.5 + sideOffset, variant.height / 2, (front + rear) / 2]));
+    group.add(roundedBox(152, 5, depth, 2, shellMat, [0, 2.5, (front + rear) / 2]));
+    if (state.variant === &quot;open&quot; || state.variant === &quot;rear60&quot;) {
+      group.add(roundedBox(152, 5, depth, 2, edgeMat, [0, variant.height - 2.5, (front + rear) / 2]));
+    } else if (state.variant === &quot;top92&quot;) {
+      group.add(roundedBox(152, 5, 111, 2, edgeMat, [0, variant.height - 2.5, 20.5]));
+      group.add(roundedBox(29, 5, 94, 2, edgeMat, [-61.5, variant.height - 2.5, 123]));
+      group.add(roundedBox(29, 5, 94, 2, edgeMat, [61.5, variant.height - 2.5, 123]));
+    } else {
+      group.add(roundedBox(152, 5, 126, 2, edgeMat, [0, variant.height - 2.5, 28]));
+      group.add(roundedBox(14, 5, 72, 2, edgeMat, [-69, variant.height - 2.5, 127]));
+      group.add(roundedBox(14, 5, 72, 2, edgeMat, [69, variant.height - 2.5, 127]));
+      group.add(roundedBox(4, 5, 72, 1, edgeMat, [0, variant.height - 2.5, 127]));
+      group.add(roundedBox(152, 5, 8, 2, edgeMat, [0, variant.height - 2.5, 159]));
+    }
+    const headerHeight = variant.height - 150;
+    group.add(roundedBox(152, headerHeight, 7, 2, edgeMat, [0, 150 + headerHeight / 2, front + 3]));
+    group.add(roundedBox(9, 158, 7, 2, edgeMat, [-69, 80, front + 3]));
+    group.add(roundedBox(9, 158, 7, 2, edgeMat, [69, 80, front + 3]));
+    return group;
+  }
+
+  function makeShellOutline(variant) {
+    const front = -35;
+    const rear = variant.rear;
+    const geometry = new THREE.BoxGeometry(152, variant.height, rear - front);
+    const edges = new THREE.EdgesGeometry(geometry);
+    const material = new THREE.LineBasicMaterial({
+      color: colors.shellEdge,
+      transparent: true,
+      opacity: 0.68,
+      depthWrite: false,
+    });
+    const outline = new THREE.LineSegments(edges, material);
+    outline.position.set(0, variant.height / 2, (front + rear) / 2);
+    return outline;
+  }
+
+  function makeTopGrille(size, y, z) {
+    const group = new THREE.Group();
+    const frameMat = mat(colors.shellEdge, 1, 0.1, 0.52);
+    const slatMat = mat(colors.metal, 1, 0.18, 0.48);
+    const edge = 5;
+    group.add(roundedBox(size, 3, edge, 1, frameMat, [0, y, z - size / 2 + edge / 2]));
+    group.add(roundedBox(size, 3, edge, 1, frameMat, [0, y, z + size / 2 - edge / 2]));
+    group.add(roundedBox(edge, 3, size - edge * 2, 1, frameMat, [-size / 2 + edge / 2, y, z]));
+    group.add(roundedBox(edge, 3, size - edge * 2, 1, frameMat, [size / 2 - edge / 2, y, z]));
+    const rows = Math.max(8, Math.round(size / 7));
+    for (let index = 0; index &lt; rows; index += 1) {
+      const slatZ = z - size / 2 + 8 + index * (size - 16) / (rows - 1);
+      group.add(roundedBox(size - 12, 2.5, 2.4, 0.7, slatMat, [0, y + 0.3, slatZ]));
+    }
+    return group;
+  }
+
+  function makeRearFrame(variant, opacity = 1) {
+    const group = new THREE.Group();
+    const frameMat = mat(colors.shellEdge, opacity, 0.08, 0.58);
+    const z = variant.rear - 2;
+    group.add(roundedBox(152, 6, 6, 2, frameMat, [0, 3, z]));
+    group.add(roundedBox(152, 6, 6, 2, frameMat, [0, 153, z]));
+    group.add(roundedBox(7, 144, 6, 2, frameMat, [-72.5, 78, z]));
+    group.add(roundedBox(7, 144, 6, 2, frameMat, [72.5, 78, z]));
+    return group;
+  }
+
+  function makeFrontAssembly(exploded = false) {
+    const group = new THREE.Group();
+    const fan = makeFan(140, 25, false);
+    fan.position.set(0, 75, exploded ? -90 : -19);
+    group.add(fan);
+    const grille = makeFrontGrille(new THREE.Vector3(0, 75, exploded ? -155 : -34));
+    group.add(grille);
+    return group;
+  }
+
+  function makeRearFanGuard(size, z, opacity = 1) {
+    const group = new THREE.Group();
+    const frameMat = mat(colors.shellEdge, opacity, 0.1, 0.52);
+    const slatMat = mat(colors.metal, opacity, 0.16, 0.48);
+    const edge = 4;
+    const half = size / 2;
+    group.add(roundedBox(size, edge, 2.5, 1, frameMat, [0, half - edge / 2, 0]));
+    group.add(roundedBox(size, edge, 2.5, 1, frameMat, [0, -half + edge / 2, 0]));
+    group.add(roundedBox(edge, size - edge * 2, 2.5, 1, frameMat, [half - edge / 2, 0, 0]));
+    group.add(roundedBox(edge, size - edge * 2, 2.5, 1, frameMat, [-half + edge / 2, 0, 0]));
+    [-18, -9, 0, 9, 18].forEach((y) =&gt; {
+      group.add(roundedBox(size - 9, 1.8, 2, 0.6, slatMat, [0, y, -1.5]));
+    });
+    group.position.set(0, 75, z);
+    return group;
+  }
+
+  function makeRearAssist(variant, opacity = 1, exploded = false) {
+    const group = new THREE.Group();
+    if (state.variant !== &quot;rear60&quot;) return group;
+
+    const frameMat = mat(colors.shellEdge, opacity, 0.08, 0.58);
+    const collectorOpacity = state.view === &quot;airflow&quot; ? 0.12 : opacity * 0.48;
+    const collectorColor = state.view === &quot;airflow&quot; ? colors.red : colors.shellEdge;
+    const collectorMat = mat(collectorColor, collectorOpacity, 0.02, 0.52);
+    const bridgeZ = variant.rear + 3.5;
+    const fanZ = variant.rear + 16;
+    const guardZ = variant.rear + 24.5;
+
+    group.add(roundedBox(4, 150, 17, 1.5, frameMat, [-30, 75, bridgeZ]));
+    group.add(roundedBox(4, 150, 17, 1.5, frameMat, [30, 75, bridgeZ]));
+    group.add(roundedBox(64, 4, 17, 1.5, frameMat, [0, 3, bridgeZ]));
+    group.add(roundedBox(64, 4, 17, 1.5, frameMat, [0, 147, bridgeZ]));
+    group.add(roundedBox(56, 58, 13, 3, collectorMat, [0, 75, variant.rear + 1.5]));
+
+    const fan = makeFan(60, 15, false, opacity);
+    fan.position.set(0, 75, fanZ);
+    group.add(fan);
+    group.add(makeRearFanGuard(64, guardZ, opacity));
+    if (exploded) group.position.z = 72;
+    return group;
+  }
+
+  function makeTopHandle(variant, opacity = 1, exploded = false) {
+    const group = new THREE.Group();
+    if (state.variant !== &quot;rear60&quot;) return group;
+
+    const anchorMat = mat(colors.shellEdge, opacity, 0.12, 0.48);
+    const boltMat = mat(colors.metal, opacity, 0.42, 0.3);
+    const strapMat = mat(colors.shellEdge, opacity, 0.02, 0.62);
+    const topY = variant.height + 3;
+    const frontAnchorZ = 28;
+    const rearAnchorZ = 122;
+
+    [frontAnchorZ, rearAnchorZ].forEach((z) =&gt; {
+      group.add(roundedBox(30, 7, 18, 3, anchorMat, [0, topY, z]));
+      group.add(cylinder(3.2, 2.8, boltMat, [0, topY + 4.7, z], &quot;y&quot;));
+    });
+
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, topY + 3, frontAnchorZ),
+      new THREE.Vector3(0, topY + 33, 50),
+      new THREE.Vector3(0, topY + 39, 75),
+      new THREE.Vector3(0, topY + 33, 100),
+      new THREE.Vector3(0, topY + 3, rearAnchorZ),
+    ]);
+    const strap = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 4.5, 12, false), strapMat);
+    strap.castShadow = true;
+    group.add(strap);
+    if (exploded) group.position.y = 78;
+    return group;
+  }
+
+  function makeTopAssist(variant, opacity = 1, exploded = false) {
+    const group = new THREE.Group();
+    if (state.variant === &quot;open&quot; || state.variant === &quot;rear60&quot;) return group;
+    const collectorMat = mat(colors.red, state.view === &quot;airflow&quot; ? 0.18 : opacity, 0.02, 0.5);
+    const fanY = exploded ? variant.height + 100 : variant.height - 15;
+    const grilleY = exploded ? variant.height + 152 : variant.height + 0.5;
+    if (state.variant === &quot;top92&quot;) {
+      group.add(roundedBox(55, 148, 18, 4, collectorMat, [0, 76, exploded ? 214 : 160]));
+      const fan = makeFan(92, 25, true);
+      fan.position.set(0, fanY, exploded ? 145 : 124);
+      group.add(fan);
+      group.add(makeTopGrille(98, grilleY, exploded ? 145 : 124));
+    } else {
+      [-32, 32].forEach((x) =&gt; {
+        group.add(roundedBox(25, 148, 14, 3, collectorMat, [x / 2, 76, exploded ? 208 : 157]));
+        const fan = makeFan(60, 15, true);
+        fan.position.set(x, fanY, exploded ? 140 : 123);
+        group.add(fan);
+        group.add(makeTopGrille(64, grilleY, exploded ? 140 : 123).translateX(x));
+      });
+    }
+    return group;
+  }
+
+  function makeCable(side, rear) {
+    const x = side * 43;
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(x, 70, 153),
+      new THREE.Vector3(side * 55, 68, rear + 7),
+      new THREE.Vector3(side * 63, 52, rear + 34),
+    ]);
+    const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 30, 2.6, 9, false), mat(colors.black));
+    cable.castShadow = true;
+    return cable;
+  }
+
+  function flowArrow(from, to, color, radius = 2.6, headRadius = 6.5) {
+    const group = new THREE.Group();
+    const start = new THREE.Vector3(...from);
+    const end = new THREE.Vector3(...to);
+    const direction = end.clone().sub(start);
+    const length = direction.length();
+    direction.normalize();
+    const flowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.92 });
+    const shaftLength = Math.max(3, length - 12);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, shaftLength, 14), flowMat);
+    shaft.position.copy(start).add(direction.clone().multiplyScalar(shaftLength / 2));
+    shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+    group.add(shaft);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(headRadius, 12, 16), flowMat);
+    head.position.copy(end).add(direction.clone().multiplyScalar(-6));
+    head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+    group.add(head);
+    return group;
+  }
+
+  function addAirflow(group, variant) {
+    if (state.variant === &quot;open&quot; || state.variant === &quot;rear60&quot;) {
+      [-29.5, 29.5].forEach((deviceX) =&gt; {
+        const exhaustX = Math.sign(deviceX) * 16.75;
+        [48, 103].forEach((y) =&gt; {
+          group.add(flowArrow([deviceX, y, -96], [deviceX, y, -35], colors.blue));
+          group.add(flowArrow([deviceX, y, -8], [deviceX, y, 70], colors.blue));
+          group.add(flowArrow([deviceX, y, 62], [exhaustX, y, 142], colors.blue));
+          if (state.variant === &quot;rear60&quot;) {
+            group.add(flowArrow([exhaustX, y, 132], [exhaustX, y, 165], colors.red, 3.2, 7.5));
+            group.add(flowArrow([exhaustX, y, 183], [exhaustX, y, 232], colors.red, 3.2, 7.5));
+          } else {
+            group.add(flowArrow([exhaustX, y, 132], [exhaustX, y, 238], colors.red, 3.4, 8));
+          }
+        });
+      });
+      if (state.variant === &quot;rear60&quot;) {
+        [20, 130].forEach((y) =&gt; {
+          group.add(flowArrow([0, y, 155], [0, y, 212], colors.red, 1.7, 4.8));
+        });
+      }
+      return;
+    }
+
+    [-31, 31].forEach((x) =&gt; {
+      [48, 103].forEach((y) =&gt; group.add(flowArrow([x, y, -66], [x, y, 142], colors.blue)));
+    });
+    if (state.variant === &quot;top92&quot;) {
+      [-16, 16].forEach((x) =&gt; {
+        group.add(flowArrow([x, 55, 142], [x, 55, 166], colors.red));
+        group.add(flowArrow([x, 62, 164], [x, variant.height + 30, 125], colors.red));
+      });
+    } else {
+      [-32, 32].forEach((x) =&gt; {
+        group.add(flowArrow([x / 2, 55, 142], [x / 2, 55, 161], colors.red));
+        group.add(flowArrow([x / 2, 62, 159], [x, variant.height + 27, 123], colors.red));
+      });
+    }
+  }
+
+  function clearModel() {
+    scene.remove(modelRoot);
+    modelRoot.traverse((object) =&gt; {
+      if (object.geometry) object.geometry.dispose();
+      if (object.material) {
+        if (Array.isArray(object.material)) object.material.forEach((item) =&gt; item.dispose());
+        else object.material.dispose();
+      }
+    });
+    modelRoot = new THREE.Group();
+    scene.add(modelRoot);
+  }
+
+  function configureCamera(position, target) {
+    cameraBase.set(...position);
+    cameraTarget.set(...target);
+    fitCamera();
+  }
+
+  function fitCamera() {
+    const rect = stage.getBoundingClientRect();
+    const aspect = Math.max(0.45, rect.width / Math.max(rect.height, 1));
+    const narrow = aspect &lt; 0.8;
+    const scale = narrow ? 1.6 : 1;
+    camera.position.copy(cameraTarget).add(cameraBase.clone().sub(cameraTarget).multiplyScalar(scale));
+    camera.fov = narrow ? 40 : 34;
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
+    controls.target.copy(cameraTarget);
+    controls.update();
+  }
+
+  function buildAssembled(variant) {
+    const displaySide = state.displaySide === &quot;left&quot; ? -1 : 1;
+    modelRoot.add(makeShell(variant, 1, false));
+    modelRoot.add(makeDevice(-1));
+    modelRoot.add(makeDevice(1));
+    modelRoot.add(makeRearFrame(variant));
+    modelRoot.add(makeFrontAssembly(false));
+    modelRoot.add(makeTopAssist(variant, 1, false));
+    modelRoot.add(makeRearAssist(variant, 1, false));
+    modelRoot.add(makeTopHandle(variant, 1, false));
+    modelRoot.add(makeDisplay(displaySide));
+    configureCamera([displaySide * 310, 235, -330], [0, 82, 62]);
+  }
+
+  function buildAirflow(variant) {
+    const isStraightThrough = state.variant === &quot;open&quot; || state.variant === &quot;rear60&quot;;
+    modelRoot.add(makeShell(variant, isStraightThrough ? 0.035 : 0.11, false));
+    if (isStraightThrough) modelRoot.add(makeShellOutline(variant));
+    modelRoot.add(makeDevice(-1, isStraightThrough ? 0.16 : 0.38));
+    modelRoot.add(makeDevice(1, isStraightThrough ? 0.16 : 0.38));
+    modelRoot.add(makeRearFrame(variant, isStraightThrough ? 0.22 : 0.3));
+    const fan = makeFan(140, 25, false, isStraightThrough ? 0.48 : 1);
+    fan.position.set(0, 75, -19);
+    modelRoot.add(fan);
+    modelRoot.add(makeTopAssist(variant, 0.22, false));
+    modelRoot.add(makeRearAssist(variant, 1, false));
+    modelRoot.add(makeTopHandle(variant, 0.65, false));
+    if (!isStraightThrough) {
+      modelRoot.add(makeCable(-1, variant.rear));
+      modelRoot.add(makeCable(1, variant.rear));
+    }
+    addAirflow(modelRoot, variant);
+    configureCamera(isStraightThrough ? [-330, 280, -350] : [-410, 230, -125], [0, 85, 70]);
+  }
+
+  function buildRear(variant) {
+    modelRoot.add(makeShell(variant, 0.24, false));
+    modelRoot.add(makeDevice(-1));
+    modelRoot.add(makeDevice(1));
+    modelRoot.add(makeRearFrame(variant));
+    modelRoot.add(makeTopAssist(variant, 0.72, false));
+    modelRoot.add(makeRearAssist(variant, 1, false));
+    modelRoot.add(makeTopHandle(variant, 1, false));
+    modelRoot.add(makeCable(-1, variant.rear));
+    modelRoot.add(makeCable(1, variant.rear));
+    configureCamera(
+      state.variant === &quot;rear60&quot; ? [0, 180, 460] : [270, 205, 345],
+      [0, 78, state.variant === &quot;rear60&quot; ? 154 : 138]
+    );
+  }
+
+  function buildExploded(variant) {
+    const displaySide = state.displaySide === &quot;left&quot; ? -1 : 1;
+    modelRoot.add(makeShell(variant, 1, true));
+    modelRoot.add(makeFrontAssembly(true));
+    const leftDevice = makeDevice(-1, 1, new THREE.Vector3(-34, 10, 0));
+    const rightDevice = makeDevice(1, 1, new THREE.Vector3(34, 10, 0));
+    modelRoot.add(leftDevice, rightDevice);
+    modelRoot.add(makeRearFrame(variant, 1));
+    modelRoot.add(makeTopAssist(variant, 0.68, true));
+    modelRoot.add(makeRearAssist(variant, 1, true));
+    modelRoot.add(makeTopHandle(variant, 1, true));
+    const display = makeDisplay(
+      displaySide,
+      1,
+      new THREE.Vector3(displaySide * 88, 18, 0)
+    );
+    modelRoot.add(display);
+    configureCamera(
+      [displaySide * 650, 470, state.variant === &quot;rear60&quot; ? 720 : -720],
+      [0, 100, 50]
+    );
+  }
+
+  function updateStatus(variant) {
+    const viewLabels = {
+      assembled: &quot;完成视图&quot;,
+      airflow: state.variant === &quot;open&quot;
+        ? &quot;前置 140 mm 进风 → 双机贯流 → 后部中央直排&quot;
+        : state.variant === &quot;rear60&quot;
+          ? &quot;前置 140 mm 进风 → 双机贯流 → 后置 60 mm 抽排 / 上下旁通&quot;
+          : &quot;蓝色进风 / 红色排风&quot;,
+      rear: &quot;外侧接口 / 中央排风&quot;,
+      exploded: &quot;模块分件&quot;,
+    };
+    const displayLabel = state.displaySide === &quot;left&quot; ? &quot;显示屏左侧&quot; : &quot;显示屏右侧&quot;;
+    status.textContent = `${variant.label} · 152 W × ${variant.depth} D × ${variant.height} H mm · ${variant.externalFans} · ${displayLabel} · ${viewLabels[state.view]}`;
+    const summary = `${variant.label}. ${variant.description}. Envelope 152 by ${variant.depth} by ${variant.height} millimeters. ${variant.externalFans}. ${displayLabel}.`;
+    accessibleSummary.textContent = summary;
+    canvas.setAttribute(&quot;aria-label&quot;, `${summary} Current view: ${viewLabels[state.view]}. Drag to rotate and scroll to zoom.`);
+  }
+
+  function rebuild() {
+    clearModel();
+    const variant = variants[state.variant];
+    floor.position.y = state.view === &quot;exploded&quot; ? -35 : -3;
+    if (state.view === &quot;airflow&quot;) buildAirflow(variant);
+    else if (state.view === &quot;rear&quot;) buildRear(variant);
+    else if (state.view === &quot;exploded&quot;) buildExploded(variant);
+    else buildAssembled(variant);
+    updateStatus(variant);
+  }
+
+  function setPressed(selector, value, attribute) {
+    root.querySelectorAll(selector).forEach((button) =&gt; {
+      const selected = button.dataset[attribute] === value;
+      button.setAttribute(&quot;aria-pressed&quot;, String(selected));
+      button.classList.toggle(&quot;btn-primary&quot;, selected);
+    });
+  }
+
+  root.querySelectorAll(&quot;[data-variant]&quot;).forEach((button) =&gt; {
+    button.addEventListener(&quot;click&quot;, () =&gt; {
+      state.variant = button.dataset.variant;
+      setPressed(&quot;[data-variant]&quot;, state.variant, &quot;variant&quot;);
+      rebuild();
+    });
+  });
+
+  root.querySelectorAll(&quot;[data-view]&quot;).forEach((button) =&gt; {
+    button.addEventListener(&quot;click&quot;, () =&gt; {
+      state.view = button.dataset.view;
+      setPressed(&quot;[data-view]&quot;, state.view, &quot;view&quot;);
+      rebuild();
+    });
+  });
+
+  root.querySelectorAll(&quot;[data-display-side]&quot;).forEach((button) =&gt; {
+    button.addEventListener(&quot;click&quot;, () =&gt; {
+      state.displaySide = button.dataset.displaySide;
+      setPressed(&quot;[data-display-side]&quot;, state.displaySide, &quot;displaySide&quot;);
+      rebuild();
+    });
+  });
+
+  const resizeObserver = new ResizeObserver(() =&gt; {
+    const rect = stage.getBoundingClientRect();
+    renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false);
+    fitCamera();
+  });
+  resizeObserver.observe(stage);
+
+  function animate() {
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+
+  try {
+    rebuild();
+    animate();
+    window.__DUAL_GB10_OPTIONS_READY__ = true;
+  } catch (error) {
+    window.__DUAL_GB10_OPTIONS_ERROR__ = { message: error.message, stack: error.stack };
+    status.textContent = `渲染错误：${error.message}`;
+    throw error;
+  }
+&lt;/script&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

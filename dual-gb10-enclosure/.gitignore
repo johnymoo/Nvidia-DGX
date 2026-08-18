@@ -1,0 +1,9 @@
+/planning/01-raw/
+/tmp/
+/output/
+/visuals/node_modules/
+
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store

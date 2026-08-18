@@ -1,0 +1,17 @@
+[project]
+name = "dual-gb10-enclosure-cad"
+version = "0.1.0"
+description = "Parametric printable CAD for the dual GB10 A+ enclosure prototype"
+requires-python = ">=3.9,<3.13"
+dependencies = [
+  "build123d==0.8.0",
+  # build123d 0.8.0 still calls TopoDS_Shape.HashCode, removed in OCP 7.9.
+  "cadquery-ocp==7.7.2",
+  "matplotlib==3.9.4",
+  "numpy==2.0.2",
+  # 2.5.0 publishes Linux-only wheels; 2.3.1 includes the macOS library.
+  "py-lib3mf==2.3.1",
+]
+
+[tool.uv]
+package = false
