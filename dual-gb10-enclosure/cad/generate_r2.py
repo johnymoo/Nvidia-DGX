@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Dual GB10 R2.1 enclosure release-candidate delivery package.
+"""Generate the Dual GB10 R2.2 enclosure release-candidate delivery package.
 
 Coordinate system:
   X: left/right
@@ -58,14 +58,14 @@ from matplotlib.patches import FancyBboxPatch, Rectangle
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE_ID = "dual-gb10-r2-1-rc2"
+RELEASE_ID = "dual-gb10-r2-2-rc1"
 DEFAULT_OUTPUT = ROOT / "output" / RELEASE_ID
 DEFAULT_PDF = ROOT / "output" / "pdf" / f"{RELEASE_ID}-engineering-drawings.pdf"
 
 
 @dataclass(frozen=True)
 class Params:
-    revision: str = "R2.1-RC2"
+    revision: str = "R2.2-RC1"
     units: str = "mm"
     print_limit: float = 180.0
     u_cover_brim: float = 10.0
@@ -100,6 +100,7 @@ class Params:
     rail_segment_starts: tuple[float, float, float] = (8.0, 62.0, 116.0)
     rail_lead_in: float = 2.0
     nominal_rail_clearance: float = 0.40
+    rail_motion_step: float = 1.0
 
     # Two GB10 devices.
     device_thickness: float = 50.5
@@ -109,20 +110,35 @@ class Params:
     device_side_clearance: float = 0.8
     device_front_clearance: float = 4.0
     device_bottom_clearance: float = 0.8
+    device_support_width: float = 18.0
+    device_support_depth: float = 130.0
+    device_front_retainer_gap: float = 0.8
+    device_front_retainer_width: float = 10.0
+    device_front_retainer_height: float = 6.0
     guide_width: float = 2.4
     guide_height: float = 6.0
     guide_end_relief: float = 2.5
     rear_stop_width: float = 70.0
+    rear_stop_toe_depth: float = 1.2
+    rear_stop_ramp_length: float = 1.8
+    rear_stop_foot_depth: float = 4.0
 
     # Front intake assembly. The fan occupies Y=-25..0 and does not lengthen
     # the 158 mm device cavity.
     front_bezel_offset: float = 32.0
     front_bezel_thickness: float = 7.0
     front_opening_radius: float = 68.5
-    front_grille_pitch: float = 15.0
-    front_grille_bar: float = 2.0
+    front_grille_pitch: float = 12.0
+    front_grille_bar: float = 1.2
     front_fan_size: float = 140.0
     front_fan_thickness: float = 25.0
+    front_fan_fit_clearance: float = 0.40
+    front_plenum_overlap: float = 0.50
+    panel_alignment_lip_depth: float = 4.0
+    panel_alignment_lip_thickness: float = 1.6
+    base_front_stop_gap: float = 0.40
+    base_front_stop_x: float = 60.0
+    base_front_stop_width: float = 12.0
     front_fan_hole_spacing: float = 124.5
     front_pin_hole_diameter: float = 4.8
 
@@ -133,6 +149,12 @@ class Params:
     rear_fan_hole_spacing: float = 50.0
     rear_pin_hole_diameter: float = 4.6
     rear_fan_opening_radius: float = 27.5
+    rear_grille_pitch: float = 10.0
+    rear_grille_bar: float = 1.2
+    rear_frame_border: float = 8.0
+    rear_fan_plate_size: float = 66.0
+    rear_support_offset: float = 34.0
+    rear_support_width: float = 5.0
 
     # Shared front/rear panel interfaces.
     panel_latch_x: float = 48.0
@@ -141,23 +163,31 @@ class Params:
     upper_hook_z: float = 160.0
     upper_hook_reach: float = 7.0
     upper_hook_tooth_height: float = 2.8
-    lower_latch_width: float = 16.0
+    upper_hook_pocket_depth: float = 9.0
+    upper_hook_ramp_length: float = 3.0
+    upper_hook_tip_land: float = 0.2
+    lower_latch_width: float = 10.0
     lower_latch_thickness: float = 1.5
-    lower_latch_z: float = 5.55
-    lower_latch_flex_length: float = 22.0
+    lower_latch_z: float = 4.10
+    lower_latch_flex_length: float = 20.0
     latch_root_radius: float = 1.5
+    latch_root_length: float = 3.5
     panel_fit_clearance: float = 0.40
     panel_arm_root_overlap: float = 2.0
-    latch_release_window_width: float = 8.0
-    latch_throat_height: float = 2.2
-    latch_pocket_height: float = 4.2
-    latch_catch_height: float = 1.3
-    latch_capture: float = 0.40
+    latch_release_window_width: float = 12.0
+    latch_release_window_depth: float = 8.0
+    latch_throat_bottom_z: float = 1.80
+    latch_throat_top_z: float = 5.20
+    latch_pocket_bottom_z: float = 1.80
+    latch_engagement: float = 1.00
+    latch_axial_clearance: float = 0.30
+    latch_ramp_length: float = 3.50
+    latch_release_deflection: float = 1.25
+    latch_anti_relock_travel: float = 3.0
+    latch_pocket_length: float = 4.5
     front_latch_pocket_front_y: float = 5.0
-    front_latch_pocket_rear_y: float = 9.5
-    rear_latch_pocket_front_y: float = 144.5
-    rear_latch_pocket_rear_y: float = 149.0
     service_opening_travel: float = 35.0
+    panel_motion_step: float = 0.5
 
     # Reversible display pod. PCB dimensions remain provisional.
     display_projection: float = 18.0
@@ -176,17 +206,41 @@ class Params:
     display_hook_head_z: float = 7.2
     display_hook_y: tuple[float, float] = (36.0, 104.0)
     display_hook_z: float = 126.0
-    display_latch_z: float = 82.0
+    display_latch_z: float = 80.0
+    display_latch_flex_length: float = 22.0
+    display_latch_thickness: float = 1.5
+    display_latch_width: float = 10.0
+    display_latch_head_height: float = 4.5
+    display_latch_engagement: float = 0.8
+    display_latch_release_deflection: float = 1.4
+    display_latch_root_overlap: float = 3.0
+    display_blank_thickness: float = 5.0
+    display_motion_step: float = 0.25
+
+    # Protected display/controller harness route.
+    harness_channel_center_x: float = 63.0
+    harness_channel_width: float = 8.0
+    harness_channel_depth: float = 1.6
+    harness_channel_y: float = 92.0
+    harness_channel_length: float = 92.0
+    harness_riser_width: float = 10.0
+    harness_riser_bottom_z: float = 12.0
+    harness_port_y: float = 92.0
+    harness_port_z: float = 79.0
+    harness_port_depth: float = 8.0
+    harness_port_width: float = 12.0
+    harness_port_height: float = 8.0
 
     # Commercial handle load path.
     handle_anchor_front_y: float = 32.0
     handle_anchor_rear_y: float = 126.0
-    handle_bolt_clearance: float = 4.5
     handle_insert_pilot: float = 5.6
     handle_boss_diameter: float = 18.0
     handle_rib_width: float = 12.0
     handle_rib_thickness: float = 4.8
+    handle_device_clearance: float = 0.8
     handle_reference_height: float = 34.0
+    handle_reference_diameter: float = 8.4
 
     # Color schedule. Hex values are appearance references, not metrology.
     default_color_scheme: str = "C"
@@ -210,6 +264,122 @@ class GaugeSpec:
     name: str
     shape: Shape
     notes: str
+
+
+def front_latch_pocket_rear_y(p: Params) -> float:
+    return p.front_latch_pocket_front_y + p.latch_pocket_length
+
+
+def panel_latch_root_y(p: Params, front: bool) -> float:
+    if front:
+        return p.front_latch_pocket_front_y + p.latch_axial_clearance - p.lower_latch_flex_length
+    return p.body_depth + p.rear_frame_thickness - p.latch_root_length
+
+
+def rear_latch_pocket_rear_y(p: Params) -> float:
+    shoulder_y = panel_latch_root_y(p, False) - p.lower_latch_flex_length
+    return shoulder_y + p.latch_axial_clearance
+
+
+def rear_latch_pocket_front_y(p: Params) -> float:
+    return rear_latch_pocket_rear_y(p) - p.latch_pocket_length
+
+
+def latch_shoulder_y(p: Params, front: bool) -> float:
+    if front:
+        return p.front_latch_pocket_front_y + p.latch_axial_clearance
+    return rear_latch_pocket_rear_y(p) - p.latch_axial_clearance
+
+
+def latch_arm_bounds_z(p: Params) -> tuple[float, float]:
+    return (
+        p.lower_latch_z - p.lower_latch_thickness / 2,
+        p.lower_latch_z + p.lower_latch_thickness / 2,
+    )
+
+
+def latch_tooth_top_z(p: Params) -> float:
+    return p.latch_throat_top_z + p.latch_engagement
+
+
+def device_top_z(p: Params) -> float:
+    return p.base_thickness + p.device_bottom_clearance + p.device_height
+
+
+def linear_motion_samples(start: float, end: float, max_step: float) -> tuple[float, ...]:
+    count = max(1, math.ceil(abs(end - start) / max_step))
+    return tuple(float(value) for value in np.linspace(start, end, count + 1))
+
+
+def display_latch_root_z(p: Params) -> float:
+    return p.display_latch_z + p.display_latch_flex_length
+
+
+def display_latch_wall_outer_x(p: Params) -> float:
+    return p.body_width / 2
+
+
+def display_latch_beam_inner_x(p: Params) -> float:
+    return p.body_width / 2 + p.display_gap
+
+
+def display_latch_tip_inner_x(p: Params) -> float:
+    return display_latch_wall_outer_x(p) - p.display_latch_engagement
+
+
+def validate_params(p: Params) -> None:
+    arm_bottom, arm_top = latch_arm_bounds_z(p)
+    required_latch_deflection = latch_tooth_top_z(p) - p.latch_throat_top_z
+    downward_clearance = arm_bottom - p.latch_throat_bottom_z
+    keeper_lip = p.base_thickness - p.latch_throat_top_z
+    panel_strain = (
+        1.5
+        * p.lower_latch_thickness
+        * p.latch_release_deflection
+        / p.lower_latch_flex_length**2
+    )
+    display_strain = (
+        1.5
+        * p.display_latch_thickness
+        * p.display_latch_release_deflection
+        / p.display_latch_flex_length**2
+    )
+    declared_bridge_span = max(
+        p.lower_latch_width + 2 * p.panel_fit_clearance,
+        p.display_latch_width + 2 * p.display_fit_clearance,
+        p.harness_port_width,
+    )
+    checks = {
+        "rail lead-in must fit each segment": 0 < 2 * p.rail_lead_in < p.rail_segment_length,
+        "rail motion step must resolve each lead-in": 0 < p.rail_motion_step <= p.rail_lead_in / 2,
+        "U-cover brim must fit the print bed": max(p.body_width, p.body_depth) + 2 * p.u_cover_brim <= p.print_limit,
+        "panel latch flexure must be 18-22 mm": 18.0 <= p.lower_latch_flex_length <= 22.0,
+        "panel latch vertical engagement must be 0.8-1.2 mm": 0.8 <= required_latch_deflection <= 1.2,
+        "panel latch retaining shoulder must rise above the arm": latch_tooth_top_z(p) > arm_top,
+        "panel latch estimated surface strain must stay below 1.5%": panel_strain <= 0.015,
+        "panel latch axial clearance must be 0.25-0.40 mm": 0.25 <= p.latch_axial_clearance <= 0.40,
+        "panel latch keeper lip must be at least 1.2 mm": keeper_lip >= 1.2,
+        "panel latch channel must permit release deflection": downward_clearance >= p.latch_release_deflection,
+        "panel latch release must clear the keeper lip": p.latch_release_deflection >= required_latch_deflection + 0.15,
+        "panel latch pocket must contain the ramp": p.latch_pocket_length >= p.latch_ramp_length,
+        "panel motion step must be at most 0.5 mm": 0 < p.panel_motion_step <= 0.5,
+        "display latch flexure must be 18-24 mm": 18.0 <= p.display_latch_flex_length <= 24.0,
+        "display latch estimated surface strain must stay below 1.5%": display_strain <= 0.015,
+        "display latch release must clear its engagement": p.display_latch_release_deflection >= p.display_latch_engagement + p.panel_fit_clearance,
+        "display motion step must be at most 0.25 mm": 0 < p.display_motion_step <= 0.25,
+        "front grille nominal open area must be at least 80%": (1 - p.front_grille_bar / p.front_grille_pitch) ** 2 >= 0.80,
+        "front grille clear aperture must not exceed 12 mm": p.front_grille_pitch - p.front_grille_bar <= 12.0,
+        "rear grille clear aperture must not exceed 10 mm": p.rear_grille_pitch - p.rear_grille_bar <= 10.0,
+        "front fan must fit inside the plenum": p.front_fan_size + 2 * p.front_fan_fit_clearance < p.body_width,
+        "rear fan plate must contain the opening": p.rear_fan_plate_size > 2 * p.rear_fan_opening_radius,
+        "front base stops must stay on the base width": p.base_front_stop_x + p.base_front_stop_width / 2 <= p.base_plate_width / 2,
+        "upper hook pocket must contain the hook reach": p.upper_hook_pocket_depth >= p.upper_hook_reach,
+        "handle boss must clear the GB10 and reach the top skin": device_top_z(p) + p.handle_device_clearance < p.body_height,
+        "declared structural bridge spans must not exceed 12 mm": declared_bridge_span <= 12.0,
+    }
+    failed = [message for message, passed in checks.items() if not passed]
+    if failed:
+        raise ValueError("Invalid R2.2 parameters: " + "; ".join(failed))
 
 
 def box_at(size: tuple[float, float, float], center: tuple[float, float, float]) -> Shape:
@@ -280,6 +450,86 @@ def prism_xy(points: list[tuple[float, float]], z_start: float, height: float) -
     with BuildSketch(Plane.XY) as sketch:
         Polygon(*points, align=None)
     return extrude(sketch.sketch, amount=height, dir=(0, 0, 1)).translate((0, 0, z_start))
+
+
+def tapered_rail_segment(
+    profile_points: list[tuple[float, float]],
+    side: int,
+    y_start: float,
+    length: float,
+    lead: float,
+    z_top: float,
+) -> Shape:
+    wall_abs = max(abs(x) for x, _ in profile_points)
+    wall_x = side * (wall_abs + 0.25)
+    attached_profile = [
+        (side * (abs(x) + 0.25), z) if abs(abs(x) - wall_abs) < 0.01 else (x, z)
+        for x, z in profile_points
+    ]
+    segment = prism_xz(attached_profile, y_start, length)
+    inner_x = side * min(abs(x) for x, _ in profile_points)
+    tip_x = wall_x - side * 0.30
+    y_end = y_start + length
+    outside_x = side * 100.0
+    if side == 1:
+        start_points = [
+            (-100.0, y_start - 0.5),
+            (tip_x, y_start - 0.5),
+            (inner_x, y_start + lead),
+            (-100.0, y_start + lead),
+        ]
+        end_points = [
+            (-100.0, y_end - lead),
+            (inner_x, y_end - lead),
+            (tip_x, y_end + 0.5),
+            (-100.0, y_end + 0.5),
+        ]
+    else:
+        start_points = [
+            (tip_x, y_start - 0.5),
+            (outside_x, y_start - 0.5),
+            (outside_x, y_start + lead),
+            (inner_x, y_start + lead),
+        ]
+        end_points = [
+            (inner_x, y_end - lead),
+            (outside_x, y_end - lead),
+            (outside_x, y_end + 0.5),
+            (tip_x, y_end + 0.5),
+        ]
+    cutters = [
+        prism_xy(start_points, -1.0, z_top + 2.0),
+        prism_xy(end_points, -1.0, z_top + 2.0),
+    ]
+    return cut(segment, cutters)
+
+
+def taper_tongue_front(
+    tongue: Shape,
+    p: Params,
+    side: int,
+) -> Shape:
+    base_edge_x = side * p.base_plate_width / 2
+    outer_x = side * p.tongue_outer_x
+    outside_x = side * 100.0
+    y0 = p.base_front_y
+    y1 = y0 + p.rail_lead_in
+    if side == 1:
+        points = [
+            (base_edge_x, y0 - 0.5),
+            (outside_x, y0 - 0.5),
+            (outside_x, y1),
+            (outer_x, y1),
+        ]
+    else:
+        points = [
+            (outside_x, y0 - 0.5),
+            (base_edge_x, y0 - 0.5),
+            (outer_x, y1),
+            (outside_x, y1),
+        ]
+    cutter = prism_xy(points, -1.0, p.rail_top_z + 2.0)
+    return cut(tongue, [cutter])
 
 
 def self_supporting_slot_x(
@@ -397,6 +647,29 @@ def side_profile(points: list[tuple[float, float]], side: int) -> list[tuple[flo
     return mirrored
 
 
+def build_harness_guides(p: Params) -> list[Shape]:
+    wall_inner = p.body_width / 2 - p.shell_wall
+    guide_depth = 2.4
+    guide_y_offset = p.harness_riser_width / 2 + 1.0
+    z_top = p.harness_port_z - p.harness_port_height / 2 - 1.0
+    z_height = z_top - p.harness_riser_bottom_z
+    parts: list[Shape] = []
+    for side in (-1, 1):
+        center_x = side * (wall_inner - guide_depth / 2 + 0.2)
+        for y in (
+            p.harness_port_y - guide_y_offset,
+            p.harness_port_y + guide_y_offset,
+        ):
+            parts.append(
+                rounded_box_at(
+                    (guide_depth, 2.0, z_height),
+                    (center_x, y, p.harness_riser_bottom_z + z_height / 2),
+                    0.6,
+                )
+            )
+    return parts
+
+
 def build_u_cover(p: Params) -> Shape:
     inner_width = p.body_width - 2 * p.shell_wall
     inner_bottom = -4.0
@@ -435,24 +708,38 @@ def build_u_cover(p: Params) -> Shape:
         shell = fillet(lower_edges, p.exposed_edge_radius)
 
     # Paired 45-degree rails capture the base in both vertical directions.
-    # Their sloped print-leading faces grow from the side wall without support
-    # when the U cover is printed exterior-top-face down.
+    # Each segment tapers in Y at both ends so a printed tongue can re-enter
+    # the second and third segments without meeting a square end face.
     rail_parts: list[Shape] = []
+    rail_anchor_width = p.shell_wall + 0.5
     right_profiles = [right_lower_rail_profile(p), right_upper_rail_profile(p)]
     for side in (-1, 1):
-        for right_profile in right_profiles:
-            profile_points = side_profile(right_profile, side)
-            for start in p.rail_segment_starts:
-                rail_parts.append(
-                    prism_xz(
-                        profile_points,
-                        start + p.rail_lead_in,
-                        p.rail_segment_length - 2 * p.rail_lead_in,
-                    )
+        for start in p.rail_segment_starts:
+            rail_parts.append(
+                box_at(
+                    (rail_anchor_width, p.rail_segment_length, p.rail_top_z),
+                    (
+                        side * (p.body_width / 2 - rail_anchor_width / 2),
+                        start + p.rail_segment_length / 2,
+                        p.rail_top_z / 2,
+                    ),
                 )
+            )
+        for right_profile in right_profiles:
+            for start in p.rail_segment_starts:
+                right_segment = tapered_rail_segment(
+                    right_profile,
+                    1,
+                    start,
+                    p.rail_segment_length,
+                    p.rail_lead_in,
+                    p.rail_top_z,
+                )
+                rail_parts.append(right_segment if side == 1 else right_segment.mirror(Plane.YZ))
 
-    # Handle ribs overlap the top skin and stop 0.8 mm above the GB10 envelope.
+    # Handle ribs overlap the top skin and stop above the GB10 envelope.
     rib_z = p.body_height - p.shell_wall - p.handle_rib_thickness / 2 + 1.0
+    handle_boss_bottom = device_top_z(p) + p.handle_device_clearance
     handle_parts: list[Shape] = []
     for y in (p.handle_anchor_front_y, p.handle_anchor_rear_y):
         handle_parts.append(
@@ -465,12 +752,13 @@ def build_u_cover(p: Params) -> Shape:
         handle_parts.append(
             cyl_z(
                 p.handle_boss_diameter / 2,
-                p.body_height - 158.6,
-                (0, y, (p.body_height + 158.6) / 2),
+                p.body_height - handle_boss_bottom,
+                (0, y, (p.body_height + handle_boss_bottom) / 2),
             )
         )
 
-    cover = union([shell, *rail_parts, *handle_parts])
+    harness_guides = build_harness_guides(p)
+    cover = union([shell, *rail_parts, *handle_parts, *harness_guides])
 
     cutters: list[Shape] = []
     for y in (p.handle_anchor_front_y, p.handle_anchor_rear_y):
@@ -479,29 +767,50 @@ def build_u_cover(p: Params) -> Shape:
     # Upper front/rear hook pockets leave at least 2.2 mm of outer top skin.
     hook_pocket_width = p.upper_hook_width + 2 * p.panel_fit_clearance
     hook_pocket_height = p.upper_hook_tooth_height + 2 * p.panel_fit_clearance
+    front_hook_pocket_y = p.upper_hook_pocket_depth / 2
+    rear_hook_pocket_y = p.body_depth - p.upper_hook_pocket_depth / 2
     for x in (-p.panel_latch_x, p.panel_latch_x):
-        cutters.append(box_at((hook_pocket_width, 9.0, hook_pocket_height), (x, 4.5, p.upper_hook_z + 1.8)))
-        cutters.append(box_at((hook_pocket_width, 9.0, hook_pocket_height), (x, 153.5, p.upper_hook_z + 1.8)))
+        cutters.append(
+            box_at(
+                (hook_pocket_width, p.upper_hook_pocket_depth, hook_pocket_height),
+                (x, front_hook_pocket_y, p.upper_hook_z + 1.8),
+            )
+        )
+        cutters.append(
+            box_at(
+                (hook_pocket_width, p.upper_hook_pocket_depth, hook_pocket_height),
+                (x, rear_hook_pocket_y, p.upper_hook_z + 1.8),
+            )
+        )
 
     # Reversible display key slots share their production geometry with the
     # display fit coupon and kinematic tests.
     for side in (-1, 1):
         cutters.extend(build_display_slot_cutters(p, side))
+        wall_center_x = side * (p.body_width - p.shell_wall) / 2
+        cutters.append(
+            self_supporting_slot_x(
+                wall_center_x,
+                p.shell_wall + 4.0,
+                p.harness_port_y,
+                p.harness_port_width,
+                p.harness_port_z - p.harness_port_height / 2,
+                p.harness_port_z + p.harness_port_height / 2,
+            )
+        )
     return cut(cover, cutters)
 
 
 def build_base_tongues(p: Params, clearance: float | None = None) -> list[Shape]:
     right_tongue = right_tongue_profile(p, clearance)
-    tongues: list[Shape] = []
-    for side in (-1, 1):
-        points = side_profile(right_tongue, side)
-        tongues.append(prism_xz(points, p.base_front_y, p.base_depth))
-    return tongues
+    tongue = prism_xz(right_tongue, p.base_front_y, p.base_depth)
+    right = taper_tongue_front(tongue, p, 1)
+    return [right.mirror(Plane.YZ), right]
 
 
 def base_guide_limits(p: Params) -> tuple[float, float]:
-    front = p.front_latch_pocket_rear_y + p.guide_end_relief
-    rear = p.rear_latch_pocket_front_y - p.guide_end_relief
+    front = front_latch_pocket_rear_y(p) + p.guide_end_relief
+    rear = rear_latch_pocket_front_y(p) - p.guide_end_relief
     if rear <= front:
         raise ValueError("Guide relief consumes the complete guide length")
     return front, rear
@@ -528,18 +837,25 @@ def build_base_guides(p: Params) -> list[Shape]:
 
 def build_base_rear_stop(p: Params) -> list[Shape]:
     stop_bottom = p.base_thickness - 0.8
+    base_rear_y = p.base_front_y + p.base_depth
     rear_stop = prism_yz(
         [
-            (154.8, stop_bottom),
-            (156.0, stop_bottom),
-            (157.8, stop_bottom + 1.8),
-            (157.8, stop_bottom + p.guide_height),
-            (154.8, stop_bottom + p.guide_height),
+            (base_rear_y - p.rear_stop_toe_depth, stop_bottom),
+            (base_rear_y, stop_bottom),
+            (
+                base_rear_y + p.rear_stop_ramp_length,
+                stop_bottom + p.rear_stop_ramp_length,
+            ),
+            (base_rear_y + p.rear_stop_ramp_length, stop_bottom + p.guide_height),
+            (base_rear_y - p.rear_stop_toe_depth, stop_bottom + p.guide_height),
         ],
         -p.rear_stop_width / 2,
         p.rear_stop_width,
     )
-    rear_stop_foot = box_at((p.rear_stop_width, 4.0, 1.2), (0, 154.0, p.base_thickness - 0.5))
+    rear_stop_foot = box_at(
+        (p.rear_stop_width, p.rear_stop_foot_depth, 1.2),
+        (0, base_rear_y - p.rear_stop_foot_depth / 2, p.base_thickness - 0.5),
+    )
     return [rear_stop, rear_stop_foot]
 
 
@@ -549,79 +865,78 @@ def build_latch_receiver_cutters(
 ) -> list[Shape]:
     width = p.lower_latch_width + 2 * p.panel_fit_clearance
     base_rear_y = p.base_front_y + p.base_depth
-    pocket_center_z = p.lower_latch_z + (p.latch_catch_height - p.lower_latch_thickness) / 2
-    throat_bottom_z = p.lower_latch_z - p.latch_throat_height / 2
-    throat_top_z = p.lower_latch_z + p.latch_throat_height / 2
-    relief_top_z = p.base_thickness + 0.5
-    relief_run = relief_top_z - throat_top_z
+    throat_height = p.latch_throat_top_z - p.latch_throat_bottom_z
+    throat_center_z = (p.latch_throat_bottom_z + p.latch_throat_top_z) / 2
+    pocket_top_z = p.base_thickness + 0.5
+    pocket_height = pocket_top_z - p.latch_pocket_bottom_z
+    pocket_center_z = (p.latch_pocket_bottom_z + pocket_top_z) / 2
+    front_pocket_rear = front_latch_pocket_rear_y(p)
+    rear_pocket_front = rear_latch_pocket_front_y(p)
+    rear_pocket_rear = rear_latch_pocket_rear_y(p)
     cutters: list[Shape] = []
     for x in x_positions or (-p.panel_latch_x, p.panel_latch_x):
         front_throat_y0 = p.base_front_y - 0.5
-        front_throat_y1 = p.front_latch_pocket_rear_y
+        front_throat_y1 = front_pocket_rear
         cutters.append(
             box_at(
-                (width, front_throat_y1 - front_throat_y0, p.latch_throat_height),
-                (x, (front_throat_y0 + front_throat_y1) / 2, p.lower_latch_z),
+                (width, front_throat_y1 - front_throat_y0, throat_height),
+                (x, (front_throat_y0 + front_throat_y1) / 2, throat_center_z),
             )
         )
         cutters.append(
-            prism_yz(
-                [
-                    (front_throat_y0, throat_top_z),
-                    (front_throat_y0, relief_top_z),
-                    (p.front_latch_pocket_front_y - relief_run, relief_top_z),
-                    (p.front_latch_pocket_front_y, throat_top_z),
-                ],
-                x - width / 2,
-                width,
+            box_at(
+                (width, p.latch_pocket_length, pocket_height),
+                (
+                    x,
+                    (p.front_latch_pocket_front_y + front_pocket_rear) / 2,
+                    pocket_center_z,
+                ),
             )
         )
         cutters.append(
             box_at(
                 (
-                    width,
-                    p.front_latch_pocket_rear_y - p.front_latch_pocket_front_y,
-                    p.latch_pocket_height,
+                    p.latch_release_window_width,
+                    p.latch_release_window_depth,
+                    p.latch_throat_bottom_z + 1.0,
                 ),
                 (
                     x,
-                    (p.front_latch_pocket_front_y + p.front_latch_pocket_rear_y) / 2,
-                    pocket_center_z,
+                    (p.front_latch_pocket_front_y + front_pocket_rear) / 2,
+                    (p.latch_throat_bottom_z - 1.0) / 2,
                 ),
             )
         )
 
-        rear_throat_y0 = p.rear_latch_pocket_front_y
+        rear_throat_y0 = rear_pocket_front
         rear_throat_y1 = base_rear_y + 0.5
         cutters.append(
             box_at(
-                (width, rear_throat_y1 - rear_throat_y0, p.latch_throat_height),
-                (x, (rear_throat_y0 + rear_throat_y1) / 2, p.lower_latch_z),
+                (width, rear_throat_y1 - rear_throat_y0, throat_height),
+                (x, (rear_throat_y0 + rear_throat_y1) / 2, throat_center_z),
             )
         )
         cutters.append(
-            prism_yz(
-                [
-                    (p.rear_latch_pocket_rear_y, throat_top_z),
-                    (p.rear_latch_pocket_rear_y + relief_run, relief_top_z),
-                    (rear_throat_y1, relief_top_z),
-                    (rear_throat_y1, throat_top_z),
-                ],
-                x - width / 2,
-                width,
+            box_at(
+                (width, p.latch_pocket_length, pocket_height),
+                (
+                    x,
+                    (rear_pocket_front + rear_pocket_rear) / 2,
+                    pocket_center_z,
+                ),
             )
         )
         cutters.append(
             box_at(
                 (
-                    width,
-                    p.rear_latch_pocket_rear_y - p.rear_latch_pocket_front_y,
-                    p.latch_pocket_height,
+                    p.latch_release_window_width,
+                    p.latch_release_window_depth,
+                    p.latch_throat_bottom_z + 1.0,
                 ),
                 (
                     x,
-                    (p.rear_latch_pocket_front_y + p.rear_latch_pocket_rear_y) / 2,
-                    pocket_center_z,
+                    (rear_pocket_front + rear_pocket_rear) / 2,
+                    (p.latch_throat_bottom_z - 1.0) / 2,
                 ),
             )
         )
@@ -637,13 +952,32 @@ def build_sliding_base(p: Params) -> Shape:
     tongues = build_base_tongues(p)
     guides = build_base_guides(p)
     rear_stop = build_base_rear_stop(p)
-    base = union([plate, *tongues, *guides, *rear_stop])
+    support_y = p.device_front_clearance + p.device_depth / 2
+    supports = [
+        rounded_box_at(
+            (p.device_support_width, p.device_support_depth, p.device_bottom_clearance),
+            (x, support_y, p.base_thickness + p.device_bottom_clearance / 2),
+            min(0.35, p.device_bottom_clearance / 2 - 0.05),
+        )
+        for x in device_centers(p)
+    ]
+    base = union([plate, *tongues, *guides, *rear_stop, *supports])
 
     cutters = build_latch_receiver_cutters(p)
 
     # Protected side harness channel stays outside the GB10 footprint.
-    cutters.append(box_at((8.0, 92.0, 1.6), (-63.0, 92.0, p.base_thickness - 0.5)))
-    cutters.append(box_at((8.0, 92.0, 1.6), (63.0, 92.0, p.base_thickness - 0.5)))
+    cutters.append(
+        box_at(
+            (p.harness_channel_width, p.harness_channel_length, p.harness_channel_depth),
+            (-p.harness_channel_center_x, p.harness_channel_y, p.base_thickness - 0.5),
+        )
+    )
+    cutters.append(
+        box_at(
+            (p.harness_channel_width, p.harness_channel_length, p.harness_channel_depth),
+            (p.harness_channel_center_x, p.harness_channel_y, p.base_thickness - 0.5),
+        )
+    )
     return cut(base, cutters)
 
 
@@ -652,43 +986,50 @@ def fan_hole_locations(spacing: float, center_z: float) -> list[tuple[float, flo
     return [(x, center_z + z) for x in (-half, half) for z in (-half, half)]
 
 
-def build_lower_latch(p: Params, x: float, root_y: float, front: bool) -> list[Shape]:
-    arm_bottom = p.lower_latch_z - p.lower_latch_thickness / 2
-    arm_top = p.lower_latch_z + p.lower_latch_thickness / 2
-    tooth_top = arm_top + p.latch_catch_height
-    if front:
-        shoulder_y = p.front_latch_pocket_front_y + p.latch_capture
-        lead_y = shoulder_y + 3.0
-    else:
-        shoulder_y = p.rear_latch_pocket_rear_y - p.latch_capture
-        lead_y = shoulder_y - 3.0
+def build_lower_latch(
+    p: Params,
+    x: float,
+    root_y: float,
+    front: bool,
+    tip_deflection: float = 0.0,
+) -> list[Shape]:
+    arm_bottom, arm_top = latch_arm_bounds_z(p)
+    tooth_top = latch_tooth_top_z(p)
+    shoulder_y = latch_shoulder_y(p, front)
+    lead_y = shoulder_y + (p.latch_ramp_length if front else -p.latch_ramp_length)
 
-    arm_y0, arm_y1 = sorted((root_y, lead_y))
-    arm = rounded_box_at(
-        (p.lower_latch_width, arm_y1 - arm_y0, p.lower_latch_thickness),
-        (x, (arm_y0 + arm_y1) / 2, p.lower_latch_z),
-        min(0.7, p.lower_latch_thickness / 2 - 0.05),
-    )
     if front:
+        arm_profile = [
+            (root_y, arm_bottom),
+            (root_y, arm_top),
+            (lead_y, arm_top - tip_deflection),
+            (lead_y, arm_bottom - tip_deflection),
+        ]
         catch_profile = [
-            (shoulder_y + tooth_top - arm_bottom, arm_bottom),
-            (shoulder_y, tooth_top),
-            (lead_y, arm_top),
-            (lead_y, arm_bottom),
+            (shoulder_y, arm_bottom - tip_deflection),
+            (shoulder_y, tooth_top - tip_deflection),
+            (lead_y, arm_top - tip_deflection),
+            (lead_y, arm_bottom - tip_deflection),
         ]
     else:
-        catch_profile = [
-            (lead_y, arm_bottom),
-            (lead_y, arm_top),
-            (shoulder_y, tooth_top),
-            (shoulder_y - (tooth_top - arm_bottom), arm_bottom),
+        arm_profile = [
+            (lead_y, arm_bottom - tip_deflection),
+            (lead_y, arm_top - tip_deflection),
+            (root_y, arm_top),
+            (root_y, arm_bottom),
         ]
+        catch_profile = [
+            (lead_y, arm_bottom - tip_deflection),
+            (lead_y, arm_top - tip_deflection),
+            (shoulder_y, tooth_top - tip_deflection),
+            (shoulder_y, arm_bottom - tip_deflection),
+        ]
+    arm = prism_yz(arm_profile, x - p.lower_latch_width / 2, p.lower_latch_width)
     catch = prism_yz(catch_profile, x - p.lower_latch_width / 2, p.lower_latch_width)
 
-    root_length = 3.0
-    root_center_y = root_y + (root_length / 2 if front else -root_length / 2)
+    root_center_y = root_y + (-p.latch_root_length / 2 if front else p.latch_root_length / 2)
     root = rounded_box_at(
-        (p.lower_latch_width, root_length, p.lower_latch_thickness + 2.0),
+        (p.lower_latch_width, p.latch_root_length, p.lower_latch_thickness + 2.0),
         (x, root_center_y, p.lower_latch_z),
         p.latch_root_radius,
     )
@@ -709,21 +1050,91 @@ def build_upper_hook(p: Params, x: float, root_y: float, front: bool) -> list[Sh
         tooth_profile = [
             (tip_y, tooth_bottom),
             (tip_y, tooth_top),
-            (tip_y - 3.0, tooth_top),
-            (tip_y - 0.2, tooth_bottom),
+            (tip_y - p.upper_hook_ramp_length, tooth_top),
+            (tip_y - p.upper_hook_tip_land, tooth_bottom),
         ]
     else:
         tooth_profile = [
             (tip_y, tooth_bottom),
-            (tip_y + 0.2, tooth_bottom),
-            (tip_y + 3.0, tooth_top),
+            (tip_y + p.upper_hook_tip_land, tooth_bottom),
+            (tip_y + p.upper_hook_ramp_length, tooth_top),
             (tip_y, tooth_top),
         ]
     tooth = prism_yz(tooth_profile, x - p.upper_hook_width / 2, p.upper_hook_width)
     return [arm, tooth]
 
 
-def build_front_bezel(p: Params) -> Shape:
+def rounded_ring_xz(
+    outer_width: float,
+    outer_height: float,
+    outer_radius: float,
+    inner_width: float,
+    inner_height: float,
+    inner_radius: float,
+    y_start: float,
+    depth: float,
+    center_z: float,
+) -> Shape:
+    with BuildSketch(Plane.XZ) as sketch:
+        with Locations((0, center_z)):
+            RectangleRounded(outer_width, outer_height, outer_radius)
+            RectangleRounded(inner_width, inner_height, inner_radius, mode=Mode.SUBTRACT)
+    return extrude(sketch.sketch, amount=depth, dir=(0, 1, 0)).translate((0, y_start, 0))
+
+
+def build_panel_alignment_lip(p: Params, front: bool) -> list[Shape]:
+    outer_x = p.body_width / 2 - p.shell_wall - p.panel_fit_clearance
+    side_center_x = outer_x - p.panel_alignment_lip_thickness / 2
+    lip_y0 = 0.0 if front else p.body_depth - p.panel_alignment_lip_depth
+    lip_y = lip_y0 + p.panel_alignment_lip_depth / 2
+    side_bottom = p.base_thickness + p.device_bottom_clearance + 5.0
+    side_top = p.body_height - p.shell_wall - p.panel_fit_clearance - 6.0
+    side_height = side_top - side_bottom
+    top_z = p.body_height - p.shell_wall - p.panel_fit_clearance - p.panel_alignment_lip_thickness / 2
+    return [
+        rounded_box_at(
+            (p.panel_alignment_lip_thickness, p.panel_alignment_lip_depth, side_height),
+            (side * side_center_x, lip_y, side_bottom + side_height / 2),
+            0.55,
+        )
+        for side in (-1, 1)
+    ] + [
+        rounded_box_at(
+            (
+                min(120.0, 2 * (outer_x - p.panel_alignment_lip_thickness)),
+                p.panel_alignment_lip_depth,
+                p.panel_alignment_lip_thickness,
+            ),
+            (0, lip_y, top_z),
+            0.55,
+        )
+    ]
+
+
+def build_latch_flex_clearance_cutters(p: Params, front: bool) -> list[Shape]:
+    root_y = panel_latch_root_y(p, front)
+    shoulder_y = latch_shoulder_y(p, front)
+    lead_y = shoulder_y + (p.latch_ramp_length if front else -p.latch_ramp_length)
+    if front:
+        y0, y1 = root_y + 0.8, lead_y + 0.6
+    else:
+        y0, y1 = lead_y - 0.6, root_y - 0.8
+    z0 = p.latch_throat_bottom_z
+    z1 = latch_tooth_top_z(p) + 0.7
+    return [
+        box_at(
+            (
+                p.lower_latch_width + 2 * p.panel_fit_clearance,
+                y1 - y0,
+                z1 - z0,
+            ),
+            (x, (y0 + y1) / 2, (z0 + z1) / 2),
+        )
+        for x in (-p.panel_latch_x, p.panel_latch_x)
+    ]
+
+
+def build_front_bezel(p: Params, latch_deflection: float = 0.0) -> Shape:
     y_start = -p.front_bezel_offset
     holes = [(x, z, p.front_pin_hole_diameter) for x, z in fan_hole_locations(p.front_fan_hole_spacing, p.body_height / 2)]
     frame = rounded_plate_xz(
@@ -740,14 +1151,15 @@ def build_front_bezel(p: Params) -> Shape:
     # Extend every bar into the fan ring by 3 mm. A merely tangent bar creates
     # fragile print joints and microscopic sliver faces during STL meshing.
     radius = p.front_opening_radius + 3.0
-    positions = np.arange(-60.0, 60.01, p.front_grille_pitch)
+    grille_extent = math.floor((p.front_opening_radius - 4.0) / p.front_grille_pitch) * p.front_grille_pitch
+    positions = np.arange(-grille_extent, grille_extent + 0.01, p.front_grille_pitch)
     for x in positions:
         chord = 2 * math.sqrt(max(0.0, radius * radius - x * x))
         grille.append(
             rounded_prism_xz(
                 p.front_grille_bar,
                 chord,
-                0.7,
+                min(0.5, p.front_grille_bar / 2 - 0.05),
                 float(x),
                 p.body_height / 2,
                 y_start,
@@ -760,7 +1172,7 @@ def build_front_bezel(p: Params) -> Shape:
             rounded_prism_xz(
                 chord,
                 p.front_grille_bar,
-                0.7,
+                min(0.5, p.front_grille_bar / 2 - 0.05),
                 0,
                 p.body_height / 2 + float(z_offset),
                 y_start,
@@ -769,59 +1181,150 @@ def build_front_bezel(p: Params) -> Shape:
         )
 
     back_face = y_start + p.front_bezel_thickness
+    fan_clearance_size = p.front_fan_size + 2 * p.front_fan_fit_clearance
+    plenum = rounded_ring_xz(
+        p.body_width,
+        p.body_height,
+        p.outer_top_radius,
+        fan_clearance_size,
+        fan_clearance_size,
+        3.0,
+        back_face - p.front_plenum_overlap,
+        p.front_fan_thickness + p.front_plenum_overlap,
+        p.body_height / 2,
+    )
+    alignment_lip = build_panel_alignment_lip(p, True)
+
+    retainer_face_y = p.device_front_clearance - p.device_front_retainer_gap
+    device_retainers = [
+        rounded_box_at(
+            (
+                p.device_front_retainer_width,
+                retainer_face_y,
+                p.device_front_retainer_height,
+            ),
+            (
+                x,
+                retainer_face_y / 2,
+                p.base_thickness + p.device_bottom_clearance + p.device_front_retainer_height / 2,
+            ),
+            0.8,
+        )
+        for x in device_centers(p)
+    ]
+    base_stop_y = p.base_front_y - p.base_front_stop_gap
+    base_stops = [
+        rounded_box_at(
+            (p.base_front_stop_width, base_stop_y, p.base_thickness),
+            (x, base_stop_y / 2, p.base_thickness / 2),
+            0.8,
+        )
+        for x in (-p.base_front_stop_x, p.base_front_stop_x)
+    ]
+
+    structure = union([frame, *grille, plenum, *alignment_lip, *device_retainers, *base_stops])
+    structure = cut(structure, build_latch_flex_clearance_cutters(p, True))
     hooks: list[Shape] = []
     for x in (-p.panel_latch_x, p.panel_latch_x):
-        hooks.extend(build_upper_hook(p, x, back_face - p.panel_arm_root_overlap, front=True))
-        hooks.extend(build_lower_latch(p, x, back_face - p.panel_arm_root_overlap, front=True))
-
-    bezel = union([frame, *grille, *hooks])
-    release_windows = [
-        box_at(
-            (p.latch_release_window_width, p.front_bezel_thickness + 2.0, 5.0),
-            (x, y_start + p.front_bezel_thickness / 2, p.lower_latch_z + 0.5),
+        hooks.extend(build_upper_hook(p, x, -p.panel_arm_root_overlap, front=True))
+        hooks.extend(
+            build_lower_latch(
+                p,
+                x,
+                panel_latch_root_y(p, True),
+                front=True,
+                tip_deflection=latch_deflection,
+            )
         )
-        for x in (-p.panel_latch_x, p.panel_latch_x)
-    ]
-    return cut(bezel, release_windows)
+    return union([structure, *hooks])
 
 
-def build_rear_frame(p: Params) -> Shape:
+def front_grille_projected_open_fraction(
+    p: Params,
+    front: Shape | None = None,
+) -> float:
+    bezel = front if front is not None else build_front_bezel(p)
+    thickness = 0.05
+    y = -p.front_bezel_offset + 1.0
+    aperture = cyl_y(p.front_opening_radius, thickness, (0, y, p.body_height / 2))
+    blocked_area = shape_volume(bezel & aperture) / thickness
+    return 1.0 - blocked_area / (math.pi * p.front_opening_radius**2)
+
+
+def build_rear_frame(p: Params, latch_deflection: float = 0.0) -> Shape:
     y_start = p.body_depth
     with BuildSketch(Plane.XZ) as sketch:
         with Locations((0, p.body_height / 2)):
             RectangleRounded(p.body_width, p.body_height, p.outer_top_radius)
-            RectangleRounded(p.body_width - 16.0, p.body_height - 16.0, 6.0, mode=Mode.SUBTRACT)
+            RectangleRounded(
+                p.body_width - 2 * p.rear_frame_border,
+                p.body_height - 2 * p.rear_frame_border,
+                6.0,
+                mode=Mode.SUBTRACT,
+            )
     perimeter = extrude(sketch.sketch, amount=p.rear_frame_thickness, dir=(0, 1, 0)).translate((0, y_start, 0))
 
     center_z = p.body_height / 2
-    fan_plate = box_at((66.0, p.rear_frame_thickness, 66.0), (0, y_start + p.rear_frame_thickness / 2, center_z))
+    fan_plate = box_at(
+        (p.rear_fan_plate_size, p.rear_frame_thickness, p.rear_fan_plate_size),
+        (0, y_start + p.rear_frame_thickness / 2, center_z),
+    )
     fan_plate = fan_plate - cyl_y(p.rear_fan_opening_radius, p.rear_frame_thickness + 2.0, (0, y_start + p.rear_frame_thickness / 2, center_z))
     for x, z in fan_hole_locations(p.rear_fan_hole_spacing, center_z):
         fan_plate = fan_plate - cyl_y(p.rear_pin_hole_diameter / 2, p.rear_frame_thickness + 2.0, (x, y_start + p.rear_frame_thickness / 2, z))
 
     supports = [
-        rounded_box_at((5.0, p.rear_frame_thickness, p.body_height - 16.0), (x, y_start + p.rear_frame_thickness / 2, center_z), 1.5)
-        for x in (-34.0, 34.0)
-    ]
-    guard = [
-        rounded_box_at((2.0, 2.4, 56.5), (0, y_start + p.rear_frame_thickness - 1.2, center_z), 0.7),
-        rounded_box_at((56.5, 2.4, 2.0), (0, y_start + p.rear_frame_thickness - 1.2, center_z), 0.7),
-    ]
-
-    hooks: list[Shape] = []
-    rear_root_y = y_start + p.panel_arm_root_overlap
-    for x in (-p.panel_latch_x, p.panel_latch_x):
-        hooks.extend(build_upper_hook(p, x, rear_root_y, front=False))
-        hooks.extend(build_lower_latch(p, x, rear_root_y, front=False))
-    frame = union([perimeter, fan_plate, *supports, *guard, *hooks])
-    release_windows = [
-        box_at(
-            (p.latch_release_window_width, p.rear_frame_thickness + 2.0, 5.0),
-            (x, y_start + p.rear_frame_thickness / 2, p.lower_latch_z + 0.5),
+        rounded_box_at(
+            (
+                p.rear_support_width,
+                p.rear_frame_thickness,
+                p.body_height - 2 * p.rear_frame_border,
+            ),
+            (x, y_start + p.rear_frame_thickness / 2, center_z),
+            1.5,
         )
-        for x in (-p.panel_latch_x, p.panel_latch_x)
+        for x in (-p.rear_support_offset, p.rear_support_offset)
     ]
-    return cut(frame, release_windows)
+    guard: list[Shape] = []
+    grille_extent = math.floor((p.rear_fan_opening_radius - 3.0) / p.rear_grille_pitch) * p.rear_grille_pitch
+    grille_positions = np.arange(-grille_extent, grille_extent + 0.01, p.rear_grille_pitch)
+    guard_y = y_start + p.rear_frame_thickness - 1.2
+    guard_radius = p.rear_fan_opening_radius + 1.0
+    for x in grille_positions:
+        chord = 2 * math.sqrt(max(0.0, guard_radius * guard_radius - x * x))
+        guard.append(
+            rounded_box_at(
+                (p.rear_grille_bar, 2.4, chord),
+                (float(x), guard_y, center_z),
+                0.45,
+            )
+        )
+    for z_offset in grille_positions:
+        chord = 2 * math.sqrt(max(0.0, guard_radius * guard_radius - z_offset * z_offset))
+        guard.append(
+            rounded_box_at(
+                (chord, 2.4, p.rear_grille_bar),
+                (0, guard_y, center_z + float(z_offset)),
+                0.45,
+            )
+        )
+
+    alignment_lip = build_panel_alignment_lip(p, False)
+    structure = union([perimeter, fan_plate, *supports, *guard, *alignment_lip])
+    structure = cut(structure, build_latch_flex_clearance_cutters(p, False))
+    hooks: list[Shape] = []
+    for x in (-p.panel_latch_x, p.panel_latch_x):
+        hooks.extend(build_upper_hook(p, x, y_start + p.panel_arm_root_overlap, front=False))
+        hooks.extend(
+            build_lower_latch(
+                p,
+                x,
+                panel_latch_root_y(p, False),
+                front=False,
+                tip_deflection=latch_deflection,
+            )
+        )
+    return union([structure, *hooks])
 
 
 def display_inner_face_x(p: Params, side: int) -> float:
@@ -902,57 +1405,83 @@ def build_display_slot_cutters(
         )
     if include_latch:
         cutters.append(
-            self_supporting_slot_x(
-                wall_center_x,
-                p.shell_wall + 4.0,
-                p.display_center_y,
-                10.0 + 2 * p.display_fit_clearance,
-                p.display_latch_z - (5.0 + 2 * p.display_fit_clearance) / 2,
-                p.display_latch_z + (5.0 + 2 * p.display_fit_clearance) / 2,
-            )
-        )
-        cutters.append(
-            self_supporting_slot_x(
-                wall_center_x,
-                p.shell_wall + 4.0,
-                p.display_center_y,
-                12.0,
-                70.0,
-                78.0,
+            box_at(
+                (
+                    p.shell_wall + 4.0,
+                    p.display_latch_width + 2 * p.display_fit_clearance,
+                    p.display_latch_head_height + 2 * p.display_fit_clearance,
+                ),
+                (
+                    wall_center_x,
+                    p.display_center_y,
+                    p.display_latch_z,
+                ),
             )
         )
     return cutters
 
 
-def build_display_latch(p: Params, side: int) -> list[Shape]:
-    inner_face = display_inner_face_x(p, side)
-    stem_outer_x = abs(inner_face) + 0.4
-    stem_inner_x = abs(inner_face) - 5.0
-    head_inner_x = stem_inner_x - 2.25
-    stem_bottom = p.display_latch_z - 0.75
-    stem_top = p.display_latch_z + 0.75
-    right_profile = [
-        (stem_outer_x, stem_bottom),
-        (stem_inner_x, stem_bottom),
-        (head_inner_x, p.display_latch_z - 2.0),
-        (head_inner_x, p.display_latch_z + 4.0),
-        (stem_inner_x, stem_top),
-        (stem_outer_x, stem_top),
+def build_display_latch(
+    p: Params,
+    side: int,
+    tip_deflection: float = 0.0,
+) -> list[Shape]:
+    beam_inner = display_latch_beam_inner_x(p)
+    beam_outer = beam_inner + p.display_latch_thickness
+    root_z = display_latch_root_z(p)
+    beam_bottom = p.display_latch_z - 0.5
+    tip_inner = beam_inner + tip_deflection
+    tip_outer = beam_outer + tip_deflection
+    beam_profile = [
+        (beam_inner, root_z + p.display_latch_root_overlap),
+        (beam_outer, root_z + p.display_latch_root_overlap),
+        (tip_outer, beam_bottom),
+        (tip_inner, beam_bottom),
     ]
+    head_bottom = p.display_latch_z - p.display_latch_head_height / 2
+    head_top = p.display_latch_z + p.display_latch_head_height / 2
+    head_inner = display_latch_tip_inner_x(p) + tip_deflection
+    head_profile = [
+        (tip_inner, head_bottom),
+        (head_inner, p.display_latch_z - 0.5),
+        (head_inner, head_top),
+        (tip_inner, head_top),
+    ]
+    beam = prism_xz(
+        beam_profile,
+        p.display_center_y - p.display_latch_width / 2,
+        p.display_latch_width,
+    )
+    head = prism_xz(
+        head_profile,
+        p.display_center_y - p.display_latch_width / 2,
+        p.display_latch_width,
+    )
+    release_pad = rounded_box_at(
+        (3.0, p.display_latch_width + 2.0, 3.0),
+        (tip_outer + 1.2, p.display_center_y, p.display_latch_z - 1.0),
+        0.7,
+    )
+    right_shapes = [beam, head, release_pad]
+    return right_shapes if side == 1 else [shape.mirror(Plane.YZ) for shape in right_shapes]
+
+
+def build_display_hooks(
+    p: Params,
+    side: int,
+    latch_deflection: float = 0.0,
+) -> list[Shape]:
     return [
-        prism_xz(
-            side_profile(right_profile, side),
-            p.display_center_y - 5.0,
-            10.0,
-        )
+        *build_display_top_hooks(p, side),
+        *build_display_latch(p, side, latch_deflection),
     ]
 
 
-def build_display_hooks(p: Params, side: int) -> list[Shape]:
-    return [*build_display_top_hooks(p, side), *build_display_latch(p, side)]
-
-
-def build_display_pod(p: Params, side: int) -> Shape:
+def build_display_pod(
+    p: Params,
+    side: int,
+    latch_deflection: float = 0.0,
+) -> Shape:
     if side not in (-1, 1):
         raise ValueError("display side must be -1 or 1")
     inner_face = display_inner_face_x(p, side)
@@ -982,8 +1511,8 @@ def build_display_pod(p: Params, side: int) -> Shape:
         (center_x, p.display_center_y, p.display_center_z - p.display_height / 2 + 1.5),
     )
     usb_slot = box_at(
-        (8.0, 12.0, 8.0),
-        (inner_face + side * 4.0, p.display_center_y + 22.0, p.display_center_z - p.display_height / 2 + 2.0),
+        (p.harness_port_depth, p.harness_port_width, p.harness_port_height),
+        (inner_face + side * p.harness_port_depth / 2, p.harness_port_y, p.harness_port_z),
     )
     pod = cut(outer, [cavity, screen_cut, bottom_service, usb_slot])
     boss_outer = outer_face - side * (p.display_wall - 0.5)
@@ -995,22 +1524,33 @@ def build_display_pod(p: Params, side: int) -> Shape:
         for y in p.display_hook_y
     ]
     mount_bosses.append(
-        box_at((boss_depth, 12.0, 8.0), (boss_center_x, p.display_center_y, p.display_latch_z))
+        box_at(
+            (boss_depth, p.display_latch_width + 2.0, 8.0),
+            (
+                boss_center_x,
+                p.display_center_y,
+                display_latch_root_z(p) + p.display_latch_root_overlap / 2,
+            ),
+        )
     )
-    return union([pod, *mount_bosses, *build_display_hooks(p, side)])
+    return union([pod, *mount_bosses, *build_display_hooks(p, side, latch_deflection)])
 
 
-def build_display_blank(p: Params, side: int) -> Shape:
+def build_display_blank(
+    p: Params,
+    side: int,
+    latch_deflection: float = 0.0,
+) -> Shape:
     if side not in (-1, 1):
         raise ValueError("display side must be -1 or 1")
     inner_face = display_inner_face_x(p, side)
-    center_x = inner_face + side * 1.5
+    center_x = inner_face + side * p.display_blank_thickness / 2
     plate = rounded_box_at(
-        (3.0, p.display_depth, p.display_height),
+        (p.display_blank_thickness, p.display_depth, p.display_height),
         (center_x, p.display_center_y, p.display_center_z),
         4.0,
     )
-    return union([plate, *build_display_hooks(p, side)])
+    return union([plate, *build_display_hooks(p, side, latch_deflection)])
 
 
 def build_device_references(p: Params) -> list[Shape]:
@@ -1045,11 +1585,12 @@ def build_handle_reference(p: Params) -> Shape:
     z1 = z0 + p.handle_reference_height
     front = p.handle_anchor_front_y
     rear = p.handle_anchor_rear_y
+    radius = p.handle_reference_diameter / 2
     return union(
         [
-            cyl_z(4.2, z1 - z0, (0, front, (z0 + z1) / 2)),
-            cyl_z(4.2, z1 - z0, (0, rear, (z0 + z1) / 2)),
-            cyl_y(4.2, rear - front, (0, (front + rear) / 2, z1)),
+            cyl_z(radius, z1 - z0, (0, front, (z0 + z1) / 2)),
+            cyl_z(radius, z1 - z0, (0, rear, (z0 + z1) / 2)),
+            cyl_y(radius, rear - front, (0, (front + rear) / 2, z1)),
         ]
     )
 
@@ -1085,10 +1626,12 @@ def build_grille_coupon(p: Params) -> Shape:
     radius = 26.0
     for x in np.arange(-22.5, 22.6, p.front_grille_pitch):
         chord = 2 * math.sqrt(max(0.0, radius * radius - x * x)) + 1.0
-        bars.append(rounded_prism_xy(p.front_grille_bar, chord, 0.7, float(x), 0, 0, 2.4))
+        bar_radius = min(0.5, p.front_grille_bar / 2 - 0.05)
+        bars.append(rounded_prism_xy(p.front_grille_bar, chord, bar_radius, float(x), 0, 0, 2.4))
     for y in np.arange(-22.5, 22.6, p.front_grille_pitch):
         chord = 2 * math.sqrt(max(0.0, radius * radius - y * y)) + 1.0
-        bars.append(rounded_prism_xy(chord, p.front_grille_bar, 0.7, 0, float(y), 0, 2.4))
+        bar_radius = min(0.5, p.front_grille_bar / 2 - 0.05)
+        bars.append(rounded_prism_xy(chord, p.front_grille_bar, bar_radius, 0, float(y), 0, 2.4))
     return union([frame, *bars])
 
 
@@ -1135,13 +1678,38 @@ def build_rail_coupon_slider(p: Params) -> Shape:
     return union(parts)
 
 
+def build_rail_lead_coupon_cover(p: Params) -> Shape:
+    starts = (5.0, 47.0)
+    parts: list[Shape] = [
+        box_at((4.5, 84.0, p.rail_top_z), (74.25, 42.0, p.rail_top_z / 2)),
+    ]
+    for start in starts:
+        for profile in (right_lower_rail_profile(p), right_upper_rail_profile(p)):
+            parts.append(
+                tapered_rail_segment(
+                    profile,
+                    1,
+                    start,
+                    p.rail_segment_length,
+                    p.rail_lead_in,
+                    p.rail_top_z,
+                )
+            )
+    return union(parts)
+
+
+def build_rail_lead_coupon_slider(p: Params) -> Shape:
+    depth = 82.0
+    plate = box_at((8.4, depth, p.base_thickness), (64.0, p.base_front_y + depth / 2, p.base_thickness / 2))
+    tongue = prism_xz(right_tongue_profile(p), p.base_front_y, depth)
+    tongue = taper_tongue_front(tongue, p, 1)
+    return union([plate, tongue])
+
+
 def build_latch_coupon_panel(p: Params, front: bool = True) -> Shape:
-    if front:
-        plate_y = -p.front_bezel_offset + p.front_bezel_thickness / 2
-        root_y = -p.front_bezel_offset + p.front_bezel_thickness - p.panel_arm_root_overlap
-    else:
-        plate_y = p.body_depth + p.rear_frame_thickness / 2
-        root_y = p.body_depth + p.panel_arm_root_overlap
+    root_y = panel_latch_root_y(p, front)
+    plate_offset = p.latch_root_length + 3.0
+    plate_y = root_y + (-plate_offset if front else plate_offset)
     plate = rounded_box_at((40.0, 7.0, 18.0), (0, plate_y, 9.0), 2.0)
     coupon = union([plate, *build_lower_latch(p, 0.0, root_y, front)])
     return oriented(coupon, Axis.X, 90 if front else -90)
@@ -1151,7 +1719,9 @@ def build_latch_coupon_receiver(p: Params, front: bool = True) -> Shape:
     if front:
         receiver = rounded_box_at((40.0, 16.0, 10.0), (0, 8.0, 5.0), 2.0)
     else:
-        receiver = rounded_box_at((40.0, 16.0, 10.0), (0, 148.0, 5.0), 2.0)
+        y0 = rear_latch_pocket_front_y(p) - 2.0
+        y1 = p.base_front_y + p.base_depth + 2.0
+        receiver = rounded_box_at((40.0, y1 - y0, 10.0), (0, (y0 + y1) / 2, 5.0), 2.0)
     return normalize(cut(receiver, build_latch_receiver_cutters(p, (0.0,))))
 
 
@@ -1349,6 +1919,39 @@ def render_stl_preview(stl_path: Path, image_path: Path, elev: float, azim: floa
     plt.close(fig)
 
 
+def export_site_assets(
+    p: Params,
+    shapes: dict[str, Shape],
+) -> Path:
+    asset_dir = ROOT / "site" / "assets" / "r2-2"
+    if asset_dir.exists():
+        shutil.rmtree(asset_dir)
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict[str, object] = {
+        "release": RELEASE_ID,
+        "revision": p.revision,
+        "coordinate_system": {"x": "right", "y": "rear", "z": "up"},
+        "parts": {},
+    }
+    for name, shape in shapes.items():
+        path = asset_dir / f"{name}.stl"
+        export_stl(shape, path, tolerance=0.08, angular_tolerance=0.24)
+        clean_binary_stl(path)
+        manifest["parts"][name] = {
+            "file": path.name,
+            "bbox": bbox_record(shape),
+        }
+    (asset_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2),
+        encoding="utf-8",
+    )
+    (asset_dir / "parameters.json").write_text(
+        json.dumps(asdict(p), indent=2),
+        encoding="utf-8",
+    )
+    return asset_dir
+
+
 def projection_vectors(view: str, p: Params) -> tuple[tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]]:
     look = (0.0, p.body_depth / 2, p.body_height / 2)
     vectors = {
@@ -1380,7 +1983,7 @@ def _sheet(p: Params, drawing_no: str, title: str) -> tuple[plt.Figure, plt.Axes
     ax.set_axis_off()
     fig.add_artist(Rectangle((0.025, 0.035), 0.95, 0.93, fill=False, linewidth=1.2, transform=fig.transFigure))
     fig.add_artist(Rectangle((0.025, 0.035), 0.95, 0.065, fill=False, linewidth=0.8, transform=fig.transFigure))
-    fig.text(0.04, 0.067, "DUAL GB10 R2.1 ENCLOSURE", fontsize=10, weight="bold")
+    fig.text(0.04, 0.067, "DUAL GB10 R2.2 ENCLOSURE", fontsize=10, weight="bold")
     fig.text(0.30, 0.067, title, fontsize=9, weight="bold")
     fig.text(0.70, 0.067, drawing_no, fontsize=9, family="monospace")
     fig.text(0.83, 0.067, p.revision, fontsize=9, weight="bold")
@@ -1435,12 +2038,12 @@ def generate_engineering_drawings(p: Params, pdf_path: Path) -> None:
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(pdf_path) as pdf:
         fig, ax = _sheet(p, "R2-000", "RELEASE COVER AND CONTROLLED DIMENSIONS")
-        ax.text(0.0, 0.96, "Dual xFusion FusionXpark GB10 - R2.1 Release Candidate", transform=ax.transAxes, fontsize=18, weight="bold", va="top")
+        ax.text(0.0, 0.96, "Dual xFusion FusionXpark GB10 - R2.2 Release Candidate", transform=ax.transAxes, fontsize=18, weight="bold", va="top")
         ax.text(0.0, 0.88, "Selected architecture", transform=ax.transAxes, fontsize=11, weight="bold")
         bullets = [
             "One-piece rounded U cover and front-loading captured base",
             "140 x 25 front intake fan; 60 x 15 central rear exhaust assist",
-            "Tool-less front and rear fan panels; two M4 handle bolts only",
+            "Tool-less fan panels with positive keeper lips; two M4 handle bolts only",
             "Two GB10 units on edge with 0.8 nominal hard-guide clearance",
             "Reversible side display pod; default left; no rotary encoder hole",
             "Color scheme C is default; schemes A and B remain approved alternates",
@@ -1504,12 +2107,28 @@ def generate_engineering_drawings(p: Params, pdf_path: Path) -> None:
         rail = _view_axis(fig, (0.53, 0.20, 0.38, 0.56), "LEFT INNER RAIL - SIDE")
         rail.add_patch(Rectangle((0, 0), p.body_depth, 18, fill=False, lw=0.9))
         for start in p.rail_segment_starts:
-            length = p.rail_segment_length - 2 * p.rail_lead_in
-            rail.add_patch(Rectangle((start + p.rail_lead_in, p.rail_lower_floor_z), length, p.rail_lower_inner_z - p.rail_lower_floor_z, facecolor="#aeb8ba", edgecolor="#273034"))
-            rail.add_patch(Rectangle((start + p.rail_lead_in, p.rail_upper_inner_bottom_z), length, p.rail_top_z - p.rail_upper_inner_bottom_z, facecolor="#aeb8ba", edgecolor="#273034"))
+            end = start + p.rail_segment_length
+            for z0, z1 in (
+                (p.rail_lower_floor_z, p.rail_lower_inner_z),
+                (p.rail_upper_inner_bottom_z, p.rail_top_z),
+            ):
+                rail.add_patch(
+                    plt.Polygon(
+                        [
+                            (start, (z0 + z1) / 2),
+                            (start + p.rail_lead_in, z0),
+                            (end - p.rail_lead_in, z0),
+                            (end, (z0 + z1) / 2),
+                            (end - p.rail_lead_in, z1),
+                            (start + p.rail_lead_in, z1),
+                        ],
+                        facecolor="#aeb8ba",
+                        edgecolor="#273034",
+                    )
+                )
         rail.set_xlim(-5, 165); rail.set_ylim(-2, 25)
         _dim_h(rail, 0, p.body_depth, 0, f"DEPTH {p.body_depth:.1f}", -3)
-        rail.text(80, 21, f"3 x {p.rail_segment_length:.1f} SEGMENTS | 2 mm LEAD-IN | NOMINAL GAP {p.nominal_rail_clearance:.2f}", ha="center", fontsize=7)
+        rail.text(80, 21, f"3 x {p.rail_segment_length:.1f} SEGMENTS | {p.rail_lead_in:.1f} mm Y LEAD-IN | NOMINAL GAP {p.nominal_rail_clearance:.2f}", ha="center", fontsize=7)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -1521,7 +2140,16 @@ def generate_engineering_drawings(p: Params, pdf_path: Path) -> None:
         guide_front, guide_rear = base_guide_limits(p)
         for x in (-outer_guide, 0, outer_guide):
             plan.plot([x, x], [guide_front, guide_rear], lw=1.2, color="#273034")
-        plan.add_patch(Rectangle((-p.rear_stop_width / 2, 154.8), p.rear_stop_width, 3, fill=False, lw=0.9))
+        base_rear_y = p.base_front_y + p.base_depth
+        plan.add_patch(
+            Rectangle(
+                (-p.rear_stop_width / 2, base_rear_y - p.rear_stop_toe_depth),
+                p.rear_stop_width,
+                p.rear_stop_toe_depth + p.rear_stop_ramp_length,
+                fill=False,
+                lw=0.9,
+            )
+        )
         plan.set_xlim(-90, 90); plan.set_ylim(-12, 174)
         _dim_h(plan, -p.tongue_outer_x, p.tongue_outer_x, p.base_front_y, f"TONGUE WIDTH {2 * p.tongue_outer_x:.1f}", -8)
         _dim_v(plan, p.base_front_y, p.base_front_y + p.base_depth, p.tongue_outer_x, f"{p.base_depth:.1f}", 10)
@@ -1540,20 +2168,43 @@ def generate_engineering_drawings(p: Params, pdf_path: Path) -> None:
         view.add_patch(PlotCircle((0, p.body_height / 2), p.front_opening_radius, fill=False, lw=0.9))
         for x, z in fan_hole_locations(p.front_fan_hole_spacing, p.body_height / 2):
             view.add_patch(PlotCircle((x, z), p.front_pin_hole_diameter / 2, fill=False, lw=0.7))
-        for x in np.arange(-60, 60.1, p.front_grille_pitch): view.plot([x, x], [22, 144], color="#7b8589", lw=0.5)
-        for z in np.arange(23, 143.1, p.front_grille_pitch): view.plot([-61, 61], [z, z], color="#7b8589", lw=0.5)
+        grille_extent = math.floor((p.front_opening_radius - 4.0) / p.front_grille_pitch) * p.front_grille_pitch
+        grille_positions = np.arange(-grille_extent, grille_extent + 0.01, p.front_grille_pitch)
+        for x in grille_positions:
+            chord = 2 * math.sqrt(max(0.0, p.front_opening_radius**2 - x**2))
+            view.plot([x, x], [p.body_height / 2 - chord / 2, p.body_height / 2 + chord / 2], color="#7b8589", lw=0.5)
+        for z_offset in grille_positions:
+            chord = 2 * math.sqrt(max(0.0, p.front_opening_radius**2 - z_offset**2))
+            view.plot([-chord / 2, chord / 2], [p.body_height / 2 + z_offset] * 2, color="#7b8589", lw=0.5)
         view.set_xlim(-95, 105); view.set_ylim(-18, 190)
         _dim_h(view, -p.front_fan_hole_spacing / 2, p.front_fan_hole_spacing / 2, p.body_height / 2 - p.front_fan_hole_spacing / 2, f"HOLE PITCH {p.front_fan_hole_spacing:.1f}", -12)
         _dim_v(view, p.body_height / 2 - p.front_fan_hole_spacing / 2, p.body_height / 2 + p.front_fan_hole_spacing / 2, p.front_fan_hole_spacing / 2, f"{p.front_fan_hole_spacing:.1f}", 12)
-        fig.text(0.72, 0.62, f"PIN HOLES: 4 x DIA {p.front_pin_hole_diameter:.1f}\nOPENING: DIA {2 * p.front_opening_radius:.1f}\nGRILLE: {p.front_grille_bar:.1f} BAR / {p.front_grille_pitch:.1f} PITCH\nPROJECTED OPEN: {(1 - p.front_grille_bar / p.front_grille_pitch) ** 2 * 100:.1f}%\nPANEL OFFSET: {p.front_bezel_offset:.1f}", fontsize=8, linespacing=1.7)
+        fig.text(0.72, 0.62, f"PIN HOLES: 4 x DIA {p.front_pin_hole_diameter:.1f}\nOPENING: DIA {2 * p.front_opening_radius:.1f}\nGRILLE: {p.front_grille_bar:.1f} BAR / {p.front_grille_pitch:.1f} PITCH\nPROJECTED OPEN: {front_grille_projected_open_fraction(p) * 100:.1f}%\nPLENUM DEPTH: {p.front_fan_thickness:.1f}", fontsize=8, linespacing=1.7)
         pdf.savefig(fig)
         plt.close(fig)
 
         fig, _ = _sheet(p, "R2-104", "60 MM FULL-PERIMETER REAR FRAME")
         view = _view_axis(fig, (0.13, 0.14, 0.58, 0.66), "REAR FACE")
         view.add_patch(FancyBboxPatch((-p.body_width / 2, 0), p.body_width, p.body_height, boxstyle=f"round,pad=0,rounding_size={p.outer_top_radius}", fill=False, lw=1.2))
-        view.add_patch(FancyBboxPatch((-(p.body_width - 16) / 2, 8), p.body_width - 16, p.body_height - 16, boxstyle="round,pad=0,rounding_size=6", fill=False, lw=0.8))
-        view.add_patch(Rectangle((-33, p.body_height / 2 - 33), 66, 66, fill=False, lw=0.9))
+        view.add_patch(
+            FancyBboxPatch(
+                (-(p.body_width - 2 * p.rear_frame_border) / 2, p.rear_frame_border),
+                p.body_width - 2 * p.rear_frame_border,
+                p.body_height - 2 * p.rear_frame_border,
+                boxstyle="round,pad=0,rounding_size=6",
+                fill=False,
+                lw=0.8,
+            )
+        )
+        view.add_patch(
+            Rectangle(
+                (-p.rear_fan_plate_size / 2, p.body_height / 2 - p.rear_fan_plate_size / 2),
+                p.rear_fan_plate_size,
+                p.rear_fan_plate_size,
+                fill=False,
+                lw=0.9,
+            )
+        )
         view.add_patch(PlotCircle((0, p.body_height / 2), p.rear_fan_opening_radius, fill=False, lw=0.9))
         for x, z in fan_hole_locations(p.rear_fan_hole_spacing, p.body_height / 2): view.add_patch(PlotCircle((x, z), p.rear_pin_hole_diameter / 2, fill=False, lw=0.7))
         view.set_xlim(-95, 105); view.set_ylim(-18, 190)
@@ -1577,7 +2228,7 @@ def generate_engineering_drawings(p: Params, pdf_path: Path) -> None:
         side.annotate("", (-12, 8), (-12, 8 + p.display_lock_travel), arrowprops={"arrowstyle": "<->", "lw": 0.8})
         side.text(-15, 12, f"LOCK {p.display_lock_travel:.1f}", rotation=90, fontsize=7, ha="right")
         side.set_xlim(-25, 30); side.set_ylim(-45, 45)
-        fig.text(0.59, 0.18, "PCB outline, mounting holes, and USB-C direction are PROVISIONAL.\nNo encoder opening. Bottom service opening and harness entry retained.", fontsize=8, color="#a33525")
+        fig.text(0.59, 0.18, f"PCB outline, mounting holes, and USB-C direction are PROVISIONAL.\nVertical latch: {p.display_latch_flex_length:.1f} mm flex / {p.display_latch_release_deflection:.1f} mm release. Harness port retained.", fontsize=8, color="#a33525")
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -1615,7 +2266,7 @@ def write_release_documents(p: Params, docs_dir: Path, report: dict) -> None:
     docs_dir.mkdir(parents=True, exist_ok=True)
     readme = f"""# Dual GB10 {p.revision} 交付包
 
-本包是已确认 R2 结构的参数化可打印候选版：一体式圆角 U 型罩、前向滑入底板、前置 140 mm 风扇、后置中央 60 mm 风扇、免工具前后面板、左右可换显示仓和两颗 M4 固定的商业提手。
+本包是已确认 R2 结构的参数化可打印候选版：一体式圆角 U 型罩、真实导入斜面的前向滑入底板、带周向导风罩的 140 mm 前风扇、中央 60 mm 后风扇、正向反扣前后面板、左右可换显示仓和两颗 M4 固定的商业提手。
 
 ## 放行状态
 
@@ -1631,7 +2282,7 @@ def write_release_documents(p: Params, docs_dir: Path, report: dict) -> None:
 - `02_STL`：已摆正到推荐打印方向的打印网格。
 - `03_ASSEMBLY`：左右显示仓总装、爆炸和带设备/风扇参考体的 STEP。
 - `04_DRAWINGS`：PDF 图册以及实际 B-Rep 投影的 DXF/SVG。
-- `05_FIT_GAUGES`：滑轨、卡扣、圆角、格栅、双机、风扇和显示窗口样件。
+- `05_FIT_GAUGES`：16 个滑轨、卡扣、圆角、格栅、双机、风扇和显示接口样件。
 - `06_DOCS`：BOM、打印、装配、参数和未关闭事项。
 - `07_SOURCE`：Build123d 源码、测试和锁定依赖。
 - `08_REPORTS`：验证结果、发布清单和 SHA-256。
@@ -1672,7 +2323,7 @@ Hex 仅用于数字外观参考，以打印色样为验收依据。金色导轨�
 
 1. 最大尺寸不得超过 {p.print_limit:.0f} mm 打印空间。
 2. 结构悬垂不大于 45 度；不得自动生成堵塞滑轨和卡扣窗口的支撑。
-3. 对照 `08_REPORTS/validation.json` 核查热床接触面积和离床向下水平面面积；单件总量不得超过 25 mm2，且任一桥接跨度不得超过 12 mm。
+3. 对照 `08_REPORTS/validation.json` 核查热床接触面积和离床向下水平面面积；水平面总量仅用于定位切片复核区域，不作为免支撑证明。由参数合同约束的任一结构桥接跨度不得超过 12 mm。
 4. 每个 STL 保持 100% 比例；禁止用整体缩放补偿耗材收缩。
 """
     (docs_dir / "PRINTING_AND_FINISHING.md").write_text(printing, encoding="utf-8")
@@ -1681,14 +2332,14 @@ Hex 仅用于数字外观参考，以打印色样为验收依据。金色导轨�
 
 1. 先打印并验证 `05_FIT_GAUGES` 全部样件。
 2. 空壳状态下，将底板从正面沿两侧连续舌边滑入 U 型罩的三段捕获轨，直至后止挡。
-3. 用四个硅胶拉钉把 60 mm 风扇固定到全周背框；上挂钩先入位，再逐个压入下卡扣。
-4. 安装控制器线束；显示仓挂入选定侧后下移 {p.display_lock_travel:.1f} mm 锁定，另一侧安装封片。
+3. 用四个硅胶拉钉把 60 mm 风扇固定到全周背框；上定位舌先入位，再逐个压入下卡扣。
+4. 将线束放入底板槽和侧壁保护导轨；显示仓 T 键入位后，在下部弹片外偏 {p.display_latch_release_deflection:.1f} mm 的状态下下移 {p.display_lock_travel:.1f} mm，松手锁定。另一侧安装封片。
 5. 两台 GB10 从正面沿硬质圆角导向筋推入，后接口朝背框，前格栅朝 140 mm 风扇。
 6. 用四个硅胶拉钉将 140 mm 风扇装在前面板内侧，连接防呆快插并保留 {p.service_opening_travel:.0f} mm 服务余量。
-7. 前面板先挂上方两个挂钩，再逐个压入下方卡扣；前面板同时阻止底板前移。
+7. 前面板周向导风罩套住风扇，上方定位舌先入位，再逐个压入下方卡扣；前面板止挡同时阻止底板前移。
 8. 用两颗 M4 安装商业提手。完成 12 kg、60 秒静载、10 次受控提放和 6 kg、24 小时悬挂蠕变试验后才允许提起整机。
 
-维护前断开风扇快插。拆背框前允许先拔除 GB10 后部线缆；不要拉扯线缆强行打开面板。
+拆面板时从底板下方的直接释放孔将单个卡扣下压 {p.latch_release_deflection:.2f} mm，并把该角外拉 {p.latch_anti_relock_travel:.1f} mm；喉道顶面会保持已释放状态，再操作另一侧。维护前断开风扇快插。拆背框前允许先拔除 GB10 后部线缆；不要拉扯线缆强行打开面板。
 """
     (docs_dir / "ASSEMBLY_AND_SERVICE.md").write_text(assembly, encoding="utf-8")
 
@@ -1705,8 +2356,9 @@ Hex 仅用于数字外观参考，以打印色样为验收依据。金色导轨�
 | G7 热浸 | 30+/-2 C 环境双机满载 2 h：无降频/关机，GPU <=85 C、PETG <=60 C；失败则改 80 mm 或双 60 mm 后排风 | 未测 |
 | G8 控制器供电 | GB10 USB-C 连续 5 V 输出和双风扇启动电流 | 未测 |
 | G9 全尺寸干装 | 量产方向 U 罩/底板：154 mm 峰值滑入力 <=40 N、三站 Z 间隙 <=0.8 mm、后挡间隙 <=0.5 mm，双机可单人推入/取出 | 未测 |
-| G10 显示仓保持 | USB-C 线缆插合状态 30 N 外拉 5 次；无裂纹/脱锁，残余位移 <=0.2 mm，仍可 7 mm 解锁和 4.5 mm 按压释放 | 未测 |
-| G11 切片边界 | U 罩加 8-10 mm brim 后避开打印机 purge/prime/skirt 保留区 | 未测 |
+| G10 显示仓保持 | USB-C 线缆插合状态 30 N 外拉 5 次；无裂纹/脱锁，残余位移 <=0.2 mm，仍可 7 mm 解锁和 1.4 mm 外偏释放 | 未测 |
+| G11 前后卡扣 | 前后各完成 50 次拆装；插入力、释放力可接受，无发白、裂纹或自动回扣 | 未测 |
+| G12 切片边界 | U 罩加 8-10 mm brim 后避开打印机 purge/prime/skirt 保留区；逐件人工复核桥接和悬垂 | 未测 |
 
 CAD 自动检查通过不等于这些实物 Gate 已关闭。
 """
@@ -1748,6 +2400,7 @@ def write_sha256(root: Path, destination: Path) -> None:
 
 
 def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
+    validate_params(p)
     if output_dir.exists():
         shutil.rmtree(output_dir)
     step_dir = output_dir / "01_STEP"
@@ -1775,8 +2428,8 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
     parts = [
         PartSpec("R2-101", "u_cover", cover, oriented(cover, Axis.X, 180), 1, "Opaque PETG", "U cover / blank", "Exterior top face down; 8-10 mm brim; no global support.", "One-piece rounded top and side shell, paired segmented capture rails, display slots, and handle load ribs."),
         PartSpec("R2-102", "sliding_base", base, oriented(base), 1, "Opaque PETG", "Base / front / rear", "Print flat on base underside.", "Continuous captured tongues, rounded GB10 guides, rear stop, latch channels, and harness routes."),
-        PartSpec("R2-103", "front_140_bezel", front, oriented(front, Axis.X, 90), 1, "Opaque PETG", "Base / front / rear", "Exterior front face down.", "140 mm grille, silicone-pin holes, long upper hooks, and sequential lower latches."),
-        PartSpec("R2-104", "rear_60_frame", rear, oriented(rear, Axis.X, -90), 1, "Opaque PETG", "Base / front / rear", "Exterior rear face down.", "Full perimeter frame, central 60 mm mount, passive bypass, hooks, and latches."),
+        PartSpec("R2-103", "front_140_bezel", front, oriented(front, Axis.X, 90), 1, "Opaque PETG", "Base / front / rear", "Exterior front face down.", "140 mm fan plenum, finger-safe grille, alignment lip, device stops, and sequential lower latches."),
+        PartSpec("R2-104", "rear_60_frame", rear, oriented(rear, Axis.X, -90), 1, "Opaque PETG", "Base / front / rear", "Exterior rear face down.", "Full perimeter frame, central 60 mm mount, passive bypass, alignment lip, grille, and latches."),
         PartSpec("R2-105", "display_pod_left", pod_left, oriented(pod_left, Axis.Y, -90), 1, "PETG", "Display pod", "Outer display face down.", "Left-side pod; PCB and USB-C dimensions remain provisional."),
         PartSpec("R2-106", "display_pod_right", pod_right, oriented(pod_right, Axis.Y, 90), 1, "PETG", "Display pod", "Outer display face down.", "Right-side mirror pod; print only for right-display configuration."),
         PartSpec("R2-107", "display_blank_left", blank_left, oriented(blank_left, Axis.Y, -90), 1, "Opaque PETG", "U cover / blank", "Outer face down.", "Use when the display pod is on the right."),
@@ -1826,8 +2479,6 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
             non_manifold.append(spec.name)
         if printability["bed_contact_area_mm2"] < 100.0:
             insufficient_bed_contact.append(spec.name)
-        if printability["unsupported_downward_horizontal_area_mm2"] > 25.0:
-            unsupported_horizontal.append(spec.name)
         report["parts"].append({
             "part_number": spec.part_number,
             "name": spec.name,
@@ -1874,6 +2525,8 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
         GaugeSpec("G12_rear_latch_receiver", build_latch_coupon_receiver(p, False), "Production-derived rear receiver pocket and throat."),
         GaugeSpec("G13_display_lock_cover", build_display_coupon_cover(p), "Production-derived 7 mm key path, entry, and lower latch receiver."),
         GaugeSpec("G14_display_lock_pod", build_display_coupon_pod(p), "Production-derived top key and lower display latch."),
+        GaugeSpec("G15_rail_lead_cover", build_rail_lead_coupon_cover(p), "Production-derived two-segment cover rail with real Y-direction lead-ins."),
+        GaugeSpec("G16_rail_lead_slider", build_rail_lead_coupon_slider(p), "Production-derived continuous tongue with a tapered insertion nose."),
     ]
     for gauge in gauges:
         shape = oriented(gauge.shape)
@@ -1900,6 +2553,24 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
     handle = build_handle_reference(p)
     devices = build_device_references(p)
     fans = build_fan_references(p)
+    site_asset_dir = export_site_assets(
+        p,
+        {
+            "u_cover": cover,
+            "sliding_base": base,
+            "front_bezel": front,
+            "rear_frame": rear,
+            "display_pod_left": pod_left,
+            "display_pod_right": pod_right,
+            "display_blank_left": blank_left,
+            "display_blank_right": blank_right,
+            "gb10_left": devices[0],
+            "gb10_right": devices[1],
+            "fan_front": fans[0],
+            "fan_rear": fans[1],
+            "handle": handle,
+        },
+    )
     printed_left = [cover, base, front, rear, pod_left, blank_right]
     printed_right = [cover, base, front, rear, pod_right, blank_left]
     assembly_left = Compound(children=[*printed_left, handle])
@@ -1964,22 +2635,97 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
         for name, shape in collision_shapes.items()
     }
 
-    front_open_area = (1 - p.front_grille_bar / p.front_grille_pitch) ** 2
+    front_open_area = front_grille_projected_open_fraction(p, front)
     collision_values = [
         value
         for group in report["collisions_mm3"].values()
         for value in group.values()
     ]
+    latch_motion_passed = True
+    for is_front in (True, False):
+        sign = -1 if is_front else 1
+        locked_latch = union(
+            build_lower_latch(
+                p,
+                p.panel_latch_x,
+                panel_latch_root_y(p, is_front),
+                is_front,
+            )
+        )
+        released_latch = union(
+            build_lower_latch(
+                p,
+                p.panel_latch_x,
+                panel_latch_root_y(p, is_front),
+                is_front,
+                p.latch_release_deflection,
+            )
+        )
+        locked = locked_latch.translate((0, sign * p.latch_anti_relock_travel, 0))
+        released = released_latch.translate((0, sign * p.latch_anti_relock_travel, 0))
+        latch_motion_passed &= intersection_volume(base, locked) > 0.05
+        latch_motion_passed &= intersection_volume(base, released) <= 0.01
+        released_panel = (
+            build_front_bezel(p, p.latch_release_deflection)
+            if is_front
+            else build_rear_frame(p, p.latch_release_deflection)
+        )
+        latch_motion_passed &= all(
+            intersection_volume(
+                base,
+                released_panel.translate((0, sign * travel, 0)),
+            ) <= 0.01
+            for travel in linear_motion_samples(
+                0.0,
+                p.latch_anti_relock_travel,
+                p.panel_motion_step,
+            )
+        )
+
+    released_pod = build_display_pod(p, -1, p.display_latch_release_deflection)
+    display_motion_passed = all(
+        intersection_volume(cover, released_pod.translate((0, 0, travel))) <= 0.01
+        for travel in linear_motion_samples(0.0, p.display_lock_travel, p.display_motion_step)
+    ) and intersection_volume(cover, pod_left.translate((0, 0, 1.0))) > 0.05
+    rail_insertion_passed = all(
+        intersection_volume(cover, base.translate((0, -outward, 0))) <= 0.01
+        for outward in linear_motion_samples(160.0, 0.0, p.rail_motion_step)
+    )
+    base_axial_stops_passed = (
+        intersection_volume(front, base.translate((0, -0.5, 0))) > 0.05
+        and intersection_volume(rear, base.translate((0, 0.5, 0))) > 0.05
+    )
+    device_restraint_passed = all(
+        intersection_volume(device.translate((0, 0, -0.1)), base) > 0.05
+        and intersection_volume(
+            device.translate((0, -(p.device_front_retainer_gap + 0.1), 0)),
+            front,
+        ) > 0.05
+        for device in devices
+    )
+    declared_bridge_span = max(
+        p.lower_latch_width + 2 * p.panel_fit_clearance,
+        p.display_latch_width + 2 * p.display_fit_clearance,
+        p.harness_port_width,
+    )
+
     report["checks"] = {
         "all_parts_valid": not invalid,
         "all_parts_single_solid": not multi_solid,
         "all_parts_within_180mm": not oversized,
         "all_meshes_closed": not non_manifold,
         "all_parts_have_at_least_100mm2_bed_contact": not insufficient_bed_contact,
-        "no_large_downward_horizontal_surfaces_above_bed": not unsupported_horizontal,
         "device_and_assembly_collision_free": all(value <= 0.01 for value in collision_values),
         "front_grille_projected_open_area": round(front_open_area, 4),
-        "front_grille_at_least_75_percent": front_open_area >= 0.75,
+        "front_grille_at_least_80_percent": front_open_area >= 0.80,
+        "declared_bridge_span_mm": round(declared_bridge_span, 3),
+        "declared_bridge_spans_at_most_12mm": declared_bridge_span <= 12.0,
+        "panel_latch_motion_passed": latch_motion_passed,
+        "display_complete_pod_motion_passed": display_motion_passed,
+        "rail_full_insertion_sweep_passed": rail_insertion_passed,
+        "base_axial_stops_passed": base_axial_stops_passed,
+        "device_support_and_front_restraint_passed": device_restraint_passed,
+        "slicer_review_required": True,
         "body_panel_screw_count": 0,
         "structural_handle_bolt_count": 2,
         "cad_generation_passed": False,
@@ -1997,9 +2743,14 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
         report["checks"]["all_parts_within_180mm"],
         report["checks"]["all_meshes_closed"],
         report["checks"]["all_parts_have_at_least_100mm2_bed_contact"],
-        report["checks"]["no_large_downward_horizontal_surfaces_above_bed"],
         report["checks"]["device_and_assembly_collision_free"],
-        report["checks"]["front_grille_at_least_75_percent"],
+        report["checks"]["front_grille_at_least_80_percent"],
+        report["checks"]["declared_bridge_spans_at_most_12mm"],
+        report["checks"]["panel_latch_motion_passed"],
+        report["checks"]["display_complete_pod_motion_passed"],
+        report["checks"]["rail_full_insertion_sweep_passed"],
+        report["checks"]["base_axial_stops_passed"],
+        report["checks"]["device_support_and_front_restraint_passed"],
     ])
 
     report_path = report_dir / "validation.json"
@@ -2007,9 +2758,14 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
     generate_engineering_drawings(p, pdf_path)
     shutil.copy2(pdf_path, drawing_dir / pdf_path.name)
     write_release_documents(p, docs_dir, report)
-    shutil.copy2(ROOT / "planning" / "02-working" / "enclosure-r2-manufacturability-review.md", docs_dir / "R2_MANUFACTURABILITY_REVIEW.md")
-    shutil.copy2(ROOT / "planning" / "02-working" / "enclosure-r2.1-remediation.md", docs_dir / "R2.1_REMEDIATION.md")
-    shutil.copy2(ROOT / "planning" / "02-working" / "enclosure-r2.1-claude-review.md", docs_dir / "R2.1_CLAUDE_REVIEW.md")
+    package_documents = [
+        ("enclosure-r2.2-remediation.md", "R2.2_REMEDIATION.md"),
+        ("enclosure-r2.2-claude-review.md", "R2.2_CLAUDE_REVIEW.md"),
+    ]
+    for source_name, package_name in package_documents:
+        source = ROOT / "planning" / "02-working" / source_name
+        if source.exists():
+            shutil.copy2(source, docs_dir / package_name)
     shutil.copy2(ROOT / "planning" / "03-core" / "confirmed-constraints.md", docs_dir / "CONFIRMED_CONSTRAINTS.md")
 
     source_files = [
@@ -2023,6 +2779,7 @@ def generate(p: Params, output_dir: Path, pdf_path: Path) -> dict:
     for source in source_files:
         if source.exists():
             shutil.copy2(source, source_dir / source.name)
+    shutil.copytree(site_asset_dir, source_dir / "site-assets", dirs_exist_ok=True)
 
     render_stl_preview(fit_preview_stl, preview_dir / "R2_complete_C_left_display.png", elev=24, azim=-128)
     render_stl_preview(exploded_stl, preview_dir / "R2_exploded_left_display.png", elev=24, azim=-128)

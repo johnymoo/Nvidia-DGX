@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:,">
-  <title>Dual GB10 Enclosure R2.1</title>
+  <title>Dual GB10 Enclosure R2.2</title>
   <style>
     :root {
       color-scheme: light;
@@ -294,7 +294,7 @@
 <body>
   <main class="app">
     <header class="topbar">
-      <div class="identity"><strong>Dual GB10</strong><span>Enclosure R2.1</span></div>
+      <div class="identity"><strong>Dual GB10</strong><span>Enclosure R2.2</span></div>
       <a class="back-link" href="./r2-assembly.html">装配评审</a>
       <a class="back-link" href="./index.html">风道方案</a>
       <div class="control-row">
@@ -311,18 +311,18 @@
     </header>
 
     <div class="workspace">
-      <section class="stage" aria-label="Dual GB10 R2.1 三维结构模型">
+      <section class="stage" aria-label="Dual GB10 R2.2 CAD 派生三维结构模型">
         <canvas tabindex="0"></canvas>
         <div class="legend" aria-hidden="true">
           <span><i style="background:#f1f3f2"></i>U 型罩</span>
-          <span><i style="background:#e6542d"></i>卡扣前盖</span>
+          <span><i style="background:#171b1d"></i>导风前盖</span>
           <span><i style="background:#d19b35"></i>承重滑轨</span>
           <span><i style="background:#2d7fac"></i>进风</span>
           <span><i style="background:#c84a36"></i>排风</span>
         </div>
         <div class="scene-note" aria-live="polite">
           <strong id="view-title">完成图 · 正面斜向下 45°</strong>
-          <span id="view-note">连续圆角 U 型罩、独立橙色风扇前盖、左侧触摸屏仓和顶部双点提手。</span>
+          <span id="view-note">深石墨圆角 U 型罩、哑黑风扇导风前盖、左侧触摸屏仓和顶部双点提手。</span>
         </div>
       </section>
 
@@ -343,14 +343,14 @@
               <div class="metric"><strong>152 × 158 × 166</strong><span>U 罩主体 W × D × H mm</span></div>
               <div class="metric"><strong>2 × M4</strong><span>结构螺丝总数</span></div>
               <div class="metric"><strong>R 10-12</strong><span>U 罩外圆角 mm</span></div>
-              <div class="metric"><strong>≥ 75%</strong><span>前格栅目标开孔率</span></div>
+              <div class="metric"><strong>≥ 80%</strong><span>前格栅 CAD 开孔率</span></div>
             </div>
 
             <h2 class="section-title">主打印件</h2>
             <ul class="part-list">
               <li><i style="background:#f1f3f2;border:1px solid #b9c0c1"></i><span>连续圆角 U 型罩</span><small>1</small></li>
               <li><i style="background:#555e61"></i><span>加强筋滑入底板</span><small>1</small></li>
-              <li><i style="background:#e6542d"></i><span>140 mm 卡扣前盖</span><small>1</small></li>
+              <li><i style="background:#171b1d"></i><span>140 mm 导风前盖</span><small>1</small></li>
               <li><i style="background:#363e41"></i><span>60 mm 一体式全周背框</span><small>1</small></li>
               <li><i style="background:#f1f3f2;border:1px solid #b9c0c1"></i><span>触摸屏侧仓 / 封板</span><small>2</small></li>
               <li><i style="background:#1e2325"></i><span>商业提手带</span><small>1</small></li>
@@ -366,7 +366,7 @@
 
           <section class="pane" data-pane-content="checks">
             <div class="check-summary">
-              <div><strong style="color:var(--green)">7</strong><span>R2.1 CAD 已验证</span></div>
+              <div><strong style="color:var(--green)">8</strong><span>R2.2 运动合同</span></div>
               <div><strong style="color:var(--amber)">6</strong><span>待打印样件</span></div>
               <div><strong style="color:var(--red)">7</strong><span>待实物硬件</span></div>
             </div>
@@ -374,7 +374,7 @@
           </section>
         </div>
 
-        <div class="panel-foot"><span>PETG · 0.4/0.6 mm nozzle</span><span>R2.1-RC2 · CAD verified</span></div>
+        <div class="panel-foot"><span>PETG · CAD-derived STL</span><span>R2.2-RC1 · physical gates open</span></div>
       </aside>
     </div>
   </main>
@@ -383,10 +383,14 @@
     import * as THREE from "https://esm.sh/three@0.179.1";
     import { OrbitControls } from "https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js";
     import { RoundedBoxGeometry } from "https://esm.sh/three@0.179.1/examples/jsm/geometries/RoundedBoxGeometry.js";
+    import { STLLoader } from "https://esm.sh/three@0.179.1/examples/jsm/loaders/STLLoader.js";
 
-    const W = 152;
-    const H = 166;
-    const D = 158;
+    const cadParametersResponse = await fetch("./assets/r2-2/parameters.json");
+    if (!cadParametersResponse.ok) throw new Error("Unable to load CAD parameter contract");
+    const cadParameters = await cadParametersResponse.json();
+    const W = cadParameters.body_width;
+    const H = cadParameters.body_height;
+    const D = cadParameters.body_depth;
     const state = { view: "assembled", side: "left" };
 
     const canvas = document.querySelector("canvas");
@@ -439,12 +443,12 @@
     scene.add(floor);
 
     const palette = {
-      shell: 0xf0f2f1,
-      shellEdge: 0xa8b0b1,
-      base: 0x4d5659,
+      shell: 0x343a3c,
+      shellEdge: 0x657074,
+      base: 0x171b1d,
       baseEdge: 0x202628,
-      orange: 0xe6542d,
-      orangeDark: 0xb73a1d,
+      orange: 0x171b1d,
+      orangeDark: 0x0e1112,
       device: 0x171b1d,
       gold: 0xb58c43,
       black: 0x101416,
@@ -453,6 +457,7 @@
       blue: 0x2d7fac,
       red: 0xc84a36,
       screen: 0x172329,
+      display: 0x8b9698,
     };
 
     function mat(color, roughness = 0.62, metalness = 0.02, opacity = 1) {
@@ -481,12 +486,15 @@
       metal: mat(palette.metal, 0.28, 0.75),
       rail: mat(palette.rail, 0.52, 0.2),
       glass: mat(0x18272d, 0.22, 0.06),
+      display: mat(palette.display, 0.68, 0.06),
     };
 
     const model = new THREE.Group();
     scene.add(model);
     const parts = {};
     const animatedMaterials = new Set();
+    const stlLoader = new STLLoader();
+    let cadAssetsLoaded = false;
 
     function trackMaterial(material) {
       animatedMaterials.add(material);
@@ -510,6 +518,31 @@
       parts[name] = group;
       model.add(group);
       return group;
+    }
+
+    function loadCadGroup(filename, material) {
+      return new Promise((resolve, reject) => {
+        stlLoader.load(`./assets/r2-2/${filename}`, (geometry) => {
+          geometry.computeVertexNormals();
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.scale.y = -1;
+          mesh.rotation.x = -Math.PI / 2;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          const group = new THREE.Group();
+          group.position.z = -D / 2;
+          group.add(mesh);
+          resolve(group);
+        }, undefined, reject);
+      });
+    }
+
+    function removePart(name) {
+      const old = parts[name];
+      if (!old) return;
+      model.remove(old);
+      old.traverse((object) => object.geometry?.dispose());
+      delete parts[name];
     }
 
     function uCoverShape() {
@@ -846,16 +879,30 @@
       parts.airflow = airflow;
     }
 
-    function rebuildDisplay() {
+    async function rebuildDisplay() {
       const old = parts.display;
-      model.remove(old);
-      old.traverse((object) => {
-        object.geometry?.dispose();
-        if (object.material?.map) object.material.map.dispose();
-        if (object.material && !Object.values(materials).includes(object.material)) object.material.dispose();
-      });
+      if (old) {
+        model.remove(old);
+        old.traverse((object) => object.geometry?.dispose());
+      }
       const side = state.side === "left" ? -1 : 1;
-      const display = makeDisplay(side);
+      const display = cadAssetsLoaded
+        ? await loadCadGroup(`display_pod_${state.side}.stl`, materials.display)
+        : makeDisplay(side);
+      if (cadAssetsLoaded) {
+        const screenMaterial = new THREE.MeshBasicMaterial({ map: makeDisplayTexture(), toneMapped: false });
+        const screen = new THREE.Mesh(
+          new THREE.PlaneGeometry(cadParameters.display_screen_width, cadParameters.display_screen_height),
+          screenMaterial,
+        );
+        screen.rotation.y = side === -1 ? -Math.PI / 2 : Math.PI / 2;
+        screen.position.set(
+          side * (W / 2 + cadParameters.display_gap + cadParameters.display_projection + 0.15),
+          cadParameters.display_center_z + 5,
+          cadParameters.display_center_y,
+        );
+        display.add(screen);
+      }
       display.userData.home = display.position.clone();
       display.userData.exploded = display.position.clone().add(new THREE.Vector3(side * 62, 12, 0));
       display.userData.target = state.view === "exploded" ? display.userData.exploded.clone() : display.userData.home.clone();
@@ -863,11 +910,31 @@
       model.add(display);
     }
 
+    async function replacePrintedPartsWithCad() {
+      const definitions = [
+        ["cover", "u_cover.stl", materials.shell, [0, 80, 0]],
+        ["base", "sliding_base.stl", materials.base, [0, -34, 0]],
+        ["frontCap", "front_bezel.stl", materials.orange, [0, 0, 88]],
+        ["rear", "rear_frame.stl", materials.base, [0, 0, -76]],
+      ];
+      const loaded = await Promise.all(
+        definitions.map(async ([name, file, material, exploded]) => [name, await loadCadGroup(file, material), exploded])
+      );
+      loaded.forEach(([name, group, exploded]) => {
+        removePart(name);
+        register(name, group, exploded);
+      });
+      cadAssetsLoaded = true;
+      await rebuildDisplay();
+      document.documentElement.dataset.gb10CadAssetsReady = "true";
+      applyView();
+    }
+
     const cameraTarget = new THREE.Vector3(0, 83, 0);
     const cameraPositionTarget = new THREE.Vector3(-320, 250, -350);
 
     const viewCopy = {
-      assembled: ["完成图 · 正面斜向下 45°", "连续圆角 U 型罩、独立橙色风扇前盖、左侧触摸屏仓和顶部双点提手。"],
+      assembled: ["完成图 · 正面斜向下 45°", "深石墨圆角 U 型罩、哑黑风扇导风前盖、左侧触摸屏仓和顶部双点提手。"],
       transparent: ["透明结构 · 风路与承重接口", "黄色接口示意底板承力位置；蓝色进风贯穿两台 GB10，中央 60 mm 风扇向后抽排。"],
       exploded: ["爆炸图 · 六类打印模块", "U 罩向上、底板向下、前盖和风扇向前、后排风桥向后，卡扣与承力件分开表达。"],
     };
@@ -915,17 +982,17 @@
     }
 
     const checks = [
-      ["pass", "CAD 通过", "打印尺寸", "R2.1 全部推荐打印方向均落在 180 mm 立方空间内。"],
-      ["pass", "CAD 通过", "封闭网格", "8 个打印件和 14 个配合规均为单一有效实体；STL 无非流形边。"],
+      ["pass", "CAD 通过", "打印尺寸", "R2.2 全部推荐打印方向均落在 180 mm 立方空间内。"],
+      ["pass", "CAD 通过", "封闭网格", "8 个打印件和 16 个配合规均为单一有效实体；STL 无非流形边。"],
       ["pass", "CAD 通过", "碰撞检查", "设备、风扇和装配零件静态碰撞为零；布尔失败会直接使验证失败。"],
       ["missing", "待样件", "连续圆角", "外圆角 12 mm、外露下边 3 mm，仍需打印角部样件检查表面。"],
       ["pass", "CAD 通过", "免全局支撑", "U 罩顶面朝下、底板平放、前盖正面朝下、背框背面朝下。"],
-      ["pass", "CAD 通过", "悬垂角", "双向导轨、面板卡扣肩、显示 T 键和侧壁槽口均采用 45° 自支撑面。"],
-      ["pass", "CAD 通过", "桥接面积", "每个打印件离床向下水平面总量不超过 25 mm2，单处跨度不超过 12 mm。"],
+      ["partial", "待切片", "悬垂与桥接", "CAD 参数限制结构桥接跨度不超过 12 mm；水平面总量仅用于定位，逐件切片复核仍是放行 Gate。"],
+      ["pass", "CAD 通过", "运动路径", "面板锁定/释放、防回扣、完整显示仓 7 mm 路径和底板全程滑入均由真实整件几何检查。"],
       ["pass", "CAD 通过", "壁厚基线", "主壳壁 3.6 mm，并在提手载荷路径设置横向加强筋。"],
       ["missing", "缺证据", "滑轨间隙", "打印 0.30 / 0.40 / 0.50 mm 单边间隙样件。"],
       ["missing", "缺证据", "卡扣寿命", "一体式顺序释放卡扣连续拆装 50 次，无发白或根部裂纹。"],
-      ["partial", "待重验", "格栅开孔率", "14-16 mm 节距、约 2 mm 筋，目标有效开孔率至少 75%。"],
+      ["partial", "待重验", "格栅开孔率", "前格栅 12 mm 节距、1.2 mm 筋，CAD 投影开孔率至少 80%；仍需打印测量。"],
       ["partial", "待重验", "底板翘曲", "完全冷却后四角翘起不超过 0.8 mm。"],
       ["missing", "缺证据", "风扇隔振", "优先硅胶拉钉，风扇框不得与松动前盖硬接触。"],
       ["pass", "通过", "材料", "主体使用 PETG；持续负载后验证实际局部温度。"],
@@ -1012,6 +1079,10 @@
     window.__GB10_R2_READY__ = true;
     window.__GB10_R2_STATE__ = state;
     document.documentElement.dataset.gb10R2Ready = "true";
+    replacePrintedPartsWithCad().catch((error) => {
+      console.error("Failed to load CAD-derived R2.2 assets", error);
+      document.documentElement.dataset.gb10CadAssetsReady = "false";
+    });
     animate();
   </script>
 </body>

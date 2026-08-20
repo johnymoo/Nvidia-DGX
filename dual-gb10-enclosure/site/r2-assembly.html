@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:,">
-  <title>Dual GB10 R2.1 装配评审</title>
+  <title>Dual GB10 R2.2 装配评审</title>
   <style>
     :root {
       color-scheme: light;
@@ -37,7 +37,9 @@
     .app {
       display: grid;
       grid-template-rows: auto minmax(0, 1fr);
+      width: 100%;
       height: 100vh;
+      min-width: 0;
       min-height: 0;
     }
 
@@ -45,6 +47,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      min-width: 0;
       min-height: 58px;
       padding: 9px 14px;
       border-bottom: 1px solid var(--line);
@@ -68,8 +71,10 @@
     .top-controls {
       display: flex;
       align-items: center;
+      flex: 1 1 auto;
       gap: 8px;
       min-width: 0;
+      max-width: 100%;
       margin-left: auto;
       overflow-x: auto;
       padding-bottom: 2px;
@@ -304,7 +309,7 @@
 <body>
   <main class="app">
     <header class="topbar">
-      <div class="identity"><strong>Dual GB10</strong><span>R2.1 Assembly Review</span></div>
+      <div class="identity"><strong>Dual GB10</strong><span>R2.2 CAD Assembly Review</span></div>
       <a class="nav-link" href="./r2.html">外壳评审</a>
       <a class="nav-link" href="./index.html">风道方案</a>
       <div class="top-controls">
@@ -317,7 +322,7 @@
             <span class="scheme-swatch" aria-hidden="true"><i style="background:#ecefed"></i><i style="background:#1d2224"></i><i style="background:#76b900"></i></span>
             <span>B 绿</span>
           </button>
-          <button class="scheme-button" type="button" data-color="c" aria-pressed="true" title="C 全黑工作站">
+          <button class="scheme-button" type="button" data-color="c" aria-pressed="true" title="C 石墨工作站">
             <span class="scheme-swatch" aria-hidden="true"><i style="background:#343a3c"></i><i style="background:#171b1d"></i><i style="background:#8b9698"></i></span>
             <span>C 石墨</span>
           </button>
@@ -408,7 +413,7 @@
           </section>
         </div>
 
-        <div class="panel-foot"><span>Three.js assembly model</span><span>R2.1-RC2 · CAD verified</span></div>
+        <div class="panel-foot"><span>Three.js · CAD-derived STL</span><span>R2.2-RC1 · physical gates open</span></div>
       </aside>
     </div>
   </main>
@@ -417,10 +422,14 @@
     import * as THREE from "https://esm.sh/three@0.179.1";
     import { OrbitControls } from "https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js";
     import { RoundedBoxGeometry } from "https://esm.sh/three@0.179.1/examples/jsm/geometries/RoundedBoxGeometry.js";
+    import { STLLoader } from "https://esm.sh/three@0.179.1/examples/jsm/loaders/STLLoader.js";
 
-    const W = 152;
-    const H = 166;
-    const D = 158;
+    const cadParametersResponse = await fetch("./assets/r2-2/parameters.json");
+    if (!cadParametersResponse.ok) throw new Error("Unable to load CAD parameter contract");
+    const cadParameters = await cadParametersResponse.json();
+    const W = cadParameters.body_width;
+    const H = cadParameters.body_height;
+    const D = cadParameters.body_depth;
     const params = new URLSearchParams(location.search);
     const initialStep = Math.max(0, Math.min(8, Number.parseInt(params.get("step") ?? "0", 10) || 0));
     const state = {
@@ -435,10 +444,10 @@
       { title: "零件总览", short: "确认分件", detail: "全部打印件和购买件按真实装配方向展开。", specs: ["5 类打印模块", "2 颗结构螺丝", "无泡棉"] },
       { title: "前风扇预装", short: "140 mm 风扇 → 前面板", detail: "风扇贴合前面板内侧，四个硅胶拉钉从四角完成隔振固定。", specs: ["4 × 硅胶拉钉", "风扇随面板拆卸", "螺丝孔仅备用"] },
       { title: "后风扇预装", short: "60 mm 风扇 → 全周背框", detail: "60 mm 风扇直接固定在一体式背框中央，不使用独立滑出风扇盒。", specs: ["4 × 硅胶拉钉", "一体式背框", "上下被动旁路"] },
-      { title: "四面主体成形", short: "底板 → U 型罩", detail: "底板从正面滑入；连续舌边穿过每侧三组上下 45° 捕获轨，双向限制竖直位移，最后抵住中央 70 mm 后挡条。", specs: ["每侧 3 组双轨", "30 mm 有效段", "0.40 mm 标称间隙"] },
+      { title: "四面主体成形", short: "底板 → U 型罩", detail: "底板锥形前端从正面滑入；连续舌边穿过每侧三组带真实 Y 向导入坡的上下捕获轨。", specs: ["每侧 3 组双轨", "34 mm 参数段", "0.40 mm 标称间隙"] },
       { title: "背框安装", short: "背框 → 四面主体", detail: "先挂上方两个刚性挂钩，再压入下方两个顺序释放卡扣。", specs: ["2 上挂钩", "2 下卡扣", "逐个释放"] },
       { title: "GB10 装入", short: "2 × GB10 → 底板", detail: "两台 GB10 从正面沿圆角 PETG 硬导向筋推入，前后面板最终限制纵向移动。", specs: ["0.6–0.8 mm 间隙", "无必需 TPU", "后接口无遮挡"] },
-      { title: "显示仓与线束", short: "显示仓 / 风扇快插", detail: "显示仓的两个楔形 T 键从扩大入口插入，下移 7 mm 后由下部卡扣锁定；风扇面板保留服务行程和防呆快插。", specs: ["锁程 7 mm", "4.5 mm 按压释放", "风扇快插"] },
+      { title: "显示仓与线束", short: "显示仓 / 风扇快插", detail: "线束沿底板槽和侧壁保护导轨进入显示仓；纵向弹片外偏 1.4 mm 后，完整显示仓可走完 7 mm 锁程。", specs: ["锁程 7 mm", "1.4 mm 外偏释放", "贯通线束口"] },
       { title: "前面板闭合", short: "前面板 → 四面主体", detail: "上挂钩先就位，再按压两个下卡扣；面板内止挡同时阻止底板向前退出。", specs: ["顺序释放", "3–4 mm 止回", "无需工具"] },
       { title: "提手与总装", short: "提手 → U 型罩", detail: "商业提手由两颗 M4 固定到内部横向加强筋；搬运载荷绕开面板卡扣。", specs: ["2 × M4", "12 kg / 60 s 待测", "前后贯穿风道"] },
     ];
@@ -448,7 +457,7 @@
       ["missing", "待样件", "顺序释放卡扣", "前后共用接口样件连续拆装 50 次，无发白、裂纹或自动回扣。"],
       ["missing", "待实物", "风扇孔位与拉钉", "用实际 140 mm、60 mm 风扇确认孔距、厚度和硅胶拉钉长度。"],
       ["partial", "待重验", "GB10 硬导向", "双机配合规需验证 0.6–0.8 mm 间隙和搬运倾斜时无明显撞击。"],
-      ["missing", "待实物", "显示屏仓", "USB-C 插合状态 30 N 外拉 5 次，无裂纹/脱锁且残余 ≤0.2 mm；仍可 7 mm 解锁和 4.5 mm 按压释放。"],
+      ["missing", "待实物", "显示屏仓", "USB-C 插合状态 30 N 外拉 5 次，无裂纹/脱锁且残余 ≤0.2 mm；仍可 7 mm 解锁和 1.4 mm 外偏释放。"],
       ["partial", "待重验", "后部接线", "完整背框装好后，USB-C、HDMI、网线和 QSFP 保持可插拔和合理弯曲半径。"],
       ["missing", "待样件", "面板服务行程", "释放后可打开 30–40 mm，且快插可单手触达、线束不受拉。"],
       ["partial", "CAD 通过", "提手载荷路径", "最终 M4 硬件锁定后：12 kg 挠度 ≤2 mm、10 次提放、6 kg/24 h 残余 ≤0.5 mm。"],
@@ -547,7 +556,7 @@
         roughness: { shell: 0.56, base: 0.7, front: 0.72, display: 0.62 },
       },
       c: {
-        name: "C 全黑工作站",
+        name: "C 石墨工作站",
         colors: {
           shell: 0x343a3c,
           shellEdge: 0x252a2c,
@@ -639,6 +648,7 @@
     const nodes = {};
     const animatedNodes = new Set();
     const rotors = [];
+    const stlLoader = new STLLoader();
 
     function track(name, node) {
       node.userData.home = node.position.clone();
@@ -646,6 +656,97 @@
       nodes[name] = node;
       animatedNodes.add(node);
       return node;
+    }
+
+    function loadCadGroup(filename, material) {
+      return new Promise((resolve, reject) => {
+        stlLoader.load(`./assets/r2-2/${filename}`, (geometry) => {
+          geometry.computeVertexNormals();
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.scale.y = -1;
+          mesh.rotation.x = -Math.PI / 2;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          const group = new THREE.Group();
+          group.position.z = -D / 2;
+          group.add(mesh);
+          resolve(group);
+        }, undefined, reject);
+      });
+    }
+
+    async function replaceTrackedNode(name, filename, material) {
+      const old = nodes[name];
+      const targetOffset = old.userData.target.clone().sub(old.userData.home);
+      model.remove(old);
+      animatedNodes.delete(old);
+      const replacement = await loadCadGroup(filename, material);
+      track(name, replacement);
+      replacement.userData.target.copy(replacement.userData.home).add(targetOffset);
+      model.add(replacement);
+    }
+
+    function addDisplayScreen(group, side) {
+      const screenMaterial = new THREE.MeshBasicMaterial({
+        map: makeDisplayTexture(),
+        toneMapped: false,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
+      screenMaterial.userData.baseOpacity = 1;
+      screenMaterial.userData.targetOpacity = 1;
+      animatedMaterials.add(screenMaterial);
+      const screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(cadParameters.display_screen_width, cadParameters.display_screen_height),
+        screenMaterial,
+      );
+      screen.rotation.y = side === -1 ? -Math.PI / 2 : Math.PI / 2;
+      screen.position.set(
+        side * (W / 2 + cadParameters.display_gap + cadParameters.display_projection + 0.15),
+        cadParameters.display_center_z + 5,
+        cadParameters.display_center_y,
+      );
+      group.add(screen);
+    }
+
+    async function replaceDisplayNode(name, filename, side) {
+      await replaceTrackedNode(name, filename, materials.display);
+      addDisplayScreen(nodes[name], side);
+    }
+
+    async function addCadToPurchasedAssembly(name, filename, material, hiddenMaterials) {
+      const assembly = nodes[name];
+      assembly.traverse((object) => {
+        if (object.isMesh && hiddenMaterials.includes(object.material)) object.visible = false;
+      });
+      const cad = await loadCadGroup(filename, material);
+      cad.position.sub(assembly.userData.home);
+      assembly.add(cad);
+    }
+
+    async function replacePrintedPartsWithCad() {
+      await Promise.all([
+        replaceTrackedNode("cover", "u_cover.stl", materials.shell),
+        replaceTrackedNode("base", "sliding_base.stl", materials.base),
+        addCadToPurchasedAssembly(
+          "frontAssembly",
+          "front_bezel.stl",
+          materials.front,
+          [materials.front, materials.frontDark, materials.rail],
+        ),
+        addCadToPurchasedAssembly(
+          "rearAssembly",
+          "rear_frame.stl",
+          materials.base,
+          [materials.base, materials.baseDark, materials.rail],
+        ),
+        replaceDisplayNode("displayLeft", "display_pod_left.stl", -1),
+        replaceDisplayNode("displayRight", "display_pod_right.stl", 1),
+        replaceTrackedNode("blankLeft", "display_blank_left.stl", materials.shell),
+        replaceTrackedNode("blankRight", "display_blank_right.stl", materials.shell),
+      ]);
+      document.documentElement.dataset.gb10CadAssetsReady = "true";
+      applyState();
     }
 
     function setNodeOffset(name, offset) {
@@ -1122,8 +1223,8 @@
         position = [side * 390, 270, -390];
         target = [0, 83, 0];
       } else if (state.mode === "exploded") {
-        position = [side * 590, 380, -570];
-        target = [0, 105, 0];
+        position = [side * 760, 560, -780];
+        target = [0, 80, -20];
       } else {
         const poses = [
           [[side * 520, 340, -540], [0, 95, 0]],
@@ -1173,21 +1274,21 @@
     }
 
     function applyExplodedPose() {
-      setNodeOffset("cover", [0, 88, 0]);
-      setNodeOffset("base", [0, -42, -12]);
-      setNodeOffset("frontAssembly", [0, 0, -92]);
+      setNodeOffset("cover", [0, 100, 0]);
+      setNodeOffset("base", [0, -10, -90]);
+      setNodeOffset("frontAssembly", [0, 0, -150]);
       setNodeOffset("frontFan", [0, 0, -38]);
       setNodeOffset("frontPins", [0, 0, -68]);
-      setNodeOffset("rearAssembly", [0, 0, 92]);
+      setNodeOffset("rearAssembly", [0, 0, 105]);
       setNodeOffset("rearFan", [0, 0, 38]);
       setNodeOffset("rearPins", [0, 0, 68]);
-      setNodeOffset("deviceLeft", [-48, 15, -15]);
-      setNodeOffset("deviceRight", [48, 15, -15]);
-      setNodeOffset("displayLeft", [-72, 20, 0]);
-      setNodeOffset("displayRight", [72, 20, 0]);
+      setNodeOffset("deviceLeft", [-54, 18, -5]);
+      setNodeOffset("deviceRight", [54, 18, -5]);
+      setNodeOffset("displayLeft", [-80, 24, 0]);
+      setNodeOffset("displayRight", [80, 24, 0]);
       setNodeOffset("blankLeft", [-42, 8, 0]);
       setNodeOffset("blankRight", [42, 8, 0]);
-      setNodeOffset("handle", [0, 130, 0]);
+      setNodeOffset("handle", [0, 110, 0]);
     }
 
     function updateSceneCopy() {
@@ -1423,6 +1524,10 @@
     controls.target.set(0, 88, 0);
     resize();
     applyState();
+    replacePrintedPartsWithCad().catch((error) => {
+      console.error("Failed to load CAD-derived R2.2 assets", error);
+      document.documentElement.dataset.gb10CadAssetsReady = "false";
+    });
     window.__GB10_ASSEMBLY_READY__ = true;
     window.__GB10_ASSEMBLY_STATE__ = state;
     window.__GB10_ASSEMBLY_DEBUG__ = () => {
