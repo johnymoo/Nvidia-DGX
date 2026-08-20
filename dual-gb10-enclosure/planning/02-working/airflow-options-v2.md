@@ -38,7 +38,7 @@ Status: A and A+ are under direct visual comparison; B and C remain fallback alt
 - Display: the side display pod uses a mirrored slide-on mount and may be installed on the left or right; the unused side receives a flush blanking plate.
 - Envelope: approximately 152 W x 218 D x 166 H mm, excluding the side display treatment.
 - Benefits: lower rear pressure and less hot-air recirculation while preserving a straight-through path.
-- Costs: approximately 25 mm more maximum depth, a higher-speed fan, and one additional PWM/tach channel.
+- Costs: approximately 25 mm more maximum depth and one higher-speed fan. It shares the front fan's PWM command; its tachometer remains on a separate optional input.
 - Current recommendation for direct thermal comparison against A; not yet selected as the final base enclosure.
 
 ## B - 92 mm top assist

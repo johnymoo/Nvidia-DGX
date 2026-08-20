@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="data:,">
+  <title>Dual GB10 Enclosure R2</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef1f1;
+      --surface: #f8f9f9;
+      --ink: #1d2224;
+      --muted: #667075;
+      --line: #d5dbdc;
+      --line-strong: #afb9bc;
+      --accent: #e6542d;
+      --accent-dark: #b63a1c;
+      --green: #1e7d58;
+      --amber: #a96a11;
+      --red: #b13b35;
+      --blue: #2d7fac;
+      --radius: 6px;
+      --shadow: 0 16px 42px rgb(30 42 47 / 10%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); }
+    body { min-height: 100vh; overflow: hidden; }
+    button, a { font: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      height: 100vh;
+      min-height: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 58px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgb(248 249 249 / 94%);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    .identity {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      flex: none;
+      white-space: nowrap;
+    }
+
+    .identity strong { font-size: 15px; font-weight: 680; }
+    .identity span { color: var(--muted); font-size: 12px; }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      min-width: 0;
+    }
+
+    .segment {
+      display: inline-grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(max-content, 1fr);
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #e7ebeb;
+    }
+
+    .segment button {
+      min-height: 32px;
+      padding: 6px 12px;
+      border: 0;
+      border-radius: 4px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .segment button[aria-pressed="true"] {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 1px 4px rgb(20 29 33 / 12%);
+    }
+
+    .back-link {
+      padding: 7px 9px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .back-link:hover, .back-link:focus-visible { color: var(--ink); background: #e4e8e8; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 326px;
+      min-height: 0;
+    }
+
+    .stage {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: #e9eded;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      outline: none;
+    }
+
+    .scene-note {
+      position: absolute;
+      left: 18px;
+      bottom: 16px;
+      max-width: min(520px, calc(100% - 36px));
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent);
+      background: rgb(248 249 249 / 90%);
+      box-shadow: var(--shadow);
+      pointer-events: none;
+    }
+
+    .scene-note strong { display: block; font-size: 13px; font-weight: 680; }
+    .scene-note span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .legend {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      max-width: calc(100% - 36px);
+      color: #596367;
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { display: inline-block; width: 13px; height: 4px; border-radius: 2px; }
+
+    .panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      min-height: 0;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .panel-head {
+      padding: 15px 16px 11px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      color: var(--accent-dark);
+      font-size: 11px;
+      font-weight: 720;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 5px 0 4px; font-size: 19px; font-weight: 680; letter-spacing: 0; }
+    .panel-head p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .panel-tabs { display: grid; grid-template-columns: 1fr 1fr; margin-top: 12px; border-bottom: 1px solid var(--line); }
+    .panel-tabs button {
+      min-height: 34px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+    .panel-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+    .panel-body { min-height: 0; overflow: auto; scrollbar-width: thin; }
+    .pane { display: none; padding: 14px 16px 20px; }
+    .pane.is-active { display: block; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+    .metric { min-height: 68px; padding: 10px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .metric strong { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+    .metric span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+
+    .section-title { margin: 18px 0 8px; font-size: 12px; font-weight: 700; }
+    .part-list, .load-list, .check-list { margin: 0; padding: 0; list-style: none; }
+
+    .part-list li, .load-list li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 33px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+    }
+    .part-list i { width: 10px; height: 10px; border-radius: 2px; }
+    .part-list small, .load-list small { color: var(--muted); font-size: 10px; }
+    .load-list li { grid-template-columns: 18px minmax(0, 1fr); }
+    .load-list b { color: var(--accent-dark); font-size: 11px; }
+
+    .check-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+    }
+    .check-summary div { padding: 9px; text-align: center; border-right: 1px solid var(--line); }
+    .check-summary div:last-child { border-right: 0; }
+    .check-summary strong { display: block; font-size: 17px; }
+    .check-summary span { color: var(--muted); font-size: 10px; }
+
+    .check-list li {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 9px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .check-list b { font-size: 10px; line-height: 20px; text-align: center; border-radius: 3px; }
+    .check-list .pass { color: var(--green); background: #dceee6; }
+    .check-list .partial { color: var(--amber); background: #f3e8d5; }
+    .check-list .missing { color: var(--red); background: #f2dfdd; }
+    .check-list strong { display: block; font-size: 11px; font-weight: 650; }
+    .check-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+    .panel-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    @media (max-width: 860px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100svh; }
+      .topbar { align-items: flex-start; flex-wrap: wrap; }
+      .control-row { flex: 0 0 calc(100vw - 28px); width: calc(100vw - 28px); max-width: calc(100vw - 28px); margin-left: 0; overflow-x: auto; padding-bottom: 2px; }
+      .back-link { margin-left: 0; }
+      .identity + .back-link { margin-left: auto; }
+      .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(480px, 64svh) auto; }
+      .panel { display: block; min-height: 0; border-left: 0; border-top: 1px solid var(--line); }
+      .panel-body { overflow: visible; }
+      .stage { min-height: 480px; }
+      .scene-note { left: 10px; bottom: 10px; max-width: calc(100% - 20px); }
+      .legend { left: 10px; top: 10px; max-width: calc(100% - 20px); }
+    }
+
+    @media (max-width: 520px) {
+      .identity { width: auto; }
+      .back-link { margin-left: 0; }
+      .identity + .back-link { margin-left: auto; }
+      .segment button { padding-inline: 9px; }
+      .workspace { grid-template-rows: minmax(440px, 62svh) auto; }
+      .stage { min-height: 440px; }
+      .scene-note span { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="identity"><strong>Dual GB10</strong><span>Enclosure R2</span></div>
+      <a class="back-link" href="./r2-assembly.html">装配评审</a>
+      <a class="back-link" href="./index.html">风道方案</a>
+      <div class="control-row">
+        <div class="segment" role="group" aria-label="视图模式">
+          <button type="button" data-view="assembled" aria-pressed="true">完成图</button>
+          <button type="button" data-view="transparent" aria-pressed="false">透明结构</button>
+          <button type="button" data-view="exploded" aria-pressed="false">爆炸图</button>
+        </div>
+        <div class="segment" role="group" aria-label="显示屏方向">
+          <button type="button" data-side="left" aria-pressed="true">屏幕左侧</button>
+          <button type="button" data-side="right" aria-pressed="false">屏幕右侧</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="stage" aria-label="Dual GB10 R2 三维结构模型">
+        <canvas tabindex="0"></canvas>
+        <div class="legend" aria-hidden="true">
+          <span><i style="background:#f1f3f2"></i>U 型罩</span>
+          <span><i style="background:#e6542d"></i>卡扣前盖</span>
+          <span><i style="background:#d19b35"></i>承重滑轨</span>
+          <span><i style="background:#2d7fac"></i>进风</span>
+          <span><i style="background:#c84a36"></i>排风</span>
+        </div>
+        <div class="scene-note" aria-live="polite">
+          <strong id="view-title">完成图 · 正面斜向下 45°</strong>
+          <span id="view-note">连续圆角 U 型罩、独立橙色风扇前盖、左侧触摸屏仓和顶部双点提手。</span>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <div class="eyebrow">Approved direction</div>
+          <h1>少螺丝承力外壳</h1>
+          <p>外观比例参考；装配接口以“装配评审”页为准。顶部商业提手保留两颗 M4，搬运载荷经 U 罩和六段捕获轨进入底板。</p>
+          <div class="panel-tabs" role="tablist" aria-label="评审内容">
+            <button type="button" role="tab" data-pane="structure" aria-selected="true">结构</button>
+            <button type="button" role="tab" data-pane="checks" aria-selected="false">打印 Checklist</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <section class="pane is-active" data-pane-content="structure">
+            <div class="metrics">
+              <div class="metric"><strong>152 × 218 × 166</strong><span>主体 W × D × H mm</span></div>
+              <div class="metric"><strong>2 × M4</strong><span>结构螺丝总数</span></div>
+              <div class="metric"><strong>R 10-12</strong><span>U 罩外圆角 mm</span></div>
+              <div class="metric"><strong>≥ 75%</strong><span>前格栅目标开孔率</span></div>
+            </div>
+
+            <h2 class="section-title">主打印件</h2>
+            <ul class="part-list">
+              <li><i style="background:#f1f3f2;border:1px solid #b9c0c1"></i><span>连续圆角 U 型罩</span><small>1</small></li>
+              <li><i style="background:#555e61"></i><span>加强筋滑入底板</span><small>1</small></li>
+              <li><i style="background:#e6542d"></i><span>140 mm 卡扣前盖</span><small>1</small></li>
+              <li><i style="background:#363e41"></i><span>60 mm 一体式全周背框</span><small>1</small></li>
+              <li><i style="background:#f1f3f2;border:1px solid #b9c0c1"></i><span>触摸屏侧仓 / 封板</span><small>2</small></li>
+              <li><i style="background:#1e2325"></i><span>商业提手带</span><small>1</small></li>
+            </ul>
+
+            <h2 class="section-title">搬运载荷路径</h2>
+            <ul class="load-list">
+              <li><b>01</b><span>提手与两颗 M4 将载荷分散到 U 罩内部横向加强筋。</span></li>
+              <li><b>02</b><span>U 罩两侧墙把拉力送入底部每侧三段 45° 捕获轨。</span></li>
+              <li><b>03</b><span>底板轨道承托两台 GB10；前盖卡扣只阻止底板前移。</span></li>
+            </ul>
+          </section>
+
+          <section class="pane" data-pane-content="checks">
+            <div class="check-summary">
+              <div><strong style="color:var(--green)">5</strong><span>R1 已通过</span></div>
+              <div><strong style="color:var(--amber)">9</strong><span>需随 R2 重验</span></div>
+              <div><strong style="color:var(--red)">7</strong><span>缺少实物证据</span></div>
+            </div>
+            <ul class="check-list" id="check-list"></ul>
+          </section>
+        </div>
+
+        <div class="panel-foot"><span>PETG · 0.4/0.6 mm nozzle</span><span>Concept R2 · CAD pending</span></div>
+      </aside>
+    </div>
+  </main>
+
+  <script type="module">
+    import * as THREE from "https://esm.sh/three@0.179.1";
+    import { OrbitControls } from "https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js";
+    import { RoundedBoxGeometry } from "https://esm.sh/three@0.179.1/examples/jsm/geometries/RoundedBoxGeometry.js";
+
+    const W = 152;
+    const H = 166;
+    const D = 158;
+    const state = { view: "assembled", side: "left" };
+
+    const canvas = document.querySelector("canvas");
+    const stage = document.querySelector(".stage");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe9eded);
+    scene.fog = new THREE.Fog(0xe9eded, 720, 1160);
+
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 1800);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enablePan = false;
+    controls.enableDamping = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 260;
+    controls.maxDistance = 840;
+    controls.maxPolarAngle = Math.PI * 0.52;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x788184, 2.35));
+    const key = new THREE.DirectionalLight(0xffffff, 4.8);
+    key.position.set(-300, 440, -380);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -360;
+    key.shadow.camera.right = 360;
+    key.shadow.camera.top = 360;
+    key.shadow.camera.bottom = -360;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xcfe4eb, 2.0);
+    fill.position.set(340, 230, 280);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffd4bd, 1.55);
+    rim.position.set(40, 280, 420);
+    scene.add(rim);
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(1100, 1100),
+      new THREE.MeshStandardMaterial({ color: 0xdce1e1, roughness: 1 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const palette = {
+      shell: 0xf0f2f1,
+      shellEdge: 0xa8b0b1,
+      base: 0x4d5659,
+      baseEdge: 0x202628,
+      orange: 0xe6542d,
+      orangeDark: 0xb73a1d,
+      device: 0x171b1d,
+      gold: 0xb58c43,
+      black: 0x101416,
+      metal: 0x9aa4a7,
+      rail: 0xd19b35,
+      blue: 0x2d7fac,
+      red: 0xc84a36,
+      screen: 0x172329,
+    };
+
+    function mat(color, roughness = 0.62, metalness = 0.02, opacity = 1) {
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        roughness,
+        metalness,
+        transparent: true,
+        opacity,
+        side: THREE.DoubleSide,
+      });
+      material.userData.baseOpacity = opacity;
+      material.userData.targetOpacity = opacity;
+      return material;
+    }
+
+    const materials = {
+      shell: mat(palette.shell, 0.58),
+      shellEdge: mat(palette.shellEdge, 0.78),
+      base: mat(palette.base, 0.72),
+      orange: mat(palette.orange, 0.58),
+      orangeDark: mat(palette.orangeDark, 0.64),
+      device: mat(palette.device, 0.48, 0.18),
+      gold: mat(palette.gold, 0.42, 0.45),
+      black: mat(palette.black, 0.52, 0.08),
+      metal: mat(palette.metal, 0.28, 0.75),
+      rail: mat(palette.rail, 0.52, 0.2),
+      glass: mat(0x18272d, 0.22, 0.06),
+    };
+
+    const model = new THREE.Group();
+    scene.add(model);
+    const parts = {};
+    const animatedMaterials = new Set();
+
+    function trackMaterial(material) {
+      animatedMaterials.add(material);
+      return material;
+    }
+    Object.values(materials).forEach(trackMaterial);
+
+    function roundedBox(w, h, d, radius, material, position = [0, 0, 0]) {
+      const geometry = new RoundedBoxGeometry(w, h, d, 5, Math.min(radius, w / 2, h / 2, d / 2));
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(...position);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function register(name, group, exploded = [0, 0, 0]) {
+      group.userData.home = group.position.clone();
+      group.userData.exploded = group.position.clone().add(new THREE.Vector3(...exploded));
+      group.userData.target = group.position.clone();
+      parts[name] = group;
+      model.add(group);
+      return group;
+    }
+
+    function uCoverShape() {
+      const wall = 4;
+      const outerR = 12;
+      const innerR = 8;
+      const s = new THREE.Shape();
+      s.moveTo(-W / 2, 0);
+      s.lineTo(-W / 2, H - outerR);
+      s.quadraticCurveTo(-W / 2, H, -W / 2 + outerR, H);
+      s.lineTo(W / 2 - outerR, H);
+      s.quadraticCurveTo(W / 2, H, W / 2, H - outerR);
+      s.lineTo(W / 2, 0);
+      s.lineTo(W / 2 - wall, 0);
+      s.lineTo(W / 2 - wall, H - wall - innerR);
+      s.quadraticCurveTo(W / 2 - wall, H - wall, W / 2 - wall - innerR, H - wall);
+      s.lineTo(-W / 2 + wall + innerR, H - wall);
+      s.quadraticCurveTo(-W / 2 + wall, H - wall, -W / 2 + wall, H - wall - innerR);
+      s.lineTo(-W / 2 + wall, 0);
+      s.closePath();
+      return s;
+    }
+
+    function makeUCover() {
+      const group = new THREE.Group();
+      const geometry = new THREE.ExtrudeGeometry(uCoverShape(), {
+        depth: D,
+        bevelEnabled: false,
+        curveSegments: 28,
+      });
+      geometry.translate(0, 0, -D / 2);
+      const cover = new THREE.Mesh(geometry, materials.shell);
+      cover.castShadow = true;
+      cover.receiveShadow = true;
+      group.add(cover);
+
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geometry, 32),
+        new THREE.LineBasicMaterial({ color: palette.shellEdge, transparent: true, opacity: 0.44 })
+      );
+      edges.material.userData.baseOpacity = 0.44;
+      edges.material.userData.targetOpacity = 0.44;
+      animatedMaterials.add(edges.material);
+      group.add(edges);
+
+      [-47, 47].forEach((z) => {
+        group.add(roundedBox(136, 5, 13, 2.2, materials.shellEdge, [0, 157, z]));
+        const boss = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 10, 28), materials.shellEdge);
+        boss.position.set(0, 160, z);
+        boss.castShadow = true;
+        group.add(boss);
+      });
+      return group;
+    }
+
+    function trapezoidRail(side) {
+      const shape = new THREE.Shape();
+      const xOuter = side * 70.5;
+      const xInner = side * 66.5;
+      const xLip = side * 65.2;
+      shape.moveTo(xOuter, 7);
+      shape.lineTo(xInner, 7);
+      shape.lineTo(xLip, 11);
+      shape.lineTo(side * 71.8, 11);
+      shape.closePath();
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 154, bevelEnabled: false });
+      geometry.translate(0, 0, -77);
+      const mesh = new THREE.Mesh(geometry, materials.rail);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
+    function makeBase() {
+      const group = new THREE.Group();
+      group.add(roundedBox(142, 7, 158, 2.5, materials.base, [0, 3.5, 0]));
+      group.add(trapezoidRail(-1), trapezoidRail(1));
+      [-53, 0, 53].forEach((z) => group.add(roundedBox(126, 3, 4, 1.2, materials.baseEdge ?? materials.black, [0, 9, z])));
+      group.add(roundedBox(3, 8, 150, 1.2, materials.black, [0, 10, 0]));
+      [-53, 53].forEach((x) => group.add(roundedBox(3, 8, 150, 1.2, materials.black, [x, 10, 0])));
+      [-27.25, 27.25].forEach((x) => {
+        [-52, 52].forEach((z) => {
+          const pad = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 1.5, 24), materials.orangeDark);
+          pad.position.set(x, 8, z);
+          group.add(pad);
+        });
+      });
+      return group;
+    }
+
+    function roundedRectShape(w, h, r) {
+      const s = new THREE.Shape();
+      s.moveTo(-w / 2 + r, -h / 2);
+      s.lineTo(w / 2 - r, -h / 2);
+      s.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+      s.lineTo(w / 2, h / 2 - r);
+      s.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+      s.lineTo(-w / 2 + r, h / 2);
+      s.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+      s.lineTo(-w / 2, -h / 2 + r);
+      s.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+      s.closePath();
+      return s;
+    }
+
+    function makeFrontCap() {
+      const group = new THREE.Group();
+      const shape = roundedRectShape(152, 166, 12);
+      const hole = new THREE.Path();
+      hole.absarc(0, 0, 68.5, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: 7,
+        bevelEnabled: true,
+        bevelThickness: 1.1,
+        bevelSize: 1.1,
+        bevelSegments: 4,
+        curveSegments: 40,
+      });
+      geometry.translate(0, 83, -3.5);
+      const frame = new THREE.Mesh(geometry, materials.orange);
+      frame.castShadow = true;
+      group.add(frame);
+
+      const radius = 66;
+      for (let x = -60; x <= 60; x += 15) {
+        const chord = 2 * Math.sqrt(Math.max(0, radius * radius - x * x));
+        group.add(roundedBox(2, chord, 2.4, 0.8, materials.orangeDark, [x, 83, -5.1]));
+      }
+      for (let y = -60; y <= 60; y += 15) {
+        const chord = 2 * Math.sqrt(Math.max(0, radius * radius - y * y));
+        group.add(roundedBox(chord, 2, 2.4, 0.8, materials.orangeDark, [0, 83 + y, -5.2]));
+      }
+
+      [-48, 48].forEach((x) => {
+        group.add(roundedBox(18, 8, 9, 2, materials.orangeDark, [x, 155, 5]));
+        group.add(roundedBox(17, 14, 8, 2.2, materials.orangeDark, [x, 10, 5]));
+      });
+      group.position.z = -114;
+      return group;
+    }
+
+    function makeBlade(size, material) {
+      const shape = new THREE.Shape();
+      shape.moveTo(size * 0.08, -size * 0.04);
+      shape.quadraticCurveTo(size * 0.30, -size * 0.10, size * 0.46, size * 0.02);
+      shape.quadraticCurveTo(size * 0.33, size * 0.17, size * 0.10, size * 0.10);
+      shape.closePath();
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 2.6, bevelEnabled: true, bevelSize: 0.7, bevelThickness: 0.7, bevelSegments: 2 });
+      geometry.translate(0, 0, -1.3);
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function makeFan(size, thickness) {
+      const group = new THREE.Group();
+      const border = Math.max(4, size * 0.055);
+      group.add(roundedBox(size, border, thickness, 2, materials.black, [0, size / 2 - border / 2, 0]));
+      group.add(roundedBox(size, border, thickness, 2, materials.black, [0, -size / 2 + border / 2, 0]));
+      group.add(roundedBox(border, size - border * 2, thickness, 2, materials.black, [-size / 2 + border / 2, 0, 0]));
+      group.add(roundedBox(border, size - border * 2, thickness, 2, materials.black, [size / 2 - border / 2, 0, 0]));
+      for (let i = 0; i < 7; i += 1) {
+        const blade = makeBlade(size, materials.black);
+        blade.rotation.z = (i / 7) * Math.PI * 2 + 0.2;
+        group.add(blade);
+      }
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.15, size * 0.15, thickness * 0.5, 36), materials.black);
+      hub.rotation.x = Math.PI / 2;
+      group.add(hub);
+      return group;
+    }
+
+    function makeDevice(side) {
+      const group = new THREE.Group();
+      const body = roundedBox(50.5, 150, 150, 3.5, materials.device, [side * 27.25, 82, 0]);
+      group.add(body);
+
+      const frontX = side * 27.25;
+      group.add(roundedBox(45, 143, 2, 2.5, materials.gold, [frontX, 82, -75.8]));
+      for (let y = 18; y <= 146; y += 8) {
+        group.add(roundedBox(41, 2.2, 1.2, 0.5, materials.black, [frontX, y, -77.1]));
+      }
+
+      const outerX = side * 40;
+      group.add(roundedBox(19, 92, 2.3, 2, materials.black, [outerX, 61, 75.8]));
+      [31, 45, 59, 75, 91].forEach((y, index) => {
+        const width = index === 3 ? 13 : 10;
+        group.add(roundedBox(width, 5.5, 1.5, 1, materials.metal, [outerX, y, 77.2]));
+      });
+      const innerX = side * 15;
+      group.add(roundedBox(22, 143, 2, 2.5, materials.gold, [innerX, 82, 75.8]));
+      for (let y = 17; y <= 147; y += 8) group.add(roundedBox(18, 2.2, 1.2, 0.5, materials.black, [innerX, y, 77]));
+      return group;
+    }
+
+    function makeRearModule() {
+      const group = new THREE.Group();
+      group.add(roundedBox(66, 68, 7, 4, materials.base, [0, 83, 0]));
+      const fan = makeFan(60, 15);
+      fan.position.set(0, 83, 10);
+      group.add(fan);
+      [-31, 31].forEach((x) => group.add(roundedBox(4, 150, 19, 1.5, materials.base, [x, 83, 0])));
+      group.position.z = 91;
+      return group;
+    }
+
+    function makeDisplayTexture() {
+      const c = document.createElement("canvas");
+      c.width = 512;
+      c.height = 320;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#142126";
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.fillStyle = "#f1f5f4";
+      ctx.font = "600 86px system-ui";
+      ctx.fillText("68°", 26, 112);
+      ctx.fillStyle = "#55c99a";
+      ctx.font = "600 27px system-ui";
+      ctx.fillText("GB10-1", 284, 66);
+      ctx.fillText("GB10-2", 284, 108);
+      ctx.fillStyle = "#d7e1e2";
+      ctx.font = "500 24px system-ui";
+      ctx.fillText("67°", 418, 66);
+      ctx.fillText("65°", 418, 108);
+      ctx.fillStyle = "#e6542d";
+      ctx.fillRect(28, 168, 322, 14);
+      ctx.fillStyle = "#647379";
+      ctx.fillRect(350, 168, 126, 14);
+      ctx.fillStyle = "#aebdc1";
+      ctx.font = "500 22px system-ui";
+      ctx.fillText("PWM 72%", 28, 228);
+      ctx.fillText("1480 / 2320 RPM", 28, 270);
+      const texture = new THREE.CanvasTexture(c);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return texture;
+    }
+
+    function makeDisplay(side) {
+      const group = new THREE.Group();
+      group.add(roundedBox(20, 70, 84, 5, materials.shell, [0, 0, 0]));
+      const screenMaterial = new THREE.MeshBasicMaterial({ map: makeDisplayTexture(), toneMapped: false });
+      screenMaterial.transparent = true;
+      screenMaterial.userData.baseOpacity = 1;
+      screenMaterial.userData.targetOpacity = 1;
+      animatedMaterials.add(screenMaterial);
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(54, 40), screenMaterial);
+      screen.rotation.y = side === -1 ? -Math.PI / 2 : Math.PI / 2;
+      screen.position.set(side * 10.2, 7, 0);
+      group.add(screen);
+      group.position.set(side * 86, 116, -22);
+      return group;
+    }
+
+    function makeHandle() {
+      const group = new THREE.Group();
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 166, -47),
+        new THREE.Vector3(0, 187, -36),
+        new THREE.Vector3(0, 193, 0),
+        new THREE.Vector3(0, 187, 36),
+        new THREE.Vector3(0, 166, 47),
+      ]);
+      const strap = new THREE.Mesh(new THREE.TubeGeometry(curve, 56, 4.2, 12, false), materials.black);
+      strap.castShadow = true;
+      group.add(strap);
+      [-47, 47].forEach((z) => {
+        const washer = new THREE.Mesh(new THREE.CylinderGeometry(6.8, 6.8, 2.2, 28), materials.metal);
+        washer.position.set(0, 167.5, z);
+        group.add(washer);
+        const screw = new THREE.Mesh(new THREE.CylinderGeometry(3.7, 3.7, 2.8, 24), materials.metal);
+        screw.position.set(0, 169.6, z);
+        group.add(screw);
+      });
+      return group;
+    }
+
+    function makeAirflow() {
+      const group = new THREE.Group();
+      const addArrow = (origin, end, color) => {
+        const a = new THREE.Vector3(...origin);
+        const b = new THREE.Vector3(...end);
+        const direction = b.clone().sub(a);
+        const length = direction.length();
+        direction.normalize();
+        const arrowMaterial = trackMaterial(mat(color, 0.4, 0.03, 0.9));
+        arrowMaterial.depthTest = false;
+        const shaftLength = Math.max(1, length - 11);
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, shaftLength, 14), arrowMaterial);
+        shaft.position.copy(a).add(direction.clone().multiplyScalar(shaftLength / 2));
+        shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        shaft.renderOrder = 20;
+        group.add(shaft);
+        const head = new THREE.Mesh(new THREE.ConeGeometry(5.2, 12, 18), arrowMaterial);
+        head.position.copy(b).add(direction.clone().multiplyScalar(-5));
+        head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        head.renderOrder = 20;
+        group.add(head);
+      };
+      [-27, 27].forEach((x) => {
+        [55, 105].forEach((y) => {
+          addArrow([x, y, -142], [x, y, 35], palette.blue);
+          addArrow([x, y, 34], [Math.sign(x) * 14, y, 128], palette.red);
+        });
+      });
+      return group;
+    }
+
+    function buildModel() {
+      register("cover", makeUCover(), [0, 80, 0]);
+      register("base", makeBase(), [0, -34, 0]);
+      register("frontCap", makeFrontCap(), [0, 0, -88]);
+      const frontFan = makeFan(140, 25);
+      frontFan.position.set(0, 83, -96);
+      register("frontFan", frontFan, [0, 0, -43]);
+      register("deviceLeft", makeDevice(-1), [-38, 8, -10]);
+      register("deviceRight", makeDevice(1), [38, 8, -10]);
+      register("rear", makeRearModule(), [0, 0, 76]);
+      register("handle", makeHandle(), [0, 92, 0]);
+      register("display", makeDisplay(-1), [-62, 12, 0]);
+      const airflow = makeAirflow();
+      airflow.visible = false;
+      model.add(airflow);
+      parts.airflow = airflow;
+    }
+
+    function rebuildDisplay() {
+      const old = parts.display;
+      model.remove(old);
+      old.traverse((object) => {
+        object.geometry?.dispose();
+        if (object.material?.map) object.material.map.dispose();
+        if (object.material && !Object.values(materials).includes(object.material)) object.material.dispose();
+      });
+      const side = state.side === "left" ? -1 : 1;
+      const display = makeDisplay(side);
+      display.userData.home = display.position.clone();
+      display.userData.exploded = display.position.clone().add(new THREE.Vector3(side * 62, 12, 0));
+      display.userData.target = state.view === "exploded" ? display.userData.exploded.clone() : display.userData.home.clone();
+      parts.display = display;
+      model.add(display);
+    }
+
+    const cameraTarget = new THREE.Vector3(0, 83, 0);
+    const cameraPositionTarget = new THREE.Vector3(-320, 250, -350);
+
+    const viewCopy = {
+      assembled: ["完成图 · 正面斜向下 45°", "连续圆角 U 型罩、独立橙色风扇前盖、左侧触摸屏仓和顶部双点提手。"],
+      transparent: ["透明结构 · 风路与承重接口", "黄色接口示意底板承力位置；蓝色进风贯穿两台 GB10，中央 60 mm 风扇向后抽排。"],
+      exploded: ["爆炸图 · 六类打印模块", "U 罩向上、底板向下、前盖和风扇向前、后排风桥向后，卡扣与承力件分开表达。"],
+    };
+
+    function setOpacity(material, opacity) {
+      material.userData.targetOpacity = opacity;
+      material.depthWrite = opacity > 0.92;
+    }
+
+    function applyView() {
+      const exploded = state.view === "exploded";
+      Object.entries(parts).forEach(([name, part]) => {
+        if (name === "airflow") return;
+        part.userData.target = (exploded ? part.userData.exploded : part.userData.home).clone();
+      });
+
+      if (state.view === "transparent") {
+        setOpacity(materials.shell, 0.15);
+        setOpacity(materials.shellEdge, 0.24);
+        setOpacity(materials.orange, 0.22);
+        setOpacity(materials.orangeDark, 0.36);
+        setOpacity(materials.base, 0.52);
+        setOpacity(materials.device, 0.62);
+        setOpacity(materials.gold, 0.78);
+        parts.airflow.visible = true;
+        cameraPositionTarget.set(-355, 270, -365);
+        cameraTarget.set(0, 83, 0);
+      } else if (exploded) {
+        Object.values(materials).forEach((material) => setOpacity(material, material.userData.baseOpacity));
+        parts.airflow.visible = false;
+        cameraPositionTarget.set(state.side === "left" ? -520 : 520, 350, -510);
+        cameraTarget.set(0, 105, -2);
+      } else {
+        Object.values(materials).forEach((material) => setOpacity(material, material.userData.baseOpacity));
+        parts.airflow.visible = false;
+        cameraPositionTarget.set(state.side === "left" ? -320 : 320, 250, -350);
+        cameraTarget.set(0, 83, 0);
+      }
+
+      const copy = viewCopy[state.view];
+      document.getElementById("view-title").textContent = copy[0];
+      document.getElementById("view-note").textContent = copy[1].replace("左侧", state.side === "left" ? "左侧" : "右侧");
+      document.querySelectorAll("[data-view]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.view === state.view)));
+      canvas.setAttribute("aria-label", `${copy[0]}。${copy[1]}。可拖动旋转并滚动缩放。`);
+    }
+
+    const checks = [
+      ["pass", "通过", "打印尺寸", "R1 全部零件已在 180 mm 平台内；R2 目标最大边不超过 175 mm。"],
+      ["pass", "通过", "封闭网格", "现有 B-Rep 有效且 STL 无非流形边；R2 生成后必须复跑。"],
+      ["pass", "通过", "碰撞检查", "R1 设备与零件碰撞为零；圆角、滑轨和实测硬件需重验。"],
+      ["missing", "缺证据", "连续圆角", "R2 外圆角 10-12 mm、外露边 3-5 mm，需打印角部样件。"],
+      ["partial", "待重验", "免全局支撑", "U 罩顶面朝下、底板平放、前盖正面朝下。"],
+      ["partial", "待重验", "悬垂角", "结构悬垂不超过 45°，轨道和穿线孔采用倒角或泪滴截面。"],
+      ["partial", "待重验", "桥接长度", "结构桥接不超过 12 mm；较长装饰桥必须通过 PETG 样件。"],
+      ["pass", "通过", "壁厚基线", "R2 改为 3.2-3.6 mm 壳壁与局部加强筋。"],
+      ["missing", "缺证据", "滑轨间隙", "打印 0.30 / 0.40 / 0.50 mm 单边间隙样件。"],
+      ["missing", "缺证据", "卡扣寿命", "一体式顺序释放卡扣连续拆装 50 次，无发白或根部裂纹。"],
+      ["partial", "待重验", "格栅开孔率", "14-16 mm 节距、约 2 mm 筋，目标有效开孔率至少 75%。"],
+      ["partial", "待重验", "底板翘曲", "完全冷却后四角翘起不超过 0.8 mm。"],
+      ["missing", "缺证据", "风扇隔振", "优先硅胶拉钉，风扇框不得与松动前盖硬接触。"],
+      ["pass", "通过", "材料", "主体使用 PETG；持续负载后验证实际局部温度。"],
+      ["partial", "待重验", "GB10 配合", "无泡棉，单边间隙 0.6-0.8 mm，不能强行压入。"],
+      ["missing", "缺证据", "风扇与屏幕", "先打印两个风扇孔位规和显示屏边框规。"],
+      ["partial", "待重验", "后部接线", "USB-C、HDMI、网线和 QSFP 必须在后风扇安装后正常弯折。"],
+      ["missing", "缺证据", "免工具维护", "前盖可手动释放，两台 GB10 可从前方滑出。"],
+      ["partial", "待重验", "搬运强度", "两颗 M4 版本需通过 12 kg、60 秒静载测试。"],
+      ["partial", "待重验", "螺丝数量", "整机结构件仅两颗 M4；风扇使用硅胶拉钉。"],
+      ["missing", "缺证据", "切片复核", "逐件检查首层、壁线、接缝、桥接、支撑、耗材和工时。"],
+    ];
+
+    const checkList = document.getElementById("check-list");
+    checks.forEach(([status, label, title, detail]) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<b class="${status}">${label}</b><span><strong>${title}</strong><small>${detail}</small></span>`;
+      checkList.appendChild(li);
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.view = button.dataset.view;
+        applyView();
+      });
+    });
+
+    document.querySelectorAll("[data-side]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.side = button.dataset.side;
+        document.querySelectorAll("[data-side]").forEach((item) => item.setAttribute("aria-pressed", String(item.dataset.side === state.side)));
+        rebuildDisplay();
+        applyView();
+      });
+    });
+
+    document.querySelectorAll("[data-pane]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const pane = button.dataset.pane;
+        document.querySelectorAll("[data-pane]").forEach((item) => item.setAttribute("aria-selected", String(item.dataset.pane === pane)));
+        document.querySelectorAll("[data-pane-content]").forEach((item) => item.classList.toggle("is-active", item.dataset.paneContent === pane));
+      });
+    });
+
+    function resize() {
+      const rect = stage.getBoundingClientRect();
+      renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false);
+      camera.aspect = Math.max(0.1, rect.width / Math.max(1, rect.height));
+      camera.fov = camera.aspect < 0.8 ? 37 : 32;
+      camera.updateProjectionMatrix();
+    }
+
+    const observer = new ResizeObserver(resize);
+    observer.observe(stage);
+
+    const clock = new THREE.Clock();
+    function animate() {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const moveAlpha = 1 - Math.pow(0.0008, dt);
+      Object.values(parts).forEach((part) => {
+        if (part.userData.target) part.position.lerp(part.userData.target, moveAlpha);
+      });
+      animatedMaterials.forEach((material) => {
+        const target = material.userData.targetOpacity ?? material.opacity;
+        material.opacity += (target - material.opacity) * moveAlpha;
+      });
+      const stageRect = stage.getBoundingClientRect();
+      const stageAspect = stageRect.width / Math.max(1, stageRect.height);
+      const responsiveScale = stageAspect < 0.8 ? 1.24 : 1;
+      const responsiveCameraTarget = cameraTarget.clone().add(
+        cameraPositionTarget.clone().sub(cameraTarget).multiplyScalar(responsiveScale)
+      );
+      camera.position.lerp(responsiveCameraTarget, moveAlpha * 0.72);
+      controls.target.lerp(cameraTarget, moveAlpha * 0.72);
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    buildModel();
+    camera.position.copy(cameraPositionTarget);
+    controls.target.copy(cameraTarget);
+    resize();
+    applyView();
+    window.__GB10_R2_READY__ = true;
+    window.__GB10_R2_STATE__ = state;
+    document.documentElement.dataset.gb10R2Ready = "true";
+    animate();
+  </script>
+</body>
+</html>

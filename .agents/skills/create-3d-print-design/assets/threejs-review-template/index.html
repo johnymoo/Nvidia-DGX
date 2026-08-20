@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>3D Print Design Review</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main id="app">
+      <div id="viewport" aria-label="Interactive 3D design review"></div>
+      <header class="toolbar">
+        <div>
+          <strong id="design-name">Design review</strong>
+          <span id="revision">R0 · mm</span>
+        </div>
+        <div class="modes" role="group" aria-label="View mode">
+          <button data-mode="assembled" class="active">Assembled</button>
+          <button data-mode="transparent">Transparent</button>
+          <button data-mode="exploded">Exploded</button>
+        </div>
+        <select id="camera-view" aria-label="Camera view">
+          <option value="perspective">Perspective</option>
+          <option value="front">Front</option>
+          <option value="rear">Rear</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+        </select>
+        <button id="reset-view" title="Reset camera" aria-label="Reset camera">↺</button>
+      </header>
+      <aside class="inspector">
+        <div><span>Envelope</span><strong id="envelope"></strong></div>
+        <div><span>Dimensions</span><strong id="dimension-status"></strong></div>
+        <div><span>Selected</span><strong id="selected-part">None</strong></div>
+        <label><span>Explosion</span><input id="explode" type="range" min="0" max="1" step="0.01" value="0" /></label>
+        <fieldset><legend>Categories</legend><div id="category-controls"></div></fieldset>
+        <fieldset><legend>Parts</legend><div id="part-controls"></div></fieldset>
+        <div id="warnings" class="warnings"></div>
+      </aside>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.codex/3d-print-package/manifest-schema-v1.json",
+  "title": "3D Print Package Manifest v1",
+  "type": "object",
+  "required": [
+    "schema_version", "design", "revision", "status", "date", "units", "cad_kernel",
+    "approved_envelope_mm", "printer_envelope_mm", "parameters", "parts", "purchased_parts",
+    "assemblies", "fit_gauges", "drawings", "documents", "reports", "unresolved_measurements",
+    "prototype_exceptions", "physical_tests", "dfm_checks", "checks"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "design": { "type": "string", "minLength": 1 },
+    "revision": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["PROTOTYPE", "RELEASE CANDIDATE", "RELEASED"] },
+    "date": { "type": "string", "format": "date" },
+    "units": { "type": "string", "minLength": 1 },
+    "cad_kernel": { "type": "object", "minProperties": 1 },
+    "approved_envelope_mm": { "$ref": "#/$defs/envelope" },
+    "printer_envelope_mm": { "$ref": "#/$defs/envelope" },
+    "parameters": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+    "parts": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/part" }
+    },
+    "purchased_parts": { "type": "array" },
+    "assemblies": { "$ref": "#/$defs/pathList" },
+    "fit_gauges": { "$ref": "#/$defs/pathList" },
+    "drawings": { "$ref": "#/$defs/pathList" },
+    "documents": { "$ref": "#/$defs/pathList" },
+    "reports": { "$ref": "#/$defs/pathList" },
+    "unresolved_measurements": { "type": "array" },
+    "prototype_exceptions": { "type": "array" },
+    "physical_tests": { "type": "array", "items": { "$ref": "#/$defs/physicalTest" } },
+    "dfm_checks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/dfmCheck" } },
+    "checks": { "$ref": "#/$defs/checks" }
+  },
+  "$defs": {
+    "envelope": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": { "type": "number", "exclusiveMinimum": 0 }
+    },
+    "pathList": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          { "type": "object", "required": ["path"], "properties": { "path": { "type": "string", "minLength": 1 } } }
+        ]
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "required": ["id", "value", "unit", "status", "source"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "unit": { "type": "string" },
+        "status": { "enum": ["verified", "derived", "provisional", "unknown"] },
+        "source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "part": {
+      "type": "object",
+      "required": ["id", "quantity", "material", "print_orientation", "bbox_mm", "validation", "step", "stl", "sha256"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "material": { "type": "string", "minLength": 1 },
+        "print_orientation": { "type": "string", "minLength": 1 },
+        "bbox_mm": { "$ref": "#/$defs/envelope" },
+        "step": { "type": "string", "minLength": 1 },
+        "stl": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "object", "required": ["step", "stl"],
+          "properties": {
+            "step": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "stl": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        }
+      }
+    },
+    "physicalTest": {
+      "type": "object", "required": ["id", "applicable", "result"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "applicable": { "type": "boolean" },
+        "result": { "enum": ["PASS", "FAIL", "PENDING", "NA"] },
+        "evidence": { "type": "string" },
+        "rationale": { "type": "string" }
+      }
+    },
+    "dfmCheck": {
+      "type": "object", "required": ["id", "phase", "applicable", "result", "evidence"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "phase": { "enum": ["HARD_PRE_CAD", "HARD_CAD_EXPORT", "HARD_RELEASE", "RECOMMENDED", "CONFIG"] },
+        "applicable": { "type": "boolean" },
+        "result": { "enum": ["PASS", "FAIL", "NA", "BLOCKED"] }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "required": [
+        "all_parts_valid", "all_meshes_closed", "all_parts_within_build_volume",
+        "assembly_collision_free", "keepouts_clear", "manifest_complete",
+        "hard_dfm_pre_cad_pass", "hard_dfm_cad_export_pass", "gate_d_conformance_pass"
+      ],
+      "additionalProperties": { "type": "boolean" }
+    }
+  }
+}

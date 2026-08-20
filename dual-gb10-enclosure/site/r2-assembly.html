@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="data:,">
+  <title>Dual GB10 R2 装配评审</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e9eded;
+      --surface: #f8f9f9;
+      --ink: #1d2224;
+      --muted: #687277;
+      --line: #d4dadb;
+      --line-strong: #aeb8ba;
+      --accent: #e6542d;
+      --accent-dark: #b63a1c;
+      --gold: #c28b2c;
+      --blue: #2d7fac;
+      --red: #c84a36;
+      --green: #1d7654;
+      --radius: 6px;
+      --shadow: 0 14px 36px rgb(27 38 42 / 12%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); }
+    body { min-height: 100vh; overflow: hidden; }
+    button, a, input { font: inherit; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      height: 100vh;
+      min-height: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 58px;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgb(248 249 249 / 96%);
+      z-index: 10;
+    }
+
+    .identity { display: flex; align-items: baseline; gap: 9px; flex: none; white-space: nowrap; }
+    .identity strong { font-size: 15px; font-weight: 700; }
+    .identity span { color: var(--muted); font-size: 12px; }
+
+    .nav-link {
+      padding: 7px 9px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .nav-link:hover { color: var(--ink); background: #e5e9e9; }
+
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      margin-left: auto;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .top-controls::-webkit-scrollbar { display: none; }
+
+    .segment {
+      display: inline-grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(max-content, 1fr);
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #e7ebeb;
+    }
+
+    .segment button {
+      min-height: 32px;
+      padding: 6px 11px;
+      border: 0;
+      border-radius: 4px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .segment button[aria-pressed="true"] { color: var(--ink); background: #fff; box-shadow: 0 1px 4px rgb(20 29 33 / 12%); }
+
+    .scheme-button { display: inline-flex; align-items: center; gap: 6px; }
+    .scheme-swatch {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 8px);
+      width: 24px;
+      height: 12px;
+      overflow: hidden;
+      border: 1px solid rgb(29 34 36 / 22%);
+      border-radius: 2px;
+      flex: none;
+    }
+    .scheme-swatch i { display: block; width: 8px; height: 12px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      min-height: 0;
+    }
+
+    .stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+
+    .legend {
+      position: absolute;
+      top: 15px;
+      left: 17px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 12px;
+      max-width: calc(100% - 34px);
+      color: #566166;
+      font-size: 11px;
+      pointer-events: none;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { width: 13px; height: 5px; border-radius: 2px; }
+
+    .playback {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      display: grid;
+      grid-template-columns: 36px 42px 36px;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgb(173 183 185 / 78%);
+      border-radius: var(--radius);
+      background: rgb(248 249 249 / 92%);
+      box-shadow: var(--shadow);
+    }
+    .playback button {
+      width: 100%;
+      height: 34px;
+      border: 0;
+      border-radius: 4px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font-size: 17px;
+      line-height: 1;
+    }
+    .playback button:hover { background: #e8ecec; }
+    .playback button:disabled { color: #a7afb1; cursor: default; background: transparent; }
+    .playback .play { color: #fff; background: var(--accent); }
+    .playback .play:hover { background: var(--accent-dark); }
+    .stage.is-complete .legend,
+    .stage.is-complete .playback,
+    .stage.is-complete .scene-note { display: none; }
+
+    .scene-note {
+      position: absolute;
+      left: 18px;
+      bottom: 16px;
+      max-width: min(580px, calc(100% - 36px));
+      padding: 11px 13px;
+      border-left: 3px solid var(--accent);
+      background: rgb(248 249 249 / 92%);
+      box-shadow: var(--shadow);
+      pointer-events: none;
+    }
+    .scene-note strong { display: block; font-size: 13px; font-weight: 700; }
+    .scene-note span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      min-height: 0;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .panel-head { padding: 15px 16px 12px; border-bottom: 1px solid var(--line); }
+    .eyebrow { color: var(--accent-dark); font-size: 10px; font-weight: 760; text-transform: uppercase; }
+    h1 { margin: 5px 0 4px; font-size: 19px; font-weight: 700; letter-spacing: 0; }
+    .panel-head p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .progress-line { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+    .progress-track { flex: 1; height: 5px; overflow: hidden; border-radius: 3px; background: #dfe4e4; }
+    .progress-fill { width: 0; height: 100%; background: var(--accent); transition: width 220ms ease; }
+    .progress-line span { min-width: 54px; color: var(--muted); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 12px; border-bottom: 1px solid var(--line); }
+    .tabs button {
+      min-height: 35px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+    .panel-body { min-height: 0; overflow: auto; scrollbar-width: thin; }
+    .pane { display: none; padding: 13px 16px 20px; }
+    .pane.is-active { display: block; }
+
+    .current-step { padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+    .step-index { color: var(--accent-dark); font-size: 10px; font-weight: 740; }
+    .current-step h2 { margin: 5px 0 4px; font-size: 16px; letter-spacing: 0; }
+    .current-step p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+    .spec-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .spec-row span { padding: 4px 6px; border: 1px solid var(--line); border-radius: 3px; color: #4e595d; font-size: 10px; background: #fff; }
+
+    .step-list { margin: 12px 0 0; padding: 0; list-style: none; }
+    .step-list button {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 43px;
+      padding: 5px 0;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+      text-align: left;
+      background: transparent;
+      cursor: pointer;
+    }
+    .step-list button:hover { background: #f0f3f3; }
+    .step-list button[aria-current="step"] { background: #f4e9e5; }
+    .step-number { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line-strong); border-radius: 50%; color: var(--muted); font-size: 10px; }
+    .step-list button[aria-current="step"] .step-number { color: #fff; border-color: var(--accent); background: var(--accent); }
+    .step-copy strong { display: block; font-size: 11px; font-weight: 680; }
+    .step-copy small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+    .step-state { color: var(--muted); font-size: 9px; }
+    .step-state.done { color: var(--green); }
+
+    .section-title { margin: 5px 0 8px; font-size: 12px; font-weight: 720; }
+    .interface-list, .check-list, .parts-list { margin: 0; padding: 0; list-style: none; }
+    .interface-list li, .parts-list li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      min-height: 37px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 11px;
+    }
+    .interface-list span, .parts-list span { color: var(--muted); }
+    .interface-list strong, .parts-list strong { font-weight: 680; }
+
+    .check-list li { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .check-list b { border-radius: 3px; font-size: 9px; line-height: 20px; text-align: center; }
+    .check-list .partial { color: #9a620e; background: #f3e7d2; }
+    .check-list .missing { color: #a93a34; background: #f2dfdd; }
+    .check-list strong { display: block; font-size: 11px; font-weight: 680; }
+    .check-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+
+    .panel-foot { display: flex; justify-content: space-between; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; }
+
+    @media (max-width: 920px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100svh; }
+      .topbar { align-items: flex-start; flex-wrap: wrap; }
+      .top-controls { flex: 0 0 calc(100vw - 28px); width: calc(100vw - 28px); max-width: calc(100vw - 28px); margin-left: 0; overflow-x: auto; padding-bottom: 2px; }
+      .nav-link { margin-left: 0; }
+      .identity + .nav-link { margin-left: auto; }
+      .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(500px, 64svh) auto; }
+      .panel { display: block; border-left: 0; border-top: 1px solid var(--line); }
+      .panel-body { overflow: visible; }
+      .stage { min-height: 500px; }
+    }
+
+    @media (max-width: 520px) {
+      .topbar { gap: 7px; padding: 8px 10px; }
+      .top-controls { flex-basis: calc(100vw - 20px); width: calc(100vw - 20px); max-width: calc(100vw - 20px); }
+      .identity span { display: none; }
+      .segment button { padding-inline: 9px; }
+      .workspace { grid-template-rows: minmax(450px, 61svh) auto; }
+      .stage { min-height: 450px; }
+      .legend { top: 9px; left: 10px; right: 122px; max-width: none; gap: 5px 9px; }
+      .playback { top: 9px; right: 9px; }
+      .scene-note { left: 10px; bottom: 10px; max-width: calc(100% - 20px); }
+      .scene-note span { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .progress-fill { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="identity"><strong>Dual GB10</strong><span>R2 Assembly Review</span></div>
+      <a class="nav-link" href="./r2.html">外壳评审</a>
+      <a class="nav-link" href="./index.html">风道方案</a>
+      <div class="top-controls">
+        <div class="segment" role="group" aria-label="配色方案">
+          <button class="scheme-button" type="button" data-color="a" aria-pressed="false" title="A 暗铜工业风">
+            <span class="scheme-swatch" aria-hidden="true"><i style="background:#d9ddda"></i><i style="background:#292f31"></i><i style="background:#a94d2d"></i></span>
+            <span>A 暗铜</span>
+          </button>
+          <button class="scheme-button" type="button" data-color="b" aria-pressed="false" title="B NVIDIA 科技风">
+            <span class="scheme-swatch" aria-hidden="true"><i style="background:#ecefed"></i><i style="background:#1d2224"></i><i style="background:#76b900"></i></span>
+            <span>B 绿</span>
+          </button>
+          <button class="scheme-button" type="button" data-color="c" aria-pressed="true" title="C 全黑工作站">
+            <span class="scheme-swatch" aria-hidden="true"><i style="background:#343a3c"></i><i style="background:#171b1d"></i><i style="background:#8b9698"></i></span>
+            <span>C 石墨</span>
+          </button>
+        </div>
+        <div class="segment" role="group" aria-label="模型模式">
+          <button type="button" data-mode="complete" aria-pressed="false">完成图</button>
+          <button type="button" data-mode="assembly" aria-pressed="true">分步装配</button>
+          <button type="button" data-mode="transparent" aria-pressed="false">透明风道</button>
+          <button type="button" data-mode="exploded" aria-pressed="false">完整爆炸</button>
+        </div>
+        <div class="segment" role="group" aria-label="显示屏方向">
+          <button type="button" data-side="left" aria-pressed="true">屏幕左侧</button>
+          <button type="button" data-side="right" aria-pressed="false">屏幕右侧</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="stage" aria-label="Dual GB10 R2 分步装配三维模型">
+        <canvas tabindex="0"></canvas>
+        <div class="legend" aria-hidden="true">
+          <span><i data-legend-color="shell" style="background:#343a3c;border:1px solid #aeb8ba"></i>U 型罩</span>
+          <span><i data-legend-color="base" style="background:#171b1d"></i>底板 / 背框</span>
+          <span><i data-legend-color="front" style="background:#171b1d"></i>前面板</span>
+          <span><i data-legend-color="display" style="background:#8b9698"></i>显示仓</span>
+          <span><i style="background:#c28b2c"></i>承力接口</span>
+          <span><i style="background:#f08a4b"></i>硅胶拉钉</span>
+        </div>
+        <div class="playback" role="group" aria-label="装配播放控制">
+          <button type="button" id="previous-step" title="上一步" aria-label="上一步">←</button>
+          <button type="button" id="toggle-play" class="play" title="播放装配" aria-label="播放装配">▶</button>
+          <button type="button" id="next-step" title="下一步" aria-label="下一步">→</button>
+        </div>
+        <div class="scene-note" aria-live="polite">
+          <strong id="scene-title">步骤 0 · 零件总览</strong>
+          <span id="scene-note">各部件沿真实装配方向展开；拖动旋转，滚轮或双指缩放。</span>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <div class="eyebrow">CAD 前装配确认</div>
+          <h1 id="panel-title">零件总览</h1>
+          <p id="panel-summary">先确认零件边界和装配方向，再逐项检查接口。</p>
+          <div class="progress-line"><div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div><span id="progress-copy">0 / 8</span></div>
+          <div class="tabs" role="tablist" aria-label="评审内容">
+            <button type="button" role="tab" data-pane="steps" aria-selected="true">装配步骤</button>
+            <button type="button" role="tab" data-pane="interfaces" aria-selected="false">接口规格</button>
+            <button type="button" role="tab" data-pane="checks" aria-selected="false">待验证</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <section class="pane is-active" data-pane-content="steps">
+            <div class="current-step">
+              <div class="step-index" id="step-index">STEP 0 OF 8</div>
+              <h2 id="step-title">零件总览</h2>
+              <p id="step-detail">全部打印件和购买件按真实装配方向展开。</p>
+              <div class="spec-row" id="step-specs"></div>
+            </div>
+            <ol class="step-list" id="step-list"></ol>
+          </section>
+
+          <section class="pane" data-pane-content="interfaces">
+            <h2 class="section-title">已冻结装配接口</h2>
+            <ul class="interface-list">
+              <li><strong>前风扇 → 前面板</strong><span>4 × 硅胶拉钉</span></li>
+              <li><strong>后风扇 → 全周背框</strong><span>4 × 硅胶拉钉</span></li>
+              <li><strong>底板 → U 型罩</strong><span>每侧 3 段 45° 捕获轨</span></li>
+              <li><strong>前 / 后面板 → 主体</strong><span>2 上挂钩 + 2 顺序释放卡扣</span></li>
+              <li><strong>显示仓 → 侧壁</strong><span>2 短挂钩 + 下移 6–8 mm + 1 卡扣</span></li>
+              <li><strong>GB10 → 底板</strong><span>PETG 硬导向，间隙 0.6–0.8 mm</span></li>
+              <li><strong>提手 → U 型罩</strong><span>2 × M4 热熔铜螺母</span></li>
+            </ul>
+
+            <h2 class="section-title" style="margin-top:18px">默认打印件</h2>
+            <ul class="parts-list">
+              <li><strong>圆角 U 型罩</strong><span>1</span></li>
+              <li><strong>加强筋底板</strong><span>1</span></li>
+              <li><strong>140 mm 前面板</strong><span>1</span></li>
+              <li><strong>60 mm 全周背框</strong><span>1</span></li>
+              <li><strong>显示仓 + 侧封片</strong><span>2</span></li>
+            </ul>
+          </section>
+
+          <section class="pane" data-pane-content="checks">
+            <ul class="check-list" id="check-list"></ul>
+          </section>
+        </div>
+
+        <div class="panel-foot"><span>Three.js design model</span><span>Concept R2 · CAD pending</span></div>
+      </aside>
+    </div>
+  </main>
+
+  <script type="module">
+    import * as THREE from "https://esm.sh/three@0.179.1";
+    import { OrbitControls } from "https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js";
+    import { RoundedBoxGeometry } from "https://esm.sh/three@0.179.1/examples/jsm/geometries/RoundedBoxGeometry.js";
+
+    const W = 152;
+    const H = 166;
+    const D = 158;
+    const params = new URLSearchParams(location.search);
+    const initialStep = Math.max(0, Math.min(8, Number.parseInt(params.get("step") ?? "0", 10) || 0));
+    const state = {
+      mode: ["complete", "assembly", "transparent", "exploded"].includes(params.get("mode")) ? params.get("mode") : "assembly",
+      side: params.get("side") === "right" ? "right" : "left",
+      color: ["a", "b", "c"].includes(params.get("color")) ? params.get("color") : "c",
+      step: initialStep,
+      playing: false,
+    };
+
+    const steps = [
+      { title: "零件总览", short: "确认分件", detail: "全部打印件和购买件按真实装配方向展开。", specs: ["5 类打印模块", "2 颗结构螺丝", "无泡棉"] },
+      { title: "前风扇预装", short: "140 mm 风扇 → 前面板", detail: "风扇贴合前面板内侧，四个硅胶拉钉从四角完成隔振固定。", specs: ["4 × 硅胶拉钉", "风扇随面板拆卸", "螺丝孔仅备用"] },
+      { title: "后风扇预装", short: "60 mm 风扇 → 全周背框", detail: "60 mm 风扇直接固定在一体式背框中央，不使用独立滑出风扇盒。", specs: ["4 × 硅胶拉钉", "一体式背框", "上下被动旁路"] },
+      { title: "四面主体成形", short: "底板 → U 型罩", detail: "底板从正面滑入；连续斜边依次通过每侧三段 45° 捕获轨并抵住后止挡。", specs: ["每侧 3 段", "30–35 mm / 段", "前面板锁轴向"] },
+      { title: "背框安装", short: "背框 → 四面主体", detail: "先挂上方两个刚性挂钩，再压入下方两个顺序释放卡扣。", specs: ["2 上挂钩", "2 下卡扣", "逐个释放"] },
+      { title: "GB10 装入", short: "2 × GB10 → 底板", detail: "两台 GB10 从正面沿圆角 PETG 硬导向筋推入，前后面板最终限制纵向移动。", specs: ["0.6–0.8 mm 间隙", "无必需 TPU", "后接口无遮挡"] },
+      { title: "显示仓与线束", short: "显示仓 / 风扇快插", detail: "显示仓挂入侧壁后下移锁定；风扇面板保留 30–40 mm 服务行程和防呆快插。", specs: ["下移 6–8 mm", "1 底部卡扣", "风扇快插"] },
+      { title: "前面板闭合", short: "前面板 → 四面主体", detail: "上挂钩先就位，再按压两个下卡扣；面板内止挡同时阻止底板向前退出。", specs: ["顺序释放", "3–4 mm 止回", "无需工具"] },
+      { title: "提手与总装", short: "提手 → U 型罩", detail: "商业提手由两颗 M4 固定到内部横向加强筋；搬运载荷绕开面板卡扣。", specs: ["2 × M4", "12 kg / 60 s 待测", "前后贯穿风道"] },
+    ];
+
+    const checks = [
+      ["missing", "待样件", "三段滑轨配合", "打印 0.30 / 0.40 / 0.50 mm 单边间隙的双段连续插入样件。"],
+      ["missing", "待样件", "顺序释放卡扣", "前后共用接口样件连续拆装 50 次，无发白、裂纹或自动回扣。"],
+      ["missing", "待实物", "风扇孔位与拉钉", "用实际 140 mm、60 mm 风扇确认孔距、厚度和硅胶拉钉长度。"],
+      ["partial", "待重验", "GB10 硬导向", "双机配合规需验证 0.6–0.8 mm 间隙和搬运倾斜时无明显撞击。"],
+      ["missing", "待实物", "显示屏仓", "显示 PCB 到货后确认外框、USB-C 方向、挂钩和底部线束空间。"],
+      ["partial", "待重验", "后部接线", "完整背框装好后，USB-C、HDMI、网线和 QSFP 保持可插拔和合理弯曲半径。"],
+      ["missing", "待样件", "面板服务行程", "释放后可打开 30–40 mm，且快插可单手触达、线束不受拉。"],
+      ["partial", "待测试", "提手载荷路径", "两颗 M4 和六段捕获轨需通过 12 kg、60 秒静载测试。"],
+    ];
+
+    const canvas = document.querySelector("canvas");
+    const stage = document.querySelector(".stage");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe9eded);
+    scene.fog = new THREE.Fog(0xe9eded, 760, 1240);
+
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 1800);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.04;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enablePan = false;
+    controls.enableDamping = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 230;
+    controls.maxDistance = 920;
+    controls.maxPolarAngle = Math.PI * 0.56;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x737e82, 2.35));
+    const key = new THREE.DirectionalLight(0xffffff, 4.6);
+    key.position.set(-330, 440, -390);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -390;
+    key.shadow.camera.right = 390;
+    key.shadow.camera.top = 390;
+    key.shadow.camera.bottom = -390;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xcfe4eb, 2.0);
+    fill.position.set(360, 250, 300);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffd4bd, 1.4);
+    rim.position.set(40, 260, 430);
+    scene.add(rim);
+
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshStandardMaterial({ color: 0xdce1e1, roughness: 1 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -3;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const palette = {
+      shell: 0xf0f2f1,
+      shellEdge: 0xa7b0b2,
+      base: 0x4d5659,
+      baseDark: 0x202628,
+      orange: 0xe6542d,
+      orangeDark: 0xb73a1d,
+      silicone: 0xf08a4b,
+      device: 0x171b1d,
+      gold: 0xb58c43,
+      black: 0x101416,
+      metal: 0x9aa4a7,
+      rail: 0xc28b2c,
+      blue: 0x2d7fac,
+      red: 0xc84a36,
+    };
+
+    const colorSchemes = {
+      a: {
+        name: "A 暗铜工业风",
+        colors: {
+          shell: 0xd9ddda,
+          shellEdge: 0x929d9a,
+          base: 0x292f31,
+          baseDark: 0x171b1d,
+          front: 0x292f31,
+          frontDark: 0x171b1d,
+          display: 0xa94d2d,
+          displayEdge: 0x6f2f1e,
+        },
+        roughness: { shell: 0.68, base: 0.74, front: 0.76, display: 0.66 },
+      },
+      b: {
+        name: "B NVIDIA 科技风",
+        colors: {
+          shell: 0xecefed,
+          shellEdge: 0xb7c0bd,
+          base: 0x1d2224,
+          baseDark: 0x101416,
+          front: 0x1d2224,
+          frontDark: 0x101416,
+          display: 0x76b900,
+          displayEdge: 0x487100,
+        },
+        roughness: { shell: 0.56, base: 0.7, front: 0.72, display: 0.62 },
+      },
+      c: {
+        name: "C 全黑工作站",
+        colors: {
+          shell: 0x343a3c,
+          shellEdge: 0x252a2c,
+          base: 0x171b1d,
+          baseDark: 0x0c0f10,
+          front: 0x171b1d,
+          frontDark: 0x0c0f10,
+          display: 0x8b9698,
+          displayEdge: 0x596467,
+        },
+        roughness: { shell: 0.82, base: 0.8, front: 0.82, display: 0.7 },
+      },
+    };
+
+    function material(color, roughness = 0.62, metalness = 0.02, opacity = 1) {
+      const value = new THREE.MeshStandardMaterial({ color, roughness, metalness, transparent: true, opacity, side: THREE.DoubleSide });
+      value.userData.baseOpacity = opacity;
+      value.userData.targetOpacity = opacity;
+      return value;
+    }
+
+    const materials = {
+      shell: material(palette.shell, 0.58),
+      shellEdge: material(palette.shellEdge, 0.76),
+      base: material(palette.base, 0.72),
+      baseDark: material(palette.baseDark, 0.62),
+      front: material(palette.orange, 0.56),
+      frontDark: material(palette.orangeDark, 0.64),
+      display: material(palette.shell, 0.58),
+      displayEdge: material(palette.shellEdge, 0.76),
+      silicone: material(palette.silicone, 0.78),
+      device: material(palette.device, 0.46, 0.18),
+      gold: material(palette.gold, 0.42, 0.45),
+      black: material(palette.black, 0.5, 0.08),
+      metal: material(palette.metal, 0.3, 0.74),
+      rail: material(palette.rail, 0.5, 0.15),
+      glass: material(0x18272d, 0.22, 0.06),
+      wire: material(0x30383b, 0.7),
+    };
+    const animatedMaterials = new Set(Object.values(materials));
+
+    function applyColorScheme() {
+      const scheme = colorSchemes[state.color];
+      Object.entries(scheme.colors).forEach(([name, color]) => materials[name].color.setHex(color));
+      materials.shell.roughness = scheme.roughness.shell;
+      materials.shellEdge.roughness = Math.min(1, scheme.roughness.shell + 0.08);
+      materials.base.roughness = scheme.roughness.base;
+      materials.baseDark.roughness = Math.min(1, scheme.roughness.base + 0.04);
+      materials.front.roughness = scheme.roughness.front;
+      materials.frontDark.roughness = Math.min(1, scheme.roughness.front + 0.04);
+      materials.display.roughness = scheme.roughness.display;
+      materials.displayEdge.roughness = Math.min(1, scheme.roughness.display + 0.06);
+
+      document.querySelectorAll("[data-color]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.color === state.color));
+      });
+      document.querySelectorAll("[data-legend-color]").forEach((swatch) => {
+        const color = scheme.colors[swatch.dataset.legendColor];
+        swatch.style.background = `#${color.toString(16).padStart(6, "0")}`;
+      });
+    }
+
+    function roundedBox(w, h, d, radius, mat, position = [0, 0, 0]) {
+      const geometry = new RoundedBoxGeometry(w, h, d, 5, Math.min(radius, w / 2, h / 2, d / 2));
+      const mesh = new THREE.Mesh(geometry, mat);
+      mesh.position.set(...position);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function roundedRectShape(w, h, r) {
+      const shape = new THREE.Shape();
+      shape.moveTo(-w / 2 + r, -h / 2);
+      shape.lineTo(w / 2 - r, -h / 2);
+      shape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+      shape.lineTo(w / 2, h / 2 - r);
+      shape.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+      shape.lineTo(-w / 2 + r, h / 2);
+      shape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+      shape.lineTo(-w / 2, -h / 2 + r);
+      shape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+      shape.closePath();
+      return shape;
+    }
+
+    const model = new THREE.Group();
+    scene.add(model);
+    const nodes = {};
+    const animatedNodes = new Set();
+    const rotors = [];
+
+    function track(name, node) {
+      node.userData.home = node.position.clone();
+      node.userData.target = node.position.clone();
+      nodes[name] = node;
+      animatedNodes.add(node);
+      return node;
+    }
+
+    function setNodeOffset(name, offset) {
+      const node = nodes[name];
+      node.userData.target.copy(node.userData.home).add(new THREE.Vector3(...offset));
+    }
+
+    function resetTargets() {
+      animatedNodes.forEach((node) => node.userData.target.copy(node.userData.home));
+    }
+
+    function uCoverShape() {
+      const wall = 4;
+      const outerR = 12;
+      const innerR = 8;
+      const shape = new THREE.Shape();
+      shape.moveTo(-W / 2, 0);
+      shape.lineTo(-W / 2, H - outerR);
+      shape.quadraticCurveTo(-W / 2, H, -W / 2 + outerR, H);
+      shape.lineTo(W / 2 - outerR, H);
+      shape.quadraticCurveTo(W / 2, H, W / 2, H - outerR);
+      shape.lineTo(W / 2, 0);
+      shape.lineTo(W / 2 - wall, 0);
+      shape.lineTo(W / 2 - wall, H - wall - innerR);
+      shape.quadraticCurveTo(W / 2 - wall, H - wall, W / 2 - wall - innerR, H - wall);
+      shape.lineTo(-W / 2 + wall + innerR, H - wall);
+      shape.quadraticCurveTo(-W / 2 + wall, H - wall, -W / 2 + wall, H - wall - innerR);
+      shape.lineTo(-W / 2 + wall, 0);
+      shape.closePath();
+      return shape;
+    }
+
+    function makeCaptureSegment(side, z, length) {
+      const shape = new THREE.Shape();
+      const outside = side * 72;
+      const inside = side * 66.4;
+      const lip = side * 64.8;
+      shape.moveTo(outside, 6.5);
+      shape.lineTo(inside, 6.5);
+      shape.lineTo(lip, 11);
+      shape.lineTo(side * 72, 11);
+      shape.closePath();
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false });
+      geometry.translate(0, 0, z - length / 2);
+      const mesh = new THREE.Mesh(geometry, materials.rail);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
+    function makeUCover() {
+      const group = new THREE.Group();
+      const geometry = new THREE.ExtrudeGeometry(uCoverShape(), { depth: D, bevelEnabled: false, curveSegments: 28 });
+      geometry.translate(0, 0, -D / 2);
+      const cover = new THREE.Mesh(geometry, materials.shell);
+      cover.castShadow = true;
+      cover.receiveShadow = true;
+      group.add(cover);
+      [-1, 1].forEach((side) => [-54, 0, 54].forEach((z) => group.add(makeCaptureSegment(side, z, 34))));
+      [-47, 47].forEach((z) => {
+        group.add(roundedBox(136, 5, 13, 2.2, materials.shellEdge, [0, 157, z]));
+        const boss = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 10, 28), materials.shellEdge);
+        boss.position.set(0, 160, z);
+        boss.castShadow = true;
+        group.add(boss);
+      });
+      return group;
+    }
+
+    function makeBaseTongue(side) {
+      const shape = new THREE.Shape();
+      shape.moveTo(side * 70.5, 6.5);
+      shape.lineTo(side * 65.8, 6.5);
+      shape.lineTo(side * 64.6, 9.8);
+      shape.lineTo(side * 70.5, 9.8);
+      shape.closePath();
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 154, bevelEnabled: false });
+      geometry.translate(0, 0, -77);
+      const mesh = new THREE.Mesh(geometry, materials.rail);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
+    function makeBase() {
+      const group = new THREE.Group();
+      group.add(roundedBox(142, 7, 158, 2.4, materials.base, [0, 3.5, 0]));
+      group.add(makeBaseTongue(-1), makeBaseTongue(1));
+      [-53, 0, 53].forEach((x) => group.add(roundedBox(3, 8, 146, 1.2, materials.baseDark, [x, 10, 0])));
+      [-54, 0, 54].forEach((z) => group.add(roundedBox(126, 3, 4, 1.1, materials.baseDark, [0, 8.5, z])));
+      group.add(roundedBox(126, 12, 4, 1.3, materials.baseDark, [0, 10, 76]));
+      return group;
+    }
+
+    function makeBlade(size) {
+      const shape = new THREE.Shape();
+      shape.moveTo(size * 0.08, -size * 0.04);
+      shape.quadraticCurveTo(size * 0.30, -size * 0.10, size * 0.46, size * 0.02);
+      shape.quadraticCurveTo(size * 0.33, size * 0.17, size * 0.10, size * 0.10);
+      shape.closePath();
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 2.5, bevelEnabled: true, bevelSize: 0.6, bevelThickness: 0.6, bevelSegments: 2 });
+      geometry.translate(0, 0, -1.25);
+      return new THREE.Mesh(geometry, materials.black);
+    }
+
+    function makeFan(size, thickness) {
+      const group = new THREE.Group();
+      const border = Math.max(4, size * 0.055);
+      group.add(roundedBox(size, border, thickness, 2, materials.black, [0, size / 2 - border / 2, 0]));
+      group.add(roundedBox(size, border, thickness, 2, materials.black, [0, -size / 2 + border / 2, 0]));
+      group.add(roundedBox(border, size - border * 2, thickness, 2, materials.black, [-size / 2 + border / 2, 0, 0]));
+      group.add(roundedBox(border, size - border * 2, thickness, 2, materials.black, [size / 2 - border / 2, 0, 0]));
+      const rotor = new THREE.Group();
+      for (let index = 0; index < 7; index += 1) {
+        const blade = makeBlade(size);
+        blade.rotation.z = (index / 7) * Math.PI * 2 + 0.2;
+        rotor.add(blade);
+      }
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.15, size * 0.15, thickness * 0.5, 36), materials.black);
+      hub.rotation.x = Math.PI / 2;
+      rotor.add(hub);
+      group.add(rotor);
+      rotors.push(rotor);
+      return group;
+    }
+
+    function makeSiliconePin(length) {
+      const group = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, length, 16), materials.silicone);
+      shaft.rotation.x = Math.PI / 2;
+      group.add(shaft);
+      [-length / 2, length / 2].forEach((z) => {
+        const head = new THREE.Mesh(new THREE.SphereGeometry(3.1, 18, 12), materials.silicone);
+        head.scale.z = 0.45;
+        head.position.z = z;
+        group.add(head);
+      });
+      return group;
+    }
+
+    function makeFrontAssembly() {
+      const group = new THREE.Group();
+      group.position.z = -110.5;
+      const shape = roundedRectShape(152, 166, 12);
+      const hole = new THREE.Path();
+      hole.absarc(0, 0, 68.5, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 7, bevelEnabled: true, bevelThickness: 1, bevelSize: 1, bevelSegments: 4, curveSegments: 40 });
+      geometry.translate(0, 83, -3.5);
+      const frame = new THREE.Mesh(geometry, materials.front);
+      frame.castShadow = true;
+      group.add(frame);
+      const radius = 66;
+      for (let x = -60; x <= 60; x += 15) {
+        const chord = 2 * Math.sqrt(Math.max(0, radius * radius - x * x));
+        group.add(roundedBox(2, chord, 2.3, 0.8, materials.frontDark, [x, 83, -5.2]));
+      }
+      for (let y = -60; y <= 60; y += 15) {
+        const chord = 2 * Math.sqrt(Math.max(0, radius * radius - y * y));
+        group.add(roundedBox(chord, 2, 2.3, 0.8, materials.frontDark, [0, 83 + y, -5.3]));
+      }
+      [-48, 48].forEach((x) => {
+        group.add(roundedBox(18, 8, 20, 2, materials.frontDark, [x, 155, 9]));
+        group.add(roundedBox(16, 20, 18, 2.5, materials.frontDark, [x, 11, 8]));
+        group.add(roundedBox(20, 5, 8, 1.5, materials.rail, [x, 4, 17]));
+      });
+      group.add(roundedBox(126, 7, 7, 1.6, materials.frontDark, [0, 5, 17]));
+
+      const fan = track("frontFan", makeFan(140, 25));
+      fan.position.set(0, 83, 18.5);
+      fan.userData.home.copy(fan.position);
+      fan.userData.target.copy(fan.position);
+      group.add(fan);
+
+      const pins = track("frontPins", new THREE.Group());
+      [-62.25, 62.25].forEach((x) => [-62.25, 62.25].forEach((dy) => {
+        const pin = makeSiliconePin(22);
+        pin.position.set(x, 83 + dy, 17);
+        pins.add(pin);
+      }));
+      group.add(pins);
+      return group;
+    }
+
+    function makeRearAssembly() {
+      const group = new THREE.Group();
+      group.position.z = 83;
+      group.add(roundedBox(8, 158, 7, 2.5, materials.base, [-72, 83, 0]));
+      group.add(roundedBox(8, 158, 7, 2.5, materials.base, [72, 83, 0]));
+      group.add(roundedBox(136, 8, 7, 2.5, materials.base, [0, 4, 0]));
+      group.add(roundedBox(136, 8, 7, 2.5, materials.base, [0, 162, 0]));
+      group.add(roundedBox(136, 6, 7, 2, materials.base, [0, 49, 0]));
+      group.add(roundedBox(136, 6, 7, 2, materials.base, [0, 117, 0]));
+      group.add(roundedBox(7, 68, 7, 2, materials.base, [-34, 83, 0]));
+      group.add(roundedBox(7, 68, 7, 2, materials.base, [34, 83, 0]));
+      [-50, 50].forEach((x) => {
+        group.add(roundedBox(18, 8, 18, 2, materials.baseDark, [x, 158, -7]));
+        group.add(roundedBox(16, 20, 16, 2.5, materials.baseDark, [x, 9, -7]));
+      });
+
+      const fan = track("rearFan", makeFan(60, 15));
+      fan.position.set(0, 83, 11);
+      fan.userData.home.copy(fan.position);
+      fan.userData.target.copy(fan.position);
+      group.add(fan);
+
+      const pins = track("rearPins", new THREE.Group());
+      [-25, 25].forEach((x) => [-25, 25].forEach((dy) => {
+        const pin = makeSiliconePin(21);
+        pin.position.set(x, 83 + dy, 3);
+        pins.add(pin);
+      }));
+      group.add(pins);
+      return group;
+    }
+
+    function makeDevice(side) {
+      const group = new THREE.Group();
+      const x = side * 27.25;
+      group.add(roundedBox(50.5, 150, 150, 3.5, materials.device, [x, 82, 0]));
+      group.add(roundedBox(45, 143, 2, 2.5, materials.gold, [x, 82, -75.8]));
+      for (let y = 18; y <= 146; y += 8) group.add(roundedBox(41, 2.1, 1.1, 0.5, materials.black, [x, y, -77]));
+      const outerX = side * 40;
+      group.add(roundedBox(19, 92, 2.3, 2, materials.black, [outerX, 61, 75.8]));
+      [31, 45, 59, 75, 91].forEach((y, index) => group.add(roundedBox(index === 3 ? 13 : 10, 5.5, 1.5, 1, materials.metal, [outerX, y, 77.2])));
+      const innerX = side * 15;
+      group.add(roundedBox(22, 143, 2, 2.5, materials.gold, [innerX, 82, 75.8]));
+      for (let y = 17; y <= 147; y += 8) group.add(roundedBox(18, 2.1, 1.1, 0.5, materials.black, [innerX, y, 77]));
+      return group;
+    }
+
+    function makeDisplayTexture() {
+      const surface = document.createElement("canvas");
+      surface.width = 512;
+      surface.height = 320;
+      const context = surface.getContext("2d");
+      context.fillStyle = "#142126";
+      context.fillRect(0, 0, surface.width, surface.height);
+      context.fillStyle = "#f1f5f4";
+      context.font = "600 82px system-ui";
+      context.fillText("68°", 26, 112);
+      context.fillStyle = "#55c99a";
+      context.font = "600 26px system-ui";
+      context.fillText("GB10-1  67°", 270, 66);
+      context.fillText("GB10-2  65°", 270, 108);
+      context.fillStyle = "#e6542d";
+      context.fillRect(28, 168, 322, 14);
+      context.fillStyle = "#647379";
+      context.fillRect(350, 168, 126, 14);
+      context.fillStyle = "#aebdc1";
+      context.font = "500 22px system-ui";
+      context.fillText("PWM 72%", 28, 228);
+      context.fillText("1480 / 2320 RPM", 28, 270);
+      const texture = new THREE.CanvasTexture(surface);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return texture;
+    }
+
+    function makeDisplayPod(side) {
+      const group = new THREE.Group();
+      group.position.set(side * 86, 116, -22);
+      group.scale.x = side === -1 ? 1 : -1;
+      group.add(roundedBox(20, 70, 84, 5, materials.display));
+      const screenTexture = makeDisplayTexture();
+      [-1, 1].forEach((face) => {
+        group.add(roundedBox(1, 44, 60, 1, materials.glass, [face * 10.25, 7, 0]));
+        const screenMaterial = new THREE.MeshBasicMaterial({ map: screenTexture, toneMapped: false, transparent: true, side: THREE.DoubleSide });
+        screenMaterial.userData.baseOpacity = 1;
+        screenMaterial.userData.targetOpacity = 1;
+        animatedMaterials.add(screenMaterial);
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(54, 40), screenMaterial);
+        screen.rotation.y = face === -1 ? -Math.PI / 2 : Math.PI / 2;
+        screen.position.set(face * 10.8, 7, 0);
+        group.add(screen);
+      });
+      [-25, 25].forEach((z) => group.add(roundedBox(8, 7, 12, 1.5, materials.displayEdge, [11, 22, z])));
+      group.add(roundedBox(8, 15, 18, 2, materials.displayEdge, [11, -32, 0]));
+      return group;
+    }
+
+    function makeBlank(side) {
+      const group = new THREE.Group();
+      group.position.set(side * 78.2, 116, -22);
+      group.add(roundedBox(3, 66, 80, 1.4, materials.shell));
+      return group;
+    }
+
+    function makeHandle() {
+      const group = new THREE.Group();
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 166, -47),
+        new THREE.Vector3(0, 187, -36),
+        new THREE.Vector3(0, 193, 0),
+        new THREE.Vector3(0, 187, 36),
+        new THREE.Vector3(0, 166, 47),
+      ]);
+      const strap = new THREE.Mesh(new THREE.TubeGeometry(curve, 56, 4.2, 12, false), materials.black);
+      strap.castShadow = true;
+      group.add(strap);
+      [-47, 47].forEach((z) => {
+        const washer = new THREE.Mesh(new THREE.CylinderGeometry(6.8, 6.8, 2.2, 28), materials.metal);
+        washer.position.set(0, 167.5, z);
+        group.add(washer);
+        const screw = new THREE.Mesh(new THREE.CylinderGeometry(3.7, 3.7, 3, 24), materials.metal);
+        screw.position.set(0, 169.6, z);
+        group.add(screw);
+      });
+      return group;
+    }
+
+    function makeCable(points, radius = 1.8, mat = materials.wire) {
+      const curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)));
+      const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, radius, 10, false), mat);
+      cable.castShadow = true;
+      return cable;
+    }
+
+    function makeHarness(side) {
+      const group = new THREE.Group();
+      group.add(makeCable([[55, 26, -93], [65, 18, -65], [61, 14, -12], [52, 17, 28]], 1.7));
+      group.add(makeCable([[20, 40, 95], [28, 27, 70], [48, 20, 35]], 1.5));
+      group.add(makeCable([[48, 20, 35], [side * 65, 30, 5], [side * 77, 72, -18]], 1.4));
+      group.add(roundedBox(9, 7, 12, 1.5, materials.silicone, [55, 26, -82]));
+      group.add(roundedBox(9, 7, 12, 1.5, materials.silicone, [24, 34, 87]));
+      return group;
+    }
+
+    function makeArrow(origin, end, color, radius = 1.9) {
+      const group = new THREE.Group();
+      const start = new THREE.Vector3(...origin);
+      const finish = new THREE.Vector3(...end);
+      const direction = finish.clone().sub(start);
+      const length = direction.length();
+      direction.normalize();
+      const arrowMat = material(color, 0.38, 0.03, 0.88);
+      arrowMat.depthTest = false;
+      animatedMaterials.add(arrowMat);
+      const shaftLength = Math.max(1, length - 11);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, shaftLength, 14), arrowMat);
+      shaft.position.copy(start).add(direction.clone().multiplyScalar(shaftLength / 2));
+      shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      shaft.renderOrder = 30;
+      group.add(shaft);
+      const head = new THREE.Mesh(new THREE.ConeGeometry(radius * 2.6, 12, 18), arrowMat);
+      head.position.copy(finish).add(direction.clone().multiplyScalar(-5));
+      head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      head.renderOrder = 30;
+      group.add(head);
+      return group;
+    }
+
+    function makeAirflow() {
+      const group = new THREE.Group();
+      [-27, 27].forEach((x) => [54, 106].forEach((y) => {
+        group.add(makeArrow([x, y, -150], [x, y, 35], palette.blue, 2));
+        group.add(makeArrow([x, y, 34], [Math.sign(x) * 14, y, 132], palette.red, 2));
+      }));
+      [34, 132].forEach((y) => group.add(makeArrow([0, y, 45], [0, y, 132], palette.red, 1.6)));
+      return group;
+    }
+
+    function makeAssemblyArrows() {
+      const groups = Array.from({ length: 9 }, () => new THREE.Group());
+      groups[1].add(makeArrow([0, 83, -225], [0, 83, -178], palette.orange ?? palette.silicone, 1.8));
+      groups[2].add(makeArrow([0, 83, 196], [0, 83, 145], palette.silicone, 1.8));
+      groups[3].add(makeArrow([0, 18, -170], [0, 18, -25], palette.rail, 1.8));
+      groups[4].add(makeArrow([0, 83, 185], [0, 83, 105], palette.rail, 1.8));
+      [-27, 27].forEach((x) => groups[5].add(makeArrow([x, 82, -205], [x, 82, -95], palette.gold, 1.8)));
+      groups[6].add(makeArrow([-150, 140, -22], [-98, 122, -22], palette.rail, 1.8));
+      groups[6].add(makeArrow([150, 140, -22], [98, 122, -22], palette.rail, 1.8));
+      groups[7].add(makeArrow([0, 83, -210], [0, 83, -132], palette.orange, 1.8));
+      groups[8].add(makeArrow([0, 275, 0], [0, 205, 0], palette.metal, 1.8));
+      groups.forEach((group) => {
+        group.visible = false;
+        model.add(group);
+      });
+      return groups;
+    }
+
+    function makeMarkers() {
+      const groups = Array.from({ length: 9 }, () => new THREE.Group());
+      const addMarker = (group, position, color = palette.rail, radius = 4) => {
+        const markerMat = material(color, 0.35, 0.05, 0.92);
+        markerMat.emissive = new THREE.Color(color).multiplyScalar(0.22);
+        animatedMaterials.add(markerMat);
+        const marker = new THREE.Mesh(new THREE.TorusGeometry(radius, 1.2, 12, 28), markerMat);
+        marker.position.set(...position);
+        group.add(marker);
+      };
+      [-62.25, 62.25].forEach((x) => [-62.25, 62.25].forEach((dy) => addMarker(groups[1], [x, 83 + dy, -104], palette.silicone, 3.4)));
+      [-25, 25].forEach((x) => [-25, 25].forEach((dy) => addMarker(groups[2], [x, 83 + dy, 88], palette.silicone, 3.2)));
+      [-1, 1].forEach((side) => [-54, 0, 54].forEach((z) => addMarker(groups[3], [side * 68, 10, z], palette.rail, 3.2)));
+      [-50, 50].forEach((x) => [9, 158].forEach((y) => addMarker(groups[4], [x, y, 81], palette.rail, 3.4)));
+      [-53, 0, 53].forEach((x) => addMarker(groups[5], [x, 12, -35], palette.gold, 3.2));
+      [-1, 1].forEach((side) => [-25, 25].forEach((z) => addMarker(groups[6], [side * 78, 138, -22 + z], palette.rail, 3.2)));
+      [-48, 48].forEach((x) => [11, 155].forEach((y) => addMarker(groups[7], [x, y, -80], palette.orange, 3.4)));
+      [-47, 47].forEach((z) => addMarker(groups[8], [0, 169, z], palette.metal, 3.8));
+      groups.forEach((group) => {
+        group.visible = false;
+        model.add(group);
+      });
+      return groups;
+    }
+
+    function buildModel() {
+      model.add(track("cover", makeUCover()));
+      model.add(track("base", makeBase()));
+      model.add(track("frontAssembly", makeFrontAssembly()));
+      model.add(track("rearAssembly", makeRearAssembly()));
+      model.add(track("deviceLeft", makeDevice(-1)));
+      model.add(track("deviceRight", makeDevice(1)));
+      model.add(track("displayLeft", makeDisplayPod(-1)));
+      model.add(track("displayRight", makeDisplayPod(1)));
+      model.add(track("blankLeft", makeBlank(-1)));
+      model.add(track("blankRight", makeBlank(1)));
+      model.add(track("handle", makeHandle()));
+      model.add(track("harnessLeft", makeHarness(-1)));
+      model.add(track("harnessRight", makeHarness(1)));
+      const airflow = makeAirflow();
+      airflow.visible = false;
+      model.add(airflow);
+      nodes.airflow = airflow;
+    }
+
+    buildModel();
+    const assemblyArrows = makeAssemblyArrows();
+    const markers = makeMarkers();
+
+    function setOpacity(mat, value) {
+      mat.userData.targetOpacity = value;
+      mat.depthWrite = value > 0.92;
+    }
+
+    function restoreMaterials() {
+      Object.values(materials).forEach((mat) => setOpacity(mat, mat.userData.baseOpacity));
+    }
+
+    function setPartVisibility() {
+      const left = state.side === "left";
+      const allVisible = state.mode !== "assembly" || state.step === 0;
+      const visibleFrom = (minimumStep) => allVisible || state.step >= minimumStep;
+
+      nodes.cover.visible = !(state.mode === "assembly" && state.step === 2);
+      nodes.base.visible = allVisible || state.step >= 3;
+      nodes.rearAssembly.visible = allVisible || state.step === 2 || state.step >= 4;
+      nodes.deviceLeft.visible = allVisible || state.step >= 5;
+      nodes.deviceRight.visible = allVisible || state.step >= 5;
+      nodes.frontAssembly.visible = allVisible || state.step === 1 || state.step >= 7;
+      nodes.handle.visible = visibleFrom(8);
+
+      const displayVisible = visibleFrom(6);
+      nodes.displayLeft.visible = left && displayVisible;
+      nodes.blankRight.visible = left && displayVisible;
+      nodes.displayRight.visible = !left && displayVisible;
+      nodes.blankLeft.visible = !left && displayVisible;
+      nodes.harnessLeft.visible = left && displayVisible;
+      nodes.harnessRight.visible = !left && displayVisible;
+    }
+
+    const cameraPositionTarget = new THREE.Vector3(-500, 320, -520);
+    const cameraLookTarget = new THREE.Vector3(0, 88, 0);
+    let cameraTween = 1;
+
+    function setCameraPose() {
+      const side = state.side === "left" ? -1 : 1;
+      let position = [side * 500, 320, -520];
+      let target = [0, 88, 0];
+      if (state.mode === "complete") {
+        position = [side * 420, 250, -360];
+        target = [0, 88, -5];
+      } else if (state.mode === "transparent") {
+        position = [side * 390, 270, -390];
+        target = [0, 83, 0];
+      } else if (state.mode === "exploded") {
+        position = [side * 590, 380, -570];
+        target = [0, 105, 0];
+      } else {
+        const poses = [
+          [[side * 520, 340, -540], [0, 95, 0]],
+          [[side * 290, 205, -430], [0, 83, -145]],
+          [[-side * 70, 205, 525], [0, 83, 118]],
+          [[side * 470, 185, -350], [0, 30, -5]],
+          [[-side * 80, 205, 510], [0, 83, 96]],
+          [[side * 390, 245, -445], [0, 82, -45]],
+          [[side * 600, 225, -170], [side * 76, 112, -22]],
+          [[side * 300, 230, -410], [0, 83, -100]],
+          [[side * 420, 250, -320], [0, 90, 0]],
+        ];
+        [position, target] = poses[state.step];
+      }
+      cameraPositionTarget.set(...position);
+      cameraLookTarget.set(...target);
+      cameraTween = 1;
+    }
+
+    function applyAssemblyPose() {
+      if (state.step < 1) {
+        setNodeOffset("frontFan", [0, 0, -42]);
+        setNodeOffset("frontPins", [0, 0, -66]);
+      }
+      if (state.step < 2) {
+        setNodeOffset("rearFan", [0, 0, 35]);
+        setNodeOffset("rearPins", [0, 0, 58]);
+      }
+      if (state.step < 3) setNodeOffset("base", [0, -28, -122]);
+      if (state.step < 4) setNodeOffset("rearAssembly", [0, 0, 68]);
+      if (state.step < 5) {
+        setNodeOffset("deviceLeft", [-105, 8, -24]);
+        setNodeOffset("deviceRight", [105, 8, -24]);
+      }
+      if (state.step < 6) {
+        setNodeOffset("displayLeft", [-66, 22, 0]);
+        setNodeOffset("blankRight", [35, 12, 0]);
+        setNodeOffset("displayRight", [66, 22, 0]);
+        setNodeOffset("blankLeft", [-35, 12, 0]);
+      }
+      if (state.step === 6) {
+        setNodeOffset("displayLeft", [-20, 8, 0]);
+        setNodeOffset("displayRight", [20, 8, 0]);
+      }
+      if (state.step < 7) setNodeOffset("frontAssembly", [0, 0, -70]);
+      if (state.step < 8) setNodeOffset("handle", [0, 92, 0]);
+    }
+
+    function applyExplodedPose() {
+      setNodeOffset("cover", [0, 88, 0]);
+      setNodeOffset("base", [0, -42, -12]);
+      setNodeOffset("frontAssembly", [0, 0, -92]);
+      setNodeOffset("frontFan", [0, 0, -38]);
+      setNodeOffset("frontPins", [0, 0, -68]);
+      setNodeOffset("rearAssembly", [0, 0, 92]);
+      setNodeOffset("rearFan", [0, 0, 38]);
+      setNodeOffset("rearPins", [0, 0, 68]);
+      setNodeOffset("deviceLeft", [-48, 15, -15]);
+      setNodeOffset("deviceRight", [48, 15, -15]);
+      setNodeOffset("displayLeft", [-72, 20, 0]);
+      setNodeOffset("displayRight", [72, 20, 0]);
+      setNodeOffset("blankLeft", [-42, 8, 0]);
+      setNodeOffset("blankRight", [42, 8, 0]);
+      setNodeOffset("handle", [0, 130, 0]);
+    }
+
+    function updateSceneCopy() {
+      const sceneTitle = document.getElementById("scene-title");
+      const sceneNote = document.getElementById("scene-note");
+      if (state.mode === "complete") {
+        sceneTitle.textContent = `完成图 · ${colorSchemes[state.color].name}`;
+        sceneNote.textContent = "完整闭合外观。";
+      } else if (state.mode === "transparent") {
+        sceneTitle.textContent = "透明风道 · 已完成总装";
+        sceneNote.textContent = "蓝色进风贯穿两台 GB10，红色气流由中央 60 mm 风扇和上下被动旁路向后排出。";
+      } else if (state.mode === "exploded") {
+        sceneTitle.textContent = "完整爆炸 · 按真实装配轴展开";
+        sceneNote.textContent = "前后面板、风扇、硅胶拉钉、底板、GB10、显示仓和提手均保持独立零件关系。";
+      } else {
+        sceneTitle.textContent = `步骤 ${state.step} · ${steps[state.step].title}`;
+        sceneNote.textContent = `${steps[state.step].detail} 拖动旋转，滚轮或双指缩放。`;
+      }
+    }
+
+    function updateStepPanel() {
+      const step = steps[state.step];
+      document.getElementById("panel-title").textContent = step.title;
+      document.getElementById("panel-summary").textContent = step.detail;
+      document.getElementById("progress-fill").style.width = `${(state.step / 8) * 100}%`;
+      document.getElementById("progress-copy").textContent = `${state.step} / 8`;
+      document.getElementById("step-index").textContent = `STEP ${state.step} OF 8`;
+      document.getElementById("step-title").textContent = step.title;
+      document.getElementById("step-detail").textContent = step.detail;
+      document.getElementById("step-specs").innerHTML = step.specs.map((spec) => `<span>${spec}</span>`).join("");
+      document.querySelectorAll("[data-step]").forEach((button) => {
+        const index = Number(button.dataset.step);
+        button.setAttribute("aria-current", index === state.step ? "step" : "false");
+        const status = button.querySelector(".step-state");
+        status.textContent = index < state.step ? "已完成" : index === state.step ? "当前" : "待装";
+        status.classList.toggle("done", index < state.step);
+      });
+      document.getElementById("previous-step").disabled = state.step === 0;
+      document.getElementById("next-step").disabled = state.step === 8;
+      const playButton = document.getElementById("toggle-play");
+      playButton.textContent = state.playing ? "Ⅱ" : "▶";
+      playButton.title = state.playing ? "暂停装配" : "播放装配";
+      playButton.setAttribute("aria-label", state.playing ? "暂停装配" : "播放装配");
+    }
+
+    function applyState() {
+      resetTargets();
+      applyColorScheme();
+      restoreMaterials();
+      assemblyArrows.forEach((group) => { group.visible = false; });
+      markers.forEach((group) => {
+        group.visible = false;
+        group.position.set(0, 0, 0);
+      });
+      nodes.airflow.visible = false;
+
+      if (state.mode === "complete") {
+        // The reset pose is the fully assembled enclosure.
+      } else if (state.mode === "transparent") {
+        setOpacity(materials.shell, 0.14);
+        setOpacity(materials.shellEdge, 0.25);
+        setOpacity(materials.base, 0.38);
+        setOpacity(materials.front, 0.23);
+        setOpacity(materials.frontDark, 0.34);
+        setOpacity(materials.display, 0.28);
+        setOpacity(materials.displayEdge, 0.36);
+        setOpacity(materials.device, 0.62);
+        setOpacity(materials.gold, 0.8);
+        nodes.airflow.visible = true;
+      } else if (state.mode === "exploded") {
+        applyExplodedPose();
+      } else {
+        applyAssemblyPose();
+        if (state.step === 4) {
+          setOpacity(materials.shell, 0.13);
+          setOpacity(materials.shellEdge, 0.22);
+        }
+        assemblyArrows[state.step].visible = state.step > 0;
+        markers[state.step].visible = state.step > 0;
+        if (state.step === 1) markers[1].position.z = -70;
+        if (state.step === 2) markers[2].position.z = 68;
+        if (state.step === 6) {
+          assemblyArrows[6].children[0].visible = state.side === "left";
+          assemblyArrows[6].children[1].visible = state.side === "right";
+          markers[6].children.forEach((marker, index) => {
+            marker.visible = state.side === "left" ? index < 2 : index >= 2;
+          });
+        }
+      }
+
+      setPartVisibility();
+      stage.classList.toggle("is-complete", state.mode === "complete");
+      document.querySelectorAll("[data-mode]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode)));
+      document.querySelectorAll("[data-side]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.side === state.side)));
+      updateSceneCopy();
+      updateStepPanel();
+      setCameraPose();
+      const description = state.mode === "assembly" ? `${steps[state.step].title}。${steps[state.step].detail}` : document.getElementById("scene-note").textContent;
+      canvas.setAttribute("aria-label", `${description} 可拖动旋转并滚动缩放。`);
+    }
+
+    const stepList = document.getElementById("step-list");
+    steps.forEach((step, index) => {
+      const item = document.createElement("li");
+      item.innerHTML = `<button type="button" data-step="${index}" aria-current="${index === state.step ? "step" : "false"}"><span class="step-number">${index}</span><span class="step-copy"><strong>${step.title}</strong><small>${step.short}</small></span><span class="step-state"></span></button>`;
+      stepList.appendChild(item);
+    });
+
+    const checkList = document.getElementById("check-list");
+    checks.forEach(([status, label, title, detail]) => {
+      const item = document.createElement("li");
+      item.innerHTML = `<b class="${status}">${label}</b><span><strong>${title}</strong><small>${detail}</small></span>`;
+      checkList.appendChild(item);
+    });
+
+    function setStep(nextStep) {
+      state.step = Math.max(0, Math.min(8, nextStep));
+      state.mode = "assembly";
+      applyState();
+    }
+
+    document.querySelectorAll("[data-step]").forEach((button) => button.addEventListener("click", () => {
+      state.playing = false;
+      setStep(Number(button.dataset.step));
+    }));
+
+    document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => {
+      state.playing = false;
+      state.mode = button.dataset.mode;
+      if (state.mode === "complete") state.step = 8;
+      applyState();
+    }));
+
+    document.querySelectorAll("[data-color]").forEach((button) => button.addEventListener("click", () => {
+      state.color = button.dataset.color;
+      applyState();
+    }));
+
+    document.querySelectorAll("[data-side]").forEach((button) => button.addEventListener("click", () => {
+      state.side = button.dataset.side;
+      applyState();
+    }));
+
+    document.querySelectorAll("[data-pane]").forEach((button) => button.addEventListener("click", () => {
+      const pane = button.dataset.pane;
+      document.querySelectorAll("[data-pane]").forEach((item) => item.setAttribute("aria-selected", String(item.dataset.pane === pane)));
+      document.querySelectorAll("[data-pane-content]").forEach((item) => item.classList.toggle("is-active", item.dataset.paneContent === pane));
+    }));
+
+    document.getElementById("previous-step").addEventListener("click", () => {
+      state.playing = false;
+      setStep(state.step - 1);
+    });
+    document.getElementById("next-step").addEventListener("click", () => {
+      state.playing = false;
+      setStep(state.step + 1);
+    });
+    document.getElementById("toggle-play").addEventListener("click", () => {
+      if (!state.playing && state.step === 8) state.step = 0;
+      state.mode = "assembly";
+      state.playing = !state.playing;
+      playElapsed = 0;
+      applyState();
+    });
+
+    canvas.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        state.playing = false;
+        setStep(state.step - 1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        state.playing = false;
+        setStep(state.step + 1);
+      } else if (event.key === " ") {
+        event.preventDefault();
+        document.getElementById("toggle-play").click();
+      }
+    });
+
+    function resize() {
+      const rect = stage.getBoundingClientRect();
+      renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false);
+      camera.aspect = Math.max(0.1, rect.width / Math.max(1, rect.height));
+      camera.fov = camera.aspect < 0.8 ? 38 : 32;
+      camera.updateProjectionMatrix();
+    }
+    const observer = new ResizeObserver(resize);
+    observer.observe(stage);
+
+    const clock = new THREE.Clock();
+    let playElapsed = 0;
+    function animate() {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const moveAlpha = 1 - Math.pow(0.0008, dt);
+      animatedNodes.forEach((node) => node.position.lerp(node.userData.target, moveAlpha));
+      animatedMaterials.forEach((mat) => {
+        const target = mat.userData.targetOpacity ?? mat.opacity;
+        mat.opacity += (target - mat.opacity) * moveAlpha;
+      });
+      rotors.forEach((rotor, index) => { rotor.rotation.z -= dt * (index === 0 ? 2.4 : 4.2); });
+
+      if (cameraTween > 0.002) {
+        const rect = stage.getBoundingClientRect();
+        const aspect = rect.width / Math.max(1, rect.height);
+        const scale = aspect < 0.8 ? 1.22 : 1;
+        const responsivePosition = cameraLookTarget.clone().add(cameraPositionTarget.clone().sub(cameraLookTarget).multiplyScalar(scale));
+        camera.position.lerp(responsivePosition, moveAlpha * 0.72);
+        controls.target.lerp(cameraLookTarget, moveAlpha * 0.72);
+        cameraTween *= 1 - Math.min(0.14, dt * 2.8);
+      }
+
+      if (state.playing) {
+        playElapsed += dt;
+        if (playElapsed >= 2.8) {
+          playElapsed = 0;
+          if (state.step >= 8) {
+            state.playing = false;
+            applyState();
+          } else {
+            state.step += 1;
+            applyState();
+          }
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    camera.position.set(-500, 320, -520);
+    controls.target.set(0, 88, 0);
+    resize();
+    applyState();
+    window.__GB10_ASSEMBLY_READY__ = true;
+    window.__GB10_ASSEMBLY_STATE__ = state;
+    window.__GB10_ASSEMBLY_DEBUG__ = () => {
+      const inspect = (name) => {
+        const world = nodes[name].getWorldPosition(new THREE.Vector3());
+        const projected = world.clone().project(camera);
+        const screen = nodes[name].children.find((child) => child.material?.isMeshBasicMaterial);
+        let screenDebug = null;
+        if (screen) {
+          const screenWorld = screen.getWorldPosition(new THREE.Vector3());
+          const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(screen.getWorldQuaternion(new THREE.Quaternion()));
+          const toCamera = camera.position.clone().sub(screenWorld).normalize();
+          screenDebug = { world: screenWorld.toArray(), normal: normal.toArray(), facing: normal.dot(toCamera) };
+        }
+        return { visible: nodes[name].visible, world: world.toArray(), projected: projected.toArray(), screen: screenDebug };
+      };
+      return {
+        state: { ...state },
+        camera: camera.position.toArray(),
+        target: controls.target.toArray(),
+        displayLeft: inspect("displayLeft"),
+        displayRight: inspect("displayRight"),
+        blankLeft: inspect("blankLeft"),
+        blankRight: inspect("blankRight"),
+      };
+    };
+    document.documentElement.dataset.gb10AssemblyReady = "true";
+    animate();
+  </script>
+</body>
+</html>

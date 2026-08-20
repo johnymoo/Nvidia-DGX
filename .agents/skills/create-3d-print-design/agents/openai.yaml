@@ -1,0 +1,5 @@
+interface:
+  display_name: "3D Print Design"
+  short_description: "从需求澄清到可打印 CAD 数据包的完整分阶段设计流程"
+  brand_color: "#E85D3F"
+  default_prompt: "Use $create-3d-print-design to turn my product requirements into a reviewed, manufacturable 3D-print package."
