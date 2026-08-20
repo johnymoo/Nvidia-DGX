@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:,">
-  <title>Dual GB10 R2 装配评审</title>
+  <title>Dual GB10 R2.1 装配评审</title>
   <style>
     :root {
       color-scheme: light;
@@ -304,7 +304,7 @@
 <body>
   <main class="app">
     <header class="topbar">
-      <div class="identity"><strong>Dual GB10</strong><span>R2 Assembly Review</span></div>
+      <div class="identity"><strong>Dual GB10</strong><span>R2.1 Assembly Review</span></div>
       <a class="nav-link" href="./r2.html">外壳评审</a>
       <a class="nav-link" href="./index.html">风道方案</a>
       <div class="top-controls">
@@ -386,9 +386,9 @@
             <ul class="interface-list">
               <li><strong>前风扇 → 前面板</strong><span>4 × 硅胶拉钉</span></li>
               <li><strong>后风扇 → 全周背框</strong><span>4 × 硅胶拉钉</span></li>
-              <li><strong>底板 → U 型罩</strong><span>每侧 3 段 45° 捕获轨</span></li>
+              <li><strong>底板 → U 型罩</strong><span>每侧 3 组上下双向 45° 捕获轨</span></li>
               <li><strong>前 / 后面板 → 主体</strong><span>2 上挂钩 + 2 顺序释放卡扣</span></li>
-              <li><strong>显示仓 → 侧壁</strong><span>2 短挂钩 + 下移 6–8 mm + 1 卡扣</span></li>
+              <li><strong>显示仓 → 侧壁</strong><span>2 楔形 T 键 + 下移 7 mm + 1 释放卡扣</span></li>
               <li><strong>GB10 → 底板</strong><span>PETG 硬导向，间隙 0.6–0.8 mm</span></li>
               <li><strong>提手 → U 型罩</strong><span>2 × M4 热熔铜螺母</span></li>
             </ul>
@@ -408,7 +408,7 @@
           </section>
         </div>
 
-        <div class="panel-foot"><span>Three.js design model</span><span>Concept R2 · CAD pending</span></div>
+        <div class="panel-foot"><span>Three.js assembly model</span><span>R2.1-RC2 · CAD verified</span></div>
       </aside>
     </div>
   </main>
@@ -435,23 +435,23 @@
       { title: "零件总览", short: "确认分件", detail: "全部打印件和购买件按真实装配方向展开。", specs: ["5 类打印模块", "2 颗结构螺丝", "无泡棉"] },
       { title: "前风扇预装", short: "140 mm 风扇 → 前面板", detail: "风扇贴合前面板内侧，四个硅胶拉钉从四角完成隔振固定。", specs: ["4 × 硅胶拉钉", "风扇随面板拆卸", "螺丝孔仅备用"] },
       { title: "后风扇预装", short: "60 mm 风扇 → 全周背框", detail: "60 mm 风扇直接固定在一体式背框中央，不使用独立滑出风扇盒。", specs: ["4 × 硅胶拉钉", "一体式背框", "上下被动旁路"] },
-      { title: "四面主体成形", short: "底板 → U 型罩", detail: "底板从正面滑入；连续斜边依次通过每侧三段 45° 捕获轨并抵住后止挡。", specs: ["每侧 3 段", "30–35 mm / 段", "前面板锁轴向"] },
+      { title: "四面主体成形", short: "底板 → U 型罩", detail: "底板从正面滑入；连续舌边穿过每侧三组上下 45° 捕获轨，双向限制竖直位移，最后抵住中央 70 mm 后挡条。", specs: ["每侧 3 组双轨", "30 mm 有效段", "0.40 mm 标称间隙"] },
       { title: "背框安装", short: "背框 → 四面主体", detail: "先挂上方两个刚性挂钩，再压入下方两个顺序释放卡扣。", specs: ["2 上挂钩", "2 下卡扣", "逐个释放"] },
       { title: "GB10 装入", short: "2 × GB10 → 底板", detail: "两台 GB10 从正面沿圆角 PETG 硬导向筋推入，前后面板最终限制纵向移动。", specs: ["0.6–0.8 mm 间隙", "无必需 TPU", "后接口无遮挡"] },
-      { title: "显示仓与线束", short: "显示仓 / 风扇快插", detail: "显示仓挂入侧壁后下移锁定；风扇面板保留 30–40 mm 服务行程和防呆快插。", specs: ["下移 6–8 mm", "1 底部卡扣", "风扇快插"] },
+      { title: "显示仓与线束", short: "显示仓 / 风扇快插", detail: "显示仓的两个楔形 T 键从扩大入口插入，下移 7 mm 后由下部卡扣锁定；风扇面板保留服务行程和防呆快插。", specs: ["锁程 7 mm", "4.5 mm 按压释放", "风扇快插"] },
       { title: "前面板闭合", short: "前面板 → 四面主体", detail: "上挂钩先就位，再按压两个下卡扣；面板内止挡同时阻止底板向前退出。", specs: ["顺序释放", "3–4 mm 止回", "无需工具"] },
       { title: "提手与总装", short: "提手 → U 型罩", detail: "商业提手由两颗 M4 固定到内部横向加强筋；搬运载荷绕开面板卡扣。", specs: ["2 × M4", "12 kg / 60 s 待测", "前后贯穿风道"] },
     ];
 
     const checks = [
-      ["missing", "待样件", "三段滑轨配合", "打印 0.30 / 0.40 / 0.50 mm 单边间隙的双段连续插入样件。"],
+      ["missing", "待样件", "三段滑轨配合", "三档规后做 154 mm 全长干装：峰值滑入力 ≤40 N、三站 Z 间隙 ≤0.8 mm、后挡间隙 ≤0.5 mm。"],
       ["missing", "待样件", "顺序释放卡扣", "前后共用接口样件连续拆装 50 次，无发白、裂纹或自动回扣。"],
       ["missing", "待实物", "风扇孔位与拉钉", "用实际 140 mm、60 mm 风扇确认孔距、厚度和硅胶拉钉长度。"],
       ["partial", "待重验", "GB10 硬导向", "双机配合规需验证 0.6–0.8 mm 间隙和搬运倾斜时无明显撞击。"],
-      ["missing", "待实物", "显示屏仓", "显示 PCB 到货后确认外框、USB-C 方向、挂钩和底部线束空间。"],
+      ["missing", "待实物", "显示屏仓", "USB-C 插合状态 30 N 外拉 5 次，无裂纹/脱锁且残余 ≤0.2 mm；仍可 7 mm 解锁和 4.5 mm 按压释放。"],
       ["partial", "待重验", "后部接线", "完整背框装好后，USB-C、HDMI、网线和 QSFP 保持可插拔和合理弯曲半径。"],
       ["missing", "待样件", "面板服务行程", "释放后可打开 30–40 mm，且快插可单手触达、线束不受拉。"],
-      ["partial", "待测试", "提手载荷路径", "两颗 M4 和六段捕获轨需通过 12 kg、60 秒静载测试。"],
+      ["partial", "CAD 通过", "提手载荷路径", "最终 M4 硬件锁定后：12 kg 挠度 ≤2 mm、10 次提放、6 kg/24 h 残余 ≤0.5 mm。"],
     ];
 
     const canvas = document.querySelector("canvas");
@@ -678,15 +678,15 @@
       return shape;
     }
 
-    function makeCaptureSegment(side, z, length) {
+    function makeCaptureSegment(side, z, length, upper) {
       const shape = new THREE.Shape();
-      const outside = side * 72;
-      const inside = side * 66.4;
-      const lip = side * 64.8;
-      shape.moveTo(outside, 6.5);
-      shape.lineTo(inside, 6.5);
-      shape.lineTo(lip, 11);
-      shape.lineTo(side * 72, 11);
+      const points = upper
+        ? [[72.4, 12.6], [72.4, 15], [67.2, 9.8], [67.2, 7.4]]
+        : [[72.4, 1], [72.4, 6.5], [68.4, 2.5], [68.4, 1]];
+      points.forEach(([x, y], index) => {
+        const px = side * x;
+        if (index === 0) shape.moveTo(px, y); else shape.lineTo(px, y);
+      });
       shape.closePath();
       const geometry = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false });
       geometry.translate(0, 0, z - length / 2);
@@ -703,7 +703,10 @@
       cover.castShadow = true;
       cover.receiveShadow = true;
       group.add(cover);
-      [-1, 1].forEach((side) => [-54, 0, 54].forEach((z) => group.add(makeCaptureSegment(side, z, 34))));
+      [-1, 1].forEach((side) => [-54, 0, 54].forEach((z) => {
+        group.add(makeCaptureSegment(side, z, 30, false));
+        group.add(makeCaptureSegment(side, z, 30, true));
+      }));
       [-47, 47].forEach((z) => {
         group.add(roundedBox(136, 5, 13, 2.2, materials.shellEdge, [0, 157, z]));
         const boss = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 10, 28), materials.shellEdge);
@@ -716,10 +719,11 @@
 
     function makeBaseTongue(side) {
       const shape = new THREE.Shape();
-      shape.moveTo(side * 70.5, 6.5);
-      shape.lineTo(side * 65.8, 6.5);
-      shape.lineTo(side * 64.6, 9.8);
-      shape.lineTo(side * 70.5, 9.8);
+      const points = [[67.2, 2.9], [68.4, 2.9], [71, 5.5], [71, 10.8], [67.5, 7]];
+      points.forEach(([x, y], index) => {
+        const px = side * x;
+        if (index === 0) shape.moveTo(px, y); else shape.lineTo(px, y);
+      });
       shape.closePath();
       const geometry = new THREE.ExtrudeGeometry(shape, { depth: 154, bevelEnabled: false });
       geometry.translate(0, 0, -77);
@@ -730,11 +734,10 @@
 
     function makeBase() {
       const group = new THREE.Group();
-      group.add(roundedBox(142, 7, 158, 2.4, materials.base, [0, 3.5, 0]));
+      group.add(roundedBox(136, 7, 154, 2.2, materials.base, [0, 3.5, 0]));
       group.add(makeBaseTongue(-1), makeBaseTongue(1));
-      [-53, 0, 53].forEach((x) => group.add(roundedBox(3, 8, 146, 1.2, materials.baseDark, [x, 10, 0])));
-      [-54, 0, 54].forEach((z) => group.add(roundedBox(126, 3, 4, 1.1, materials.baseDark, [0, 8.5, z])));
-      group.add(roundedBox(126, 12, 4, 1.3, materials.baseDark, [0, 10, 76]));
+      [-53.7, 0, 53.7].forEach((x) => group.add(roundedBox(2.4, 6, 130, 1.1, materials.baseDark, [x, 9.7, -2])));
+      group.add(roundedBox(70, 6, 3, 1.1, materials.baseDark, [0, 9.7, 77.3]));
       return group;
     }
 

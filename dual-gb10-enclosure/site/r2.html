@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:,">
-  <title>Dual GB10 Enclosure R2</title>
+  <title>Dual GB10 Enclosure R2.1</title>
   <style>
     :root {
       color-scheme: light;
@@ -294,7 +294,7 @@
 <body>
   <main class="app">
     <header class="topbar">
-      <div class="identity"><strong>Dual GB10</strong><span>Enclosure R2</span></div>
+      <div class="identity"><strong>Dual GB10</strong><span>Enclosure R2.1</span></div>
       <a class="back-link" href="./r2-assembly.html">装配评审</a>
       <a class="back-link" href="./index.html">风道方案</a>
       <div class="control-row">
@@ -311,7 +311,7 @@
     </header>
 
     <div class="workspace">
-      <section class="stage" aria-label="Dual GB10 R2 三维结构模型">
+      <section class="stage" aria-label="Dual GB10 R2.1 三维结构模型">
         <canvas tabindex="0"></canvas>
         <div class="legend" aria-hidden="true">
           <span><i style="background:#f1f3f2"></i>U 型罩</span>
@@ -330,7 +330,7 @@
         <div class="panel-head">
           <div class="eyebrow">Approved direction</div>
           <h1>少螺丝承力外壳</h1>
-          <p>外观比例参考；装配接口以“装配评审”页为准。顶部商业提手保留两颗 M4，搬运载荷经 U 罩和六段捕获轨进入底板。</p>
+          <p>外观比例参考；装配接口以“装配评审”页为准。顶部商业提手保留两颗 M4，搬运载荷经 U 罩和每侧三组上下双向捕获轨进入底板。</p>
           <div class="panel-tabs" role="tablist" aria-label="评审内容">
             <button type="button" role="tab" data-pane="structure" aria-selected="true">结构</button>
             <button type="button" role="tab" data-pane="checks" aria-selected="false">打印 Checklist</button>
@@ -340,7 +340,7 @@
         <div class="panel-body">
           <section class="pane is-active" data-pane-content="structure">
             <div class="metrics">
-              <div class="metric"><strong>152 × 218 × 166</strong><span>主体 W × D × H mm</span></div>
+              <div class="metric"><strong>152 × 158 × 166</strong><span>U 罩主体 W × D × H mm</span></div>
               <div class="metric"><strong>2 × M4</strong><span>结构螺丝总数</span></div>
               <div class="metric"><strong>R 10-12</strong><span>U 罩外圆角 mm</span></div>
               <div class="metric"><strong>≥ 75%</strong><span>前格栅目标开孔率</span></div>
@@ -359,22 +359,22 @@
             <h2 class="section-title">搬运载荷路径</h2>
             <ul class="load-list">
               <li><b>01</b><span>提手与两颗 M4 将载荷分散到 U 罩内部横向加强筋。</span></li>
-              <li><b>02</b><span>U 罩两侧墙把拉力送入底部每侧三段 45° 捕获轨。</span></li>
+              <li><b>02</b><span>U 罩两侧墙把拉力送入底部每侧三组上下双向 45° 捕获轨。</span></li>
               <li><b>03</b><span>底板轨道承托两台 GB10；前盖卡扣只阻止底板前移。</span></li>
             </ul>
           </section>
 
           <section class="pane" data-pane-content="checks">
             <div class="check-summary">
-              <div><strong style="color:var(--green)">5</strong><span>R1 已通过</span></div>
-              <div><strong style="color:var(--amber)">9</strong><span>需随 R2 重验</span></div>
-              <div><strong style="color:var(--red)">7</strong><span>缺少实物证据</span></div>
+              <div><strong style="color:var(--green)">7</strong><span>R2.1 CAD 已验证</span></div>
+              <div><strong style="color:var(--amber)">6</strong><span>待打印样件</span></div>
+              <div><strong style="color:var(--red)">7</strong><span>待实物硬件</span></div>
             </div>
             <ul class="check-list" id="check-list"></ul>
           </section>
         </div>
 
-        <div class="panel-foot"><span>PETG · 0.4/0.6 mm nozzle</span><span>Concept R2 · CAD pending</span></div>
+        <div class="panel-foot"><span>PETG · 0.4/0.6 mm nozzle</span><span>R2.1-RC2 · CAD verified</span></div>
       </aside>
     </div>
   </main>
@@ -533,6 +533,23 @@
       return s;
     }
 
+    function captureRailSegment(side, z, upper) {
+      const shape = new THREE.Shape();
+      const points = upper
+        ? [[72.4, 12.6], [72.4, 15], [67.2, 9.8], [67.2, 7.4]]
+        : [[72.4, 1], [72.4, 6.5], [68.4, 2.5], [68.4, 1]];
+      points.forEach(([x, y], index) => {
+        const px = side * x;
+        if (index === 0) shape.moveTo(px, y); else shape.lineTo(px, y);
+      });
+      shape.closePath();
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 30, bevelEnabled: false });
+      geometry.translate(0, 0, z - 15);
+      const mesh = new THREE.Mesh(geometry, materials.rail);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
     function makeUCover() {
       const group = new THREE.Group();
       const geometry = new THREE.ExtrudeGeometry(uCoverShape(), {
@@ -555,6 +572,11 @@
       animatedMaterials.add(edges.material);
       group.add(edges);
 
+      [-1, 1].forEach((side) => [-54, 0, 54].forEach((z) => {
+        group.add(captureRailSegment(side, z, false));
+        group.add(captureRailSegment(side, z, true));
+      }));
+
       [-47, 47].forEach((z) => {
         group.add(roundedBox(136, 5, 13, 2.2, materials.shellEdge, [0, 157, z]));
         const boss = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 10, 28), materials.shellEdge);
@@ -567,13 +589,11 @@
 
     function trapezoidRail(side) {
       const shape = new THREE.Shape();
-      const xOuter = side * 70.5;
-      const xInner = side * 66.5;
-      const xLip = side * 65.2;
-      shape.moveTo(xOuter, 7);
-      shape.lineTo(xInner, 7);
-      shape.lineTo(xLip, 11);
-      shape.lineTo(side * 71.8, 11);
+      const points = [[67.2, 2.9], [68.4, 2.9], [71, 5.5], [71, 10.8], [67.5, 7]];
+      points.forEach(([x, y], index) => {
+        const px = side * x;
+        if (index === 0) shape.moveTo(px, y); else shape.lineTo(px, y);
+      });
       shape.closePath();
       const geometry = new THREE.ExtrudeGeometry(shape, { depth: 154, bevelEnabled: false });
       geometry.translate(0, 0, -77);
@@ -584,18 +604,10 @@
 
     function makeBase() {
       const group = new THREE.Group();
-      group.add(roundedBox(142, 7, 158, 2.5, materials.base, [0, 3.5, 0]));
+      group.add(roundedBox(136, 7, 154, 2.2, materials.base, [0, 3.5, 0]));
       group.add(trapezoidRail(-1), trapezoidRail(1));
-      [-53, 0, 53].forEach((z) => group.add(roundedBox(126, 3, 4, 1.2, materials.baseEdge ?? materials.black, [0, 9, z])));
-      group.add(roundedBox(3, 8, 150, 1.2, materials.black, [0, 10, 0]));
-      [-53, 53].forEach((x) => group.add(roundedBox(3, 8, 150, 1.2, materials.black, [x, 10, 0])));
-      [-27.25, 27.25].forEach((x) => {
-        [-52, 52].forEach((z) => {
-          const pad = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 1.5, 24), materials.orangeDark);
-          pad.position.set(x, 8, z);
-          group.add(pad);
-        });
-      });
+      [-53.7, 0, 53.7].forEach((x) => group.add(roundedBox(2.4, 6, 130, 1.1, materials.black, [x, 9.7, -2])));
+      group.add(roundedBox(70, 6, 3, 1.1, materials.black, [0, 9.7, 77.3]));
       return group;
     }
 
@@ -903,14 +915,14 @@
     }
 
     const checks = [
-      ["pass", "通过", "打印尺寸", "R1 全部零件已在 180 mm 平台内；R2 目标最大边不超过 175 mm。"],
-      ["pass", "通过", "封闭网格", "现有 B-Rep 有效且 STL 无非流形边；R2 生成后必须复跑。"],
-      ["pass", "通过", "碰撞检查", "R1 设备与零件碰撞为零；圆角、滑轨和实测硬件需重验。"],
-      ["missing", "缺证据", "连续圆角", "R2 外圆角 10-12 mm、外露边 3-5 mm，需打印角部样件。"],
-      ["partial", "待重验", "免全局支撑", "U 罩顶面朝下、底板平放、前盖正面朝下。"],
-      ["partial", "待重验", "悬垂角", "结构悬垂不超过 45°，轨道和穿线孔采用倒角或泪滴截面。"],
-      ["partial", "待重验", "桥接长度", "结构桥接不超过 12 mm；较长装饰桥必须通过 PETG 样件。"],
-      ["pass", "通过", "壁厚基线", "R2 改为 3.2-3.6 mm 壳壁与局部加强筋。"],
+      ["pass", "CAD 通过", "打印尺寸", "R2.1 全部推荐打印方向均落在 180 mm 立方空间内。"],
+      ["pass", "CAD 通过", "封闭网格", "8 个打印件和 14 个配合规均为单一有效实体；STL 无非流形边。"],
+      ["pass", "CAD 通过", "碰撞检查", "设备、风扇和装配零件静态碰撞为零；布尔失败会直接使验证失败。"],
+      ["missing", "待样件", "连续圆角", "外圆角 12 mm、外露下边 3 mm，仍需打印角部样件检查表面。"],
+      ["pass", "CAD 通过", "免全局支撑", "U 罩顶面朝下、底板平放、前盖正面朝下、背框背面朝下。"],
+      ["pass", "CAD 通过", "悬垂角", "双向导轨、面板卡扣肩、显示 T 键和侧壁槽口均采用 45° 自支撑面。"],
+      ["pass", "CAD 通过", "桥接面积", "每个打印件离床向下水平面总量不超过 25 mm2，单处跨度不超过 12 mm。"],
+      ["pass", "CAD 通过", "壁厚基线", "主壳壁 3.6 mm，并在提手载荷路径设置横向加强筋。"],
       ["missing", "缺证据", "滑轨间隙", "打印 0.30 / 0.40 / 0.50 mm 单边间隙样件。"],
       ["missing", "缺证据", "卡扣寿命", "一体式顺序释放卡扣连续拆装 50 次，无发白或根部裂纹。"],
       ["partial", "待重验", "格栅开孔率", "14-16 mm 节距、约 2 mm 筋，目标有效开孔率至少 75%。"],
