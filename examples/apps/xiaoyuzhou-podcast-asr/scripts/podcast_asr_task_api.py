@@ -23,7 +23,7 @@ PODCAST_ROOT = Path(os.environ.get("PODCAST_ROOT", "~/podcast")).expanduser()
 PODCAST_PIPELINE = Path(os.environ.get("PODCAST_PIPELINE", str(PODCAST_ROOT / "xiaoyuzhou_asr_to_site.py"))).expanduser()
 PODCAST_TASK_DIR = Path(os.environ.get("PODCAST_TASK_DIR", str(PODCAST_ROOT / "asr_tasks"))).expanduser()
 PODCAST_TASK_DIR.mkdir(parents=True, exist_ok=True)
-PODCAST_SITE_BASE = os.environ.get("PODCAST_ASR_SITE_BASE", "http://127.0.0.1:8020/static/podcast-asr").rstrip("/")
+PODCAST_SITE_BASE = os.environ.get("PODCAST_ASR_SITE_BASE", "/static/podcast-asr").rstrip("/")
 PODCAST_LIBRARY_DIR = Path(os.environ.get("PODCAST_LIBRARY_DIR", "~/deployments/sensevoice/static/podcast-asr")).expanduser()
 
 _TASK_LOCK = threading.Lock()
@@ -171,7 +171,7 @@ def _enrich(state: dict[str, Any], include_log: bool = False) -> dict[str, Any]:
         if state.get("status") == "failed" and ok == total and state.get("has_summary") and slug:
             state["recovered_from_failed_task"] = True
             state["status"] = "completed"
-            state["message"] = "原后台任务曾失败，但工作区已有完整转写/总结/发布结果；可打开报告查看。"
+            state["message"] = "任务已完成并发布；完整转写、总结和报告均可用。"
     if include_log:
         state["log_tail"] = _tail_text(Path(state.get("log_path") or ""))
     return state
