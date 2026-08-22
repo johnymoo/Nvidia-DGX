@@ -14,6 +14,7 @@ import base64
 import json
 import os
 import re
+import struct
 import sys
 import time
 from datetime import datetime
@@ -22,7 +23,9 @@ from typing import Any
 
 import requests
 
-W, H = 2048, 1152
+# Official gpt-image-2 maximum landscape request. Compatible gateways may
+# return a smaller image, so generation metadata records the actual PNG size.
+W, H = 3840, 2160
 CONFIG_ENV = os.environ.get("HERMES_CONFIG", "").strip()
 CONFIG_PATH = Path(CONFIG_ENV).expanduser() if CONFIG_ENV else None
 DEFAULT_PROVIDER = os.environ.get("IMAGE2_PROVIDER", "openai")
@@ -44,125 +47,150 @@ def one_line(text: Any) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
-def trim(text: Any, n: int) -> str:
-    s = one_line(text)
-    return s if len(s) <= n else s[: max(0, n - 1)].rstrip("，。；、 ") + "…"
-
-
-def item_text(item: Any, max_chars: int = 90) -> str:
-    if isinstance(item, dict):
-        if item.get("term"):
-            return trim(f"{item.get('term')}：{item.get('explanation', '')}", max_chars)
-        if item.get("topic"):
-            return trim(f"{item.get('topic')}：{item.get('summary', '')}", max_chars)
-        if item.get("quote"):
-            return trim(item.get("quote"), max_chars)
-        for key in ["summary", "takeaway", "point", "value", "explanation", "text"]:
-            if item.get(key):
-                return trim(item[key], max_chars)
-    return trim(item, max_chars)
-
-
 def extract_payload(summary: dict[str, Any]) -> dict[str, Any]:
     topics = []
-    for t in safe_list(summary.get("topic_summary"))[:6]:
+    for t in safe_list(summary.get("topic_summary")):
         if isinstance(t, dict):
-            title = trim(t.get("topic") or "未命名话题", 20)
-            body = trim(t.get("summary") or "；".join(item_text(x, 36) for x in safe_list(t.get("key_points"))[:2]), 56)
-            ts = trim(t.get("timestamp_range") or "", 16)
-            topics.append({"title": title, "body": body, "time": ts})
-        else:
-            topics.append({"title": trim(t, 20), "body": "", "time": ""})
-
-    quotes = []
-    for q in safe_list(summary.get("golden_quotes"))[:2]:
-        if isinstance(q, dict):
-            quotes.append({
-                "quote": trim(q.get("quote"), 42),
-                "why": trim(q.get("why_it_matters") or q.get("speaker_or_context"), 28),
+            topics.append({
+                "title": one_line(t.get("topic") or "未命名话题"),
+                "body": one_line(t.get("summary")),
+                "time": one_line(t.get("timestamp_range")),
+                "key_points": [one_line(x) for x in safe_list(t.get("key_points")) if one_line(x)],
             })
         else:
-            quotes.append({"quote": trim(q, 42), "why": ""})
+            topics.append({"title": one_line(t), "body": "", "time": "", "key_points": []})
+
+    quotes = []
+    for q in safe_list(summary.get("golden_quotes")):
+        if isinstance(q, dict):
+            quotes.append({
+                "quote": one_line(q.get("quote")),
+                "context": one_line(q.get("speaker_or_context")),
+                "why": one_line(q.get("why_it_matters")),
+            })
+        else:
+            quotes.append({"quote": one_line(q), "context": "", "why": ""})
 
     terms = []
-    for t in safe_list(summary.get("entities_and_terms"))[:4]:
+    for t in safe_list(summary.get("entities_and_terms")):
         if isinstance(t, dict):
-            terms.append(trim(f"{t.get('term', '')}：{t.get('explanation', '')}", 36))
+            terms.append(one_line(f"{t.get('term', '')}：{t.get('explanation', '')}"))
         else:
-            terms.append(trim(t, 36))
+            terms.append(one_line(t))
 
-    takeaways = [item_text(x, 48) for x in safe_list(summary.get("key_takeaways"))[:5]]
+    takeaways = [one_line(x) for x in safe_list(summary.get("key_takeaways")) if one_line(x)]
     guests = []
-    for g in safe_list(summary.get("guests"))[:3]:
+    for g in safe_list(summary.get("guests")):
         if isinstance(g, dict):
-            guests.append(trim(f"{g.get('name','')}｜{g.get('role','')}", 28))
+            guests.append(one_line(f"{g.get('name','')}｜{g.get('role','')}"))
         else:
-            guests.append(trim(g, 28))
+            guests.append(one_line(g))
+
+    outline = []
+    for item in safe_list(summary.get("official_outline")):
+        if isinstance(item, dict):
+            outline.append({
+                "time": one_line(item.get("timestamp")),
+                "title": one_line(item.get("title")),
+                "notes": one_line(item.get("notes")),
+            })
 
     return {
-        "title": trim(summary.get("title") or "播客 TL;DR", 42),
-        "podcast": trim(summary.get("podcast") or "Podcast", 22),
-        "published_time": trim(summary.get("published_time") or "", 18),
-        "theme": trim(summary.get("theme"), 78),
-        "background": trim(summary.get("background"), 58),
-        "tldr": trim(summary.get("tldr") or summary.get("theme"), 92),
+        "title": one_line(summary.get("title") or "播客 TL;DR"),
+        "podcast": one_line(summary.get("podcast") or "Podcast"),
+        "published_time": one_line(summary.get("published_time")),
+        "theme": one_line(summary.get("theme")),
+        "background": one_line(summary.get("background")),
+        "tldr": one_line(summary.get("tldr") or summary.get("theme")),
         "takeaways": takeaways,
         "topics": topics,
         "quotes": quotes,
         "terms": terms,
         "guests": guests,
-        "summary_model": trim(summary.get("summary_model"), 24),
+        "outline": outline,
+        "caveats": [one_line(x) for x in safe_list(summary.get("caveats")) if one_line(x)],
+        "summary_model": one_line(summary.get("summary_model")),
     }
 
 
 def build_direct_prompt(payload: dict[str, Any], attempt: int = 1) -> str:
-    topic_lines = "\n".join(
-        f"{i+1}. {t['title']}｜{t.get('time','')}｜{t.get('body','')}"
-        for i, t in enumerate(payload["topics"][:6])
-    ) or "1. 核心主题｜unknown｜围绕节目主要观点展开"
-    takeaway_lines = "\n".join(f"- {x}" for x in payload["takeaways"][:5]) or "- 提炼节目中的关键判断"
-    quote_lines = "\n".join(f"- “{q['quote']}” {q.get('why','')}" for q in payload["quotes"][:2]) or "- 保留节目中最有代表性的表达"
-    term_lines = "\n".join(f"- {x}" for x in payload["terms"][:4]) or "- 解释关键术语"
+    takeaway_lines = "\n".join(
+        f"{i + 1}. {x}" for i, x in enumerate(payload["takeaways"])
+    ) or "1. 提炼节目中的关键判断"
+    quote_lines = "\n".join(
+        f"“{q['quote']}”" for q in payload["quotes"][:2]
+    )
+    core_conclusion = payload["takeaways"][0] if payload["takeaways"] else payload["theme"] or payload["tldr"]
     guest_line = "；".join(payload["guests"]) or "嘉宾/主持：见节目说明"
     attempt_note = {
-        1: "baseline complete finished asset, direct Image2 output",
-        2: "reinforce polished ChatGPT website visual summary style",
-        3: "compress text budget for legibility",
-        4: "strengthen 2×3 grid, no crop, high hierarchy",
-        5: "final correction: readable Chinese text and exact title",
-    }.get(attempt, "direct complete asset")
+        1: "dense AI summary with exact complete paragraphs",
+        2: "correct omitted or malformed summary text without adding content",
+        3: "increase type size while preserving every summary paragraph",
+        4: "strict three-section summary and all-insight completeness audit",
+        5: "final typography correction with no truncation",
+    }.get(attempt, "production infographic")
+    source_context = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
-    return f"""Create a complete finished Chinese TL;DR infographic in one image, including all readable text. Native GPT Image2 direct generation only; do not leave blank text boxes.
+    return f"""Create one finished Chinese podcast TL;DR infographic as a normal wide poster, not a long webpage. Native GPT Image2 generation only.
 
-Canvas: horizontal 16:9, 2048×1152. Language: Simplified Chinese. Style: polished ChatGPT website visual summary, dense lecture handout, modern macro-research dashboard, clean vector cards, soft shadows, navy/ivory background, orange/cyan/green accents. Attempt focus: {attempt_note}.
+Canvas request: 3840×2160, wide 16:9. Language: Simplified Chinese. Style: premium editorial knowledge brief, crisp vector cards, restrained navy and ivory with orange/cyan/green accents, strong typographic hierarchy, minimal decoration. Attempt focus: {attempt_note}.
 
-Main title (must appear exactly): {payload['title']}
-Subtitle: {payload['podcast']} · {payload['published_time']} · 播客 TL;DR
-People: {guest_line}
+VISIBLE COPY - render only the following copy. Preserve every line exactly and in full:
 
-Readable content plan:
-1) Top title banner: title + subtitle.
-2) Left large card titled「核心结论」with this short TL;DR:
-{payload['tldr']}
-3) Small card titled「主题」:
-{payload['theme']}
-4) Center 2×3 module grid titled「讨论地图」with these numbered modules:
-{topic_lines}
-5) Right column titled「关键洞察」:
+TITLE
+{payload['title']}
+
+SUBTITLE
+{payload['podcast']} · {payload['published_time'][:10]} · 播客 TL;DR
+
+PEOPLE
+{guest_line}
+
+核心结论
+{core_conclusion}
+
+关键洞察
 {takeaway_lines}
-6) Bottom band titled「金句 / 术语」:
-{quote_lines}
-{term_lines}
-7) Footer:「ASR + LLM 总结，原生 GPT Image2 直接生成」
 
-Design requirements:
-- This must look like a final production infographic, not a draft poster.
-- Use crisp, readable Chinese text; concise labels are better than tiny paragraphs.
-- Strong hierarchy: title readable first, then TL;DR, then modules.
-- Integrate mini charts/icons/arrows/timeline chips; avoid generic clipart.
-- No pseudo-Chinese, no fake random English, no lorem ipsum, no cropped text, no wrong title.
-- Keep safe margins on all edges; no text cut off.
+AI 总结
+
+节目概要
+{payload['tldr']}
+
+为什么是现在
+{payload['background']}
+
+核心判断
+{payload['theme']}
+
+金句
+{quote_lines}
+
+LAYOUT
+- Header across the top, followed by one compact core-conclusion band.
+- Main body uses a 60/40 split. The entire left side is titled「AI 总结」and must be filled densely with all three exact summary sections. Put「节目概要」in a full-width text card, then「为什么是现在」and「核心判断」in two balanced text cards below it.
+- The right side contains a compact topic-appropriate conceptual diagram plus every key insight. Derive diagram labels only from exact terms in the supplied source context.
+- Place the two quotes in a slim footer band. Keep the entire design within one 16:9 frame.
+- The AI summary cards should use almost all available left-side space. Use readable compact paragraph typography with generous line spacing, not oversized headings or decorative illustrations.
+
+HARD CONSTRAINTS
+- The complete text of「节目概要」「为什么是现在」「核心判断」and every insight line must be visible, readable, and complete.
+- Do not show a discussion map, topic index, numbered timeline, or timestamps anywhere.
+- Never use "...", the ellipsis character, clipped endings, fade-outs, continuation marks, or placeholder text.
+- Do not invent names, figures, dates, labels, or extra body copy.
+- No pseudo-Chinese, no lorem ipsum, no cropped cards, no text touching an edge, no watermark.
+- If space is tight, remove decoration first. Keep all required text at a readable size.
+
+COMPLETE SOURCE CONTEXT - factual grounding only; do not render this block verbatim:
+{source_context}
 """
+
+
+def png_dimensions(path: Path) -> tuple[int, int] | None:
+    data = path.read_bytes()[:24]
+    if len(data) >= 24 and data[:8] == b"\x89PNG\r\n\x1a\n":
+        return struct.unpack(">II", data[16:24])
+    return None
 
 
 def normalize_base_url(base_url: str) -> str:
@@ -243,10 +271,10 @@ def find_b64(obj: Any) -> str | None:
 
 
 def generate_image2(prompt: str, out_path: Path, *, provider: str, model: str, size: str, quality: str, timeout: int, partial_images: int) -> dict[str, Any]:
-    base_url, api_key = load_provider_from_config(provider)
+    base_url, auth_value = load_provider_from_config(provider)
     url = base_url.rstrip("/") + "/images/generations"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {auth_value}",
         "Content-Type": "application/json",
         "Accept": "text/event-stream",
     }
@@ -309,11 +337,25 @@ def generate_image2(prompt: str, out_path: Path, *, provider: str, model: str, s
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(base64.b64decode(last_b64))
+    actual = png_dimensions(out_path)
+    actual_size = f"{actual[0]}x{actual[1]}" if actual else "unknown"
+    requested_pixels = None
+    try:
+        req_w, req_h = (int(x) for x in size.lower().split("x", 1))
+        requested_pixels = req_w * req_h
+    except Exception:
+        pass
+    if actual_size != size:
+        print(f"[image2-direct] warning=requested_size_mismatch requested={size} actual={actual_size}", flush=True)
     return {
         "provider": provider,
         "model": model,
         "base_url_host": re.sub(r"^https?://", "", base_url).split("/")[0],
         "size": size,
+        "requested_pixels": requested_pixels,
+        "actual_size": actual_size,
+        "actual_pixels": actual[0] * actual[1] if actual else None,
+        "size_match": actual_size == size,
         "quality": quality,
         "stream": True,
         "events": events[-20:],
@@ -330,7 +372,7 @@ def main() -> int:
     parser.add_argument("--provider", default=DEFAULT_PROVIDER)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--size", default=f"{W}x{H}")
-    parser.add_argument("--quality", default="medium", choices=["low", "medium", "high", "auto"])
+    parser.add_argument("--quality", default="high", choices=["low", "medium", "high", "auto"])
     parser.add_argument("--timeout", type=int, default=600)
     parser.add_argument("--partial-images", type=int, default=2)
     parser.add_argument("--attempt", type=int, default=1, help="Prompt attempt profile 1-5 from the Image2 workflow")

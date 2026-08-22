@@ -63,6 +63,13 @@ The scripts default to local paths, but all environment-specific values are conf
 | `IMAGE2_API_KEY` / `OPENAI_API_KEY` | required for native GPT Image2 TLDR image generation |
 | `IMAGE2_BASE_URL` / `OPENAI_BASE_URL` | optional OpenAI-compatible image endpoint |
 
+The infographic generator requests the official maximum landscape size
+(`3840x2160`) at `high` quality. OpenAI-compatible gateways may return a
+smaller image or remap the aspect ratio. Check `requested_pixels`,
+`actual_size`, `actual_pixels`, and `size_match` in
+`output/tldr_infographic_meta.json` instead of assuming the requested size was
+honored.
+
 ## Usage
 
 ```bash
