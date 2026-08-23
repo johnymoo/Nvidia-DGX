@@ -1,0 +1,47 @@
+services:
+  vllm-dspark:
+    environment:
+      DSPARK_THINKING: "true"
+    command:
+      - bash
+      - -lc
+      - >
+        export PATH="/opt/env/bin:/opt/env/nvvm/bin:/opt/env/targets/sbsa-linux/nvvm/bin:$${PATH:-}";
+        export CUDA_HOME="$${CUDA_HOME:-/opt/env/targets/sbsa-linux}";
+        export CUDA_PATH="$${CUDA_PATH:-$${CUDA_HOME}}";
+        export CUDAToolkit_ROOT="$${CUDAToolkit_ROOT:-$${CUDA_HOME}}";
+        export LD_LIBRARY_PATH="/opt/env/lib:/opt/env/targets/sbsa-linux/lib:$${LD_LIBRARY_PATH:-}";
+        SPECULATIVE_CONFIG="{\"method\":\"dspark\",\"num_speculative_tokens\":${MTP_NUM_TOKENS:-5},\"draft_sample_method\":\"probabilistic\"}";
+        exec /opt/env/bin/vllm serve ${DSPARK_MODEL:-/models/DeepSeek-V4-Flash-0731}
+        --served-model-name ${SERVED_MODEL_NAME:-deepseek-v4-flash-0731}
+        --host ${VLLM_HOST:-0.0.0.0}
+        --port ${VLLM_PORT:-8890}
+        --trust-remote-code
+        --tensor-parallel-size 2
+        --pipeline-parallel-size 1
+        --kv-cache-dtype ${KV_CACHE_DTYPE:-nvfp4_ds_mla}
+        --block-size 256
+        --max-model-len ${MAX_MODEL_LEN:-1048576}
+        --max-num-seqs ${MAX_NUM_SEQS:-6}
+        --max-num-batched-tokens ${MAX_NUM_BATCHED_TOKENS:-8192}
+        --long-prefill-token-threshold ${LONG_PREFILL_TOKEN_THRESHOLD:-6144}
+        --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.78}
+        --enable-prefix-caching
+        --enable-prompt-tokens-details
+        --async-scheduling
+        --enable-chunked-prefill
+        --speculative-config "$${SPECULATIVE_CONFIG}"
+        --tokenizer-mode deepseek_v4
+        --distributed-executor-backend mp
+        --tool-call-parser deepseek_v4
+        --enable-auto-tool-choice
+        --reasoning-parser deepseek_v4
+        --reasoning-config '{"reasoning_parser":"deepseek_v4","reasoning_start_str":"<think>","reasoning_end_str":"</think>"}'
+        --default-chat-template-kwargs '{"thinking":true}'
+        --generation-config vllm
+        --enable-flashinfer-autotune
+        --nnodes 2
+        --node-rank ${NODE_RANK}
+        --master-addr ${MASTER_ADDR}
+        --master-port ${MASTER_PORT:-29510}
+        ${HEADLESS:+--headless}

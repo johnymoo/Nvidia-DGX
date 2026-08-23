@@ -23,6 +23,7 @@ service_write_receipt() {
     --arg run_id "$RUN_ID" --arg started "$RUN_START_ISO" --arg ended "$ended_at" \
     --arg revision "$EXPECTED_REVISION" --arg image "$EXPECTED_IMAGE" \
     --arg fingerprint "$EXPECTED_FINGERPRINT" --arg model "$EXPECTED_API_MODEL" \
+    --argjson thinking "$EXPECTED_THINKING" \
     --arg head "$(hostname -s)" --arg worker "$EXPECTED_WORKER_HOST" \
     --arg artifact "$ARTIFACT_DIR" --arg worker_artifact "$WORKER_ARTIFACT_DIR" \
     --arg head_container "$HEAD_CONTAINER_ID" --arg worker_container "$WORKER_CONTAINER_ID" \
@@ -36,7 +37,7 @@ service_write_receipt() {
     --arg lexdata_before "$LEXDATA_STATUS_BEFORE" \
     '{schema_version:1,state:$state,failure_reason:$failure,run_id:$run_id,
       started_at:$started,ended_at:$ended,exit_code:$exit_code,
-      release:{revision:$revision,image:$image,fingerprint:$fingerprint,model:$model,patch4:true},
+      release:{revision:$revision,image:$image,fingerprint:$fingerprint,model:$model,patch4:true,thinking:$thinking},
       topology:{head:$head,worker:$worker,tp:2,nnodes:2,head_container:$head_container,worker_container:$worker_container},
       qwen:{was_running:($qwen_was_running==1),stopped:($qwen_stopped==1),restore_attempted:($qwen_restore_attempted==1),restored:($qwen_restored==1)},
       protected:{pdf2md_was_running:($pdf_was_running==1),trading_was_running:($trading_was_running==1),lexdata_before:$lexdata_before},
@@ -54,6 +55,7 @@ service_write_active_state() {
     --arg head_container "$HEAD_CONTAINER_ID" --arg worker_container "$WORKER_CONTAINER_ID" \
     --arg revision "$EXPECTED_REVISION" --arg fingerprint "$EXPECTED_FINGERPRINT" \
     --arg model "$EXPECTED_API_MODEL" \
+    --argjson thinking "$EXPECTED_THINKING" \
     --argjson qwen_was_running "$QWEN_WAS_RUNNING" \
     --argjson qwen_stopped "$QWEN_STOPPED" \
     --argjson pdf_was_running "$PDF_WAS_RUNNING" \
@@ -61,7 +63,7 @@ service_write_active_state() {
     --arg lexdata_before "$LEXDATA_STATUS_BEFORE" \
     '{schema_version:1,state:"running",run_id:$run_id,started_at:$started,
       artifact:$artifact,worker_artifact:$worker_artifact,receipt:$receipt,
-      release:{revision:$revision,fingerprint:$fingerprint,model:$model,patch4:true},
+      release:{revision:$revision,fingerprint:$fingerprint,model:$model,patch4:true,thinking:$thinking},
       containers:{head:$head_container,worker:$worker_container},
       qwen:{was_running:($qwen_was_running==1),stopped:($qwen_stopped==1)},
       protected:{pdf2md_was_running:($pdf_was_running==1),trading_was_running:($trading_was_running==1),lexdata_before:$lexdata_before}}' >"$tmp"
@@ -187,11 +189,12 @@ service_start() {
 
 service_load_active() {
   [ -s "$SERVICE_ACTIVE_STATE" ] || die "no active DeepSeek service state: $SERVICE_ACTIVE_STATE"
-  "$JQ_BIN" -e '
+  "$JQ_BIN" -e --argjson thinking "$EXPECTED_THINKING" '
     .schema_version == 1 and .state == "running" and
     .release.revision == "f277b3dfa718a5962bed64e69e7e640a5384ec2f" and
     .release.fingerprint == "36adbf92fe8cdd5c57609b2c5ccfa8e2fc32a340c9ee3d727be538143dda74db" and
-    .release.model == "deepseek-v4-flash-0731" and .release.patch4 == true
+    .release.model == "deepseek-v4-flash-0731" and .release.patch4 == true and
+    (.release.thinking // false) == $thinking
   ' "$SERVICE_ACTIVE_STATE" >/dev/null || die "active service state contract mismatch"
   RUN_ID="$("$JQ_BIN" -r '.run_id' "$SERVICE_ACTIVE_STATE")"
   RUN_START_ISO="$("$JQ_BIN" -r '.started_at' "$SERVICE_ACTIVE_STATE")"

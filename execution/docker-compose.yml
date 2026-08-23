@@ -32,7 +32,7 @@ services:
       DSPARK_SLOT_CLAMP: "${DSPARK_SLOT_CLAMP:-1}"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
       VLLM_TRITON_MLA_SPARSE: "1"
-      VLLM_SPARSE_INDEXER_MAX_LOGITS_MB: "256"
+      VLLM_SPARSE_INDEXER_MAX_LOGITS_MB: "${VLLM_SPARSE_INDEXER_MAX_LOGITS_MB:-256}"
       VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "0"
       VLLM_SKIP_INIT_MEMORY_CHECK: "1"
       VLLM_USE_FLASHINFER_SAMPLER: "1"
@@ -104,8 +104,10 @@ services:
         --max-model-len ${MAX_MODEL_LEN:-1048576}
         --max-num-seqs ${MAX_NUM_SEQS:-6}
         --max-num-batched-tokens ${MAX_NUM_BATCHED_TOKENS:-8192}
+        --long-prefill-token-threshold ${LONG_PREFILL_TOKEN_THRESHOLD:-6144}
         --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.78}
         --enable-prefix-caching
+        --enable-prompt-tokens-details
         --async-scheduling
         --enable-chunked-prefill
         --speculative-config "$${SPECULATIVE_CONFIG}"

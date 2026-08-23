@@ -39,6 +39,8 @@ readonly LEXDATA_CONTAINER="lexdata-ai"
 readonly API_BASE="http://127.0.0.1:8890"
 readonly QWEN_BASE="http://127.0.0.1:8004"
 readonly COMPOSE_OVERRIDE_FILE="$SCRIPT_DIR/docker-compose.f277b3d-timeout.yml"
+COMPOSE_EXTRA_FILE="${ACCEPTANCE_COMPOSE_EXTRA_FILE:-}"
+EXPECTED_THINKING="${ACCEPTANCE_EXPECTED_THINKING:-false}"
 
 MODE=""
 TEST_MODE="${ACCEPTANCE_TEST_MODE:-0}"
@@ -141,6 +143,10 @@ load_env() {
   [ "$RESTORE_QWEN_ON_SUCCESS" = "0" ] || [ "$RESTORE_QWEN_ON_SUCCESS" = "1" ] || die "ACCEPTANCE_RESTORE_QWEN_ON_SUCCESS must be 0 or 1"
   [ "$PRESERVE_DEEPSEEK_CONTAINERS" = "0" ] || [ "$PRESERVE_DEEPSEEK_CONTAINERS" = "1" ] || die "ACCEPTANCE_PRESERVE_DEEPSEEK_CONTAINERS must be 0 or 1"
   [ "$SKIP_PRESTART_CHECK" = "0" ] || [ "$SKIP_PRESTART_CHECK" = "1" ] || die "ACCEPTANCE_SKIP_PRESTART_CHECK must be 0 or 1"
+  [ "$EXPECTED_THINKING" = "false" ] || [ "$EXPECTED_THINKING" = "true" ] || die "ACCEPTANCE_EXPECTED_THINKING must be false or true"
+  if [ -n "$COMPOSE_EXTRA_FILE" ]; then
+    [ -f "$COMPOSE_EXTRA_FILE" ] || die "missing Compose extra file: $COMPOSE_EXTRA_FILE"
+  fi
 }
 
 remote() {
@@ -148,15 +154,19 @@ remote() {
 }
 
 head_compose() {
-  NCCL_DEBUG=INFO "$DOCKER_BIN" compose \
-    --env-file "$COMMON_ENV" --env-file "$NODE_ENV" \
-    -f "$SCRIPT_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE_FILE" -p "$COMPOSE_PROJECT" "$@"
+  local args=(compose --env-file "$COMMON_ENV" --env-file "$NODE_ENV" -f "$SCRIPT_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE_FILE")
+  [ -z "$COMPOSE_EXTRA_FILE" ] || args+=(-f "$COMPOSE_EXTRA_FILE")
+  NCCL_DEBUG=INFO "$DOCKER_BIN" "${args[@]}" -p "$COMPOSE_PROJECT" "$@"
 }
 
 worker_compose() {
   local command_string
-  printf -v command_string 'cd %q && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -f execution/docker-compose.f277b3d-timeout.yml -p %q' \
-    "$WORKER_DEPLOY_ROOT" "$COMPOSE_PROJECT"
+  printf -v command_string 'cd %q && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -f execution/docker-compose.f277b3d-timeout.yml' \
+    "$WORKER_DEPLOY_ROOT"
+  if [ -n "$COMPOSE_EXTRA_FILE" ]; then
+    printf -v command_string '%s -f %q' "$command_string" "execution/$(basename "$COMPOSE_EXTRA_FILE")"
+  fi
+  printf -v command_string '%s -p %q' "$command_string" "$COMPOSE_PROJECT"
   local argument
   for argument in "$@"; do
     printf -v command_string '%s %q' "$command_string" "$argument"
@@ -196,7 +206,7 @@ container_health() {
 
 assert_rendered_config() {
   local config="$1" role="$2"
-  "$JQ_BIN" -e --arg role "$role" '
+  "$JQ_BIN" -e --arg role "$role" --arg thinking "$EXPECTED_THINKING" '
     .services["vllm-dspark"] as $s
     | ($s.command | join(" ")) as $c
     | $s.image == "gb10-ds4-vllm:f277b3d-nvfp4"
@@ -208,6 +218,7 @@ assert_rendered_config() {
       and $s.environment.PYTHONUNBUFFERED == "1"
       and $s.environment.VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS == "0"
       and $s.environment.MTP_NUM_TOKENS == "5"
+      and ($s.environment.DSPARK_THINKING // "false") == $thinking
       and $s.environment.NODE_RANK == (if $role == "head" then "0" else "1" end)
       and ($c | contains("DeepSeek-V4-Flash-0731"))
       and ($c | contains("--tensor-parallel-size 2"))
@@ -215,9 +226,12 @@ assert_rendered_config() {
       and ($c | contains("--max-model-len 1048576"))
       and ($c | contains("--max-num-seqs 6"))
       and ($c | contains("--max-num-batched-tokens 8192"))
+      and ($c | contains("--long-prefill-token-threshold 6144"))
       and ($c | contains("--gpu-memory-utilization 0.78"))
       and ($c | contains("--kv-cache-dtype nvfp4_ds_mla"))
       and ($c | contains("--speculative-config"))
+      and ($c | contains("--default-chat-template-kwargs"))
+      and ($c | contains("{\"thinking\":" + $thinking + "}"))
   ' <<<"$config" >/dev/null
 }
 
@@ -316,12 +330,11 @@ check_runtime_sources() {
 }
 
 head_rendered_config() {
-  NCCL_DEBUG=INFO "$DOCKER_BIN" compose --env-file "$COMMON_ENV" --env-file "$NODE_ENV" \
-    -f "$SCRIPT_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE_FILE" -p "$COMPOSE_PROJECT" config --format json
+  head_compose config --format json
 }
 
 worker_rendered_config() {
-  remote "cd '$WORKER_DEPLOY_ROOT' && NCCL_DEBUG=INFO docker compose --env-file execution/env/common.env --env-file execution/env/node.env -f execution/docker-compose.yml -f execution/docker-compose.f277b3d-timeout.yml -p '$COMPOSE_PROJECT' config --format json"
+  worker_compose config --format json
 }
 
 run_checks() {
