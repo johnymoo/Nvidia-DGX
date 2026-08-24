@@ -129,7 +129,8 @@ substitute manual per-rank Compose commands.
 Status: running. Production defaults to thinking-on through
 `execution/run-private-ds-production.sh`; the active run ID is recorded in
 `artifacts/service/active.json`. Current production run
-`20260823T164410Z` started on 2026-08-24 (local) and records
+`20260824T144141Z` started on 2026-08-24 after the follow-up test campaign
+below, on the unchanged baseline configuration, and records
 `thinking: true`.
 
 ### Long-context TTFT scheduler profile (2026-08-24)
@@ -161,32 +162,52 @@ Rollback: remove `LONG_PREFILL_TOKEN_THRESHOLD` from
 `execution/run-vllm-acceptance.sh` from the `.bak-20260824T0020` copies next
 to them), then restart through the production controller.
 
-### Long-context follow-up options (proposed 2026-08-24, not yet applied)
+### Long-context follow-up options (tested 2026-08-24; decisions recorded)
 
-Ranked by expected value for the remaining pain: cold prefill is
-compute-bound at ~1,900 tok/s shallow to ~1,400 tok/s at 480K (both GPUs at
-96% SM during prefill), and the 1.22M-token KV pool holds barely two 465K
-agent sessions, so a third session still triggers a 300 s+ full re-prefill.
+Options 1, 3, and 4 were tested on 2026-08-24 under the plan
+`planning/02-working/2026-08-24-long-context-followup-test-plan.md`; raw
+evidence is under `tmp/followup-tests/20260824T124317Z/` in this workspace
+(service runs `20260824T130109Z` through `20260824T144141Z`). Every tested
+change was rejected and production was restored byte-identical to the
+baseline (final run `20260824T144141Z`, verified healthy).
 
-1. **KV pool: `GPU_MEMORY_UTILIZATION` 0.78 -> 0.80.** Buys about +2.4 GB
-   (~+330K pool tokens), directly reducing eviction-driven full re-prefills.
-   Blocked on operator approval: upstream issue #8 recorded 0.80 booting
-   clean then dying under traffic because DSpark buffers allocate on the
-   first real request. Requires a supervised window with soak traffic and
-   the documented rollback.
-2. **KV offload to NVMe (LMCache-class connector).** An evicted 465K session
-   is ~3.7 GB of nvfp4 KV; reloading from NVMe takes seconds versus a 300 s+
-   re-prefill. Eliminates the "no cache hit" class outright. Framework-level
-   work: the fork's connector surface with nvfp4_ds_mla MLA KV is unproven.
-3. **A/B `VLLM_USE_B12X_SPARSE_INDEXER=1`.** The image ships a tiled
-   SM120-specific indexer extend/topk path (default off,
-   `VLLM_B12X_NSA_EXTEND_TOPK_SUPERTILE_K=32768`) that avoids materializing
-   the 256 MiB logits buffer per sub-chunk; candidate for the ~25% prefill
-   decay between 64K and 254K depth. Env-only toggle, one controller restart
-   per arm.
-4. **Kernel-level prefill ceiling.** The flat ~1,900 tok/s base rate is
-   dominated by small-M grouped MoE GEMMs and indexer MQA logits on this
-   fork; treat as a deep-kernel effort with limited headroom. Do 1-3 first.
+**Campaign-wide root cause:** the compose hardcodes
+`VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0`, so CUDA-graph memory
+(~0.7-0.9 GiB) is never accounted during KV-cache sizing and the deployment
+sits at the 7.3 GiB KV floor with near-zero headroom. Any additional GPU
+memory consumer - B12X buffers, nsys injection, or a higher gmu - pushed a
+boot over the floor or the driver into allocation failures during this
+campaign. vLLM's own boot warning recommends re-enabling the estimate and
+raising gmu to ~0.787 as the accounting-neutral point.
+
+1. **gmu 0.78 -> 0.80: REJECTED as tested.** The KV pool did grow (8.81 ->
+   10.21 GiB; 1,221,928 -> 1,471,271 tokens) and Phase-A traffic served
+   correctly at normal speed, but the head kernel logged 84 NVRM
+   `NV_ERR_NO_MEMORY` events (worker 28) in a burst during boot
+   compilation - over-committed at 0.80 while graph memory is unaccounted.
+   Superseding follow-up (needs an operator-approved supervised window):
+   set `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`, re-tune gmu upward
+   from 0.787, and only then re-attempt pool growth with soak traffic.
+2. **KV offload to NVMe (LMCache-class connector): unchanged, not yet
+   attempted.** Still the root fix for eviction-driven 300 s+ re-prefills.
+   An evicted 465K session is ~3.7 GB of nvfp4 KV; reloading from NVMe takes
+   seconds. Framework-level work: the fork's connector surface with
+   nvfp4_ds_mla MLA KV is unproven.
+3. **`VLLM_USE_B12X_SPARSE_INDEXER=1`: REJECTED permanently - do not
+   retry.** Slower at every measured depth (-1.7% to -11.9%; fitted
+   quadratic coefficient +47% vs baseline), KV pool ~1 GiB smaller, and a
+   reproducible correctness regression: cold ~60K-token needle-in-haystack
+   retrieval returned wrong/refusal answers on two independent prompts at
+   temperature 0, while the same prompts answer correctly on baseline and
+   on cache-warm reruns.
+4. **Kernel-level prefill ceiling: DEFERRED.** nsys injection cannot boot
+   inside the current zero-headroom memory profile (same root cause), so no
+   kernel-time attribution exists yet. The fallback fit
+   time(n) = a*n + b*n^2 (R^2 > 0.999) shows the depth-dependent quadratic
+   term is only ~12% of prefill time at 130K, ~21% at 254K, ~32% at 465K:
+   the flat ~1,850 tok/s linear term dominates the operating range, so
+   deep-kernel work stays last. Revisit only after items 1 (superseded
+   form) and 2.
 The head API is `http://192.168.88.181:8890/v1` and exposes only
 `deepseek-v4-flash-0731`. The immutable runtime revision is
 `f277b3dfa718a5962bed64e69e7e640a5384ec2f`, with Patch4 fingerprint
