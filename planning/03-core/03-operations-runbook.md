@@ -129,9 +129,17 @@ substitute manual per-rank Compose commands.
 Status: running. Production defaults to thinking-on through
 `execution/run-private-ds-production.sh`; the active run ID is recorded in
 `artifacts/service/active.json`. Current production run
-`20260824T144141Z` started on 2026-08-24 after the follow-up test campaign
-below, on the unchanged baseline configuration, and records
-`thinking: true`.
+`20260824T175920Z` started late on 2026-08-24 UTC after the CUDA-graph
+accounting / gmu re-tune campaign below, on the byte-identical restored
+baseline configuration, and records `thinking: true`.
+
+**Journal-scan rule for both hosts:** `gb10` and `gb10-2` run in
+Asia/Shanghai local time. `journalctl --since/--until` with bare date-time
+strings parses them as CST (UTC+8), silently shifting the window 8 hours if
+you meant UTC. Always prefix `TZ=UTC` (forces parsing and output into UTC)
+when scanning kernel journals against UTC-timestamped service events.
+Relative windows (`--since '-2 min'`) are unaffected. This bug produced
+false-clean scans in the 2026-08-24 campaigns before it was caught.
 
 ### Long-context TTFT scheduler profile (2026-08-24)
 
@@ -171,23 +179,26 @@ evidence is under `tmp/followup-tests/20260824T124317Z/` in this workspace
 change was rejected and production was restored byte-identical to the
 baseline (final run `20260824T144141Z`, verified healthy).
 
-**Campaign-wide root cause:** the compose hardcodes
-`VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0`, so CUDA-graph memory
-(~0.7-0.9 GiB) is never accounted during KV-cache sizing and the deployment
-sits at the 7.3 GiB KV floor with near-zero headroom. Any additional GPU
-memory consumer - B12X buffers, nsys injection, or a higher gmu - pushed a
-boot over the floor or the driver into allocation failures during this
-campaign. vLLM's own boot warning recommends re-enabling the estimate and
-raising gmu to ~0.787 as the accounting-neutral point.
+**Campaign-wide root cause (partially revised by the re-tune campaign
+below):** the compose hardcodes `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0`,
+so CUDA-graph memory (~0.7-0.9 GiB) is never accounted during KV-cache sizing
+and the deployment sits at the 7.3 GiB KV floor with near-zero headroom. The
+KV-floor boot failures in this campaign (B12X buffers, nsys injection, and
+the earlier 16384 batched-token attempt) are genuinely explained by that
+zero-headroom profile. The NVRM-burst attribution, however, did not survive
+the re-tune campaign: once journal scans were timezone-corrected, boot-time
+NVRM bursts appeared on every configuration including the untouched
+baseline, so they do not discriminate between gmu/accounting settings (see
+the re-tune section below).
 
-1. **gmu 0.78 -> 0.80: REJECTED as tested.** The KV pool did grow (8.81 ->
-   10.21 GiB; 1,221,928 -> 1,471,271 tokens) and Phase-A traffic served
-   correctly at normal speed, but the head kernel logged 84 NVRM
-   `NV_ERR_NO_MEMORY` events (worker 28) in a burst during boot
-   compilation - over-committed at 0.80 while graph memory is unaccounted.
-   Superseding follow-up (needs an operator-approved supervised window):
-   set `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`, re-tune gmu upward
-   from 0.787, and only then re-attempt pool growth with soak traffic.
+1. **gmu 0.78 -> 0.80: REJECTED as tested; superseding re-tune also
+   abandoned.** The KV pool did grow (8.81 -> 10.21 GiB; 1,221,928 ->
+   1,471,271 tokens) and Phase-A traffic served correctly at normal speed,
+   but the boot logged NVRM `NV_ERR_NO_MEMORY` bursts. The planned
+   superseding follow-up (`VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1` plus
+   gmu re-tuned upward from 0.787) was executed the same night and
+   abandoned - see the re-tune campaign section below for why, and for the
+   protocol any future attempt must follow.
 2. **KV offload to NVMe (LMCache-class connector): unchanged, not yet
    attempted.** Still the root fix for eviction-driven 300 s+ re-prefills.
    An evicted 465K session is ~3.7 GB of nvfp4 KV; reloading from NVMe takes
@@ -206,8 +217,66 @@ raising gmu to ~0.787 as the accounting-neutral point.
    time(n) = a*n + b*n^2 (R^2 > 0.999) shows the depth-dependent quadratic
    term is only ~12% of prefill time at 130K, ~21% at 254K, ~32% at 465K:
    the flat ~1,850 tok/s linear term dominates the operating range, so
-   deep-kernel work stays last. Revisit only after items 1 (superseded
-   form) and 2.
+   deep-kernel work stays last. Revisit only after item 2 or a successful
+   future re-tune frees memory headroom for profiler injection.
+
+### CUDA-graph accounting + gmu re-tune (2026-08-24/25; adoption abandoned)
+
+Plan `planning/02-working/2026-08-24-cudagraph-accounting-gmu-retune-plan.md`;
+evidence `tmp/followup-tests/20260824T150255Z/` (service runs
+`20260824T150604Z` through the restored `20260824T175920Z`). Both candidate
+arms - `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1` with gmu 0.80, and with
+gmu 0.787 - were tested and adoption was abandoned; production was restored
+byte-identical to the pre-campaign baseline and verified healthy.
+
+What was measured (all journal scans TZ=UTC corrected; counts are new NVRM
+`NV_ERR_NO_MEMORY` kernel events strictly inside each boot window):
+
+| Boot | Settle | Head | Worker | Total |
+|---|---|---|---|---|
+| gmu 0.80, accounting on (attempt 1) | 2m07s (short) | 5 | 26 | 31 |
+| gmu 0.787, accounting on (attempt 1) | 49s (short) | 85 | 0 | 85 |
+| gmu 0.787, accounting on (attempt 2) | 5m00s | 67 | 55 | 122 |
+| gmu 0.80, accounting on (attempt 2) | 5m55s | 78 | 15 | 93 |
+| baseline gmu 0.78, accounting off (restore) | 5m17s | 59 | 5 | 64 |
+
+Findings that supersede parts of the earlier campaign's analysis:
+
+- **Boot-time NVRM bursts are not a config discriminator.** Every boot that
+  night - including the restored, never-modified baseline - produced a
+  31-122-event burst strictly during CUDA-graph capture, with zero events
+  afterward in every case. The earlier campaign's "baseline boots clean"
+  comparisons were false-clean artifacts of the journalctl timezone bug.
+  Counts varied non-monotonically across five back-to-back restarts in ~3 h,
+  consistent with unified-memory state degrading over the session (the
+  restored baseline's pool also came up at 8.22 GiB / 1,172,653 tokens vs
+  the 8.81 GiB / 1,221,928 clean-boot reference).
+- **The accounting flag itself behaved as designed and remains promising.**
+  Arm gmu 0.80 with accounting on booted with pool 9.61 GiB / 1,363,371
+  tokens (+11.6% vs clean-boot baseline), passed first-traffic, ran a
+  42-minute mixed-workload soak with 0/98 failed requests and zero
+  post-boot kernel events, and matched or beat baseline perf (64K cold
+  prefill 1772 vs 1744 tok/s; 130K 1732 vs 1630; HOL small-request 11.8 s
+  vs 12.8 s reference; free-prose decode 33.7-34.5 vs 31.7-32.9 tok/s).
+  It failed only the "zero NVRM events in the boot window" gate - a gate
+  the baseline itself cannot pass.
+- **Decode reference correction:** the probe-measured free-prose decode
+  (500-token essay, thinking off) is ~32-34 tok/s on every configuration.
+  The "~62 tok/s structured" figure in the scheduler section is a different
+  workload (structured output, higher MTP acceptance); never compare the
+  two.
+
+Decision: adoption abandoned for now, not rejected on the merits. The
+discriminating experiment requires clean host state: a full host reboot
+(not container restart) before each boot-gate measurement, an
+operator-approved window because a reboot takes down co-tenant services
+(trading was live during this campaign), and a gate of "no worse than a
+same-session baseline boot" instead of "zero events". Until then the fleet
+stays on gmu 0.78 with accounting off. Campaign backups on both hosts carry
+suffix `.bak-20260824T1503` (this campaign's pre-state, restored from);
+`.bak-arm1-20260824T1613` and `.bak-arm2retry-20260824T1742` record the
+intermediate arm edits; none were deleted.
+
 The head API is `http://192.168.88.181:8890/v1` and exposes only
 `deepseek-v4-flash-0731`. The immutable runtime revision is
 `f277b3dfa718a5962bed64e69e7e640a5384ec2f`, with Patch4 fingerprint
