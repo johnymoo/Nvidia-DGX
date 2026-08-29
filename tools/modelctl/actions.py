@@ -294,7 +294,7 @@ class Actor:
             self._run_step(receipt, model.controller.host,
                            f"start via controller script on {model.controller.host}",
                            list(model.controller.start),
-                           timeout=max(600, 300 * len(model.hosts)))
+                           timeout=max(3600, 600 * len(model.hosts)))
             if receipt.steps and receipt.steps[-1].exit_code != 0:
                 raise ActionError("CONTROLLER_FAILED",
                                   f"controller start failed on {model.controller.host}",
@@ -321,7 +321,7 @@ class Actor:
             self._run_step(receipt, model.controller.host,
                            f"stop via controller script on {model.controller.host}",
                            list(model.controller.stop),
-                           timeout=max(600, 300 * len(model.hosts)))
+                           timeout=max(1200, 300 * len(model.hosts)))
             if receipt.steps and receipt.steps[-1].exit_code != 0:
                 raise ActionError("CONTROLLER_FAILED",
                                   f"controller stop failed on {model.controller.host}",
