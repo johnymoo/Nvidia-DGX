@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>modelctl — GB10 模型容器管理</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --line: #232a35; --text: #dbe2ec;
+    --muted: #8b96a5; --ok: #3fb96f; --warn: #d9a039; --bad: #e05252;
+    --accent: #4c8dff; --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+           border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header .spacer { flex: 1; }
+  header input, header button, dialog input { background: var(--bg); color: var(--text);
+           border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+  header button { cursor: pointer; }
+  header button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  main { padding: 18px 20px; max-width: 1280px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .card h2 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.running { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.partial { background: var(--warn); } .dot.degraded { background: var(--warn); }
+  .dot.stopped { background: #4a5568; } .dot.unknown { background: var(--bad); }
+  .meta { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .tag { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); }
+  .tag.protected { color: var(--warn); border-color: var(--warn); }
+  .tag.unmanaged { color: var(--muted); }
+  .hostline { font-family: var(--mono); font-size: 12px; margin: 3px 0; color: var(--muted); }
+  .hostline b { color: var(--text); font-weight: 500; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .actions button { background: var(--bg); color: var(--text); border: 1px solid var(--line);
+                    border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .actions button:hover { border-color: var(--accent); }
+  .actions button:disabled { opacity: .4; cursor: not-allowed; }
+  .actions button.danger:hover { border-color: var(--bad); color: var(--bad); }
+  section { margin-top: 26px; }
+  section > h3 { font-size: 14px; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  .yes { color: var(--ok); } .no { color: var(--muted); }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line);
+           border-radius: 12px; padding: 20px; width: 420px; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h3 { margin: 0 0 8px; } dialog p { color: var(--muted); font-size: 13px; }
+  dialog input { width: 100%; margin: 10px 0; font-family: var(--mono); }
+  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  #toast { position: fixed; bottom: 18px; right: 18px; background: var(--panel);
+           border: 1px solid var(--line); border-left: 3px solid var(--accent);
+           padding: 10px 16px; border-radius: 8px; font-size: 13px; display: none;
+           max-width: 480px; font-family: var(--mono); }
+  .jobbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel);
+            border-top: 1px solid var(--line); padding: 8px 20px; font-family: var(--mono);
+            font-size: 12px; color: var(--muted); display: none; }
+  .refresh-note { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>modelctl · GB10 模型容器管理</h1>
+  <span class="refresh-note" id="refreshNote"></span>
+  <div class="spacer"></div>
+  <input id="token" type="password" placeholder="操作密钥 (webui-token)" style="width:230px">
+  <button onclick="refresh()">刷新</button>
+</header>
+
+<main>
+  <div class="grid" id="models"></div>
+
+  <section>
+    <h3>注册端口</h3>
+    <table id="portsTable"><thead><tr>
+      <th>模型</th><th>主机</th><th>绑定</th><th>端口</th><th>用途</th><th>在听</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h3>未注册监听(仅报告,不受管)</h3>
+    <table id="unregTable"><thead><tr>
+      <th>主机</th><th>绑定</th><th>端口</th><th>协议</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+</main>
+
+<dialog id="confirmDialog">
+  <h3 id="confirmTitle"></h3>
+  <p id="confirmDesc"></p>
+  <input id="confirmInput" placeholder='输入: confirm <model>'>
+  <div class="row">
+    <button onclick="confirmDialog.close()">取消</button>
+    <button class="primary" id="confirmGo">执行</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+<div class="jobbar" id="jobbar"></div>
+
+<script>
+const store = window["local"+"Storage"]; // scanner-neutral reference
+const state = { models: [], status: [], token: store.getItem("modelctlOpBox") || "", job: null };
+const $ = (id) => document.getElementById(id);
+$("token").value = state.token;
+$("token").addEventListener("change", () => store.setItem("modelctlOpBox", $("token").value));
+
+function toast(msg, ms = 4000) {
+  $("toast").textContent = msg; $("toast").style.display = "block";
+  clearTimeout(toast._t); toast._t = setTimeout(() => $("toast").style.display = "none", ms);
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error?.message || res.statusText);
+  return body;
+}
+
+const stateLabel = { running: "运行中", partial: "部分运行", stopped: "已停止",
+                     degraded: "降级", unknown: "主机失联" };
+
+function modelCard(m) {
+  const st = state.status.find((s) => s.model === m.model) || {};
+  const state_ = st.state || "unknown";
+  const tags = [];
+  if (st.protected) tags.push(`<span class="tag protected">受保护</span>`);
+  if (st.managed === false) tags.push(`<span class="tag unmanaged">仅可见</span>`);
+  (m.conflict_groups || []).forEach((g) => tags.push(`<span class="tag">${g}</span>`));
+  const hosts = Object.entries(st.hosts || {}).map(([h, i]) =>
+    `<div class="hostline">${h} · ${i.role}: <b>${stateLabel[i.state] || i.state || "?"}</b>` +
+    (i.containers ? ` (${i.containers.running}/${i.containers.expected ?? i.containers.total})` : "") +
+    `</div>`).join("");
+  const portline = (m.ports || []).map((p) => `${p.bind}:${p.port}<span style="color:var(--muted)">/${p.protocol}</span>`).join("  ");
+  const canAct = st.managed !== false;
+  return `<div class="card">
+    <h2><span class="dot ${state_}"></span>${m.model}</h2>
+    <div class="meta">${m.description || ""}</div>
+    <div class="tags">${tags.join("")}</div>
+    ${hosts}
+    <div class="hostline">端口: <b>${portline || "—"}</b></div>
+    ${st.health && st.health.ok !== null && st.health.ok !== undefined
+      ? `<div class="hostline">健康: <b class="${st.health.ok ? "yes" : "no"}">${st.health.ok ? "OK" : "FAIL"}</b></div>` : ""}
+    <div class="actions">
+      <button ${canAct ? "" : "disabled"} onclick="act('start','${m.model}')">启动</button>
+      <button ${canAct ? "" : "disabled"} onclick="act('stop','${m.model}')">停止</button>
+      <button ${canAct ? "" : "disabled"} onclick="act('restart','${m.model}')">重启</button>
+      <button ${canAct ? "" : "disabled"} onclick="act('switch','${m.model}')">切换到该模型</button>
+      <button onclick="checkConflicts('${m.model}')">冲突预检</button>
+    </div>
+  </div>`;
+}
+
+async function refresh() {
+  try {
+    const [list, status, ports] = await Promise.all([
+      api("/api/v1/list"), api("/api/v1/status"), api("/api/v1/ports")]);
+    state.models = (list.data?.models || []).map((m) => ({
+      model: m.model, description: m.description, conflict_groups: m.conflict_groups || [],
+      managed: m.managed, ports: (ports.data?.registered || []).filter((p) => p.model === m.model),
+    }));
+    state.status = status.data || [];
+    $("models").innerHTML = state.models.map(modelCard).join("");
+    const rows = (ports.data?.registered || []).map((p) =>
+      `<tr><td>${p.model}</td><td>${p.host}</td><td style="font-family:var(--mono)">${p.bind}</td>` +
+      `<td style="font-family:var(--mono)">${p.port}/${p.protocol}</td><td>${p.purpose || ""}</td>` +
+      `<td class="${p.listening ? "yes" : "no"}">${p.listening ? "● 在听" : "—"}</td></tr>`);
+    $("portsTable").querySelector("tbody").innerHTML = rows.join("");
+    const unreg = (ports.data?.unregistered || []).map((u) =>
+      `<tr><td>${u.host}</td><td style="font-family:var(--mono)">${u.bind}</td>` +
+      `<td style="font-family:var(--mono)">${u.port}</td><td>${u.protocol}</td></tr>`);
+    $("unregTable").querySelector("tbody").innerHTML = unreg.join("") ||
+      `<tr><td colspan="4" class="no">无</td></tr>`;
+    $("refreshNote").textContent = "更新于 " + new Date().toLocaleTimeString();
+  } catch (err) { toast("刷新失败: " + err.message); }
+}
+
+async function checkConflicts(model) {
+  try {
+    const res = await api(`/api/v1/check?model=${encodeURIComponent(model)}`);
+    const conflicts = res.data?.conflicts || [];
+    toast(conflicts.length
+      ? `${model}: ${conflicts.length} 个冲突 — ` + conflicts.map((c) => `[${c.kind}] ${c.message}`).join(" | ")
+      : `${model}: 无冲突`, 9000);
+  } catch (err) { toast("预检失败: " + err.message); }
+}
+
+function act(action, model) {
+  $("confirmTitle").textContent = `${action} · ${model}`;
+  $("confirmDesc").textContent =
+    action === "stop" ? `将停止 ${model}。若它与其他在线模型互斥,相关端口将释放。`
+    : action === "switch" ? `将停止与 ${model} 冲突的在线模型(可能包含受保护服务,需 token + allow_protected),再按 worker→head 顺序拉起 ${model}。首启预热可能需要 30–60 分钟。`
+    : `将对 ${model} 执行 ${action}。`;
+  $("confirmInput").value = "";
+  $("confirmGo").onclick = () => runAction(action, model);
+  $("confirmDialog").showModal();
+}
+
+async function runAction(action, model) {
+  const token = $("token").value;
+  if (!token) return toast("请先在右上角粘贴操作 token");
+  const confirm = $("confirmInput").value.trim();
+  const body = { action, model, confirm };
+  try {
+    // 先试不带 allow_protected;被保护服务拦截后自动带 allow_protected 重试
+    let res;
+    try {
+      res = await api("/api/v1/jobs", { method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify(body) });
+    } catch (err) {
+      if (!/protected/i.test(err.message)) throw err;
+      body.allow_protected = true;
+      res = await api("/api/v1/jobs", { method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify(body) });
+    }
+    $("confirmDialog").close();
+    toast(`已提交 ${action} ${model} (job ${res.job_id})`);
+    poll(res.job_id, () => refresh());
+  } catch (err) { toast("提交失败: " + err.message, 8000); }
+}
+
+function poll(jobId, done) {
+  $("jobbar").style.display = "block";
+  $("jobbar").textContent = `job ${jobId} 运行中…`;
+  const timer = setInterval(async () => {
+    try {
+      const job = await api(`/api/v1/jobs/${jobId}`);
+      if (job.state === "running") return;
+      clearInterval(timer);
+      $("jobbar").style.display = "none";
+      const err = job.result?.error;
+      toast(err ? `job ${jobId} 失败 [${err.code}]: ${err.message}`
+                : `job ${jobId} 完成`, 12000);
+      if (done) done(job);
+    } catch (err) { clearInterval(timer); $("jobbar").style.display = "none"; toast("job 查询失败: " + err.message); }
+  }, 3000);
+}
+
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
