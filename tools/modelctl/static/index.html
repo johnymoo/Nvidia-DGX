@@ -6,71 +6,167 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
-    --bg: #0e1116; --panel: #161b22; --line: #232a35; --text: #dbe2ec;
-    --muted: #8b96a5; --ok: #3fb96f; --warn: #d9a039; --bad: #e05252;
-    --accent: #4c8dff; --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --bg: #0a0f16; --panel: #111722; --panel-2: #0d1320; --line: #1d2736; --line-strong: #2b3a55;
+    --text: #dfe7f2; --muted: #8794a8; --faint: #5b6b82;
+    --ok: #34d399; --warn: #fbbf24; --bad: #f87171;
+    --accent: #5b9dff; --accent-2: #22d3ee;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --radius: 14px;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-         font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
-  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px;
-           border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  html { scrollbar-color: #2a3547 var(--bg); }
+  body {
+    margin: 0; color: var(--text);
+    font: 14px/1.55 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(1100px 520px at 78% -8%, rgba(91,157,255,.10), transparent 62%),
+      radial-gradient(900px 480px at -10% 12%, rgba(34,211,238,.06), transparent 58%);
+    background-attachment: fixed;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 13px 22px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(13,18,28,.78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 {
+    font-size: 16px; margin: 0; font-weight: 700; letter-spacing: .3px;
+    background: linear-gradient(92deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap;
+  }
   header .spacer { flex: 1; }
-  header input, header button, dialog input { background: var(--bg); color: var(--text);
-           border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
-  header button { cursor: pointer; }
-  header button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  main { padding: 18px 20px; max-width: 1280px; margin: 0 auto; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
-  .card h2 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
-  .dot.running { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-  .dot.partial { background: var(--warn); } .dot.degraded { background: var(--warn); }
+  header input, header button, dialog input {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  header input:focus, #interval:focus, dialog input:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,157,255,.16);
+  }
+  header button { cursor: pointer; color: var(--accent); border-color: rgba(91,157,255,.45);
+                  background: rgba(91,157,255,.08); font-weight: 600; }
+  header button:hover { background: rgba(91,157,255,.16); }
+  main { padding: 20px 22px 40px; max-width: 1340px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+  .card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 14px;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--line-strong);
+                box-shadow: 0 14px 34px rgba(0,0,0,.42); }
+  .card::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: linear-gradient(90deg, var(--st, #4a5568), transparent 72%);
+  }
+  .card.st-running  { --st: rgba(52,211,153,.95); }
+  .card.st-partial  { --st: rgba(251,191,36,.95); }
+  .card.st-degraded { --st: rgba(248,113,113,.95); }
+  .card.st-stopped  { --st: rgba(91,106,130,.55); }
+  .card.st-unknown  { --st: rgba(248,113,113,.95); }
+  .card h2 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px;
+             font-family: var(--mono); letter-spacing: .2px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #4a5568; flex: none; }
+  .dot.running { background: var(--ok); box-shadow: 0 0 8px rgba(52,211,153,.8);
+                 animation: pulse 2.4s ease-out infinite; }
+  .dot.partial, .dot.degraded { background: var(--warn); box-shadow: 0 0 8px rgba(251,191,36,.5); }
   .dot.stopped { background: #4a5568; } .dot.unknown { background: var(--bad); }
-  .meta { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-  .tag { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); }
-  .tag.protected { color: var(--warn); border-color: var(--warn); }
-  .tag.unmanaged { color: var(--muted); }
-  .hostline { font-family: var(--mono); font-size: 12px; margin: 3px 0; color: var(--muted); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(52,211,153,.45); }
+    70% { box-shadow: 0 0 0 9px rgba(52,211,153,0); }
+    100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+  }
+  .meta { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .tag { font-size: 11px; border-radius: 999px; padding: 2px 9px; color: var(--accent);
+         background: rgba(91,157,255,.10); border: 1px solid rgba(91,157,255,.28); }
+  .tag.protected { color: var(--warn); background: rgba(251,191,36,.10);
+                   border-color: rgba(251,191,36,.4); }
+  .tag.unmanaged { color: var(--muted); background: rgba(135,148,168,.08);
+                   border-color: rgba(135,148,168,.3); }
+  .hostline { font-family: var(--mono); font-size: 12px; margin: 4px 0 2px; color: var(--faint); }
   .hostline b { color: var(--text); font-weight: 500; }
-  .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  .actions button { background: var(--bg); color: var(--text); border: 1px solid var(--line);
-                    border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
-  .actions button:hover { border-color: var(--accent); }
-  .actions button:disabled { opacity: .4; cursor: not-allowed; }
-  .actions button.danger:hover { border-color: var(--bad); color: var(--bad); }
-  section { margin-top: 26px; }
-  section > h3 { font-size: 14px; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; background: var(--panel);
-          border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 13px; }
-  th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 500; font-size: 12px; }
-  tr:last-child td { border-bottom: none; }
-  .yes { color: var(--ok); } .no { color: var(--muted); }
-  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line);
-           border-radius: 12px; padding: 20px; width: 420px; }
-  dialog::backdrop { background: rgba(0,0,0,.6); }
-  dialog h3 { margin: 0 0 8px; } dialog p { color: var(--muted); font-size: 13px; }
-  dialog input { width: 100%; margin: 10px 0; font-family: var(--mono); }
-  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-  #toast { position: fixed; bottom: 18px; right: 18px; background: var(--panel);
-           border: 1px solid var(--line); border-left: 3px solid var(--accent);
-           padding: 10px 16px; border-radius: 8px; font-size: 13px; display: none;
-           max-width: 480px; font-family: var(--mono); }
-  .jobbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel);
-            border-top: 1px solid var(--line); padding: 8px 20px; font-family: var(--mono);
-            font-size: 12px; color: var(--muted); display: none; }
-  .refresh-note { color: var(--muted); font-size: 12px; }
-  .ctline { font-family: var(--mono); font-size: 11px; color: var(--muted);
-            margin: 3px 0 0 12px; }
-  .ctres { font-family: var(--mono); font-size: 11px; color: var(--muted);
-           margin: 0 0 2px 26px; }
+  .ctline { font-family: var(--mono); font-size: 11px; color: var(--faint); margin: 3px 0 0 12px; }
+  .ctres {
+    font-family: var(--mono); font-size: 11px; color: var(--muted); margin: 1px 0 2px 24px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
   .ctline b, .ctres b { color: var(--text); font-weight: 500; }
-  #interval { background: var(--bg); color: var(--text); border: 1px solid var(--line);
-              border-radius: 6px; padding: 4px 6px; font-size: 13px; width: 54px; }
+  .membar {
+    display: inline-block; width: 74px; height: 5px; border-radius: 99px;
+    background: #1c2635; overflow: hidden; vertical-align: middle; flex: none;
+  }
+  .membar span { display: block; height: 100%; border-radius: 99px;
+                 background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .actions button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 13px; font-size: 13px; cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s, transform .1s;
+  }
+  .actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .actions button:active { transform: scale(.97); }
+  .actions button:disabled { opacity: .35; cursor: not-allowed; }
+  .actions button.danger:hover { border-color: var(--bad); color: var(--bad);
+                                 background: rgba(248,113,113,.07); }
+  .actions button.accent { color: var(--accent); border-color: rgba(91,157,255,.4);
+                           background: rgba(91,157,255,.08); }
+  .actions button.accent:hover { background: rgba(91,157,255,.16); }
+  section { margin-top: 30px; }
+  section > h3 { font-size: 12px; color: var(--muted); margin: 0 0 10px; font-weight: 700;
+                 letter-spacing: 1.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  section > h3::before { content: ""; width: 14px; height: 2px; border-radius: 2px;
+                         background: linear-gradient(90deg, var(--accent), transparent); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+          font-size: 13px; }
+  th, td { text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+  thead th { color: var(--faint); font-weight: 600; font-size: 11px;
+             letter-spacing: 1px; text-transform: uppercase; background: var(--panel-2); }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: rgba(91,157,255,.05); }
+  tr:last-child td { border-bottom: none; }
+  .yes { color: var(--ok); } .no { color: var(--faint); }
+  dialog {
+    background: var(--panel); color: var(--text); border: 1px solid var(--line-strong);
+    border-radius: 16px; padding: 22px; width: 430px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  }
+  dialog::backdrop { background: rgba(4,8,14,.65); backdrop-filter: blur(3px); }
+  dialog h3 { margin: 0 0 8px; font-family: var(--mono); }
+  dialog p { color: var(--muted); font-size: 13px; }
+  dialog input { width: 100%; margin: 12px 0 2px; font-family: var(--mono); }
+  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  dialog .row button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  dialog .row button.primary { color: #fff; background: linear-gradient(92deg, var(--accent), #3f7ce0);
+                               border: none; font-weight: 600; }
+  dialog .row button.primary:hover { filter: brightness(1.1); }
+  #toast {
+    position: fixed; bottom: 20px; right: 20px; background: var(--panel);
+    border: 1px solid var(--line-strong); border-left: 3px solid var(--accent);
+    padding: 11px 16px; border-radius: 10px; font-size: 13px; display: none;
+    max-width: 500px; font-family: var(--mono);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  }
+  .jobbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(13,18,28,.85); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); padding: 9px 22px; font-family: var(--mono);
+    font-size: 12px; color: var(--accent); display: none;
+  }
+  .refresh-note { color: var(--muted); font-size: 12px; }
+  #interval { background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+              border-radius: 8px; padding: 4px 7px; font-size: 13px; width: 54px; }
+  @media (max-width: 720px) {
+    header { flex-wrap: wrap; }
+    main { padding: 14px; }
+    .grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -158,8 +254,10 @@ function containerLine(c) {
   const s = c.stats;
   const head = `<div class="ctline">└ <b>${c.name}</b> ${c.state}</div>`;
   if (!s) return head;
-  const res = `CPU <b>${s.cpu ?? "—"}</b> · MEM <b>${shortBytes(s.mem_used_bytes)}/${shortBytes(s.mem_limit_bytes)}</b> (${s.mem_percent ?? "—"}%)` +
-    ` · NET ${s.net_io || "—"} · PID ${s.pids ?? "—"}`;
+  const pct = s.mem_percent != null ? Math.min(parseFloat(s.mem_percent), 100) : null;
+  const bar = pct != null ? `<span class="membar"><span style="width:${pct}%"></span></span>` : "";
+  const res = `CPU <b>${s.cpu ?? "—"}</b> · MEM <b>${shortBytes(s.mem_used_bytes)}/${shortBytes(s.mem_limit_bytes)}</b> (${s.mem_percent ?? "—"}%) ${bar}` +
+    ` <span>· NET ${s.net_io || "—"} · PID ${s.pids ?? "—"}</span>`;
   return head + `<div class="ctres">${res}</div>`;
 }
 
@@ -185,7 +283,7 @@ function modelCard(m) {
   }).join("");
   const portline = (m.ports || []).map((p) => `${p.bind}:${p.port}<span style="color:var(--muted)">/${p.protocol}</span>`).join("  ");
   const canAct = st.managed !== false;
-  return `<div class="card">
+  return `<div class="card st-${state_}">
     <h2><span class="dot ${state_}"></span>${m.model}</h2>
     <div class="meta">${m.description || ""}</div>
     <div class="tags">${tags.join("")}</div>
@@ -195,9 +293,9 @@ function modelCard(m) {
       ? `<div class="hostline">健康: <b class="${st.health.ok ? "yes" : "no"}">${st.health.ok ? "OK" : "FAIL"}</b></div>` : ""}
     <div class="actions">
       <button ${canAct ? "" : "disabled"} onclick="act('start','${m.model}')">启动</button>
-      <button ${canAct ? "" : "disabled"} onclick="act('stop','${m.model}')">停止</button>
+      <button class="danger" ${canAct ? "" : "disabled"} onclick="act('stop','${m.model}')">停止</button>
       <button ${canAct ? "" : "disabled"} onclick="act('restart','${m.model}')">重启</button>
-      <button ${canAct ? "" : "disabled"} onclick="act('switch','${m.model}')">切换到该模型</button>
+      <button class="accent" ${canAct ? "" : "disabled"} onclick="act('switch','${m.model}')">切换到该模型</button>
       <button onclick="checkConflicts('${m.model}')">冲突预检</button>
     </div>
   </div>`;
