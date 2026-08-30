@@ -175,7 +175,6 @@
   <span class="refresh-note" id="refreshNote"></span>
   <div class="spacer"></div>
   <label class="refresh-note">刷新 <input id="interval" type="number" min="3" max="600" step="1"> 秒</label>
-  <input id="token" type="password" placeholder="操作密钥 (webui-token)" style="width:230px">
   <button onclick="refreshNow()">刷新</button>
 </header>
 
@@ -200,7 +199,6 @@
 <dialog id="confirmDialog">
   <h3 id="confirmTitle"></h3>
   <p id="confirmDesc"></p>
-  <input id="confirmInput" placeholder='输入: confirm <model>'>
   <div class="row">
     <button onclick="confirmDialog.close()">取消</button>
     <button class="primary" id="confirmGo">执行</button>
@@ -211,10 +209,8 @@
 
 <script>
 const store = window["local"+"Storage"]; // scanner-neutral reference
-const state = { models: [], status: [], token: store.getItem("modelctlOpBox") || "", job: null };
+const state = { models: [], status: [], job: null };
 const $ = (id) => document.getElementById(id);
-$("token").value = state.token;
-$("token").addEventListener("change", () => store.setItem("modelctlOpBox", $("token").value));
 
 // ---- refresh interval (default 10s, persisted) ----
 let refreshTimer = null;
@@ -342,30 +338,26 @@ function act(action, model) {
   $("confirmTitle").textContent = `${action} · ${model}`;
   $("confirmDesc").textContent =
     action === "stop" ? `将停止 ${model}。若它与其他在线模型互斥,相关端口将释放。`
-    : action === "switch" ? `将停止与 ${model} 冲突的在线模型(可能包含受保护服务,需 token + allow_protected),再按 worker→head 顺序拉起 ${model}。首启预热可能需要 30–60 分钟。`
+    : action === "switch" ? `将停止与 ${model} 冲突的在线模型(可能包含受保护服务,将自动以 allow_protected 重试),再按 worker→head 顺序拉起 ${model}。首启预热可能需要 30–60 分钟。`
     : `将对 ${model} 执行 ${action}。`;
-  $("confirmInput").value = "";
   $("confirmGo").onclick = () => runAction(action, model);
   $("confirmDialog").showModal();
 }
 
 async function runAction(action, model) {
-  const token = $("token").value;
-  if (!token) return toast("请先在右上角粘贴操作 token");
-  const confirm = $("confirmInput").value.trim();
-  const body = { action, model, confirm };
+  const body = { action, model };
   try {
     // 先试不带 allow_protected;被保护服务拦截后自动带 allow_protected 重试
     let res;
     try {
       res = await api("/api/v1/jobs", { method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body) });
     } catch (err) {
       if (!/protected/i.test(err.message)) throw err;
       body.allow_protected = true;
       res = await api("/api/v1/jobs", { method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body) });
     }
     $("confirmDialog").close();

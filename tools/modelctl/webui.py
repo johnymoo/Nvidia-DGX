@@ -3,8 +3,8 @@
 Security contract (issue #26):
 - the backend runs ONLY `modelctl` read-only commands and the four mutating
   actions with fixed argv; no shell interpolation, no arbitrary commands
-- mutating POSTs require a bearer token (auto-generated at
-  <state_dir>/webui-token) and echo a typed confirmation phrase
+- mutations are gated by the plain confirm dialog (LAN-trusted deployment);
+  protected models still require the explicit allow_protected escalation
 - every request is audit-logged to <state_dir>/audit.log
 - long-running actions run as jobs: POST returns a job id, the page polls
 
@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
-import hmac
 import json
 import os
 import re
@@ -117,7 +116,7 @@ def _utcnow() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def make_handler(config: str, state_dir: str, token: str, registry_model_names, audit_path: str,
+def make_handler(config: str, state_dir: str, registry_model_names, audit_path: str,
                  job_runner: JobRunner, cli_state_dir: str):
     read_argv = {
         "list": ["--json", "list"],
@@ -164,11 +163,6 @@ def make_handler(config: str, state_dir: str, token: str, registry_model_names, 
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-
-        def _authorized(self) -> bool:
-            header = self.headers.get("Authorization", "")
-            expected = "Bearer " + token
-            return bool(token) and hmac.compare_digest(header, expected)
 
         def _modelctl(self, argv: list[str]) -> dict:
             proc = subprocess.run(
@@ -218,11 +212,6 @@ def make_handler(config: str, state_dir: str, token: str, registry_model_names, 
             if self.path.split("?", 1)[0] != "/api/v1/jobs":
                 return self._send_json(
                     {"error": {"code": "NOT_FOUND", "message": "not found"}}, 404)
-            if not self._authorized():
-                self._audit("auth_denied", path=self.path)
-                return self._send_json(
-                    {"error": {"code": "UNAUTHORIZED",
-                               "message": "mutation requires a valid bearer token"}}, 401)
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 body = json.loads(self.rfile.read(length) or b"{}")
@@ -232,7 +221,6 @@ def make_handler(config: str, state_dir: str, token: str, registry_model_names, 
 
             action = body.get("action")
             model = body.get("model", "")
-            confirm = body.get("confirm", "")
             allow_protected = bool(body.get("allow_protected"))
 
             if action not in _MUTATIONS:
@@ -242,10 +230,6 @@ def make_handler(config: str, state_dir: str, token: str, registry_model_names, 
             if not _MODEL_NAME_RE.match(model) or model not in registry_model_names:
                 return self._send_json(
                     {"error": {"code": "UNKNOWN_MODEL", "message": f"unknown model: {model}"}}, 400)
-            if confirm != f"confirm {model}":
-                return self._send_json(
-                    {"error": {"code": "CONFIRMATION_REQUIRED",
-                               "message": f'confirmation phrase must be exactly "confirm {model}"'}}, 400)
 
             extra = ["--allow-protected"] if allow_protected else []
             if action in ("start", "switch") and body.get("no_wait"):
@@ -260,21 +244,6 @@ def make_handler(config: str, state_dir: str, token: str, registry_model_names, 
                                     "poll": f"/api/v1/jobs/{job_id}"}, 202)
 
     return Handler
-
-
-def generate_token(state_dir: str) -> str:
-    os.makedirs(state_dir, exist_ok=True)
-    token_path = os.path.join(state_dir, "webui-token")
-    if os.path.exists(token_path):
-        with open(token_path, "r", encoding="utf-8") as handle:
-            token = handle.read().strip()
-        if token:
-            return token
-    token = os.urandom(24).hex()
-    fd = os.open(token_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write(token + "\n")
-    return token
 
 
 def load_model_names(config: str) -> set[str]:
@@ -293,17 +262,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=8461)
     args = parser.parse_args(argv)
 
-    token = generate_token(args.state_dir)
     names = load_model_names(args.config)
     os.makedirs(args.state_dir, exist_ok=True)
     audit_path = os.path.join(args.state_dir, "audit.log")
     # the CLI jobs run with the same state dir; read-only commands never lock
     jobs = JobRunner(args.state_dir, sys.executable, args.config, args.state_dir)
 
-    handler = make_handler(args.config, args.state_dir, token, names, audit_path, jobs, args.state_dir)
+    handler = make_handler(args.config, args.state_dir, names, audit_path, jobs, args.state_dir)
     server = ThreadingHTTPServer((args.host, args.port), handler)
-    print(f"modelctl web UI on http://{args.host}:{args.port}  (token: {os.path.join(args.state_dir, 'webui-token')})",
-          flush=True)
+    print(f"modelctl web UI on http://{args.host}:{args.port}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

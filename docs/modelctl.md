@@ -29,7 +29,7 @@
 - `conflict_groups`(GPU/统一内存域)+ `conflicts_with`(显式互斥)共同表达
   "谁能和谁同时在线"。
 - `protected: true` 的模型(stop/conflict 解决路径涉及它)必须显式
-  `--allow-protected`(Web UI 中为输入确认短语 + token)。
+  `--allow-protected`(Web UI 中为确认框自动重试)。
 - **本文件禁止出现任何凭据**:加载器直接拒绝 `token/password/secret/api_key`
   形态的键。
 
@@ -74,10 +74,9 @@ python3 -m tools.modelctl.webui --config ~/modelctl/models.yaml --port 8461
 - 只读视图:模型卡片(状态灯/主机/端口/健康 + 每容器 CPU/内存占用,来自
   `docker stats --no-stream`,`status --stats` 带出)、注册端口表、未注册监听表;
   自动刷新间隔可调(右上角输入框,**默认 10s**,持久化到浏览器,3–600s)。
-- 操作(启动/停止/重启/切换):POST 走异步 job,需
-  `Authorization: Bearer <token>`(token 在 `~/modelctl/var/webui-token`,
-  首次启动自动生成)并输入 `confirm <model>` 确认短语;涉及受保护服务时前端
-  自动带 `allow_protected` 重试。
+- 操作(启动/停止/重启/切换):POST 走异步 job,弹一次普通确认框即可
+  (内网可信部署,无 token/口令);涉及受保护服务时前端自动带
+  `allow_protected` 重试。
 - 后端只允许白名单命令(`list/status/ports/discover/check` + 四个受控动作),
   无任意 shell;所有请求写审计日志。
 
@@ -97,7 +96,7 @@ python3 -m tools.modelctl.webui --config ~/modelctl/models.yaml --port 8461
 ~/modelctl/
 ├── models.yaml                  # 本注册表
 ├── tools/modelctl/…             # 包(与仓库 tools/modelctl 一致)
-└── var/{modelctl.lock,receipts/,jobs/,audit.log,webui-token}
+└── var/{modelctl.lock,receipts/,jobs/,audit.log}
 ~/glm53-exl3-deploy/             # GLM kit(controller: compose 引用的就是它)
 ~/gb10-ds4/execution/            # DeepSeek(controller: script 引用的就是它)
 ```
