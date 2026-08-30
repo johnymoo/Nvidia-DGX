@@ -121,7 +121,7 @@ def make_handler(config: str, state_dir: str, token: str, registry_model_names, 
                  job_runner: JobRunner, cli_state_dir: str):
     read_argv = {
         "list": ["--json", "list"],
-        "status": ["--json", "status"],
+        "status": ["--json", "status", "--stats"],
         "ports": ["--json", "ports"],
         "discover": ["--json", "discover"],
     }

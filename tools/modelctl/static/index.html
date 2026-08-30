@@ -64,6 +64,11 @@
             border-top: 1px solid var(--line); padding: 8px 20px; font-family: var(--mono);
             font-size: 12px; color: var(--muted); display: none; }
   .refresh-note { color: var(--muted); font-size: 12px; }
+  .ctline { font-family: var(--mono); font-size: 11px; color: var(--muted);
+            margin: 2px 0 2px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ctline b { color: var(--text); font-weight: 500; }
+  #interval { background: var(--bg); color: var(--text); border: 1px solid var(--line);
+              border-radius: 6px; padding: 4px 6px; font-size: 13px; width: 54px; }
 </style>
 </head>
 <body>
@@ -71,8 +76,9 @@
   <h1>modelctl · GB10 模型容器管理</h1>
   <span class="refresh-note" id="refreshNote"></span>
   <div class="spacer"></div>
+  <label class="refresh-note">刷新 <input id="interval" type="number" min="3" max="600" step="1"> 秒</label>
   <input id="token" type="password" placeholder="操作密钥 (webui-token)" style="width:230px">
-  <button onclick="refresh()">刷新</button>
+  <button onclick="refreshNow()">刷新</button>
 </header>
 
 <main>
@@ -112,6 +118,25 @@ const $ = (id) => document.getElementById(id);
 $("token").value = state.token;
 $("token").addEventListener("change", () => store.setItem("modelctlOpBox", $("token").value));
 
+// ---- refresh interval (default 10s, persisted) ----
+let refreshTimer = null;
+let refreshing = false;
+function intervalSec() {
+  const v = parseInt($("interval").value, 10);
+  return Number.isFinite(v) && v >= 3 ? Math.min(v, 600) : 10;
+}
+function scheduleNext() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => { await refresh(); scheduleNext(); }, intervalSec() * 1000);
+}
+$("interval").value = parseInt(store.getItem("modelctlInterval"), 10) || 10;
+$("interval").addEventListener("change", () => {
+  store.setItem("modelctlInterval", String(intervalSec()));
+  scheduleNext();               // re-arm immediately with the new interval
+  refreshNow();
+});
+function refreshNow() { clearTimeout(refreshTimer); refresh().then(scheduleNext); }
+
 function toast(msg, ms = 4000) {
   $("toast").textContent = msg; $("toast").style.display = "block";
   clearTimeout(toast._t); toast._t = setTimeout(() => $("toast").style.display = "none", ms);
@@ -127,6 +152,15 @@ async function api(path, opts) {
 const stateLabel = { running: "运行中", partial: "部分运行", stopped: "已停止",
                      degraded: "降级", unknown: "主机失联" };
 
+function containerLine(c) {
+  const s = c.stats;
+  const statBits = s
+    ? ` · CPU <b>${s.cpu ?? "—"}</b> · MEM <b>${s.mem ?? "—"}</b> (${s.mem_percent ?? "—"}%)` +
+      ` <span title="net ${s.net_io || "—"} · block ${s.block_io || "—"} · pids ${s.pids ?? "—"}">ⓘ</span>`
+    : "";
+  return `<div class="ctline">└ <b>${c.name}</b> ${c.state}${statBits}</div>`;
+}
+
 function modelCard(m) {
   const st = state.status.find((s) => s.model === m.model) || {};
   const state_ = st.state || "unknown";
@@ -134,10 +168,12 @@ function modelCard(m) {
   if (st.protected) tags.push(`<span class="tag protected">受保护</span>`);
   if (st.managed === false) tags.push(`<span class="tag unmanaged">仅可见</span>`);
   (m.conflict_groups || []).forEach((g) => tags.push(`<span class="tag">${g}</span>`));
-  const hosts = Object.entries(st.hosts || {}).map(([h, i]) =>
-    `<div class="hostline">${h} · ${i.role}: <b>${stateLabel[i.state] || i.state || "?"}</b>` +
+  const hosts = Object.entries(st.hosts || {}).map(([h, i]) => {
+    const ctLines = (i.containers?.list || []).map(containerLine).join("");
+    return `<div class="hostline">${h} · ${i.role}: <b>${stateLabel[i.state] || i.state || "?"}</b>` +
     (i.containers ? ` (${i.containers.running}/${i.containers.expected ?? i.containers.total})` : "") +
-    `</div>`).join("");
+    `</div>${ctLines}`;
+  }).join("");
   const portline = (m.ports || []).map((p) => `${p.bind}:${p.port}<span style="color:var(--muted)">/${p.protocol}</span>`).join("  ");
   const canAct = st.managed !== false;
   return `<div class="card">
@@ -159,6 +195,8 @@ function modelCard(m) {
 }
 
 async function refresh() {
+  if (refreshing) return;
+  refreshing = true;
   try {
     const [list, status, ports] = await Promise.all([
       api("/api/v1/list"), api("/api/v1/status"), api("/api/v1/ports")]);
@@ -178,8 +216,9 @@ async function refresh() {
       `<td style="font-family:var(--mono)">${u.port}</td><td>${u.protocol}</td></tr>`);
     $("unregTable").querySelector("tbody").innerHTML = unreg.join("") ||
       `<tr><td colspan="4" class="no">无</td></tr>`;
-    $("refreshNote").textContent = "更新于 " + new Date().toLocaleTimeString();
+    $("refreshNote").textContent = `更新于 ${new Date().toLocaleTimeString()} · 每 ${intervalSec()}s`;
   } catch (err) { toast("刷新失败: " + err.message); }
+  finally { refreshing = false; }
 }
 
 async function checkConflicts(model) {
@@ -245,8 +284,7 @@ function poll(jobId, done) {
   }, 3000);
 }
 
-refresh();
-setInterval(refresh, 30000);
+refreshNow();
 </script>
 </body>
 </html>

@@ -126,6 +126,72 @@ def listeners(runner: Runner, host_target: str | None) -> list[Listener]:
     return found
 
 
+def container_stats(runner: Runner, host_target: str | None) -> list[dict]:
+    """One-shot per-container resource snapshot via `docker stats --no-stream`.
+
+    Adds numeric companions (cpu_percent, mem_percent, mem_used_bytes) to the
+    engine's human strings so clients can sort/compare without re-parsing.
+    Costs ~2s per host (two samples for CPU%), so callers opt in.
+    """
+    result = runner.run(
+        host_target,
+        ["docker", "stats", "--no-stream", "--format", "{{json .}}"],
+        timeout=30,
+    )
+    if not result.ok:
+        raise DiscoveryError(f"docker stats failed on host {host_target or 'local'}", result)
+    entries = []
+    for entry in _json_lines(result.stdout):
+        name = entry.get("Name") or entry.get("Container") or ""
+        cpu = _percent_to_float(entry.get("CPUPerc"))
+        mem_pct = _percent_to_float(entry.get("MemPerc"))
+        used, limit = _pair_bytes(entry.get("MemUsage"))
+        entries.append({
+            "name": name,
+            "cpu": entry.get("CPUPerc"),
+            "cpu_percent": cpu,
+            "mem": entry.get("MemUsage"),
+            "mem_percent": mem_pct,
+            "mem_used_bytes": used,
+            "mem_limit_bytes": limit,
+            "net_io": entry.get("NetIO"),
+            "block_io": entry.get("BlockIO"),
+            "pids": entry.get("PIDs"),
+        })
+    return entries
+
+
+def _percent_to_float(text) -> float | None:
+    if not text:
+        return None
+    try:
+        return float(str(text).replace("%", "").strip())
+    except ValueError:
+        return None
+
+
+def _pair_bytes(text) -> tuple[int | None, int | None]:
+    """'1.5GiB / 125GiB' -> (used_bytes, limit_bytes)."""
+    if not text or "/" not in str(text):
+        return None, None
+    used_str, _, limit_str = str(text).partition("/")
+    return _bytes_to_int(used_str.strip()), _bytes_to_int(limit_str.strip())
+
+
+def _bytes_to_int(text) -> int | None:
+    units = {"B": 1, "kB": 10**3, "KB": 10**3, "KiB": 2**10,
+             "MB": 10**6, "MiB": 2**20, "GB": 10**9, "GiB": 2**30,
+             "TB": 10**12, "TiB": 2**40}
+    text = str(text).strip()
+    for unit, factor in sorted(units.items(), key=lambda kv: -len(kv[0])):
+        if text.endswith(unit):
+            try:
+                return int(float(text[: -len(unit)].strip()) * factor)
+            except ValueError:
+                return None
+    return None
+
+
 def http_health(runner: Runner, host_target: str | None, url: str, timeout_s: int = 5) -> bool:
     """GET a health URL from the given host; returns True on HTTP 2xx."""
     result = runner.run(

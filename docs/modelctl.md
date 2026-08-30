@@ -71,8 +71,9 @@ modelctl stop glm53-exl3
 python3 -m tools.modelctl.webui --config ~/modelctl/models.yaml --port 8461
 ```
 
-- 只读视图:模型卡片(状态灯/主机/端口/健康)、注册端口表、未注册监听表,
-  30 秒自动刷新。
+- 只读视图:模型卡片(状态灯/主机/端口/健康 + 每容器 CPU/内存占用,来自
+  `docker stats --no-stream`,`status --stats` 带出)、注册端口表、未注册监听表;
+  自动刷新间隔可调(右上角输入框,**默认 10s**,持久化到浏览器,3–600s)。
 - 操作(启动/停止/重启/切换):POST 走异步 job,需
   `Authorization: Bearer <token>`(token 在 `~/modelctl/var/webui-token`,
   首次启动自动生成)并输入 `confirm <model>` 确认短语;涉及受保护服务时前端

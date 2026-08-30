@@ -113,15 +113,49 @@ def cmd_list(args, registry) -> int:
     return _emit_text(lines)
 
 
+def _attach_stats(data, args, registry, snapshot) -> None:
+    """Merge docker-stats fields into container lists (opt-in via --stats)."""
+    stats_by_host = {}
+    for host in registry.hosts.values():
+        facts = snapshot.facts.get(host.name)
+        if not facts or not facts.reachable:
+            continue
+        try:
+            stats_by_host[host.name] = {
+                s["name"]: s for s in discovery.container_stats(args.runner, host.ssh_target)
+            }
+        except discovery.DiscoveryError:
+            stats_by_host[host.name] = {}
+    hosts_data = [data] if isinstance(data, dict) else data
+    for entry in hosts_data:
+        for host_name, host_info in (entry.get("hosts") or {}).items():
+            host_stats = stats_by_host.get(host_name) or {}
+            for container in (host_info.get("containers") or {}).get("list") or []:
+                stats = host_stats.get(container.get("name") or "")
+                if stats:
+                    container["stats"] = {
+                        k: stats[k] for k in
+                        ("cpu", "cpu_percent", "mem", "mem_percent",
+                         "mem_used_bytes", "mem_limit_bytes", "net_io", "block_io", "pids")
+                    }
+
+
 def cmd_status(args, registry) -> int:
     snapshot = build_snapshot(args.runner, registry, check_health=True)
+    want_stats = bool(getattr(args, "stats", False))
     if args.model:
         registry.model(args.model)  # raises RegistryError for unknown names
-        status = snapshot.statuses[args.model]
-        return _emit("status", status.to_json()) if args.json else _emit_text(
-            [f"{status.model}: {status.state}" + (" (protected)" if status.protected else ""),
-             json.dumps(status.to_json(), ensure_ascii=False, indent=2)])
+        data = snapshot.statuses[args.model].to_json()
+        if want_stats:
+            _attach_stats(data, args, registry, snapshot)
+        if args.json:
+            return _emit("status", data)
+        return _emit_text(
+            [f"{data['model']}: {data['state']}" + (" (protected)" if data["protected"] else ""),
+             json.dumps(data, ensure_ascii=False, indent=2)])
     data = [snapshot.statuses[name].to_json() for name in sorted(snapshot.statuses)]
+    if want_stats:
+        _attach_stats(data, args, registry, snapshot)
     if args.json:
         return _emit("status", data)
     return _emit_text([
@@ -298,6 +332,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("status")
     p.add_argument("model", nargs="?", default=None)
+    p.add_argument("--stats", action="store_true",
+                   help="attach per-container CPU/memory via docker stats (~2s per host)")
     p.set_defaults(func=cmd_status)
 
     sub.add_parser("ports").set_defaults(func=cmd_ports)

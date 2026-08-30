@@ -102,6 +102,37 @@ class DiscoveryParsingTest(unittest.TestCase):
         with self.assertRaises(discovery.DiscoveryError):
             discovery.compose_projects(runner, None)
 
+    def test_container_stats_parsing(self):
+        stats_lines = "\n".join([
+            json.dumps({"BlockIO": "0B / 0kB", "CPUPerc": "312.15%", "Container": "abc",
+                        "ID": "abc123def4", "MemUsage": "94.2GiB / 119.6GiB", "MemPerc": "78.77%",
+                        "Name": "glm53-exl3-head", "NetIO": "1.2MB / 3.4MB", "PIDs": "128"}),
+            json.dumps({"BlockIO": "8.1MB / 0kB", "CPUPerc": "0.00%", "Container": "def",
+                        "ID": "def456abc7", "MemUsage": "8.5MiB / 119.6GiB", "MemPerc": "0.01%",
+                        "Name": "qwen36-8004-proxy", "NetIO": "60B / 0B", "PIDs": "1"}),
+        ])
+        runner = FakeRunner(responses={
+            (None, ("docker", "stats")): RunResult(
+                host=None, argv=(), exit_code=0, stdout=stats_lines),
+        })
+        entries = {e["name"]: e for e in discovery.container_stats(runner, None)}
+        head = entries["glm53-exl3-head"]
+        self.assertEqual(head["cpu"], "312.15%")
+        self.assertAlmostEqual(head["cpu_percent"], 312.15)
+        self.assertAlmostEqual(head["mem_percent"], 78.77)
+        self.assertEqual(head["mem_used_bytes"], int(94.2 * 2**30))
+        self.assertEqual(head["mem_limit_bytes"], int(119.6 * 2**30))
+        self.assertEqual(head["pids"], "128")
+        self.assertEqual(entries["qwen36-8004-proxy"]["cpu_percent"], 0.0)
+
+    def test_container_stats_error_wraps_failure(self):
+        runner = FakeRunner(responses={
+            (None, ("docker", "stats")): RunResult(
+                host=None, argv=(), exit_code=1, stderr="denied"),
+        })
+        with self.assertRaises(discovery.DiscoveryError):
+            discovery.container_stats(runner, None)
+
 
 class StateTest(unittest.TestCase):
     def setUp(self):
