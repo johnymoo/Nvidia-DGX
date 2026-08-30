@@ -65,8 +65,10 @@
             font-size: 12px; color: var(--muted); display: none; }
   .refresh-note { color: var(--muted); font-size: 12px; }
   .ctline { font-family: var(--mono); font-size: 11px; color: var(--muted);
-            margin: 2px 0 2px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ctline b { color: var(--text); font-weight: 500; }
+            margin: 3px 0 0 12px; }
+  .ctres { font-family: var(--mono); font-size: 11px; color: var(--muted);
+           margin: 0 0 2px 26px; }
+  .ctline b, .ctres b { color: var(--text); font-weight: 500; }
   #interval { background: var(--bg); color: var(--text); border: 1px solid var(--line);
               border-radius: 6px; padding: 4px 6px; font-size: 13px; width: 54px; }
 </style>
@@ -154,11 +156,18 @@ const stateLabel = { running: "运行中", partial: "部分运行", stopped: "�
 
 function containerLine(c) {
   const s = c.stats;
-  const statBits = s
-    ? ` · CPU <b>${s.cpu ?? "—"}</b> · MEM <b>${s.mem ?? "—"}</b> (${s.mem_percent ?? "—"}%)` +
-      ` <span title="net ${s.net_io || "—"} · block ${s.block_io || "—"} · pids ${s.pids ?? "—"}">ⓘ</span>`
-    : "";
-  return `<div class="ctline">└ <b>${c.name}</b> ${c.state}${statBits}</div>`;
+  const head = `<div class="ctline">└ <b>${c.name}</b> ${c.state}</div>`;
+  if (!s) return head;
+  const res = `CPU <b>${s.cpu ?? "—"}</b> · MEM <b>${shortBytes(s.mem_used_bytes)}/${shortBytes(s.mem_limit_bytes)}</b> (${s.mem_percent ?? "—"}%)` +
+    ` · NET ${s.net_io || "—"} · PID ${s.pids ?? "—"}`;
+  return head + `<div class="ctres">${res}</div>`;
+}
+
+function shortBytes(n) {
+  if (n === null || n === undefined) return "—";
+  if (n >= 2**30) return (n / 2**30).toFixed(1) + "GiB";
+  if (n >= 2**20) return (n / 2**20).toFixed(0) + "MiB";
+  return n + "B";
 }
 
 function modelCard(m) {
