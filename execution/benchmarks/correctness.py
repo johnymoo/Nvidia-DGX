@@ -14,10 +14,13 @@ import uuid
 BASE = os.environ.get("URL", "http://127.0.0.1:8890/v1").rstrip("/")
 MODEL = os.environ.get("MODEL", "deepseek-v4-flash-0731")
 RESULT_PATH = os.environ.get("RESULT_PATH", "")
+MAX_TOKENS_OVERRIDE = int(os.environ["MAX_TOKENS_OVERRIDE"]) if os.environ.get("MAX_TOKENS_OVERRIDE") else None
 SPECIAL = re.compile(r"<\|.*?\|>|<｜.*?｜>|�|\x00", re.I)
 
 
 def request(messages, *, max_tokens=256, temperature=0.0, tools=None, timeout=600):
+    if MAX_TOKENS_OVERRIDE is not None:
+        max_tokens = MAX_TOKENS_OVERRIDE
     body = {"model": MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": temperature}
     if tools:
         body["tools"] = tools
@@ -87,7 +90,7 @@ def concurrent_round(concurrency):
 
 
 def main():
-    result = {"schema_version": 1, "url": BASE, "model": MODEL, "status": "failed", "cases": [], "concurrency": []}
+    result = {"schema_version": 1, "url": BASE, "model": MODEL, "max_tokens_override": MAX_TOKENS_OVERRIDE, "status": "failed", "cases": [], "concurrency": []}
     try:
         models = json.load(urllib.request.urlopen(BASE + "/models", timeout=30))
         ids = [item.get("id") for item in models.get("data") or []]

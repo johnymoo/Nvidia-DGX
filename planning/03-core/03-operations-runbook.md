@@ -199,11 +199,17 @@ the re-tune section below).
    gmu re-tuned upward from 0.787) was executed the same night and
    abandoned - see the re-tune campaign section below for why, and for the
    protocol any future attempt must follow.
-2. **KV offload to NVMe (LMCache-class connector): unchanged, not yet
-   attempted.** Still the root fix for eviction-driven 300 s+ re-prefills.
-   An evicted 465K session is ~3.7 GB of nvfp4 KV; reloading from NVMe takes
-   seconds. Framework-level work: the fork's connector surface with
-   nvfp4_ds_mla MLA KV is unproven.
+2. **KV offload: DRAM tier (OffloadingConnector) REJECTED 2026-08-31;
+   allocator prerequisite (A0) ADOPTED; NVMe (Phase B) remains the root
+   fix but now has a hard prerequisite.** See the "KV offload Phase A"
+   campaign section below. Key law discovered: any offload tier that
+   shares the GPU prefix cache's insert/touch timeline (the fork's
+   store-on-fill CPU tier does) must EXCEED the GPU pool
+   (1.27M tokens ≈ 18.1 GiB cluster) to ever serve a hit — DRAM cannot
+   afford that on these hosts; NVMe at 64 GiB/rank can. Additionally the
+   connector currently zeroes GPU prefix-cache hits and re-stores ~13×
+   (block-hash mismatch, root-cause investigation open); do NOT re-enable
+   any `--kv-transfer-config` until that is fixed.
 3. **`VLLM_USE_B12X_SPARSE_INDEXER=1`: REJECTED permanently - do not
    retry.** Slower at every measured depth (-1.7% to -11.9%; fitted
    quadratic coefficient +47% vs baseline), KV pool ~1 GiB smaller, and a
@@ -327,6 +333,56 @@ to baseline, the unchanged thinking-on profile started successfully on its
 second authorized attempt. Do not reduce context or alter the memory profile
 to work around this transient condition; allow memory to settle, then retry
 through the controller.
+
+### KV offload Phase A (2026-08-31/09-01; A0 adopted, A1 rejected)
+
+Plan `planning/02-working/2026-08-31-kv-offload-phase-a-plan.md`; evidence
+`tmp/followup-tests/20260831T170721Z/` (report.md there is authoritative;
+service runs `20260831T171207Z` (A0), `20260831T172747Z` (A1, rolled back),
+`20260831T175939Z` (final adopted state)). Trigger: the 2026-08-31
+21:07-21:18 local eviction-thrash incident (concurrent ~400K sessions,
+4-5 min cold re-prefills, decode crushed to ~1-2 tok/s).
+
+**ADOPTED (A0): `PYTORCH_CUDA_ALLOC_CONF` empty (expandable_segments
+removed).** Compose L64 is now a passthrough
+(`"${PYTORCH_CUDA_ALLOC_CONF:-}"`) with the empty default documented in
+`env/common.env`. Outcome: KV pool GREW to 1,266,008 tokens
+(+3.6% vs 1,221,928 baseline) on a clean boot; all perf in baseline bands
+(64K cold 1744 tok/s, 130K 1692, decode 33.7, HOL 13.9 s); prefix caching
+verified working post-campaign (identical 17.8K prompt → 0.54 s,
+cached_tokens 17,664). This setting is also the hard boot prerequisite for
+ANY future `--kv-transfer-config` (the fork's `_verify_kv_transfer_compat`,
+`config/vllm.py:782-823`, rejects connectors under expandable_segments).
+
+**REJECTED (A1): OffloadingConnector + CPUOffloadingSpec @ cluster 8 GiB —
+do not re-enable any KV connector until the block-hash mismatch is fixed.**
+Three independent kill-grade findings, no data corruption (needle answers
+stayed byte-identical throughout):
+
+1. GPU prefix caching went to ZERO hits for the whole A1 session
+   (1,084,361 queries, hits 0.0), including a sha256-verified byte-identical
+   60K requery that fully recomputed (39 s). Rollback restored normal
+   hits immediately — connector-caused.
+2. Store write amplification ~13×: 113.2 GB GPU→CPU for ~700K computed
+   tokens; sustained prefill collapsed to ~325 tok/s (-79%). Same root
+   cause: block hashes never match, so nothing is ever "already stored"
+   (and nothing ever hits). Root-cause investigation is the open Phase B
+   prerequisite (`planning/02-working/2026-09-01-kv-offload-hash-mismatch-rootcause.md`).
+3. Structural law (code-verified in-container): the CPU tier is
+   store-on-fill with LRU and per-request touches that mirror the GPU
+   prefix cache's timeline (`offloading/scheduler.py` ~539/700-750,
+   `cpu/manager.py:139-195`). A same-timeline inclusive tier SMALLER than
+   the GPU pool mathematically never serves a hit: 8 GiB ≈ 605K tokens and
+   12 GiB ≈ 845K tokens are both under the 1.27M-token GPU pool, so A2 was
+   skipped as pointless. Break-even is >18.1 GiB cluster pinned —
+   unaffordable against the ≥4Gi free-memory floor on gb10.
+
+Rollback discipline followed Section 6 of the plan: all seven A1-tagged
+backups restored byte-identical; final-state diff vs pre-campaign originals
+is exactly the two A0 hunks per host. C1-C5 battery passes on the final
+state (note: run it with `MAX_TOKENS_OVERRIDE=1024`; the default 128-token
+budget can be consumed by thinking-mode reasoning, yielding a false C2
+failure with empty content).
 
 ## SSH-Only External Relay
 
