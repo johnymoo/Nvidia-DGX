@@ -503,3 +503,109 @@ worked. The transport layer is sound; only the key bookkeeping is broken.
   ~260); the B1 NVMe-hit kill-arm flood is >= 1.5M fresh tokens (GPU pool
   1.27M + margin; the Rev 1 "GPU + DRAM tier" flood sizing no longer
   applies); B1 soak adds the R2.3 amplification gate.
+
+---
+
+# Rev 3 (2026-09-01) — post-rebase-scoping amendments
+
+Source: `planning/02-working/2026-09-01-kv-offload-upstream-rebase-scope.md`.
+The D1 rebase route is now concretely scoped (recommended and lead-approved:
+vendored subtree replacement of the offloading stack at pinned upstream main
+SHA `f5e441de10bd`, fork core kept, ~4 shims). Three design consequences:
+
+## R3.1 The worker-side handler seam this design targets no longer exists
+at tip
+
+Upstream #45053 (f237e16b4, 06-24) deleted `v1/kv_offload/worker/` — the
+`OffloadingHandler` / `register_handler((src_medium, dst_medium))` API that
+Rev 1 Section 1 builds on (including the `worker/worker.py:113` uniqueness
+assert) is gone from the stack D1 will vendor. **All custom-spec work must
+target the vendored subtree at the pin, not the current in-image API.** New
+mount points at `f5e441de10bd`:
+
+- Worker side: `OffloadingWorker` (successor of OffloadingHandler; medium
+  pairs remain the dispatch key) — `NVMeGpuHandlers` becomes an
+  OffloadingWorker specialization.
+- Scheduler side: the OffloadingManager contract gained `LookupResult`
+  (replacing the bool lookup verdict, #44193), `on_schedule_end` with
+  `ScheduleEndContext` (#44206/#46450), tier-owned KV events
+  (`offloading/events.py`, #46544), `Medium`/`Locality` enums,
+  `TierFilter`/`TierMatcher` (#48123), `has_pending_work`.
+- Config boundary: `v1/kv_offload/config.py` + `offloading/config.py`
+  (#48150) — sizing/extra-config parsing moves here.
+- Loading seams that SURVIVE: `spec_module_path` (tip `factory.py:31-49`)
+  plus a new `register_spec`; and #51007 adds out-of-tree **secondary tier
+  managers** via `module_path` — a second, smaller seam: an NVMe tier can
+  plug in as a secondary tier under the stock CPU/tiering spec instead of
+  replacing the whole spec.
+- Rev 1's line-level citations (`cpu/gpu_worker.py` ~415-436 pinned buffers,
+  `base.py:337+`/`370-411`, `fs/io.py` patterns) are baseline-snapshot
+  citations; re-derive them against the vendored tree at D1.
+
+## R3.2 New D1-entry decision item: evaluate configuring the upstream
+in-tree tiering/fs NVMe tier FIRST; the custom spec is demoted to fallback
+
+Rev 1 rejected `TieringOffloadingSpec` for two reasons; both are lifted in
+the upstream drift window:
+
+- *Single-GPU-block-size-group assert (crashes multi-group V4)* → HMA models
+  enabled for tiering (#44287), `blocks_per_chunk` for heterogeneous KV
+  groups (#48878), attention-only hybrids certified in the canonical
+  portability gate (#51689).
+- *Scheduler-process IO against a per-host /dev/shm mmap (wrong on 2-node
+  TP)* → canonical parallelism-agnostic per-layer page mappings + canonical
+  CPU layout (#48408/#48414), TP-independent compact secondary identity
+  (#49858), DP-replica-aware regions (#47987).
+
+The fs tier also now ships capabilities the custom spec would otherwise have
+to build: async batched lookup (#44193), C-accelerated batch lookup/store/
+load (#46713/#49152), O_DIRECT with buffered fallback (#49734), HIT_PENDING
+promotion (#51840), failed-load → lookup-miss semantics (#49328),
+store_threshold counted on store offers (#52227), tier-owned self-describing
+events + metrics (#47923/#48679/#48798).
+
+**Evaluation checklist (run against the vendored tree + D1b throwaway
+boot):**
+
+1. Per-rank IO semantics under our 2-node TP=2: where does fs-tier file IO
+   execute at tip (per-rank worker vs scheduler process); can each rank be
+   pointed at its local NVMe path; does the canonical layout make shards
+   rank-local or does it assume shared storage.
+2. nvfp4_ds_mla pages: inline per-token-head scale transfer width (#48411)
+   vs the fork's `*584`/`*416` page-size lines in `kv_cache_interface.py`
+   (shim 2 of the scoping doc); `set_` overflow fix for packed non-uniform
+   pages (#48530) present at the pin.
+3. Capacity/eviction coverage: can the fs tier express the R2.4 parameters —
+   64 GiB/rank cap, LRU (or CachePolicyFactory policy, #49114), the R2.2
+   "tier must exceed the 1.27M-token GPU pool" law, GC observability.
+4. Failure semantics: equivalent of `kv_load_failure_policy="recompute"` —
+   #49328 marks failed loads as misses at the manager; confirm no
+   livelock/crash on injected IO error; O_DIRECT fallback behavior on ext4.
+5. Staging path: the fs tier stages through the CPU region
+   (SharedOffloadRegion, #50094); can that region be sized down to the R2.2
+   staging-ring budget (~512 MB/rank) instead of a full DRAM tier, and does
+   dedupe of replicated MLA KV (#48906) apply to our layout.
+
+If items 1-4 pass, **Phase B custom code collapses to configuration +
+validation** (near-zero new code) and Rev 1 Sections 1-7 become the fallback
+design, re-targeted per R3.1. If the fs tier fails the checklist, the custom
+spec proceeds on the new API, considering the #51007 secondary-tier seam
+before a whole-spec replacement.
+
+## R3.3 Code volume and schedule correction
+
+- **Code estimate**: Rev 1's ~600-900 lines (Rev 2: manager ~180) was priced
+  against the now-deleted OffloadingHandler API. Best case (R3.2 passes):
+  near zero — config + acceptance probes only. Fallback custom spec:
+  re-estimate at D1 after the R3.2 checklist; expect the same order of
+  magnitude on the new API, minus whatever the #51007 secondary-tier seam
+  absorbs.
+- **Schedule**: D0 unchanged (R2.5). D1 gains the internal structure from
+  the scoping doc Section 6 — D1a vendor subtree at the pin + shims + image
+  build (1-1.5 d); D1b throwaway boot + A1-derived gate battery, with the
+  R3.2 checklist folded into this boot (0.5 d); D1c contingent Stage-2
+  core-file extension only if D1b fails with connector-core interaction
+  signatures (+2-3 d). Expected D1 total 2 d, worst ~5 d — replaces the
+  flat "rebase 2-4 d" placeholder. If R3.2 passes, Rev 1's D1-D2 custom-spec
+  dev days collapse; D3 (image/runbook) and D4 (B-campaign, Section 8 gates
+  + Rev 2 amendments) are unchanged.

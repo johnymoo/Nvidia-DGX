@@ -240,3 +240,134 @@ and pin where divergence enters. Mechanism: KV cache events carry raw hashes.
 - The A1 soak calibration curves were never produced (arm killed early);
   all `[A1-cal]` parameters re-tagged `[B0-cal]` or given conservative fixed
   values in the design doc Rev 2.
+
+---
+
+# Rev 2 (2026-09-01) — corrections and additions from the rebase scoping study
+
+Source: `planning/02-working/2026-09-01-kv-offload-upstream-rebase-scope.md`
+(read-only blob-provenance audit of the image's offloading stack against
+vllm-project/vllm history, plus function-level diff of the fork's boundary
+files). The body above is preserved unmodified as the original reasoning
+record; where this Rev contradicts it, this Rev wins.
+
+## R2.1 Baseline lineage correction (supersedes the Section 6 heading claim)
+
+- Section 6's claim "base commit `1967a5627bc3` exists in vllm-project/vllm"
+  is a **GitHub fork-network artifact**: the API resolves commits from ANY
+  fork in the network. `1967a5627bc3` ("fix(sm120): pass scratch for small
+  prefill chunks", 2026-05-27) is a private vllm-spark commit and is NOT in
+  upstream history (`git rev-parse` on a fresh upstream clone: unknown
+  revision).
+- The true upstream baseline is **`7e33081cee7b` (2026-05-26)**, proven by
+  byte-level blob provenance: 42 of 46 audited offloading-stack and
+  hash-touchpoint files in the live image are byte-identical to upstream at
+  exactly this commit (zero mismatches as a set). The 4 non-matching files
+  are fork-modified boundary files, none inside the offloading stack.
+- Consequence: the deployed offloading stack (`v1/kv_offload/**`,
+  `offloading/*`, `offloading_connector.py`) is **100% pristine upstream
+  code** frozen the day before the v0.22 release train. Everything we had
+  assumed was "fork V4 offload customization" (GroupOffloadConfig SWA
+  alignment, the DSv4 store-skip, `_get_kv_cache_config_deepseek_v4`) is
+  upstream code. The stack is missing ~120 upstream commits since baseline,
+  of which **~23 are fixes directly relevant to our configuration** (the
+  Section 6 set plus R2.3 below).
+
+## R2.2 Candidate C2 rewording
+
+C2 should read: **"pristine but STALE upstream snapshot missing ~20 later
+fixes"**, not "fork mid-refactor snapshot" — there are NO fork edits inside
+the offloading stack. Likewise, the `num_offloadable_tokens =
+min(num_tokens_after_batch, req.num_tokens)` accommodation cited under C1 as
+"a related but different accommodation" of the fork is in fact upstream
+baseline code, not a fork change. C1's substance (async-scheduling + MTP +
+chunked prefill interaction) stands, but the fork-specific part of that
+surface is now precisely R2.4, not the connector scheduler.
+
+## R2.3 Additional config-relevant upstream fixes (extends the Section 6 list)
+
+Found during rebase scoping; each directly touches mechanisms our deployment
+uses (hybrid HMA groups, nvfp4_ds_mla, MTP, chunked prefill, load-failure
+semantics). Merge SHAs on upstream main:
+
+| SHA | Date | PR | Subject (relevance) |
+| --- | --- | --- | --- |
+| 7ad894c86 | 06-16 | #44784 | Prevent cuMemcpyBatchAsync segfault with MTP + KV offloading |
+| 32aef4438 | 07-14 | #48411 | Include inline per-token-head scales in offloaded page transfer width (nvfp4/fp8 scale-carrying KV — OUR dtype) |
+| 12f2c515a | 07-16 | #48530 | Fix `set_` overflow for packed non-uniform KV caches (our 37,376 B vs 1,168 B heterogeneous pages) |
+| bed3280f5 | 08-31 | #50696 | Order CPU→GPU loads against the compute stream (load correctness) |
+| 480fadab1 | 06-02 | #42959 | Prevent offloading stale sliding-window blocks (SWA groups) |
+| 798185d43 | 06-27 | #46888 | Fix tensors_per_block stride (multi-tensor pages) |
+| 1b0ce31f3 | 08-09 | #49328 | Failed-load livelock → mark lookup verdict a miss (the load-failure semantics Phase B relies on) |
+| e6bfe03ad | 08-27 | #52227 | Count store offers, not lookups, for store_threshold |
+| cf9fd6457 | 06-24 | #46284 | Fix request-finished lifecycle contract |
+| d30b1ecd1 | 07-25 | #49671 | Defer request finalization until final store |
+
+Core-side (scheduler/cache-manager) fixes in the connector × hybrid × async
+intersection, also absent from the image: e9e08c49b (#44082, EAGLE/MTP
+lookahead block in SWA prefix-cache mask — upstream twin of the fork's
+`eagle_extra_cache_blocks`), a6183563b (#43447, DSv4 selective prefix-cache
+retention — upstream twin of the fork's protected-prompt-blocks), 373eb314a
+(#46066) + a0c092ee7 (#48245) (num_output_placeholders underflow with async
+scheduling + spec decode — directly adjacent to Patch 3's territory),
+530852f95 (#48481, PD async-scheduling race for hybrid models), 229e01e9e
+(#48425) + d6941300f (#50344) (per-group prefix-hit divergence for hybrid
+models with a KV connector), 8950394e0 (#48860, prefix-cache metrics
+double-count when a connector defers requests).
+
+Note also: the fix-set map in the scoping doc Section 2.1 gives merge SHAs
+for all Section 6 items, and found that the coordinator comment citing
+"PR #41834 (e6c46a50fb)" refers to a PR/SHA that does not exist upstream —
+that tail-block alignment scheme is fork-local code with an unverifiable
+citation.
+
+## R2.4 The fork's only code in the hash/caching pipeline — D0's precise
+discrimination targets
+
+With the offloading stack proven pristine, the fork-local suspect surface
+reduces to exactly two features in the boundary files:
+
+1. **DSpark Patch 3** — `Scheduler.update_from_output`
+   (`$VLLM/v1/core/sched/scheduler.py`, overlay): under async scheduling,
+   resizes `request.spec_token_ids = [-1] * draft_len` from
+   `model_runner_output.draft_token_lengths` (field added in
+   `v1/outputs.py`), decode-only guarded. Placeholder token state adjacent
+   to the hash-extension timeline; upstream's #46066/#48245 fix underflows
+   in the same mechanism and are absent from the image.
+2. **Protected-prompt-blocks + eagle-mask machinery** —
+   `kv_cache_manager.allocate_slots` → `_has_enough_free_blocks` release
+   cascade; `kv_cache_coordinator.verify_and_split_kv_cache_groups`
+   (per-manager `cache_alignment_tokens`, `eagle_extra_cache_blocks`),
+   `HybridKVCacheCoordinator.cache_blocks` (lcm truncation removed),
+   `release_protected_prompt_blocks`; `single_type_kv_cache_manager`
+   (+189 lines: `_protect_prompt_blocks` et al., new `MLAAttentionManager` /
+   `SlidingWindowMLAManager`, `SlidingWindowManager._cache_block_mask`
+   eagle disable). Extra block_pool references and altered cache_blocks
+   truncation sit directly in the GPU-side caching path of Proof 2.
+
+**D0 readout addition (extends Section 7 step 4):**
+
+- If the divergence signature localizes to Patch 3's placeholder resize —
+  connector BlockStored hash instability appearing only on passes where
+  `draft_token_lengths` triggers the `spec_token_ids` resize (MTP decode
+  boundaries), or probe B unstable while pure-prefill probe A/A' is stable —
+  **the fix belongs to a fork-side shim (Patch 3 / placeholder handling,
+  possibly adopting upstream #46066/#48245 semantics), NOT to the upstream
+  vendor swap** — vendoring the offloading subtree alone would not fix A1.
+- Conversely, instability independent of decode/MTP passes (present in
+  chunked-prefill-only passes) points at the stale-snapshot bugs (C2) or
+  the protected-prompt-blocks interaction; the vendored subtree at
+  `f5e441de10bd` (scoping doc Section 5.3) is then the fix vehicle, with
+  the protected-blocks hypothesis checked by the GPU-side (probe A/A')
+  readout.
+
+## R2.5 Effect on Section 8 (fix draft)
+
+The "upgrade the offloading stack to upstream-current" path is now concretely
+scoped: **vendored subtree replacement at pinned upstream main SHA
+`f5e441de10bd`** (per-fix cherry-picking is mechanically dead — 3 of 23 fixes
+apply cleanly; whole-image tag upgrade rejected on the documented GB10/SM120
+boot-failure precedent). Route, shims, and the revised effort estimate
+(expected 2 d, worst ~5 d, replacing "2-4 days") are in the scoping doc
+Sections 5-6. The Section 8 fallback ("minimal overlay patch if D0 pins a
+fork-local one-liner") now has a concrete candidate location: R2.4 item 1.
