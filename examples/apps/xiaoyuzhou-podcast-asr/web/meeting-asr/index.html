@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>会议转写 · Podcast ASR Studio</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0d10;--surface:#14181d;--surface2:#1a2026;--ink:#f1f4f6;--muted:#98a3ad;--line:#303842;--green:#4bd19b;--blue:#69a9ff;--amber:#f3ba63;--red:#ff7f7f;--shadow:0 12px 32px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;letter-spacing:0}
+    button,input,select{font:inherit;letter-spacing:0}button,a{touch-action:manipulation}.shell{max-width:1120px;margin:0 auto;padding:0 20px 64px}
+    .topbar{height:64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);margin-bottom:28px}.brand{font-weight:750}.brand small{display:block;color:var(--muted);font-weight:500}.nav{display:flex;gap:8px;align-items:center}.nav a{color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:6px}.nav a:hover{color:var(--ink);background:var(--surface2)}
+    .workspace{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:24px;align-items:start}.heading{margin:0 0 18px}.heading h1{font-size:28px;line-height:1.2;margin:0 0 6px}.heading p{margin:0;color:var(--muted)}
+    .tool{border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:var(--shadow);padding:20px}.form-grid{display:grid;grid-template-columns:1fr 180px;gap:14px}.field{display:grid;gap:7px}.field label{font-size:13px;color:#cbd2d8;font-weight:650}.field input,.field select{width:100%;height:42px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:#0f1317;padding:0 12px;outline:none}.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(105,169,255,.16)}
+    .file-drop{margin-top:14px;display:grid;place-items:center;min-height:160px;border:1px dashed #52616e;border-radius:8px;background:#101419;text-align:center;padding:20px;cursor:pointer}.file-drop:hover,.file-drop.drag{border-color:var(--green);background:#101a17}.file-drop strong{display:block;margin-bottom:5px}.file-drop span{color:var(--muted);font-size:13px}.file-drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.selected{margin-top:10px;color:var(--green);font-size:13px;min-height:20px}
+    .folder-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}.folder-row input{display:none}.folder-row select{min-width:220px;max-width:100%;height:40px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:#0f1317;padding:0 10px}
+    .submit-row{display:flex;align-items:center;gap:12px;margin-top:14px}.button{border:1px solid var(--line);border-radius:6px;background:var(--surface2);color:var(--ink);min-height:40px;padding:0 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.button:hover{border-color:#55616e}.button.primary{background:var(--green);border-color:var(--green);color:#07120e}.button:disabled{opacity:.48;cursor:not-allowed}.progress{height:6px;flex:1;border-radius:4px;background:#282f36;overflow:hidden;display:none}.progress span{display:block;width:0;height:100%;background:var(--blue);transition:width .12s linear}.progress.indeterminate span{width:38%!important;animation:progress-slide 1.25s ease-in-out infinite}@keyframes progress-slide{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+    .status{margin-top:22px;border-top:1px solid var(--line);padding-top:18px;display:none}.status-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.status-title{font-weight:750}.badge{font-size:12px;padding:3px 8px;border-radius:999px;background:#253229;color:#93e9c3;white-space:nowrap}.badge.failed{background:#382426;color:#ffadad}.badge.completed{background:#203448;color:#abd1ff}.status-message{color:var(--muted);margin:6px 0 12px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{background:#0f1317;border:1px solid #252c33;border-radius:6px;padding:10px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:16px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .side h2,.result h2{font-size:16px;margin:0 0 12px}.task-list{display:grid;gap:8px}.task-row{width:100%;text-align:left;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);padding:12px;cursor:pointer}.task-row:hover,.task-row.active{border-color:#596673;background:var(--surface2)}.task-row strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task-row span{font-size:12px;color:var(--muted)}.empty{color:var(--muted);font-size:13px;padding:16px 0}
+    .result{margin-top:24px;border-top:1px solid var(--line);padding-top:24px;display:none}.turns{display:grid;gap:14px}.turn{display:grid;grid-template-columns:124px minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid #222930}.speaker{color:var(--green);font-weight:750}.speaker time{display:block;color:var(--muted);font-size:12px;font-weight:500}.turn p{margin:0;color:#e5e9ec;white-space:pre-wrap}.log{max-height:220px;overflow:auto;white-space:pre-wrap;background:#090b0d;border:1px solid var(--line);border-radius:6px;padding:12px;color:#b6c0c8;font-size:12px}
+    @media(max-width:820px){.workspace{grid-template-columns:1fr}.side{order:2}.form-grid{grid-template-columns:1fr}.shell{padding:0 14px 44px}.topbar{height:auto;min-height:60px;gap:10px}.nav{flex-wrap:wrap;justify-content:flex-end}.metrics{grid-template-columns:1fr}.turn{grid-template-columns:1fr;gap:6px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <div class="brand">Podcast ASR Studio<small>会议转写</small></div>
+      <div class="nav"><a href="/static/podcast-asr/index.html">播客转写</a><a href="/healthz">服务状态</a></div>
+    </nav>
+
+    <div class="heading"><h1>会议录音转写</h1><p>MP3 / WAV · SenseVoice · CAM++ 说话人分离</p></div>
+    <div class="workspace">
+      <section>
+        <form class="tool" id="uploadForm">
+          <div class="form-grid">
+            <div class="field"><label for="title">会议标题</label><input id="title" name="title" maxlength="160" placeholder="默认使用文件名"></div>
+            <div class="field"><label for="speakerCount">发言人数</label><select id="speakerCount" name="speaker_count"><option value="">自动识别</option><option value="1">1 人</option><option value="2">2 人</option><option value="3">3 人</option><option value="4">4 人</option><option value="5">5 人</option><option value="6">6 人</option><option value="7">7 人</option><option value="8">8 人</option></select></div>
+          </div>
+          <label class="file-drop" id="fileDrop" for="audioFile"><input id="audioFile" name="file" type="file" multiple><div><strong>从文件中选择会议录音</strong><span>支持 MP3 / WAV，单个文件不超过 256 MiB</span></div></label>
+          <div class="folder-row"><button class="button" id="folderButton" type="button">选择录音所在文件夹</button><input id="folderInput" type="file" webkitdirectory directory multiple><select id="folderFileSelect" aria-label="选择录音文件" hidden></select></div>
+          <div class="selected" id="selectedFile"></div>
+          <div class="submit-row"><button class="button primary" id="submitButton" type="submit">开始转写</button><div class="progress" id="uploadProgress"><span></span></div></div>
+
+          <div class="status" id="statusPanel">
+            <div class="status-head"><div><div class="status-title" id="statusTitle"></div><div class="status-message" id="statusMessage"></div></div><span class="badge" id="statusBadge"></span></div>
+            <div class="metrics" id="metrics"></div>
+            <div class="actions" id="artifactActions"></div>
+            <details id="logDetails" style="display:none;margin-top:12px"><summary>任务日志</summary><pre class="log" id="taskLog"></pre></details>
+          </div>
+        </form>
+      </section>
+      <aside class="side"><h2>最近任务</h2><div class="task-list" id="taskList"><div class="empty">暂无会议转写任务</div></div></aside>
+    </div>
+
+    <section class="result" id="resultPanel"><h2>转写结果</h2><div class="turns" id="turns"></div></section>
+  </main>
+
+  <script>
+    const API='/api/meeting-asr';
+    const form=document.getElementById('uploadForm'), fileInput=document.getElementById('audioFile'), drop=document.getElementById('fileDrop');
+    const folderButton=document.getElementById('folderButton'), folderInput=document.getElementById('folderInput'), folderFileSelect=document.getElementById('folderFileSelect');
+    const selected=document.getElementById('selectedFile'), submit=document.getElementById('submitButton'), progress=document.getElementById('uploadProgress'), progressBar=progress.querySelector('span');
+    const statusPanel=document.getElementById('statusPanel'), statusTitle=document.getElementById('statusTitle'), statusMessage=document.getElementById('statusMessage'), statusBadge=document.getElementById('statusBadge');
+    const metrics=document.getElementById('metrics'), actions=document.getElementById('artifactActions'), taskList=document.getElementById('taskList'), resultPanel=document.getElementById('resultPanel'), turns=document.getElementById('turns');
+    const logDetails=document.getElementById('logDetails'), taskLog=document.getElementById('taskLog');
+    let activeTaskId=localStorage.getItem('meetingAsr.activeTaskId')||'', pollTimer=null, chosenFile=null, folderAudioFiles=[];
+
+    function esc(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+    function fmtBytes(value){if(!value)return '—';const units=['B','KiB','MiB','GiB'];let n=Number(value),i=0;while(n>=1024&&i<units.length-1){n/=1024;i++}return `${n.toFixed(i?1:0)} ${units[i]}`}
+    function fmtDuration(value){const n=Math.max(0,Math.floor(Number(value)||0)),h=Math.floor(n/3600),m=Math.floor((n%3600)/60),s=n%60;return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+    function elapsedSince(value){if(!value)return 0;const started=new Date(value).getTime();return Number.isFinite(started)?Math.max(0,(Date.now()-started)/1000):0}
+    function stageLabel(task){const labels={uploaded:'已上传',transcribing:'转写中',completed:'已完成',failed:'失败',unknown:'状态未知'};return labels[task.stage]||task.stage||task.status}
+    function setBusy(busy){submit.disabled=busy;submit.textContent=busy?'处理中':'开始转写'}
+    function showChosenFile(file){chosenFile=file||null;selected.textContent=file?`${file.name} · ${fmtBytes(file.size)}`:''}
+    function fileChanged(){folderFileSelect.hidden=true;const files=fileInput.files;if(files?.length>1){chosenFile=null;selected.textContent='每次只能上传一个文件';return}showChosenFile(files?.[0])}
+    fileInput.addEventListener('change',fileChanged);
+    folderButton.addEventListener('click',()=>folderInput.click());
+    folderInput.addEventListener('change',()=>{folderAudioFiles=Array.from(folderInput.files||[]).filter(file=>/\.(mp3|wav)$/i.test(file.name));if(!folderAudioFiles.length){chosenFile=null;folderFileSelect.hidden=true;selected.textContent='该文件夹中没有 MP3 或 WAV 文件';return}if(folderAudioFiles.length===1){folderFileSelect.hidden=true;showChosenFile(folderAudioFiles[0]);return}folderFileSelect.innerHTML='<option value="">选择录音文件</option>'+folderAudioFiles.map((file,index)=>`<option value="${index}">${esc(file.name)}</option>`).join('');folderFileSelect.hidden=false;chosenFile=null;selected.textContent=`找到 ${folderAudioFiles.length} 个录音文件`});
+    folderFileSelect.addEventListener('change',()=>{const index=Number(folderFileSelect.value);showChosenFile(folderFileSelect.value===''?null:folderAudioFiles[index])});
+    ['dragenter','dragover'].forEach(name=>drop.addEventListener(name,event=>{event.preventDefault();drop.classList.add('drag')}));
+    ['dragleave','drop'].forEach(name=>drop.addEventListener(name,event=>{event.preventDefault();drop.classList.remove('drag')}));
+    drop.addEventListener('drop',event=>{const file=event.dataTransfer.files?.[0];if(file){const transfer=new DataTransfer();transfer.items.add(file);fileInput.files=transfer.files;fileChanged()}});
+
+    function renderTask(task){
+      const live=task.status==='queued'||task.status==='running', elapsed=elapsedSince(task.started_at||task.created_at);statusPanel.style.display='block';statusTitle.textContent=task.title||task.original_filename||task.task_id;statusMessage.textContent=`${task.message||''}${live?` 已用时 ${fmtDuration(elapsed)}`:''}`;statusBadge.textContent=stageLabel(task);statusBadge.className=`badge ${task.status||''}`;
+      metrics.innerHTML=`<div class="metric"><small>${task.duration_seconds?'音频时长':'文件大小'}</small><strong>${task.duration_seconds?fmtDuration(task.duration_seconds):fmtBytes(task.size_bytes)}</strong></div><div class="metric"><small>发言人</small><strong>${task.detected_speaker_count??task.speaker_count??'自动'}</strong></div><div class="metric"><small>${live?'已用时间':'转写耗时'}</small><strong>${live?fmtDuration(elapsed):(task.inference_seconds?`${Number(task.inference_seconds).toFixed(1)} 秒`:'—')}</strong></div>`;
+      actions.innerHTML=task.transcript_url?`<a class="button primary" href="${esc(task.transcript_url)}">下载 TXT</a><a class="button" href="${esc(task.json_download_url)}">下载 JSON</a>`:'';
+      if(task.log_tail&&(task.status==='failed'||task.status==='unknown')){logDetails.style.display='block';taskLog.textContent=task.log_tail}else{logDetails.style.display='none'}
+      setBusy(live);progress.classList.toggle('indeterminate',live);progress.style.display=live?'block':'none';if(live){activeTaskId=task.task_id;localStorage.setItem('meetingAsr.activeTaskId',task.task_id)}else if(activeTaskId===task.task_id){localStorage.removeItem('meetingAsr.activeTaskId');activeTaskId=''}
+      if(task.status==='completed')loadResult(task.task_id);else{resultPanel.style.display='none';turns.innerHTML=''}
+    }
+    async function loadResult(taskId){const response=await fetch(`${API}/tasks/${encodeURIComponent(taskId)}/result`,{cache:'no-store'});const data=await response.json();if(!response.ok||!data.ok)return;const segments=data.result?.segments||[];turns.innerHTML=segments.map(segment=>`<article class="turn"><div class="speaker">发言人 ${Number(segment.speaker)+1}<time>${fmtDuration(segment.start)}</time></div><p>${esc(segment.text)}</p></article>`).join('');resultPanel.style.display=segments.length?'block':'none'}
+    async function getTask(taskId){const response=await fetch(`${API}/tasks/${encodeURIComponent(taskId)}`,{cache:'no-store'});const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.detail||'任务查询失败');renderTask(data.task);await loadTasks();return data.task}
+    function startPolling(taskId){if(pollTimer)clearInterval(pollTimer);getTask(taskId).catch(()=>{});pollTimer=setInterval(async()=>{try{const task=await getTask(taskId);if(!['queued','running'].includes(task.status)){clearInterval(pollTimer);pollTimer=null}}catch(error){}},3000)}
+    async function loadTasks(){const response=await fetch(`${API}/tasks?limit=20`,{cache:'no-store'});const data=await response.json();const list=data.tasks||[];taskList.innerHTML=list.length?list.map(task=>`<button class="task-row ${task.task_id===activeTaskId?'active':''}" data-id="${esc(task.task_id)}"><strong>${esc(task.title||task.original_filename)}</strong><span>${esc(stageLabel(task))} · ${esc(task.created_at||'')}</span></button>`).join(''):'<div class="empty">暂无会议转写任务</div>';taskList.querySelectorAll('.task-row').forEach(row=>row.onclick=()=>{activeTaskId=row.dataset.id;getTask(activeTaskId);if(pollTimer){clearInterval(pollTimer);pollTimer=null}});return list}
+
+    form.addEventListener('submit',event=>{event.preventDefault();const file=chosenFile;if(!file){selected.textContent='请选择一个 MP3 或 WAV 文件';return}const extension=file.name.toLowerCase().split('.').pop();if(!['mp3','wav'].includes(extension)){selected.textContent='只支持 MP3 和 WAV 文件';return}const payload=new FormData(form);payload.delete('file');payload.append('file',file,file.name);setBusy(true);progress.classList.remove('indeterminate');progress.style.display='block';progressBar.style.width='0';const xhr=new XMLHttpRequest();xhr.open('POST',`${API}/tasks`);xhr.upload.onprogress=e=>{if(e.lengthComputable)progressBar.style.width=`${Math.round(e.loaded/e.total*100)}%`};xhr.onload=()=>{progress.style.display='none';let data={};try{data=JSON.parse(xhr.responseText)}catch(error){}if(xhr.status<200||xhr.status>=300||!data.ok){setBusy(false);statusPanel.style.display='block';statusTitle.textContent='创建失败';statusMessage.textContent=data.detail||'上传失败';statusBadge.textContent='失败';statusBadge.className='badge failed';return}activeTaskId=data.task.task_id;localStorage.setItem('meetingAsr.activeTaskId',activeTaskId);renderTask(data.task);loadTasks();startPolling(activeTaskId)};xhr.onerror=()=>{progress.classList.remove('indeterminate');progress.style.display='none';setBusy(false);statusPanel.style.display='block';statusTitle.textContent='上传失败';statusMessage.textContent='无法连接服务器';statusBadge.textContent='失败';statusBadge.className='badge failed'};xhr.send(payload)});
+
+    (async()=>{const tasks=await loadTasks();if(activeTaskId)startPolling(activeTaskId);else if(tasks[0])getTask(tasks[0].task_id)})().catch(()=>{});
+  </script>
+</body>
+</html>
