@@ -61,7 +61,7 @@ services:
       TILELANG_CLEANUP_TEMP_FILES: "1"
       DG_JIT_USE_NVRTC: "0"
       DG_JIT_NVCC_COMPILER: /opt/env/bin/nvcc
-      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      PYTORCH_CUDA_ALLOC_CONF: "${PYTORCH_CUDA_ALLOC_CONF:-}"
 
       NCCL_NET: "${NCCL_NET:-IB}"
       NCCL_IB_DISABLE: "${NCCL_IB_DISABLE:-0}"
