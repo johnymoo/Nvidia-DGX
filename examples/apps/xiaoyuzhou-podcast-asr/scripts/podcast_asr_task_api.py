@@ -154,7 +154,9 @@ def _enrich(state: dict[str, Any], include_log: bool = False) -> dict[str, Any]:
 
     output_dir = Path(state.get("work_dir") or "") / "output"
     slug = _published_slug_for_state(state)
-    if slug:
+    report_path = PODCAST_LIBRARY_DIR / slug / "index.html" if slug else None
+    state["has_report"] = bool(report_path and report_path.is_file())
+    if state["has_report"]:
         state["slug"] = slug
         state["report_url"] = f"{PODCAST_SITE_BASE}/{slug}/index.html"
         state["full_text_url"] = f"{PODCAST_SITE_BASE}/{slug}/full.html"
@@ -168,7 +170,7 @@ def _enrich(state: dict[str, Any], include_log: bool = False) -> dict[str, Any]:
         state["asr_ok_chunks"] = ok
         state["asr_chunks"] = total
         state["asr_device"] = device
-        if state.get("status") == "failed" and ok == total and state.get("has_summary") and slug:
+        if state.get("status") == "failed" and ok == total and state.get("has_summary") and state["has_report"]:
             state["recovered_from_failed_task"] = True
             state["status"] = "completed"
             state["message"] = "任务已完成并发布；完整转写、总结和报告均可用。"

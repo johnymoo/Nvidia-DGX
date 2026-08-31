@@ -35,6 +35,10 @@ DEFAULT_VAD_MODEL_DIR = str(Path(os.environ.get("SENSEVOICE_VAD_MODEL_DIR", "~/d
 DEFAULT_LLM_API_BASE = "http://127.0.0.1:8004/v1"
 DEFAULT_LLM_MODEL = "qwen3.6-35b-fp8"
 DEFAULT_SITE_BASE_LAN = os.environ.get("PODCAST_ASR_SITE_BASE", "http://127.0.0.1:8020/static/podcast-asr")
+DEFAULT_ASR_API_URL = os.environ.get("PODCAST_ASR_API_URL", "")
+REMOTE_ASR_CLIENT = Path(
+    os.environ.get("PODCAST_REMOTE_ASR_CLIENT", str(PODCAST_ROOT / "remote_asr_client.py"))
+).expanduser()
 
 
 def now_stamp() -> str:
@@ -329,6 +333,11 @@ def main() -> int:
     parser.add_argument("--benchmark-start", type=float, default=600.0)
     parser.add_argument("--benchmark-seconds", type=float, default=300.0)
     parser.add_argument("--skip-benchmark", action="store_true")
+    parser.add_argument(
+        "--asr-api-url",
+        default=DEFAULT_ASR_API_URL,
+        help="OpenAI-compatible remote ASR endpoint; omit to use the local CUDA pipeline",
+    )
     parser.add_argument("--skip-asr-if-exists", action="store_true", default=True)
     parser.add_argument("--force-asr", action="store_true")
     parser.add_argument("--force-summary", action="store_true")
@@ -393,20 +402,42 @@ def main() -> int:
 
     pipeline = write_asr_pipeline(work_dir, episode_id, episode_url, title, args)
     log_prefix = work_dir / "logs" / f"run_{now_stamp()}"
-    transcription = work_dir / "output" / "transcription_cuda.json"
+    remote_transcription = work_dir / "output" / "transcription_remote_cpu.json"
+    local_transcription = work_dir / "output" / "transcription_cuda.json"
+    transcription = remote_transcription if args.asr_api_url else local_transcription
     if args.force_asr or not (args.skip_asr_if_exists and transcription.exists()):
         run(["python3.12", str(pipeline), "prepare", "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)], log_prefix.with_name(log_prefix.name + "_prepare.log"))
-        if not args.skip_benchmark:
+        if not args.asr_api_url and not args.skip_benchmark:
             run(["python3.12", str(pipeline), "benchmark", "--devices", "cpu,cuda", "--start", str(args.benchmark_start), "--seconds", str(args.benchmark_seconds), "--language", args.language], log_prefix.with_name(log_prefix.name + "_benchmark.log"))
-        cuda_cmd = ["python3.12", str(pipeline), "transcribe", "--device", "cuda", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)] + (["--force"] if args.force_asr else [])
-        cuda_failed = False
+        if args.asr_api_url:
+            asr_cmd = [
+                "python3.12",
+                str(REMOTE_ASR_CLIENT),
+                "--api-url",
+                args.asr_api_url,
+                "--manifest",
+                str(work_dir / "output" / "manifest.json"),
+                "--output-dir",
+                str(work_dir / "output"),
+                "--transcript-dir",
+                str(work_dir / "transcripts"),
+                "--language",
+                args.language,
+                "--device-label",
+                "remote_cpu",
+            ] + (["--force"] if args.force_asr else [])
+            asr_label = "remote ASR"
+        else:
+            asr_cmd = ["python3.12", str(pipeline), "transcribe", "--device", "cuda", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds)] + (["--force"] if args.force_asr else [])
+            asr_label = "CUDA ASR"
+        asr_failed = False
         try:
-            run(cuda_cmd, log_prefix.with_name(log_prefix.name + "_transcribe.log"))
+            run(asr_cmd, log_prefix.with_name(log_prefix.name + "_transcribe.log"))
         except subprocess.CalledProcessError:
-            cuda_failed = True
-        cuda_ok, cuda_total = transcription_chunk_counts(transcription)
-        if cuda_failed or cuda_ok < cuda_total:
-            print(f"WARN: CUDA ASR incomplete ({cuda_ok}/{cuda_total} chunks); retrying full transcription on CPU fallback.", flush=True)
+            asr_failed = True
+        asr_ok, asr_total = transcription_chunk_counts(transcription)
+        if asr_failed or asr_ok < asr_total:
+            print(f"WARN: {asr_label} incomplete ({asr_ok}/{asr_total} chunks); retrying full transcription on local CPU fallback.", flush=True)
             cpu_transcription = work_dir / "output" / "transcription_cpu.json"
             run(["python3.12", str(pipeline), "transcribe", "--device", "cpu", "--language", args.language, "--chunk-seconds", str(args.chunk_seconds), "--overlap-seconds", str(args.overlap_seconds), "--force"], log_prefix.with_name(log_prefix.name + "_transcribe_cpu_fallback.log"))
             transcription = cpu_transcription
