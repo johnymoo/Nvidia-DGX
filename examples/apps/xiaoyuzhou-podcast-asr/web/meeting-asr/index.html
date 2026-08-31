@@ -8,7 +8,7 @@
     :root{color-scheme:dark;--bg:#0b0d10;--surface:#14181d;--surface2:#1a2026;--ink:#f1f4f6;--muted:#98a3ad;--line:#303842;--green:#4bd19b;--blue:#69a9ff;--amber:#f3ba63;--red:#ff7f7f;--shadow:0 12px 32px rgba(0,0,0,.28)}
     *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;letter-spacing:0}
     button,input,select{font:inherit;letter-spacing:0}button,a{touch-action:manipulation}.shell{max-width:1120px;margin:0 auto;padding:0 20px 64px}
-    .topbar{height:64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);margin-bottom:28px}.brand{font-weight:750}.brand small{display:block;color:var(--muted);font-weight:500}.nav{display:flex;gap:8px;align-items:center}.nav a{color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:6px}.nav a:hover{color:var(--ink);background:var(--surface2)}
+    .topbar{height:64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);margin-bottom:28px}.brand{font-weight:750}.brand small{display:block;color:var(--muted);font-weight:500}.nav{display:flex;gap:8px;align-items:center}.nav button{border:0;color:var(--muted);background:transparent;padding:8px 10px;border-radius:6px;cursor:pointer}.nav button:hover{color:var(--ink);background:var(--surface2)}
     .workspace{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:24px;align-items:start}.heading{margin:0 0 18px}.heading h1{font-size:28px;line-height:1.2;margin:0 0 6px}.heading p{margin:0;color:var(--muted)}
     .tool{border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:var(--shadow);padding:20px}.form-grid{display:grid;grid-template-columns:1fr 180px;gap:14px}.field{display:grid;gap:7px}.field label{font-size:13px;color:#cbd2d8;font-weight:650}.field input,.field select{width:100%;height:42px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:#0f1317;padding:0 12px;outline:none}.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(105,169,255,.16)}
     .file-drop{margin-top:14px;display:grid;place-items:center;min-height:160px;border:1px dashed #52616e;border-radius:8px;background:#101419;text-align:center;padding:20px;cursor:pointer}.file-drop:hover,.file-drop.drag{border-color:var(--green);background:#101a17}.file-drop strong{display:block;margin-bottom:5px}.file-drop span{color:var(--muted);font-size:13px}.file-drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.selected{margin-top:10px;color:var(--green);font-size:13px;min-height:20px}
@@ -24,7 +24,7 @@
   <main class="shell">
     <nav class="topbar">
       <div class="brand">Podcast ASR Studio<small>会议转写</small></div>
-      <div class="nav"><a href="/static/podcast-asr/index.html">播客转写</a><a href="/healthz">服务状态</a></div>
+      <div class="nav"><button id="podcastNav" type="button">播客转写</button><button id="healthNav" type="button">服务状态</button></div>
     </nav>
 
     <div class="heading"><h1>会议录音转写</h1><p>MP3 / WAV · SenseVoice · CAM++ 说话人分离</p></div>
@@ -57,12 +57,16 @@
   <script>
     const API='/api/meeting-asr';
     const form=document.getElementById('uploadForm'), fileInput=document.getElementById('audioFile'), drop=document.getElementById('fileDrop');
+    const podcastNav=document.getElementById('podcastNav'), healthNav=document.getElementById('healthNav');
     const folderButton=document.getElementById('folderButton'), folderInput=document.getElementById('folderInput'), folderFileSelect=document.getElementById('folderFileSelect');
     const selected=document.getElementById('selectedFile'), submit=document.getElementById('submitButton'), progress=document.getElementById('uploadProgress'), progressBar=progress.querySelector('span');
     const statusPanel=document.getElementById('statusPanel'), statusTitle=document.getElementById('statusTitle'), statusMessage=document.getElementById('statusMessage'), statusBadge=document.getElementById('statusBadge');
     const metrics=document.getElementById('metrics'), actions=document.getElementById('artifactActions'), taskList=document.getElementById('taskList'), resultPanel=document.getElementById('resultPanel'), turns=document.getElementById('turns');
     const logDetails=document.getElementById('logDetails'), taskLog=document.getElementById('taskLog');
     let activeTaskId=localStorage.getItem('meetingAsr.activeTaskId')||'', pollTimer=null, chosenFile=null, folderAudioFiles=[];
+
+    podcastNav.addEventListener('click',()=>location.assign('/static/podcast-asr/index.html'));
+    healthNav.addEventListener('click',()=>location.assign('/healthz'));
 
     function esc(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
     function fmtBytes(value){if(!value)return '—';const units=['B','KiB','MiB','GiB'];let n=Number(value),i=0;while(n>=1024&&i<units.length-1){n/=1024;i++}return `${n.toFixed(i?1:0)} ${units[i]}`}
@@ -83,7 +87,7 @@
     function renderTask(task){
       const live=task.status==='queued'||task.status==='running', elapsed=elapsedSince(task.started_at||task.created_at);statusPanel.style.display='block';statusTitle.textContent=task.title||task.original_filename||task.task_id;statusMessage.textContent=`${task.message||''}${live?` 已用时 ${fmtDuration(elapsed)}`:''}`;statusBadge.textContent=stageLabel(task);statusBadge.className=`badge ${task.status||''}`;
       metrics.innerHTML=`<div class="metric"><small>${task.duration_seconds?'音频时长':'文件大小'}</small><strong>${task.duration_seconds?fmtDuration(task.duration_seconds):fmtBytes(task.size_bytes)}</strong></div><div class="metric"><small>发言人</small><strong>${task.detected_speaker_count??task.speaker_count??'自动'}</strong></div><div class="metric"><small>${live?'已用时间':'转写耗时'}</small><strong>${live?fmtDuration(elapsed):(task.inference_seconds?`${Number(task.inference_seconds).toFixed(1)} 秒`:'—')}</strong></div>`;
-      actions.innerHTML=task.transcript_url?`<a class="button primary" href="${esc(task.transcript_url)}">下载 TXT</a><a class="button" href="${esc(task.json_download_url)}">下载 JSON</a>`:'';
+      actions.innerHTML=task.transcript_url?`<button class="button primary" type="button" data-download="${esc(task.transcript_url)}">下载 TXT</button><button class="button" type="button" data-download="${esc(task.json_download_url)}">下载 JSON</button>`:'';actions.querySelectorAll('[data-download]').forEach(button=>button.addEventListener('click',()=>location.assign(button.dataset.download)));
       if(task.log_tail&&(task.status==='failed'||task.status==='unknown')){logDetails.style.display='block';taskLog.textContent=task.log_tail}else{logDetails.style.display='none'}
       setBusy(live);progress.classList.toggle('indeterminate',live);progress.style.display=live?'block':'none';if(live){activeTaskId=task.task_id;localStorage.setItem('meetingAsr.activeTaskId',task.task_id)}else if(activeTaskId===task.task_id){localStorage.removeItem('meetingAsr.activeTaskId');activeTaskId=''}
       if(task.status==='completed')loadResult(task.task_id);else{resultPanel.style.display='none';turns.innerHTML=''}
