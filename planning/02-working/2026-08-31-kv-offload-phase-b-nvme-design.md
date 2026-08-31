@@ -386,3 +386,120 @@ unconditionally, starting immediately after the Phase A campaign concludes.
 A1's `vllm:kv_offload_*` metrics are used ONLY to calibrate the
 `[A1-calibration-pending]` parameters in Section 5, never to defer or cancel
 this work.
+
+---
+
+# Rev 2 (2026-09-01) — post-A1-campaign revision
+
+Phase A outcome (report: `tmp/followup-tests/20260831T170721Z/report.md`):
+A0 adopted (+3.6% KV pool); A1 KILLED and rolled back — 0 prefix-cache hits
+across 1,084,361 queried tokens and ~13x GPU→CPU store write amplification
+while the connector was enabled. A1 never reached soak, so no calibration
+curves exist. This Rev overrides the sections named below; everything else in
+Rev 1 stands.
+
+## R2.1 New hard prerequisite: D0 — block-hash mismatch root-cause + fix
+
+Root-cause analysis:
+`planning/02-working/2026-09-01-kv-offload-hash-mismatch-rootcause.md`.
+Proven fault class: while OffloadingConnector is registered, block-hash-keyed
+identity is unstable — offload keys for the same (request, block) differ
+across scheduler passes (proven by store arithmetic: 25 GB stored for 758
+unique blocks ≈ 2.8 GB during A1 first-traffic, with the dedupe and
+high-water guards verified intact in code), and byte-identical requeries miss
+both hash tables. Phase B inherits this exact store path: unfixed, the NVMe
+tier would take ~160-200 MB/s of sustained junk writes (~1.5 TB/day at
+incident traffic) and NEVER hit. Therefore the schedule gains **D0 (before
+D1): run the zero-code kv-events diagnostic arm (rootcause doc Section 7),
+pin the faulting line, apply the fix — preferred: adopt the upstream-current
+offloading stack in the Phase B image rebuild (rootcause doc Section 8 lists
+8+ post-snapshot upstream fixes in this exact area); fallback: minimal
+overlay patch if D0 pins a fork-local one-liner — and re-run the A1
+offload-hit kill-arm gate on a DRAM config until it PASSES.** Phase B proper
+does not start until that gate is green. D0 also adds `PYTHONHASHSEED=0` to
+both hosts' env (deterministic NONE_HASH; NVIDIA Dynamo-documented practice
+for this connector; upstream made it default in #51875).
+
+## R2.2 Structural law — the DRAM tier is demoted to a staging ring
+(overrides Rev 1 Sections 1 and 4 tier semantics)
+
+Campaign-verified law: a same-timeline inclusive cache tier with LRU must
+EXCEED the GPU pool (1.27M tokens ≈ 18.1 GiB cluster) to produce ANY hit —
+the GPU prefix cache and the tier see the same insert/touch timeline, so the
+smaller inclusive LRU always evicts a key before the bigger LRU does. The
+Rev 1 "DRAM inclusive hot cache @ 8 GiB (~605K tokens)" therefore yields
+~zero hits and is REMOVED. New design:
+
+- **Pinned staging ring, per rank, few hundred MB** (`staging_ring_bytes`,
+  default 536,870,912 = 512 MB/rank; a per-rank knob on our own spec — no
+  cluster/world_size division). Fixed slots sized to the largest
+  per-canonical-tensor block stride; a slot is held only for one transfer
+  leg.
+- **All offload hits are served from NVMe directly**: load = pipelined
+  `preadv` file → ring slot (+ crc verify) → `swap_blocks_batch` ring → GPU,
+  chunk k reading while chunk k-1 swaps. The ring is transport, never a hit
+  source; the scheduler-side manager tracks ONLY disk residency
+  (single-tier metadata — simpler than Rev 1's two-tier table; the
+  `lookup() -> None` backpressure now applies to ring-slot exhaustion).
+- **Stores unchanged in principle (write-through)**: GPU → ring slot →
+  `pwritev` + fdatasync → slot freed; `complete_store` still fires only
+  after persist. Ring full ⇒ skip this pass's store WITHOUT advancing
+  `next_stored_block_idx`, so the framework re-offers it next pass
+  (backpressure by deferral, no new mechanism).
+- Medium graph collapses to GPU ↔ RING(transport) ↔ NVMe with the same two
+  registered handlers as Rev 1 ((GPU, NVME_TIER) store, (NVME_TIER, GPU)
+  load).
+
+Revised TTFT budget (replaces Rev 1 Section 4 read budget): 400K-token
+reload = 2.9 GiB/rank; pipelined pread at measured 4.2/5.6 GB/s (gb10 /
+gb10-2; 50% derate for sharded buffered reads) overlapped with crc32 and H2D
+on unified LPDDR5x → **still ~3-8 s end-to-end**. The removed DRAM-resident
+hit path costs nothing material: on Grace the extra hop was microseconds,
+and what the DRAM tier was supposed to buy (fast re-hits inside the same
+timeline window) is exactly what the structural law proves it could never
+deliver. Campaign gate stays <= 30 s with single-digit expectation.
+
+## R2.3 Write budget re-check (post-D0 fix, 13x → 1x)
+
+Steady state 1600-1900 tok/s prefill x 7.7 KB/token/rank ≈ 12-15 MB/s/rank;
+worst single-pass burst ≈ 63 MB/rank absorbed by one ring-slot cycle;
+fdatasync per file remains the dominant cost (D2 micro-bench). Endurance:
+~1.3 TB/day at continuous incident-level traffic vs a realistic duty cycle
+well under 10% → <150 GB/day, trivial for these 2-4 TB drives. New B1-arm
+gate: soak `vllm:kv_offload_total_bytes` must be <= 1.3x the soak's
+computed-token bytes (amplification detector — the A1 signature was ~13x, so
+a regression cannot be missed).
+
+## R2.4 Parameter table re-tag ([A1-cal] is dead — A1 never reached soak)
+
+| Parameter | Rev 2 value | Tag |
+| --- | --- | --- |
+| `staging_ring_bytes` (replaces the KV_OFFLOAD_CPU_BYTES role) | 536870912 /rank | fixed; [B0-cal] may shrink to 256 MB |
+| `nvme_bytes_to_use` (`KV_OFFLOAD_NVME_BYTES`) | 137438953472 (128 GiB cluster = 64 GiB/rank ≈ 8.7M tokens ≈ 6.8x GPU pool — satisfies the R2.2 law with headroom) | fixed conservative; [B0-cal] from B-campaign soak `kv_offload_*` curves |
+| `store_threshold` | 0 | fixed; [B0-cal] raise to >=2 only on churn evidence |
+| `max_tracker_size` | 262144 | fixed |
+| `eviction_policy` (disk metadata LRU) | lru | fixed |
+| `gpu_blocks_per_file` | 1 | [dev-bench D2] |
+| io threads | 4 | [dev-bench D2] |
+| fdatasync per file | on | [dev-bench D2] |
+| GC watermark / interval | 1.10x / 60 s | fixed |
+| `kv_load_failure_policy` | "recompute" | fixed |
+| `PYTHONHASHSEED` | 0 (both hosts) | fixed (D0) |
+
+A1 calibration that DID survive (valid despite the bug): GPU→CPU DMA
+sustained >25 GB/s aggregate; per-job transfer sizes 200-400 MB completed
+with zero failures; pinned allocation and 2-rank completion aggregation
+worked. The transport layer is sound; only the key bookkeeping is broken.
+
+## R2.5 Revised schedule (amends Section 10)
+
+- **D0 (new, ~1 d dev + one campaign window): kv-events diagnostic arm →
+  pin faulting line → fix decision (upstream-stack adoption vs one-line
+  overlay) → re-run the A1 offload-hit kill-arm gate until green.** If the
+  fix is the upstream-stack adoption, D0's rebase work merges into D1/D3
+  image work (+1-2 d total).
+- D1-D4 as Rev 1, with these amendments: the manager is now simpler
+  (single-tier disk table + ring allocator, est. ~180 lines instead of
+  ~260); the B1 NVMe-hit kill-arm flood is >= 1.5M fresh tokens (GPU pool
+  1.27M + margin; the Rev 1 "GPU + DRAM tier" flood sizing no longer
+  applies); B1 soak adds the R2.3 amplification gate.
