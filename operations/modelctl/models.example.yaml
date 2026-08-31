@@ -1,0 +1,107 @@
+# models.example.yaml — modelctl registry TEMPLATE (issue #26)
+#
+# Copy to your management host (e.g. ~/modelctl/models.yaml) and replace the
+# placeholders. The real registry is environment-specific (hostnames, LAN
+# addresses, home paths) and therefore lives ONLY on the deployment host, not
+# in this repository — see the privacy contract in tools/validate.py.
+#
+# Rules encoded by the loader (tools/modelctl/schema.py):
+# - secret-like keys (token/password/secret/api_key) are rejected outright
+# - managed models need a controller: `compose` (driven per host in
+#   start_order) or `script` (delegated to an external persistent controller)
+# - worker starts before head; head stops before worker
+# - `managed: false` entries are visibility-only: reported, never managed
+# - `protected: true` requires --allow-protected to stop or to displace
+
+schema_version: 1
+
+hosts:
+  head-host:
+    hostname: your-head-hostname     # matches `hostname -s`
+    ssh_target: null                 # null = the host modelctl runs on
+    labels: [primary, head]
+  worker-host:
+    hostname: your-worker-hostname
+    ssh_target: user-at-worker-host.example   # real format is user@host
+    labels: [worker]
+
+models:
+  example-dual-node-vllm:
+    description: "template of a dual-node vLLM served through its own controller"
+    kind: llm
+    managed: true
+    hosts:
+      head-host:
+        role: head
+        compose:                      # read-only reference used for status attribution
+          project: example-vllm
+          config_files: [/home/YOUR_USERNAME/example-vllm/docker-compose.yml]
+      worker-host:
+        role: worker
+        compose:
+          project: example-vllm
+          config_files: [/home/YOUR_USERNAME/example-vllm/docker-compose.yml]
+    controller:
+      type: script                    # start/stop/status delegate to your controller
+      host: head-host
+      start: [/home/YOUR_USERNAME/example-vllm/ctl.sh, --start]
+      stop: [/home/YOUR_USERNAME/example-vllm/ctl.sh, --stop]
+      status: [/home/YOUR_USERNAME/example-vllm/ctl.sh, --status]
+    start_order: [worker-host, head-host]
+    stop_order: [head-host, worker-host]
+    ports:
+      - {host: head-host, port: 8000, bind: "0.0.0.0", purpose: head-api}
+    health:
+      host: head-host
+      url: http://127.0.0.1:8000/health
+      timeout_s: 5
+      wait_timeout_s: 1800
+    expected_containers: {head-host: 1, worker-host: 1}
+    conflict_groups: [gpu-head-host, gpu-worker-host]
+    conflicts_with: [example-compose-vllm]
+    notes: worker-first/head-second choreography stays inside the controller.
+
+  example-compose-vllm:
+    description: "template of a dual-node vLLM driven directly by modelctl (compose)"
+    kind: llm
+    managed: true
+    hosts:
+      head-host:
+        role: head
+        compose:
+          project: example-compose-vllm
+          config_files: [/home/YOUR_USERNAME/example-compose-vllm/docker-compose.head.yml]
+          env_files: [/home/YOUR_USERNAME/example-compose-vllm/.env]
+      worker-host:
+        role: worker
+        compose:
+          project: example-compose-vllm
+          config_files: [/home/YOUR_USERNAME/example-compose-vllm/docker-compose.worker.yml]
+          env_files: [/home/YOUR_USERNAME/example-compose-vllm/.env]
+    controller: {type: compose}
+    start_order: [worker-host, head-host]
+    ports:
+      - {host: head-host, port: 8001, bind: "0.0.0.0", purpose: head-api}
+    health:
+      host: head-host
+      url: http://127.0.0.1:8001/health
+      timeout_s: 5
+      wait_timeout_s: 5400            # allow long JIT warmups
+    expected_containers: {head-host: 1, worker-host: 1}
+    conflict_groups: [gpu-head-host, gpu-worker-host]
+    conflicts_with: [example-dual-node-vllm]
+
+  example-protected-proxy:
+    description: "visibility-only protected service: reported, never managed"
+    kind: proxy
+    managed: false
+    protected: true
+    hosts:
+      head-host:
+        role: standalone
+        compose:
+          project: example-proxy
+          config_files: [/home/YOUR_USERNAME/example-proxy/docker-compose.yml]
+    ports:
+      - {host: head-host, port: 8080, bind: "0.0.0.0", purpose: proxy}
+    conflict_groups: []

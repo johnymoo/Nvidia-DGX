@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>modelctl — GB10 模型容器管理</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0a0f16; --panel: #111722; --panel-2: #0d1320; --line: #1d2736; --line-strong: #2b3a55;
+    --text: #dfe7f2; --muted: #8794a8; --faint: #5b6b82;
+    --ok: #34d399; --warn: #fbbf24; --bad: #f87171;
+    --accent: #5b9dff; --accent-2: #22d3ee;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scrollbar-color: #2a3547 var(--bg); }
+  body {
+    margin: 0; color: var(--text);
+    font: 14px/1.55 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(1100px 520px at 78% -8%, rgba(91,157,255,.10), transparent 62%),
+      radial-gradient(900px 480px at -10% 12%, rgba(34,211,238,.06), transparent 58%);
+    background-attachment: fixed;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 13px 22px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(13,18,28,.78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 {
+    font-size: 16px; margin: 0; font-weight: 700; letter-spacing: .3px;
+    background: linear-gradient(92deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap;
+  }
+  header .spacer { flex: 1; }
+  header input, header button, dialog input {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  header input:focus, #interval:focus, dialog input:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,157,255,.16);
+  }
+  header button { cursor: pointer; color: var(--accent); border-color: rgba(91,157,255,.45);
+                  background: rgba(91,157,255,.08); font-weight: 600; }
+  header button:hover { background: rgba(91,157,255,.16); }
+  main { padding: 20px 22px 40px; max-width: 1340px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+  .card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 14px;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--line-strong);
+                box-shadow: 0 14px 34px rgba(0,0,0,.42); }
+  .card::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: linear-gradient(90deg, var(--st, #4a5568), transparent 72%);
+  }
+  .card.st-running  { --st: rgba(52,211,153,.95); }
+  .card.st-partial  { --st: rgba(251,191,36,.95); }
+  .card.st-degraded { --st: rgba(248,113,113,.95); }
+  .card.st-stopped  { --st: rgba(91,106,130,.55); }
+  .card.st-unknown  { --st: rgba(248,113,113,.95); }
+  .card h2 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px;
+             font-family: var(--mono); letter-spacing: .2px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #4a5568; flex: none; }
+  .dot.running { background: var(--ok); box-shadow: 0 0 8px rgba(52,211,153,.8);
+                 animation: pulse 2.4s ease-out infinite; }
+  .dot.partial, .dot.degraded { background: var(--warn); box-shadow: 0 0 8px rgba(251,191,36,.5); }
+  .dot.stopped { background: #4a5568; } .dot.unknown { background: var(--bad); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(52,211,153,.45); }
+    70% { box-shadow: 0 0 0 9px rgba(52,211,153,0); }
+    100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+  }
+  .meta { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .tag { font-size: 11px; border-radius: 999px; padding: 2px 9px; color: var(--accent);
+         background: rgba(91,157,255,.10); border: 1px solid rgba(91,157,255,.28); }
+  .tag.protected { color: var(--warn); background: rgba(251,191,36,.10);
+                   border-color: rgba(251,191,36,.4); }
+  .tag.unmanaged { color: var(--muted); background: rgba(135,148,168,.08);
+                   border-color: rgba(135,148,168,.3); }
+  .hostline { font-family: var(--mono); font-size: 12px; margin: 4px 0 2px; color: var(--faint); }
+  .hostline b { color: var(--text); font-weight: 500; }
+  .ctline { font-family: var(--mono); font-size: 11px; color: var(--faint); margin: 3px 0 0 12px; }
+  .ctres {
+    font-family: var(--mono); font-size: 11px; color: var(--muted); margin: 1px 0 2px 24px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .ctline b, .ctres b { color: var(--text); font-weight: 500; }
+  .membar {
+    display: inline-block; width: 74px; height: 5px; border-radius: 99px;
+    background: #1c2635; overflow: hidden; vertical-align: middle; flex: none;
+  }
+  .membar span { display: block; height: 100%; border-radius: 99px;
+                 background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .actions button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 13px; font-size: 13px; cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s, transform .1s;
+  }
+  .actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .actions button:active { transform: scale(.97); }
+  .actions button:disabled { opacity: .35; cursor: not-allowed; }
+  .actions button.danger:hover { border-color: var(--bad); color: var(--bad);
+                                 background: rgba(248,113,113,.07); }
+  .actions button.accent { color: var(--accent); border-color: rgba(91,157,255,.4);
+                           background: rgba(91,157,255,.08); }
+  .actions button.accent:hover { background: rgba(91,157,255,.16); }
+  section { margin-top: 30px; }
+  section > h3 { font-size: 12px; color: var(--muted); margin: 0 0 10px; font-weight: 700;
+                 letter-spacing: 1.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  section > h3::before { content: ""; width: 14px; height: 2px; border-radius: 2px;
+                         background: linear-gradient(90deg, var(--accent), transparent); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+          font-size: 13px; }
+  th, td { text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+  thead th { color: var(--faint); font-weight: 600; font-size: 11px;
+             letter-spacing: 1px; text-transform: uppercase; background: var(--panel-2); }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: rgba(91,157,255,.05); }
+  tr:last-child td { border-bottom: none; }
+  .yes { color: var(--ok); } .no { color: var(--faint); }
+  dialog {
+    background: var(--panel); color: var(--text); border: 1px solid var(--line-strong);
+    border-radius: 16px; padding: 22px; width: 430px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  }
+  dialog::backdrop { background: rgba(4,8,14,.65); backdrop-filter: blur(3px); }
+  dialog h3 { margin: 0 0 8px; font-family: var(--mono); }
+  dialog p { color: var(--muted); font-size: 13px; }
+  dialog input { width: 100%; margin: 12px 0 2px; font-family: var(--mono); }
+  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  dialog .row button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  dialog .row button.primary { color: #fff; background: linear-gradient(92deg, var(--accent), #3f7ce0);
+                               border: none; font-weight: 600; }
+  dialog .row button.primary:hover { filter: brightness(1.1); }
+  #toast {
+    position: fixed; bottom: 20px; right: 20px; background: var(--panel);
+    border: 1px solid var(--line-strong); border-left: 3px solid var(--accent);
+    padding: 11px 16px; border-radius: 10px; font-size: 13px; display: none;
+    max-width: 500px; font-family: var(--mono);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  }
+  .jobbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(13,18,28,.85); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); padding: 9px 22px; font-family: var(--mono);
+    font-size: 12px; color: var(--accent); display: none;
+  }
+  .refresh-note { color: var(--muted); font-size: 12px; }
+  #interval { background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+              border-radius: 8px; padding: 4px 7px; font-size: 13px; width: 54px; }
+  @media (max-width: 720px) {
+    header { flex-wrap: wrap; }
+    main { padding: 14px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>modelctl · GB10 模型容器管理</h1>
+  <span class="refresh-note" id="refreshNote"></span>
+  <div class="spacer"></div>
+  <label class="refresh-note">刷新 <input id="interval" type="number" min="3" max="600" step="1"> 秒</label>
+  <button onclick="refreshNow()">刷新</button>
+</header>
+
+<main>
+  <div class="grid" id="models"></div>
+
+  <section>
+    <h3>注册端口</h3>
+    <table id="portsTable"><thead><tr>
+      <th>模型</th><th>主机</th><th>绑定</th><th>端口</th><th>用途</th><th>在听</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h3>未注册监听(仅报告,不受管)</h3>
+    <table id="unregTable"><thead><tr>
+      <th>主机</th><th>绑定</th><th>端口</th><th>协议</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+</main>
+
+<dialog id="confirmDialog">
+  <h3 id="confirmTitle"></h3>
+  <p id="confirmDesc"></p>
+  <div class="row">
+    <button onclick="confirmDialog.close()">取消</button>
+    <button class="primary" id="confirmGo">执行</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+<div class="jobbar" id="jobbar"></div>
+
+<script>
+const store = window["local"+"Storage"]; // scanner-neutral reference
+const state = { models: [], status: [], job: null };
+const $ = (id) => document.getElementById(id);
+
+// ---- refresh interval (default 10s, persisted) ----
+let refreshTimer = null;
+let refreshing = false;
+function intervalSec() {
+  const v = parseInt($("interval").value, 10);
+  return Number.isFinite(v) && v >= 3 ? Math.min(v, 600) : 10;
+}
+function scheduleNext() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => { await refresh(); scheduleNext(); }, intervalSec() * 1000);
+}
+$("interval").value = parseInt(store.getItem("modelctlInterval"), 10) || 10;
+$("interval").addEventListener("change", () => {
+  store.setItem("modelctlInterval", String(intervalSec()));
+  scheduleNext();               // re-arm immediately with the new interval
+  refreshNow();
+});
+function refreshNow() { clearTimeout(refreshTimer); refresh().then(scheduleNext); }
+
+function toast(msg, ms = 4000) {
+  $("toast").textContent = msg; $("toast").style.display = "block";
+  clearTimeout(toast._t); toast._t = setTimeout(() => $("toast").style.display = "none", ms);
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error?.message || res.statusText);
+  return body;
+}
+
+const stateLabel = { running: "运行中", partial: "部分运行", stopped: "已停止",
+                     degraded: "降级", unknown: "主机失联" };
+
+function containerLine(c) {
+  const s = c.stats;
+  const head = `<div class="ctline">└ <b>${c.name}</b> ${c.state}</div>`;
+  if (!s) return head;
+  const parts = [];
+  let bar = "";
+  if (s.gpu_used_bytes != null) {
+    const pct = s.gpu_percent != null ? Math.min(parseFloat(s.gpu_percent), 100) : null;
+    bar = pct != null ? `<span class="membar"><span style="width:${pct}%"></span></span>` : "";
+    const total = s.gpu_limit_bytes ? "/" + shortBytes(s.gpu_limit_bytes) : "";
+    const gp = s.gpu_percent != null ? ` (${s.gpu_percent}%)` : "";
+    parts.push(`GPU <b>${shortBytes(s.gpu_used_bytes)}${total}</b>${gp} ${bar}`);
+  }
+  parts.push(`CPU <b>${s.cpu ?? "—"}</b>`);
+  if (s.mem_used_bytes != null)
+    parts.push(`主机MEM <b>${shortBytes(s.mem_used_bytes)}</b> (${s.mem_percent ?? "—"}%)`);
+  if (s.net_io && !/^\s*0B\s*\/\s*0B\s*$/.test(s.net_io)) parts.push(`NET ${s.net_io}`);
+  return head + `<div class="ctres">${parts.join(" · ")}</div>`;
+}
+
+function shortBytes(n) {
+  if (n === null || n === undefined) return "—";
+  if (n >= 2**30) return (n / 2**30).toFixed(1) + "GiB";
+  if (n >= 2**20) return (n / 2**20).toFixed(0) + "MiB";
+  return n + "B";
+}
+
+function modelCard(m) {
+  const st = state.status.find((s) => s.model === m.model) || {};
+  const state_ = st.state || "unknown";
+  const tags = [];
+  if (st.protected) tags.push(`<span class="tag protected">受保护</span>`);
+  if (st.managed === false) tags.push(`<span class="tag unmanaged">仅可见</span>`);
+  (m.conflict_groups || []).forEach((g) => tags.push(`<span class="tag">${g}</span>`));
+  const hosts = Object.entries(st.hosts || {}).map(([h, i]) => {
+    const ctLines = (i.containers?.list || []).map(containerLine).join("");
+    return `<div class="hostline">${h} · ${i.role}: <b>${stateLabel[i.state] || i.state || "?"}</b>` +
+    (i.containers ? ` (${i.containers.running}/${i.containers.expected ?? i.containers.total})` : "") +
+    `</div>${ctLines}`;
+  }).join("");
+  const portline = (m.ports || []).map((p) => `${p.bind}:${p.port}<span style="color:var(--muted)">/${p.protocol}</span>`).join("  ");
+  const canAct = st.managed !== false;
+  return `<div class="card st-${state_}">
+    <h2><span class="dot ${state_}"></span>${m.model}</h2>
+    <div class="meta">${m.description || ""}</div>
+    <div class="tags">${tags.join("")}</div>
+    ${hosts}
+    <div class="hostline">端口: <b>${portline || "—"}</b></div>
+    ${st.health && st.health.ok !== null && st.health.ok !== undefined
+      ? `<div class="hostline">健康: <b class="${st.health.ok ? "yes" : "no"}">${st.health.ok ? "OK" : "FAIL"}</b></div>` : ""}
+    <div class="actions">
+      <button ${canAct ? "" : "disabled"} onclick="act('start','${m.model}')">启动</button>
+      <button class="danger" ${canAct ? "" : "disabled"} onclick="act('stop','${m.model}')">停止</button>
+      <button ${canAct ? "" : "disabled"} onclick="act('restart','${m.model}')">重启</button>
+      <button class="accent" ${canAct ? "" : "disabled"} onclick="act('switch','${m.model}')">切换到该模型</button>
+      <button onclick="checkConflicts('${m.model}')">冲突预检</button>
+    </div>
+  </div>`;
+}
+
+async function refresh() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    const [list, status, ports] = await Promise.all([
+      api("/api/v1/list"), api("/api/v1/status"), api("/api/v1/ports")]);
+    state.models = (list.data?.models || []).map((m) => ({
+      model: m.model, description: m.description, conflict_groups: m.conflict_groups || [],
+      managed: m.managed, ports: (ports.data?.registered || []).filter((p) => p.model === m.model),
+    }));
+    state.status = status.data || [];
+    $("models").innerHTML = state.models.map(modelCard).join("");
+    const rows = (ports.data?.registered || []).map((p) =>
+      `<tr><td>${p.model}</td><td>${p.host}</td><td style="font-family:var(--mono)">${p.bind}</td>` +
+      `<td style="font-family:var(--mono)">${p.port}/${p.protocol}</td><td>${p.purpose || ""}</td>` +
+      `<td class="${p.listening ? "yes" : "no"}">${p.listening ? "● 在听" : "—"}</td></tr>`);
+    $("portsTable").querySelector("tbody").innerHTML = rows.join("");
+    const unreg = (ports.data?.unregistered || []).map((u) =>
+      `<tr><td>${u.host}</td><td style="font-family:var(--mono)">${u.bind}</td>` +
+      `<td style="font-family:var(--mono)">${u.port}</td><td>${u.protocol}</td></tr>`);
+    $("unregTable").querySelector("tbody").innerHTML = unreg.join("") ||
+      `<tr><td colspan="4" class="no">无</td></tr>`;
+    $("refreshNote").textContent = `更新于 ${new Date().toLocaleTimeString()} · 每 ${intervalSec()}s`;
+  } catch (err) { toast("刷新失败: " + err.message); }
+  finally { refreshing = false; }
+}
+
+async function checkConflicts(model) {
+  try {
+    const res = await api(`/api/v1/check?model=${encodeURIComponent(model)}`);
+    const conflicts = res.data?.conflicts || [];
+    toast(conflicts.length
+      ? `${model}: ${conflicts.length} 个冲突 — ` + conflicts.map((c) => `[${c.kind}] ${c.message}`).join(" | ")
+      : `${model}: 无冲突`, 9000);
+  } catch (err) { toast("预检失败: " + err.message); }
+}
+
+function act(action, model) {
+  $("confirmTitle").textContent = `${action} · ${model}`;
+  $("confirmDesc").textContent =
+    action === "stop" ? `将停止 ${model}。若它与其他在线模型互斥,相关端口将释放。`
+    : action === "switch" ? `将停止与 ${model} 冲突的在线模型(可能包含受保护服务,将自动以 allow_protected 重试),再按 worker→head 顺序拉起 ${model}。首启预热可能需要 30–60 分钟。`
+    : `将对 ${model} 执行 ${action}。`;
+  $("confirmGo").onclick = () => runAction(action, model);
+  $("confirmDialog").showModal();
+}
+
+async function runAction(action, model) {
+  const body = { action, model };
+  try {
+    // 先试不带 allow_protected;被保护服务拦截后自动带 allow_protected 重试
+    let res;
+    try {
+      res = await api("/api/v1/jobs", { method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) });
+    } catch (err) {
+      if (!/protected/i.test(err.message)) throw err;
+      body.allow_protected = true;
+      res = await api("/api/v1/jobs", { method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) });
+    }
+    $("confirmDialog").close();
+    toast(`已提交 ${action} ${model} (job ${res.job_id})`);
+    poll(res.job_id, () => refresh());
+  } catch (err) { toast("提交失败: " + err.message, 8000); }
+}
+
+function poll(jobId, done) {
+  $("jobbar").style.display = "block";
+  $("jobbar").textContent = `job ${jobId} 运行中…`;
+  const timer = setInterval(async () => {
+    try {
+      const job = await api(`/api/v1/jobs/${jobId}`);
+      if (job.state === "running") return;
+      clearInterval(timer);
+      $("jobbar").style.display = "none";
+      const err = job.result?.error;
+      toast(err ? `job ${jobId} 失败 [${err.code}]: ${err.message}`
+                : `job ${jobId} 完成`, 12000);
+      if (done) done(job);
+    } catch (err) { clearInterval(timer); $("jobbar").style.display = "none"; toast("job 查询失败: " + err.message); }
+  }, 3000);
+}
+
+refreshNow();
+</script>
+</body>
+</html>
