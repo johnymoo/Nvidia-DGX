@@ -250,11 +250,20 @@ function containerLine(c) {
   const s = c.stats;
   const head = `<div class="ctline">└ <b>${c.name}</b> ${c.state}</div>`;
   if (!s) return head;
-  const pct = s.mem_percent != null ? Math.min(parseFloat(s.mem_percent), 100) : null;
-  const bar = pct != null ? `<span class="membar"><span style="width:${pct}%"></span></span>` : "";
-  const res = `CPU <b>${s.cpu ?? "—"}</b> · MEM <b>${shortBytes(s.mem_used_bytes)}/${shortBytes(s.mem_limit_bytes)}</b> (${s.mem_percent ?? "—"}%) ${bar}` +
-    ` <span>· NET ${s.net_io || "—"} · PID ${s.pids ?? "—"}</span>`;
-  return head + `<div class="ctres">${res}</div>`;
+  const parts = [];
+  let bar = "";
+  if (s.gpu_used_bytes != null) {
+    const pct = s.gpu_percent != null ? Math.min(parseFloat(s.gpu_percent), 100) : null;
+    bar = pct != null ? `<span class="membar"><span style="width:${pct}%"></span></span>` : "";
+    const total = s.gpu_limit_bytes ? "/" + shortBytes(s.gpu_limit_bytes) : "";
+    const gp = s.gpu_percent != null ? ` (${s.gpu_percent}%)` : "";
+    parts.push(`GPU <b>${shortBytes(s.gpu_used_bytes)}${total}</b>${gp} ${bar}`);
+  }
+  parts.push(`CPU <b>${s.cpu ?? "—"}</b>`);
+  if (s.mem_used_bytes != null)
+    parts.push(`主机MEM <b>${shortBytes(s.mem_used_bytes)}</b> (${s.mem_percent ?? "—"}%)`);
+  if (s.net_io && !/^\s*0B\s*\/\s*0B\s*$/.test(s.net_io)) parts.push(`NET ${s.net_io}`);
+  return head + `<div class="ctres">${parts.join(" · ")}</div>`;
 }
 
 function shortBytes(n) {

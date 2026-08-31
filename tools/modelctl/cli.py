@@ -136,7 +136,9 @@ def _attach_stats(data, args, registry, snapshot) -> None:
                     container["stats"] = {
                         k: stats[k] for k in
                         ("cpu", "cpu_percent", "mem", "mem_percent",
-                         "mem_used_bytes", "mem_limit_bytes", "net_io", "block_io", "pids")
+                         "mem_used_bytes", "mem_limit_bytes", "net_io", "block_io", "pids",
+                         "id", "gpu_used_bytes", "gpu_limit_bytes", "gpu_percent")
+                        if k in stats
                     }
 
 

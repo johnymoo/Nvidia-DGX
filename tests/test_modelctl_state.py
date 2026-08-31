@@ -103,9 +103,10 @@ class DiscoveryParsingTest(unittest.TestCase):
             discovery.compose_projects(runner, None)
 
     def test_container_stats_parsing(self):
+        full_cid = "abc" + "1" * 61  # 64-hex docker id (docker stats reports the full id)
         stats_lines = "\n".join([
-            json.dumps({"BlockIO": "0B / 0kB", "CPUPerc": "312.15%", "Container": "abc",
-                        "ID": "abc123def4", "MemUsage": "94.2GiB / 119.6GiB", "MemPerc": "78.77%",
+            json.dumps({"BlockIO": "0B / 0kB", "CPUPerc": "312.15%", "Container": full_cid,
+                        "ID": "abc123def4", "MemUsage": "5.7GiB / 119.6GiB", "MemPerc": "4.76%",
                         "Name": "glm53-exl3-head", "NetIO": "1.2MB / 3.4MB", "PIDs": "128"}),
             json.dumps({"BlockIO": "8.1MB / 0kB", "CPUPerc": "0.00%", "Container": "def",
                         "ID": "def456abc7", "MemUsage": "8.5MiB / 119.6GiB", "MemPerc": "0.01%",
@@ -114,16 +115,39 @@ class DiscoveryParsingTest(unittest.TestCase):
         runner = FakeRunner(responses={
             (None, ("docker", "stats")): RunResult(
                 host=None, argv=(), exit_code=0, stdout=stats_lines),
+            (None, ("nvidia-smi",)): RunResult(
+                host=None, argv=(), exit_code=0, stdout="291083, 95236\n4422, 66\n"),
+            (None, ("grep", "-H", ".")): RunResult(
+                host=None, argv=(), exit_code=0,
+                stdout=f"/proc/291083/cgroup:0::/system.slice/docker-{full_cid}.scope\n"),
         })
         entries = {e["name"]: e for e in discovery.container_stats(runner, None)}
         head = entries["glm53-exl3-head"]
         self.assertEqual(head["cpu"], "312.15%")
         self.assertAlmostEqual(head["cpu_percent"], 312.15)
-        self.assertAlmostEqual(head["mem_percent"], 78.77)
-        self.assertEqual(head["mem_used_bytes"], int(94.2 * 2**30))
+        self.assertAlmostEqual(head["mem_percent"], 4.76)
+        self.assertEqual(head["mem_used_bytes"], int(5.7 * 2**30))
         self.assertEqual(head["mem_limit_bytes"], int(119.6 * 2**30))
         self.assertEqual(head["pids"], "128")
-        self.assertEqual(entries["qwen36-8004-proxy"]["cpu_percent"], 0.0)
+        # device-side memory attributed via nvidia-smi + /proc cgroup
+        self.assertEqual(head["gpu_used_bytes"], 95236 * 2**20)
+        self.assertEqual(head["gpu_limit_bytes"], int(119.6 * 2**30))
+        self.assertAlmostEqual(head["gpu_percent"], 95236 / (119.6 * 2**10) * 100, places=1)
+        # non-GPU container carries no gpu fields
+        self.assertNotIn("gpu_used_bytes", entries["qwen36-8004-proxy"])
+
+    def test_container_stats_without_nvidia_smi_skips_gpu(self):
+        stats_lines = json.dumps({"BlockIO": "0B / 0kB", "CPUPerc": "1.00%", "Container": "abc",
+                                  "MemUsage": "8.5MiB / 119.6GiB", "MemPerc": "0.01%",
+                                  "Name": "guard-1", "NetIO": "60B / 0B", "PIDs": "1"})
+        runner = FakeRunner(responses={
+            (None, ("docker", "stats")): RunResult(
+                host=None, argv=(), exit_code=0, stdout=stats_lines),
+        })  # no nvidia-smi response -> FakeRunner returns empty rc=0 (skipped)
+        entries = discovery.container_stats(runner, None)
+        self.assertEqual(len(entries), 1)
+        self.assertNotIn("gpu_used_bytes", entries[0])
+        self.assertNotIn("gpu_percent", entries[0])
 
     def test_container_stats_error_wraps_failure(self):
         runner = FakeRunner(responses={

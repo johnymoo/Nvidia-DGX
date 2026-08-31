@@ -126,12 +126,57 @@ def listeners(runner: Runner, host_target: str | None) -> list[Listener]:
     return found
 
 
+_SMI_APP_LINE = re.compile(r"^(?P<pid>\d+)\s*,\s*(?P<mib>\d+)$")
+_CGROUP_CONTAINER = re.compile(r"docker-(?P<cid>[0-9a-f]{64})\.scope")
+
+
+def _gpu_mem_by_container(runner: Runner, host_target: str | None) -> dict[str, int]:
+    """Container id (12-hex) -> device-memory bytes, via nvidia-smi + /proc cgroups.
+
+    `docker stats` only sees cgroup (host-side) memory, which on GB10 excludes
+    the device-side weight allocations that dominate LLM containers. nvidia-smi
+    reports per-process MiB; /proc/<pid>/cgroup attributes each process to its
+    container. Returns {} on hosts without nvidia-smi or without compute apps.
+    """
+    result = runner.run(
+        host_target,
+        ["nvidia-smi", "--query-compute-apps=pid,used_memory",
+         "--format=csv,noheader,nounits"],
+        timeout=20,
+    )
+    if not result.ok:
+        return {}
+    mem_by_pid: dict[str, int] = {}
+    for line in result.stdout.splitlines():
+        match = _SMI_APP_LINE.match(line.strip())
+        if match:
+            mem_by_pid[match.group("pid")] = int(match.group("mib")) * 2**20
+    if not mem_by_pid:
+        return {}
+    probe = runner.run(
+        host_target,
+        ["grep", "-H", ".", *(f"/proc/{pid}/cgroup" for pid in sorted(mem_by_pid))],
+        timeout=20,
+    )
+    gpu_bytes: dict[str, int] = {}
+    for line in probe.stdout.splitlines():
+        path, _, content = line.partition(":")
+        match = _CGROUP_CONTAINER.search(content)
+        pid = path.split("/")[2] if path.startswith("/proc/") else ""
+        if match and pid in mem_by_pid:
+            cid = match.group("cid")[:12]
+            gpu_bytes[cid] = gpu_bytes.get(cid, 0) + mem_by_pid[pid]
+    return gpu_bytes
+
+
 def container_stats(runner: Runner, host_target: str | None) -> list[dict]:
     """One-shot per-container resource snapshot via `docker stats --no-stream`.
 
     Adds numeric companions (cpu_percent, mem_percent, mem_used_bytes) to the
     engine's human strings so clients can sort/compare without re-parsing.
-    Costs ~2s per host (two samples for CPU%), so callers opt in.
+    Device memory (gpu_used_bytes/gpu_limit_bytes/gpu_percent) is attributed
+    per container via nvidia-smi process lists — on GB10 the model weights
+    live outside the cgroup accounting. Costs ~2s per host, so callers opt in.
     """
     result = runner.run(
         host_target,
@@ -140,13 +185,15 @@ def container_stats(runner: Runner, host_target: str | None) -> list[dict]:
     )
     if not result.ok:
         raise DiscoveryError(f"docker stats failed on host {host_target or 'local'}", result)
+    gpu_by_container = _gpu_mem_by_container(runner, host_target)
     entries = []
     for entry in _json_lines(result.stdout):
         name = entry.get("Name") or entry.get("Container") or ""
         cpu = _percent_to_float(entry.get("CPUPerc"))
         mem_pct = _percent_to_float(entry.get("MemPerc"))
         used, limit = _pair_bytes(entry.get("MemUsage"))
-        entries.append({
+        row = {
+            "id": entry.get("Container") or entry.get("ID") or "",
             "name": name,
             "cpu": entry.get("CPUPerc"),
             "cpu_percent": cpu,
@@ -157,7 +204,14 @@ def container_stats(runner: Runner, host_target: str | None) -> list[dict]:
             "net_io": entry.get("NetIO"),
             "block_io": entry.get("BlockIO"),
             "pids": entry.get("PIDs"),
-        })
+        }
+        gpu_used = gpu_by_container.get(row["id"][:12], 0)
+        if gpu_used:
+            row["gpu_used_bytes"] = gpu_used
+            if limit:
+                row["gpu_limit_bytes"] = limit
+                row["gpu_percent"] = round(gpu_used / limit * 100, 1)
+        entries.append(row)
     return entries
 
 
