@@ -664,6 +664,28 @@ def check_shm_free_space(required_bytes: int, shm_path: str = "/dev/shm") -> Non
 '''
     write("distributed/device_communicators/shm_broadcast.py", img_shm + shm_bp, "image+backports", rows)
 
+    # 6. offloading/config.py shim 2.0h — boot-5 crash (AttributeError:
+    #    'CacheConfig' object has no attribute 'kv_cache_layout' inside
+    #    build_offloading_config). Tip CacheConfig declares
+    #    kv_cache_layout: str|None = field(default=None, init=False) — a
+    #    post-init RESOLVED field defaulting to None; fork CacheConfig lacks
+    #    it. Only consumer is the file-tier mapper (file_mapper.py asserts
+    #    not-None), so a tolerant read reproduces tip's None default for the
+    #    CPU tier exactly.
+    oc_rel = "distributed/kv_transfer/kv_connector/v1/offloading/config.py"
+    oc = (OVERLAY / oc_rel).read_text()
+    oc_old = "        kv_cache_layout=vllm_config.cache_config.kv_cache_layout,\n"
+    oc_new = (
+        "        # D1a fork-compat (2.0h): fork CacheConfig lacks\n"
+        "        # kv_cache_layout (tip: resolved post-init, default None,\n"
+        "        # only the file-tier mapper reads it).\n"
+        "        kv_cache_layout=getattr(\n"
+        "            vllm_config.cache_config, \"kv_cache_layout\", None\n"
+        "        ),\n"
+    )
+    assert oc.count(oc_old) == 1, "offloading config kv_cache_layout site"
+    write(oc_rel, oc.replace(oc_old, oc_new, 1), "tip+fork-shims", rows)
+
     # manifest (last write per path wins — shims overwrite pristine copies)
     dedup = {}
     for row in rows:

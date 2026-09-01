@@ -285,3 +285,37 @@ production MLA pages 149,504/149,760 B unchanged.
 
 Round-5 image building from `/tmp/d1a-build` (only the interface file
 changed); then fingerprint → ship to gb10-2 → boot 5.
+
+## Rev 5 (2026-09-02 ~02:00 local) — boot 5: `kv_cache_layout`; shim 2.0h; repro upgraded to full-tree bind-mount
+
+Boot 4 fix (2.0g) held — boot 5 got through scheduler-side checks, KV pool
+**8.34 GiB / 1,262,892 tokens**, and INTO connector creation, then died at
+worker-side `build_offloading_config`:
+`AttributeError: 'CacheConfig' object has no attribute 'kv_cache_layout'`
+(offloading/config.py:219). Tip CacheConfig declares it as
+`str|None = field(default=None, init=False)` — a post-init resolved field;
+the only consumer is the file-tier mapper (asserts not-None). **Shim 2.0h**:
+tolerant `getattr(..., "kv_cache_layout", None)` = tip's None default for
+the CPU tier, byte-identical semantics. (Phase B file tier will need a real
+layout resolution — noted for that design.)
+
+Audit upgraded to depth-2 chains (`vllm_config.<sub>.<attr>` + local
+aliases) + dynamic `self.X =` assignments in config __post_init__ surfaces:
+after 2.0h the sweep is clean — zero missing reads across all 66 files
+(`original_max_model_len` was a false positive: both fork and tip set it
+dynamically in __post_init__).
+
+headless repro rebuilt to a **full-tree bind-mount harness** (repro_run.sh
+generates per-file `-v` binds of the build-context overlay over
+site-packages in the f277b3d image — real import machinery, no sys.modules
+gymnastics; caught the fork-stale `offloading/metrics.py →
+vllm.v1.kv_offload.worker` trap that only affects registration-based
+loading, not the built image). Now covers boots 1-5 paths +
+`resolve_kv_cache_block_sizes` + full `offloading_connector` import:
+PASS in ~30 s, pre-build. Mock VllmConfig attrs = audit-derived set
+(exact tripwire: any unshimmed config read crashes the repro).
+
+Round-6 image `bf11564d…` built (only offloading/config.py changed) and
+validated in-image (same repro, no mounts needed for the trio — run against
+built tag directly). Head edits rolled back and re-applied with the round-6
+fingerprint; shipping to gb10-2; boot 6 next.
