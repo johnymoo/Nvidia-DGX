@@ -389,3 +389,33 @@ directly dissolving the A1 structural law without any vendoring).
 Rolled back cleanly ~03:30 (both .bak-1659 sets + env/acceptance gmu
 edits covered by the same restores; worker env byte-identical to
 pristine). Production restart = see restore record below.
+
+## Rev 8 (2026-09-02 ~04:30 local) — D0-lite: PYTHONHASHSEED=0 FIXES the A1 zero-hit; store 9× is a separate, manager-side factor
+
+Zero-code decisive experiment on the FORK-native stack (production image
+f277b3d, A1 connector config, + `PYTHONHASHSEED=0` in both hosts' env;
+tag 20260901T1924; evidence `tmp/followup-tests/20260901T162905Z/d0lite/`):
+
+- **Boot**: clean, acceptance PASS, API up (fork stack allocates the pinned
+  tier AFTER KV sizing — no capacity wall, unlike the tip stack's boot 7/8).
+- **Canary (the A1 kill signal)**: identical 18,427-token prompt → 2nd
+  request **0.67 s, cached_tokens 18,176** — PASS. A1 with the same config
+  minus the hashseed: 0 hits in 1,084,361 queries. **Root cause of the
+  block-hash mismatch CONFIRMED CLOSED: Python hash randomization driving
+  the per-process NONE_HASH seed** (upstream made it deterministic in
+  #51875; PYTHONHASHSEED=0 achieves it on the fork with zero code).
+- **Store amplification (A1's second kill)**: clean single-request
+  measurement = **8.97×** (2.52 GiB stored for one 21,213-token cold
+  prefill; gate ≤1.3). Matches the root-cause doc's store arithmetic
+  (25 GB / 758 unique blocks ≈ 2.8 GB ≈ 8.9×) — i.e. the ~9× factor was
+  NEVER key instability; it is the fork CPU-spec manager accepting repeat
+  store offers. NOT a Phase B blocker: our custom manager's key table
+  dedupes offers by design (only new keys enter the store spec).
+- **Decision**: this arm NOT adopted (9× write cost + R2.2 law makes the
+  8 GiB DRAM tier dead weight). Rolled back; production restored.
+- **Phase B unblocked**: custom NVMe spec on the fork API (Rev 1 design +
+  Rev 2 staging-ring amendment), with `PYTHONHASHSEED=0` as a REQUIRED env
+  in the Phase B configuration. The vendored-route verdict (Rev 7) stands;
+  fork-native is the build target.
+
+Post-restore verification appended below after the restart completed.
