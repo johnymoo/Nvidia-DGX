@@ -71,6 +71,199 @@ def main():
     # 2. kv_cache_interface.py = tip + fork-compat shims
     tip_if = git_show("vllm/v1/kv_cache_interface.py")
 
+    # 2.0 re-add TQFullAttentionSpec (removed upstream; the fork's
+    #     single_type_kv_cache_manager imports it). Baseline definition.
+    tq_anchor = (
+        "@dataclass(frozen=True, kw_only=True)\n"
+        "class MLAAttentionSpec(FullAttentionSpec):\n"
+    )
+    tq_block = (
+        "@dataclass(frozen=True, kw_only=True)\n"
+        "class TQFullAttentionSpec(FullAttentionSpec):\n"
+        "    \"\"\"D1a fork-compat: TQ-aware page size (removed upstream).\n"
+        "    Kept because the fork's single_type_kv_cache_manager imports it.\n"
+        "    \"\"\"\n"
+        "\n"
+        "    tq_slot_size: int = 0\n"
+        "\n"
+        "    @property\n"
+        "    def real_page_size_bytes(self) -> int:\n"
+        "        if self.tq_slot_size > 0:\n"
+        "            return self.block_size * self.num_kv_heads * self.tq_slot_size\n"
+        "        return super().real_page_size_bytes\n"
+        "\n"
+        "    @classmethod\n"
+        "    def merge(cls, specs: list[Self]) -> Self:\n"
+        "        merged = super().merge(specs)\n"
+        "        assert all(s.tq_slot_size == specs[0].tq_slot_size for s in specs), (\n"
+        "            \"All TQ layers in the same KV cache group must use the same tq_slot_size.\"\n"
+        "        )\n"
+        "        return replace(merged, tq_slot_size=specs[0].tq_slot_size)\n"
+        "\n"
+        "\n"
+        "@dataclass(frozen=True, kw_only=True)\n"
+        "class MLAAttentionSpec(FullAttentionSpec):\n"
+    )
+    assert tip_if.count(tq_anchor) == 1, "TQ insertion anchor"
+    tip_if = tip_if.replace(tq_anchor, tq_block, 1)
+
+    # 2.0b is_uniform_type: revert to the baseline isinstance ladder. The tip
+    #     version consults KVCacheSpecRegistry, whose lazy bootstrap imports
+    #     register_all_kvcache_specs from the TIP single_type manager (not
+    #     shipped). Discovered in the first D1b boot attempt (ImportError in
+    #     group_and_unify_kv_cache_specs).
+    iut_anchor = (
+        "        block_sizes = set(spec.block_size for spec in kv_cache_specs.values())\n"
+        "        if len(block_sizes) > 1:\n"
+        "            # Different block sizes, not uniform.\n"
+        "            return False\n"
+        "        first_spec = next(iter(kv_cache_specs.values()))\n"
+        "        return first_spec.is_uniform_with_collection(kv_cache_specs)\n"
+    )
+    iut_new = (
+        "        block_sizes = set(spec.block_size for spec in kv_cache_specs.values())\n"
+        "        if len(block_sizes) > 1:\n"
+        "            # Different block sizes, not uniform.\n"
+        "            return False\n"
+        "        one_spec = next(iter(kv_cache_specs.values()))\n"
+        "        # D1a fork-compat: baseline isinstance ladder (the tip registry\n"
+        "        # requires tip-core registration machinery we do not ship).\n"
+        "        if isinstance(one_spec, SlidingWindowMLASpec):\n"
+        "            return all(\n"
+        "                isinstance(spec, SlidingWindowMLASpec)\n"
+        "                and spec.sliding_window == one_spec.sliding_window\n"
+        "                for spec in kv_cache_specs.values()\n"
+        "            )\n"
+        "        elif isinstance(one_spec, FullAttentionSpec):\n"
+        "            return all(\n"
+        "                isinstance(spec, FullAttentionSpec) for spec in kv_cache_specs.values()\n"
+        "            )\n"
+        "        elif isinstance(one_spec, CrossAttentionSpec):\n"
+        "            return all(\n"
+        "                isinstance(spec, CrossAttentionSpec) for spec in kv_cache_specs.values()\n"
+        "            )\n"
+        "        elif isinstance(one_spec, SlidingWindowSpec):\n"
+        "            return all(\n"
+        "                isinstance(spec, SlidingWindowSpec)\n"
+        "                and spec.sliding_window == one_spec.sliding_window\n"
+        "                for spec in kv_cache_specs.values()\n"
+        "            )\n"
+        "        elif isinstance(one_spec, ChunkedLocalAttentionSpec):\n"
+        "            return all(\n"
+        "                isinstance(spec, ChunkedLocalAttentionSpec)\n"
+        "                and spec.attention_chunk_size == one_spec.attention_chunk_size\n"
+        "                for spec in kv_cache_specs.values()\n"
+        "            )\n"
+        "        elif isinstance(one_spec, MambaSpec):\n"
+        "            return all(\n"
+        "                isinstance(spec, MambaSpec)\n"
+        "                and spec.num_speculative_blocks == one_spec.num_speculative_blocks\n"
+        "                for spec in kv_cache_specs.values()\n"
+        "            )\n"
+        "        else:\n"
+        "            raise NotImplementedError(\n"
+        "                f\"Unsupported KV cache spec type: {type(one_spec)}\"\n"
+        "            )\n"
+    )
+    assert tip_if.count(iut_anchor) == 1, "is_uniform_type anchor"
+    tip_if = tip_if.replace(iut_anchor, iut_new, 1)
+
+    # 2.0c get_kv_cache_spec_kind wrapper branch: drop the registry
+    #     consultation (baseline semantics — mixed inner kinds are UNKNOWN).
+    kind_anchor = (
+        "        # A group is only formed when all members share one registered\n"
+        "        # uniform_type_base_spec, so UNKNOWN would discard what the merge\n"
+        "        # already established.\n"
+        "        base_specs = {\n"
+        "            KVCacheSpecRegistry.get_uniform_type_base_spec(spec)\n"
+        "            for spec in kv_cache_spec.kv_cache_specs.values()\n"
+        "        }\n"
+        "        if len(base_specs) == 1 and next(iter(base_specs)) is FullAttentionSpec:\n"
+        "            return KVCacheSpecKind.FULL_ATTENTION\n"
+        "        return KVCacheSpecKind.UNKNOWN\n"
+    )
+    kind_new = (
+        "        # D1a fork-compat: baseline semantics — no registry consultation.\n"
+        "        return KVCacheSpecKind.UNKNOWN\n"
+    )
+    assert tip_if.count(kind_anchor) == 1, "kind anchor"
+    tip_if = tip_if.replace(kind_anchor, kind_new, 1)
+
+    # 2.0d get_num_layer_tuples: fork core calls it (kv_cache_utils 926/1522/
+    #     1776); tip renamed it to get_max_layers_per_page_size (same body).
+    #     Insert an alias right after the tip definition.
+    gnlt_anchor = (
+        "    def get_max_layers_per_page_size(self) -> int:\n"
+        "        \"\"\"Max number of layers sharing a page size. For a balanced bucket\n"
+        "        this equals the number of repetitions of the layer pattern.\"\"\"\n"
+        "        return Counter(\n"
+        "            spec.page_size_bytes for spec in self.kv_cache_specs.values()\n"
+        "        ).most_common(1)[0][1]\n"
+    )
+    gnlt_new = gnlt_anchor + (
+        "\n"
+        "    def get_num_layer_tuples(self) -> int:\n"
+        "        \"\"\"D1a fork-compat alias (tip: get_max_layers_per_page_size).\"\"\"\n"
+        "        return self.get_max_layers_per_page_size()\n"
+    )
+    assert tip_if.count(gnlt_anchor) == 1, "get_num_layer_tuples anchor"
+    tip_if = tip_if.replace(gnlt_anchor, gnlt_new, 1)
+
+    # 2.0f KVCacheTensor fork-compat: tip requires the layout triple
+    #     (layers/layer_stride/block_stride); the fork core constructs only
+    #     {size, shared_by} and its allocator ignores strides. Safe to
+    #     default them: the vendored connector derives layout from live torch
+    #     tensors (register_kv_caches / .stride(0)), never from these fields.
+    #     Third boot-attempt discovery (TypeError: unexpected kwarg shared_by).
+    dc_import_anchor = "from dataclasses import dataclass, fields, replace\n"
+    dc_import_new = "from dataclasses import dataclass, field, fields, replace\n"
+    assert tip_if.count(dc_import_anchor) == 1, "dataclasses import anchor"
+    tip_if = tip_if.replace(dc_import_anchor, dc_import_new, 1)
+
+    kvt_anchor = (
+        "    size: int  # total size of the backing allocation in bytes\n"
+        "    layers: list[str]  # layer names in L order\n"
+        "    layer_stride: int\n"
+        "    block_stride: int\n"
+        "    offset: int = 0  # byte offset of layers[0]'s block 0\n"
+    )
+    kvt_new = (
+        "    size: int  # total size of the backing allocation in bytes\n"
+        "    # D1a fork-compat: all defaulted so the fork core's minimal\n"
+        "    # {size, shared_by} construction works; unused by the fork\n"
+        "    # allocator and by the vendored connector (live-tensor layout).\n"
+        "    layers: list[str] = field(default_factory=list)  # layer names in L order\n"
+        "    layer_stride: int = 0\n"
+        "    block_stride: int = 0\n"
+        "    offset: int = 0  # byte offset of layers[0]'s block 0\n"
+        "    shared_by: list[str] = field(default_factory=list)  # fork field\n"
+        "\n"
+        "    def __post_init__(self):\n"
+        "        if not self.layers and self.shared_by:\n"
+        "            self.layers = list(self.shared_by)\n"
+    )
+    assert tip_if.count(kvt_anchor) == 1, "KVCacheTensor fields anchor"
+    tip_if = tip_if.replace(kvt_anchor, kvt_new, 1)
+
+    # 2.0e get_page_sizes: fork core's DSv4 pool-sizing math calls it (5
+    #     sites in kv_cache_utils); removed at tip. Second boot-attempt
+    #     discovery (AttributeError in _pool_bytes_per_block).
+    gps_anchor = (
+        "    def get_num_layer_tuples(self) -> int:\n"
+        "        \"\"\"D1a fork-compat alias (tip: get_max_layers_per_page_size).\"\"\"\n"
+        "        return self.get_max_layers_per_page_size()\n"
+    )
+    gps_new = gps_anchor + (
+        "\n"
+        "    def get_page_sizes(self) -> list[int]:\n"
+        "        \"\"\"D1a fork-compat: distinct member page sizes.\"\"\"\n"
+        "        return list(\n"
+        "            set(spec.page_size_bytes for spec in self.kv_cache_specs.values())\n"
+        "        )\n"
+    )
+    assert tip_if.count(gps_anchor) == 1, "get_page_sizes anchor"
+    tip_if = tip_if.replace(gps_anchor, gps_new, 1)
+
     # 2a. MLAAttentionSpec: add compress_ratio field + storage_block_size +
     #     fork page-size branches; merge() carries compress_ratio.
     mla_anchor_fields = (
@@ -291,9 +484,10 @@ def main():
         "\n"
         "    # ---- D1a fork-compat stubs ---------------------------------\n"
         "    # Upstream removed the cross-layer KV registration API; the fork's\n"
-        "    # gpu_model_runner + kv_connector_model_runner_mixin still call it.\n"
-        "    # No-op semantics match the upstream removal default (no cross-layer\n"
-        "    # pooling).\n"
+        "    # gpu_model_runner (@7503) and kv_connector_model_runner_mixin still\n"
+        "    # call it. (set_host_xfer_buffer_ops and CopyBlocksOp survive at\n"
+        "    # tip — no shim needed.) No-op semantics match the upstream\n"
+        "    # removal default (no cross-layer pooling).\n"
         "    @property\n"
         "    def prefer_cross_layer_blocks(self) -> bool:\n"
         "        \"\"\"Cross-layer block pooling is not used (fork-compat stub).\"\"\"\n"
