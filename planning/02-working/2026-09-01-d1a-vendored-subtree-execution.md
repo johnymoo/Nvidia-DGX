@@ -344,3 +344,48 @@ Repro extended (boots 1-6 now): SharedOffloadRegion layout math headless
 (/dev/shm mmap + 5 worker views with shape/stride asserts, ~30 s; cleanup
 BufferError warning is benign and self-logged). Round-7 image `8a741c7a…`
 built, repro PASS in-image, head edits re-applied; boot 7 after ship.
+
+## Rev 7 (2026-09-02 ~03:30 local) — boots 7-8: connector fully initializes; capacity wall then fork-core invariant; ROUTE VERDICT
+
+**Boot 7** (round-7, all shims): every interface/config/layout seam clean —
+connector fully constructed, mmap region created. Died at the CAPACITY
+wall: with the CPU tier pinned (8 GiB cluster = 4 GiB/rank on world_size 2),
+"Available KV cache memory" fell 8.34 → 5.63 GiB (pinned + alignment ≈
+0.68× exchange rate on unified LPDDR), below the 7.3 GiB floor for
+max_model_len 1,048,576. Not a bug — the plan's R2/R3 tradeoff
+materializing one level deeper than expected.
+
+**Boot 8** (gmu 0.78 → 0.796 via env+acceptance edits, no image change;
+estimated KV ≈ 7.5 GiB + 550K-token CPU tier): died at
+`v1/worker/utils.py:155 KVBlockZeroer.init_meta` —
+`Non-uniform page sizes: 2160 vs 9360`. Fork's dspark zero-on-free
+machinery (anti cross-request-KV-leak) asserts all groups share ONE
+uniform page layout; the tip connector's per-group canonical tensor model
+violates it. **Not shim-able**: a wrong fix here is silent KV leakage
+between requests — precisely the class the kill-gate discipline forbids
+improvising.
+
+**Route verdict — vendored subtree (Stage 1) BLOCKED at fork-core
+invariants.** Six seams in five boots (2.0b-2.0f interface; 2.0g VllmConfig;
+2.0h CacheConfig; 2.0i KVCacheTensor.size semantics; then fork-internal
+KVBlockZeroer), each deeper: the two stacks' KV-layout MODELS differ
+structurally (fork: uniform-slot shared tensor; tip: per-group canonical).
+Bridging at every internal invariant is unbounded and risks correctness.
+Evidence: `tmp/followup-tests/20260901T162905Z/d1b/` (pre-stop → boot 8);
+tools durable in execution/kv-offload-d1a/ (audits + repro cover boots 1-6
+classes pre-build).
+
+**What the campaign still proved**: A0-era seam map, the full connector
+config/layout pipeline works through register_kv_caches on the vendored
+stack, capacity exchange rate measured (pinned:KV ≈ 0.68×), and the A1
+zero-hit question remains untested empirically (never served a request).
+
+**Next (user-directed Phase B)**: custom per-rank NVMe OffloadingSpec on
+the FORK-NATIVE stack (factory `spec_module_path`, no image rebuild —
+A1 proved the fork stack boots and serves; its defect was the CPU spec's
+store-on-fill policy, which a custom spec replaces with store-on-eviction,
+directly dissolving the A1 structural law without any vendoring).
+
+Rolled back cleanly ~03:30 (both .bak-1659 sets + env/acceptance gmu
+edits covered by the same restores; worker env byte-identical to
+pristine). Production restart = see restore record below.
