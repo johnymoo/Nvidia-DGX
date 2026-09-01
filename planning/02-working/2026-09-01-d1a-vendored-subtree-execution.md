@@ -242,3 +242,46 @@ in `tmp/` per Phase A convention):
   probe / monitor).
 - `execution/kv-offload-d0/`: full D0 fallback kit (subscriber + probes +
   analyzer + selftest).
+
+---
+
+## Rev 4 (2026-09-02 ~01:00 local) — night retry: boot 4 found `max_in_flight_tokens`; shim 2.0g; round-5 image
+
+User directive (~23:59 local): start after 30 min, wait for in-flight
+inference to drain first (last generation finished 00:56), then execute.
+Pre-stop evidence: `tmp/followup-tests/20260901T162905Z/d1b/`. Stop clean at
+~00:59; D1b edits re-applied tag `20260901T1659` (worker host + head host +
+head scripts; verify all-true, worker by grep).
+
+**Boot 4** (~01:04): got PAST group_and_unify and pool sizing — shims
+2.0b-2.0f all effective — then died in `_check_enough_kv_cache_memory`:
+`AttributeError: 'VllmConfig' object has no attribute 'max_in_flight_tokens'`
+(`kv_cache_interface.py:804`, tip `SlidingWindowSpec.max_memory_usage_bytes`).
+Root cause: tip added a VllmConfig property
+(`max_concurrent_batches * max_num_batched_tokens`, async-sched aware); fork
+VllmConfig lacks it and fork's original specs passed
+`scheduler_config.max_num_batched_tokens` directly. Both tip read sites
+(ChunkedLocalAttentionSpec + SlidingWindowSpec) share one line.
+
+**Fix — shim 2.0g** (assemble.py): both sites now pass
+`vllm_config.scheduler_config.max_num_batched_tokens` (fork baseline formula,
+kwarg name unchanged) — startup pool check keeps production semantics
+instead of importing tip's 2× async-sched inflation.
+
+Audit closure for the class (new tool
+`tmp/kv-offload-d1a/audit_config_reads.py`): every `<x>_config.<attr>` read
+across the overlay diffed against the fork config classes extracted from the
+production image (vllm/scheduler/parallel/cache/model/speculative) —
+**exactly one missing attr existed (`max_in_flight_tokens`, 2 sites); all 24
+distinct reads now present**. No other config seams anywhere in the 66 files.
+
+`headless_repro.py` promoted to a durable script (was ad-hoc): mounts the
+overlay trio over the production image, walks the boot call path
+group_and_unify → `_get_kv_cache_groups_uniform_groups` →
+`_max_memory_usage_bytes_from_groups` + get_page_sizes + fork-style
+KVCacheTensor — PASS in seconds, incl. SWA fork-formula cross-check
+(306,333,696 B exact). equiv_test re-run on the 2.0g interface: 109/109,
+production MLA pages 149,504/149,760 B unchanged.
+
+Round-5 image building from `/tmp/d1a-build` (only the interface file
+changed); then fingerprint → ship to gb10-2 → boot 5.

@@ -264,6 +264,30 @@ def main():
     assert tip_if.count(gps_anchor) == 1, "get_page_sizes anchor"
     tip_if = tip_if.replace(gps_anchor, gps_new, 1)
 
+    # 2.0g max_in_flight_tokens: boot-4 crash (AttributeError in
+    #     _max_memory_usage_bytes_from_groups). Tip specs read
+    #     vllm_config.max_in_flight_tokens (= max_concurrent_batches *
+    #     max_num_batched_tokens, a tip-only VllmConfig property); fork
+    #     VllmConfig lacks it and fork's original specs passed
+    #     scheduler_config.max_num_batched_tokens directly. Both vendored
+    #     call sites (ChunkedLocalAttentionSpec, SlidingWindowSpec) share
+    #     the same read line; substitute the fork baseline value so the
+    #     startup pool check keeps production semantics.
+    mif_old = (
+        "            max_in_flight_tokens=vllm_config.max_in_flight_tokens,\n"
+    )
+    mif_new = (
+        "            # D1a fork-compat (2.0g): fork VllmConfig has no\n"
+        "            # max_in_flight_tokens (tip: max_concurrent_batches *\n"
+        "            # max_num_batched_tokens); pass the scheduler cap as the\n"
+        "            # fork baseline specs did.\n"
+        "            max_in_flight_tokens=(\n"
+        "                vllm_config.scheduler_config.max_num_batched_tokens\n"
+        "            ),\n"
+    )
+    assert tip_if.count(mif_old) == 2, "max_in_flight_tokens read sites"
+    tip_if = tip_if.replace(mif_old, mif_new)
+
     # 2a. MLAAttentionSpec: add compress_ratio field + storage_block_size +
     #     fork page-size branches; merge() carries compress_ratio.
     mla_anchor_fields = (
