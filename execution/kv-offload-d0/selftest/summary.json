@@ -1,0 +1,157 @@
+{
+  "census": {
+    "block_stored|gpu": 3,
+    "block_stored|cpu": 9,
+    "block_removed|gpu": 1,
+    "something_else|unlabeled": 1
+  },
+  "series": [
+    {
+      "key": [
+        "req_A",
+        "0",
+        "gpu"
+      ],
+      "probe": "A",
+      "n_store_events": 1,
+      "block_store_instances": 11,
+      "unique_hashes": 11,
+      "repeat_instances": 0,
+      "repeat_ratio": 0.0,
+      "mean_consecutive_overlap": 0.0,
+      "store_event_sizes": [
+        11
+      ],
+      "triangular": false,
+      "amplification_vs_expected": 1.0,
+      "label": "healthy/incremental"
+    },
+    {
+      "key": [
+        "req_A2",
+        "0",
+        "gpu"
+      ],
+      "probe": "A",
+      "n_store_events": 1,
+      "block_store_instances": 11,
+      "unique_hashes": 11,
+      "repeat_instances": 0,
+      "repeat_ratio": 0.0,
+      "mean_consecutive_overlap": 0.0,
+      "store_event_sizes": [
+        11
+      ],
+      "triangular": false,
+      "amplification_vs_expected": 1.0,
+      "label": "healthy/incremental"
+    },
+    {
+      "key": [
+        "req_B",
+        "0",
+        "cpu"
+      ],
+      "probe": "B",
+      "n_store_events": 4,
+      "block_store_instances": 240,
+      "unique_hashes": 240,
+      "repeat_instances": 0,
+      "repeat_ratio": 0.0,
+      "mean_consecutive_overlap": 0.0,
+      "store_event_sizes": [
+        24,
+        48,
+        72,
+        96
+      ],
+      "triangular": true,
+      "amplification_vs_expected": 3.08,
+      "label": "C1-like: FRESH hash values per pass (hash-input instability)",
+      "note": "store-event sizes strictly growing = full-prefix re-store (triangular) signature"
+    },
+    {
+      "key": [
+        "req_B",
+        "0",
+        "gpu"
+      ],
+      "probe": "B",
+      "n_store_events": 1,
+      "block_store_instances": 1,
+      "unique_hashes": 1,
+      "repeat_instances": 0,
+      "repeat_ratio": 0.0,
+      "mean_consecutive_overlap": 0.0,
+      "store_event_sizes": [
+        1
+      ],
+      "triangular": false,
+      "amplification_vs_expected": 0.01,
+      "label": "healthy/incremental"
+    },
+    {
+      "key": [
+        "req_B",
+        "1",
+        "cpu"
+      ],
+      "probe": "B",
+      "n_store_events": 2,
+      "block_store_instances": 48,
+      "unique_hashes": 48,
+      "repeat_instances": 0,
+      "repeat_ratio": 0.0,
+      "mean_consecutive_overlap": 0.0,
+      "store_event_sizes": [
+        24,
+        24
+      ],
+      "triangular": false,
+      "amplification_vs_expected": 0.62,
+      "label": "healthy/incremental"
+    },
+    {
+      "key": [
+        "req_C2",
+        "0",
+        "cpu"
+      ],
+      "probe": "B",
+      "n_store_events": 3,
+      "block_store_instances": 30,
+      "unique_hashes": 10,
+      "repeat_instances": 20,
+      "repeat_ratio": 0.667,
+      "mean_consecutive_overlap": 0.667,
+      "store_event_sizes": [
+        10,
+        10,
+        10
+      ],
+      "triangular": false,
+      "amplification_vs_expected": 0.38,
+      "label": "C2-like: STABLE hashes re-stored (bookkeeping)"
+    }
+  ],
+  "A_vs_A2": {
+    "A2_cached_tokens": null,
+    "gpu_readout": "C3-like-stable-hashes-entries-destroyed"
+  },
+  "probe_B": {
+    "prefill": {
+      "events": 9,
+      "instances": 318,
+      "unique": 298
+    },
+    "decode": {
+      "events": 1,
+      "instances": 1,
+      "unique": 1
+    },
+    "discriminator": "prefill-pass-instability"
+  },
+  "block_removed": {
+    "gpu|0": 1
+  }
+}

@@ -4,7 +4,7 @@ Status: **code complete and locally validated; NOT yet built or booted.**
 Implements `planning/02-working/2026-09-01-kv-offload-upstream-rebase-scope.md`
 §5.3 (route iii) at pin `f5e441de10bd` (upstream main, 2026-08-31). User
 decision 2026-09-01 morning: skip D0, go direct to D1a; D0 assets stay ready
-(`tmp/kv-offload-d0/`) if the D1b kill gate still fails.
+(`execution/kv-offload-d0/`) if the D1b kill gate still fails.
 
 ## What shipped (66 files into `recipe/overlay/vllm/`)
 
@@ -104,7 +104,7 @@ upstream-baseline — the base image is the private vllm-spark tree; only the
 4. If gates fail with connector×core interaction signatures → Stage 2
    (extend vendored set to `kv_cache_utils`/`block_pool`/`request.py`/
    `sched/output.py` wholesale + re-merge the 4 grade-B files), or fall back
-   to D0 (`tmp/kv-offload-d0/` runbook is execution-ready).
+   to D0 (`execution/kv-offload-d0/` runbook is execution-ready).
 
 ## Residual risks (accepted, D1b will test)
 
@@ -168,7 +168,7 @@ gaps, one false alarm:
 the A1 connector config → gate battery (identical-prompt-twice cached_tokens
 > 0, ≤1.3× amplification, needle, perf band, C1–C5) → adopt or rollback.
 Compose edit tooling from Phase A (`edit_files.py`) and the D0 subscriber
-kit (`tmp/kv-offload-d0/`) are ready if the gate fails.**
+kit (`execution/kv-offload-d0/`) are ready if the gate fails.**
 
 ---
 
@@ -227,4 +227,18 @@ round-4 completes in background). Equiv test re-run after each round: 109/109.
    needle/flood/requery kill-arm → decode + C1-C5 (MAX_TOKENS_OVERRIDE=1024)
    → 20-30 min soak with monitor.sh.
 5. Any gate failure → rollback per this record; escalate to Stage 2 (core
-   file adoption) or D0 diagnostic (assets ready in tmp/kv-offload-d0/).
+   file adoption) or D0 diagnostic (assets ready in execution/kv-offload-d0/).
+
+## Durable copies (2026-09-01, pre-PR)
+
+Session tooling promoted from untracked `tmp/` into the repo (evidence stays
+in `tmp/` per Phase A convention):
+
+- `execution/kv-offload-d1a/assemble.py` synced to the final 660-line version
+  (shim sections 2.0b-2.0f; the previously committed 466-line copy predated
+  boot attempts 1-3).
+- `execution/kv-offload-d1b/`: `edit_files.py` (NEW_FP=b845f104…) + gate
+  scripts (canary_twice / amplification / needle_offload / correctness /
+  probe / monitor).
+- `execution/kv-offload-d0/`: full D0 fallback kit (subscriber + probes +
+  analyzer + selftest).
