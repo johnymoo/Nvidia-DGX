@@ -117,3 +117,55 @@ upstream-baseline — the base image is the private vllm-spark tree; only the
 - P2P/obj tiers vendored for completeness; unimported in our config.
 - p2p `get_none_hash_seed` backport always returns the deterministic
   default (baseline core never seeds a random NONE_HASH).
+
+---
+
+## Rev 2 (2026-09-01, same day) — build executed and validated
+
+**Discovery that changed the build route:** neither host has the original
+build chain (fusion base / mia-raf-pr1 / stage tags are gone; only the final
+production image remains). The build therefore stacks D1a DIRECTLY on
+`gb10-ds4-vllm:f277b3d-nvfp4` via a new
+`recipe/Dockerfile.d1a-kvoffload` (durable copy in `execution/kv-offload-d1a/`):
+cleanup RUN + the D1a COPY block + compileall + an in-build import smoke.
+This is strictly safer than rebuilding the chain: exact running bits as base,
+one layer, no network, no tag mutation. Both prior Dockerfiles remain valid
+for full-chain rebuilds if the chain images ever return.
+
+**Reverse-dependency audit (new, closing a blind spot of the forward audit):**
+the fork's OWN files import symbols from the replaced modules. Enumerated
+every `from <replaced-module> import ...` across the image tree. Two real
+gaps, one false alarm:
+
+- `TQFullAttentionSpec` — removed upstream, imported by the fork's
+  `single_type_kv_cache_manager.py:15`. Re-added to the overlay interface as
+  a fork-compat class (baseline definition verbatim).
+- `CopyBlocksOp` — my first symbol check missed assignments; it SURVIVES at
+  tip (base.py:71) together with `set_host_xfer_buffer_ops` (tip:274). No
+  shim needed.
+- Build bug caught by the in-build smoke: the first
+  `Dockerfile.d1a-kvoffload` omitted the `kv_cache_utils.py` COPY line (the
+  compileall referenced the base-image original). Fixed.
+
+**Build results (2026-09-01, service untouched, running container unaffected):**
+
+| Host | Tag | Result |
+| --- | --- | --- |
+| gb10 | `gb10-ds4-vllm:d1a-kvoffload` | built (sha256:f4308f0a…); import smoke OK |
+| gb10-2 | `gb10-ds4-vllm:d1a-kvoffload` | built; import smoke OK |
+
+- Full-chain import smoke inside the image (fork core + tip offload stack
+  together: single_type/kv_cache_manager/coordinator/mixin/offloading_*
+  /cpu spec+manager/tiering fs): PASS, TQ shim visible.
+- Cross-host parity: all 66 overlay files byte-identical between the two
+  images (sha256 manifest comparison); `v1/kv_offload/worker/` absent.
+- Equivalence test re-run on the FINAL interface (post-TQ-shim): 109/109,
+  production MLA 149,504/149,760 B exact.
+- Rollback: production image + tag untouched; `docker rmi
+  gb10-ds4-vllm:d1a-kvoffload` on both hosts removes the D1a artifacts.
+
+**D1b (pending, needs window): stop production → boot `d1a-kvoffload` with
+the A1 connector config → gate battery (identical-prompt-twice cached_tokens
+> 0, ≤1.3× amplification, needle, perf band, C1–C5) → adopt or rollback.
+Compose edit tooling from Phase A (`edit_files.py`) and the D0 subscriber
+kit (`tmp/kv-offload-d0/`) are ready if the gate fails.**
