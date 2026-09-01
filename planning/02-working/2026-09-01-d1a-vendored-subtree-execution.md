@@ -169,3 +169,62 @@ the A1 connector config → gate battery (identical-prompt-twice cached_tokens
 > 0, ≤1.3× amplification, needle, perf band, C1–C5) → adopt or rollback.
 Compose edit tooling from Phase A (`edit_files.py`) and the D0 subscriber
 kit (`tmp/kv-offload-d0/`) are ready if the gate fails.**
+
+---
+
+## Rev 3 (2026-09-01 ~10:30 local) — D1b boot attempts 1-3: three more interface shims; rolled back to production by user decision
+
+User decision (~10:15 local): restore original config during the day; retry
+the new image tonight. Rollback executed cleanly (details below).
+
+Three boot attempts, each failing fast (~4-6 min, memory-profiling stage),
+each a distinct tip×fork-core interface incompatibility in
+`v1/kv_cache_interface.py` — all fixed by new shims in the overlay interface
+(marked `# D1a`, assemble.py sections 2.0b-2.0f):
+
+| Boot | Failure | Shim added |
+| --- | --- | --- |
+| 1 | `ImportError: register_all_kvcache_specs` (tip registry's lazy bootstrap needs tip core) | `is_uniform_type` reverted to the baseline isinstance ladder; `get_kv_cache_spec_kind` wrapper branch de-registry'd |
+| 2 | `AttributeError: get_page_sizes` (fork DSv4 pool sizing, 5 call sites) | `get_page_sizes` re-added (baseline body); also `get_num_layer_tuples` alias (tip renamed it) |
+| 3 | `TypeError: KVCacheTensor __init__ unexpected kwarg 'shared_by'` (tip redesigned the tensor; fork constructs `{size, shared_by}` only) | tip layout fields defaulted (`layers/layer_stride/block_stride`) + `shared_by` field + `__post_init__` sync; SAFE because the vendored connector derives layout from live torch tensors (`.stride(0)`), never these fields |
+
+Audit hardening between attempts (tools under tmp/kv-offload-d1a/):
+- constructor-kwargs audit (all interface dataclasses × fork-core call sites)
+  — after 2.0f, zero real gaps (only inherited-field false positives)
+- attribute-read audit on spec/tensor/group receivers — no further gaps
+- **headless repro** (docker run + file mount): runs `group_and_unify` +
+  `_pool_bytes_per_block` + fork-style `KVCacheTensor` construction against
+  the patched interface — all pass; catches this failure class pre-build now
+
+Round-4 image (all shims incl. KVCacheTensor) built on gb10
+(`b845f104b33e1927473b9d3d7a7eb4e4f05a41c327efc26ee85a367e33a53326`);
+gb10-2 sync was in flight at rollback time (round-3 `ca6f3d89` present;
+round-4 completes in background). Equiv test re-run after each round: 109/109.
+
+## Rollback record (executed ~10:20 local)
+
+- `rollback-host` both hosts + `rollback-head` on gb10 (tag 20260901T0043);
+  spot-verified: KV lines 0/0 in both composes + acceptance, image env =
+  f277b3d-nvfp4, KV_OFFLOAD_CPU_BYTES gone, service fp = 36adbf92 restored.
+- Restart with original config: run **20260901T022534Z**, acceptance PASS,
+  KV pool 8.94 GiB / 1,291,388 tokens.
+- Post-restore canary: identical 18,427-token prompt → 2nd request 0.46 s,
+  cached_tokens 18,176 — prefix caching healthy (and re-confirms A1's
+  zero-hit was connector-caused).
+- D1a images left in place on both hosts (d1a-kvoffload tags) for tonight.
+- Known script nit: `rollback-host`/`verify` subcommands try to read head
+  files and error on the worker (files restore BEFORE the error; verified
+  clean by grep) — cosmetic, fix before next campaign.
+
+## Tonight's retry plan (round-4 image)
+
+1. Confirm gb10-2 has `b845f104` fingerprint; refresh head edits
+   (`rollback-head` → `head` with NEW_FP=b845f104…; host edits re-apply).
+2. `--stop --restore-qwen` (original scripts must be in place BEFORE stop —
+   learned: stop loads active.json against the CURRENT fingerprint contract).
+3. Re-apply D1b edits (host both + head gb10) → `--start`.
+4. Gate battery (fast→slow): canary_twice → amplification + 64K cold perf →
+   needle/flood/requery kill-arm → decode + C1-C5 (MAX_TOKENS_OVERRIDE=1024)
+   → 20-30 min soak with monitor.sh.
+5. Any gate failure → rollback per this record; escalate to Stage 2 (core
+   file adoption) or D0 diagnostic (assets ready in tmp/kv-offload-d0/).
