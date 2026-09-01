@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "result_id": "rtx-a6000-qwen38-llamacpp-192k-p1-20260901",
+  "recipe_id": "qwen3.8.rtx-a6000-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-192k",
+  "suite": {"id": "performance-v1", "version": "1.0.0"},
+  "workload": {
+    "id": "qwen38-low-streaming-2048-warm-p1",
+    "concurrency": 1,
+    "cache_state": "warm",
+    "stream": true,
+    "seed": 42,
+    "max_tokens": 2048,
+    "warmup_runs": 1,
+    "measured_runs": 3,
+    "distribution_method": "linear interpolation over three measured samples",
+    "raw_result": "raw-performance.json"
+  },
+  "metrics": {
+    "ttft_seconds": {"min": 0.169815, "mean": 0.2677883333, "p50": 0.170801, "p95": 0.4335542, "p99": 0.45691004, "max": 0.462749},
+    "first_final_token_seconds": {"not_applicable": true, "reason": "The harness did not distinguish the first final-answer token from reasoning deltas."},
+    "response_time_seconds": {"min": 21.503876, "mean": 21.5902, "p50": 21.544782, "p95": 21.704226, "p99": 21.7183988, "max": 21.721942},
+    "decode_tokens_per_second": {"min": 61.760948, "mean": 62.429818, "p50": 62.269895, "p95": 63.1597394, "p99": 63.23883668, "max": 63.258611},
+    "output_tokens_per_second_e2e": {"min": 61.3204841446, "mean": 61.6958400976, "p50": 61.8247146803, "p95": 61.9305607892, "p99": 61.9399693322, "max": 61.942321468},
+    "aggregate_tokens_per_second": {"min": 61.3204841446, "mean": 61.6958400976, "p50": 61.8247146803, "p95": 61.9305607892, "p99": 61.9399693322, "max": 61.942321468},
+    "prompt_tokens": {"min": 79, "mean": 79, "p50": 79, "p95": 79, "p99": 79, "max": 79},
+    "completion_tokens": {"min": 1332, "mean": 1332, "p50": 1332, "p95": 1332, "p99": 1332, "max": 1332},
+    "reasoning_tokens": {"not_applicable": true, "reason": "The runtime reported combined completion tokens without a reasoning-token split."},
+    "cached_tokens": {"min": 75, "mean": 75, "p50": 75, "p95": 75, "p99": 75, "max": 75},
+    "errors": {"count": 0, "successful_runs": 3, "total_runs": 3, "categories": {}},
+    "hardware": {"gpu_vram_total_mib": 49140, "gpu_vram_service_mib": 31958, "gpu_vram_headroom_mib": 976, "peak_power_watts": 299, "peak_temperature_celsius": 87, "ram": null, "disk": null}
+  },
+  "unavailable_metrics": {
+    "metrics.hardware.ram": {"not_applicable": true, "reason": "RAM telemetry was not collected."},
+    "metrics.hardware.disk": {"not_applicable": true, "reason": "Disk telemetry was not collected."}
+  },
+  "receipt": "recipes/qwen3.8/rtx-a6000-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-192k/receipts/deployment-20260901.json",
+  "receipt_sha256": "4a0ba8d27443ad4d163f244b4927b164aba9716294cc6f5c452dfcc55584a035",
+  "quality_floor": {"id": "core-text-v1", "status": "failed", "qualification": "not run; failed closed"},
+  "context_floor": {"status": "passed", "tested_tokens": 180028, "method": "deterministic retrieval codes near both ends matched exactly"},
+  "maturity": "Reference",
+  "status": {"acceptance": "partial", "reliability": "unknown", "safety": "unknown"},
+  "legacy_metric_definitions": false,
+  "report": "results/rtx-a6000-48gb/qwen3.8/reference-20260901/report.md"
+}

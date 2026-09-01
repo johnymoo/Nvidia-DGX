@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "reference",
+  "recipe_id": "qwen3.8.rtx-a6000-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-192k",
+  "subject": {"model": "Qwen3.8-27B-UD-Q4_K_XL", "hardware": "rtx-a6000-48gb", "runtime": "llama.cpp", "profile": "ud-q4-k-xl-mtp2-192k-p1"},
+  "acceptance": {"health": "passed", "model_identity": "passed", "performance_samples": "passed", "long_context_retrieval": "passed", "quality_floor": "not-run", "reliability": "not-run", "safety": "not-run"},
+  "collected_at": "2026-09-01T04:45:22Z",
+  "identity": {
+    "model_repository": "unsloth/Qwen3.8-27B-GGUF",
+    "model_revision": "f1bfb127c64f7072bdd2cad55f258b9c8b2910fe",
+    "model_file": "Qwen3.8-27B-UD-Q4_K_XL.gguf",
+    "model_bytes": 17923394624,
+    "model_sha256": "bee238bbeb3dc0a34bde4d0dedbaee1f98c009e8bb4226f03070054c12fb1372",
+    "mmproj_file": "mmproj-F16.gguf",
+    "mmproj_bytes": 927607488,
+    "mmproj_sha256": "cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e",
+    "image_digest": "sha256:32d4b78519e450e9754853c500c41cea13488d01bd0d6a8333ed7dacf1d14180"
+  },
+  "runtime": {"api": "http://localhost:8006/v1", "container_bind": "0.0.0.0", "publish_host": "0.0.0.0", "port": 8006, "context": 196608, "parallel": 1, "kv_cache": "F16", "gpu_layers": 999, "flash_attention": true, "speculative_decoding": {"type": "draft-mtp", "n_max": 2, "p_min": 0}},
+  "runtime_build": {"version": "b10454", "commit": "4df29be4f4c3673f428170fda944a5b19f743bb8"},
+  "hardware": {"gpu": "NVIDIA RTX A6000", "vram_total_mib": 49140, "vram_service_mib": 31958, "vram_headroom_mib": 976, "peak_power_watts": 299, "peak_temperature_celsius": 87},
+  "invalidation_conditions": ["Model or mmproj hash changes", "Runtime image digest changes", "Context, KV cache, MTP, parallelism, or GPU changes"]
+}

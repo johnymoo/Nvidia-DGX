@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "qwen3.8.rtx-a6000-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-192k",
+  "model_family": "qwen3.8",
+  "model_id": "Qwen3.8-27B-UD-Q4_K_XL",
+  "hardware_id": "rtx-a6000-48gb",
+  "runtime_id": "llama.cpp",
+  "profile_id": "ud-q4-k-xl-mtp2-192k-p1",
+  "modality": "multimodal-generation",
+  "maturity": "Reference",
+  "default": true,
+  "source_paths": ["README.md", "config/", "scripts/", "receipts/"],
+  "operations": {"prepare": ["scripts/download.sh"], "start": ["scripts/start.sh"], "status": ["scripts/status.sh"], "benchmark": ["scripts/benchmark.sh"], "stop": ["scripts/stop.sh"]},
+  "benchmark_suites": ["performance-v1@1.0.0"],
+  "evidence": {"receipts": ["receipts/deployment-20260901.json"], "benchmarks": ["../../../results/rtx-a6000-48gb/qwen3.8/reference-20260901/"]},
+  "limitations": ["Single-stream performance and one 180,028-token retrieval case only.", "Quality floor, reasoning-token split, first-final-token latency, concurrency, safety, and soak are unverified."],
+  "invalidation_conditions": ["GGUF, mmproj, image digest, MTP, context, KV cache, parallelism, or hardware changes."]
+}

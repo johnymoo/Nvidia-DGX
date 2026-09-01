@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "suite": "performance-v1@1.0.0",
+  "transport": "OpenAI-compatible SSE streaming",
+  "request": {"model": "qwen3.8-27b", "seed": 42, "max_tokens": 2048, "stream": true, "prompt": "You are a data lakehouse engineer. Explain in exactly four concise bullet points how to diagnose an Apache Spark job stalled by shuffle skew. Keep the final answer under 180 English words."},
+  "prompt_sha256": "52d5a8250d684dd807f06f3c087197c9ef524d4e6bacccee76614f1bd2fcfec2",
+  "warmup_runs": 1,
+  "samples": [
+    {"run": 1, "ttft_seconds": 0.462749, "response_seconds": 21.503876, "decode_seconds": 21.040614, "decode_tokens_per_second": 63.258611, "output_tokens_per_second_e2e": 61.942321468, "prompt_tokens": 79, "completion_tokens": 1332, "cached_tokens": 75, "finish_reason": "stop", "content_sha256": "f23fa0be9b3f55156e85984e80467f0db6b3221f2aa51a4c4f37f5b15f7954b7", "reasoning_sha256": "a71792b74df4624e9510d3ba0b8cc3639d900da4b14ac54996f439d9dca03f1e"},
+    {"run": 2, "ttft_seconds": 0.169815, "response_seconds": 21.544782, "decode_seconds": 21.374695, "decode_tokens_per_second": 62.269895, "output_tokens_per_second_e2e": 61.8247146803, "prompt_tokens": 79, "completion_tokens": 1332, "cached_tokens": 75, "finish_reason": "stop", "content_sha256": "f23fa0be9b3f55156e85984e80467f0db6b3221f2aa51a4c4f37f5b15f7954b7", "reasoning_sha256": "a71792b74df4624e9510d3ba0b8cc3639d900da4b14ac54996f439d9dca03f1e"},
+    {"run": 3, "ttft_seconds": 0.170801, "response_seconds": 21.721942, "decode_seconds": 21.550835, "decode_tokens_per_second": 61.760948, "output_tokens_per_second_e2e": 61.3204841446, "prompt_tokens": 79, "completion_tokens": 1332, "cached_tokens": 75, "finish_reason": "stop", "content_sha256": "f23fa0be9b3f55156e85984e80467f0db6b3221f2aa51a4c4f37f5b15f7954b7", "reasoning_sha256": "a71792b74df4624e9510d3ba0b8cc3639d900da4b14ac54996f439d9dca03f1e"}
+  ],
+  "post_restart_reference": {"samples": 1, "warmup_runs": 0, "host_page_cache_cleared": false, "ttft_seconds": 0.384035, "response_seconds": 21.230369, "decode_tokens_per_second": 63.849111, "cached_tokens": 0},
+  "long_context": {"allocated_context_tokens": 196608, "prompt_tokens": 180028, "completion_tokens": 28, "response_seconds": 292.733602, "retrieval": "passed; deterministic codes at both prompt ends matched exactly", "prompt_sha256": "349f6523f749fbdff00456a6f2f55b019f2627a9341accbaed1173331014800e"}
+}

@@ -16,7 +16,8 @@
     "dgx-spark-gb10-pair::deepseek-v4": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
     "rtx3090-24gb::qwen3.8": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
     "rtx4090-48gb::qwen3.6": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
-    "rtx4090-48gb::qwen3.8": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192}
+    "rtx4090-48gb::qwen3.8": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192},
+    "rtx-a6000-48gb::qwen3.8": {"quality_id": "core-text-v1", "minimum_context_tokens": 8192}
   },
   "required_status": {
     "status.acceptance": "passed",

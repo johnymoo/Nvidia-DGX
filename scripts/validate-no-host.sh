@@ -17,6 +17,7 @@ python3 -m unittest discover -s recipes/qwen3.6/rtx4090-48gb-ollama-27b-q4-k-m-1
 python3 -m unittest discover -s recipes/qwen3.6/rtx4090-48gb-vllm-35b-a3b-fp8-32k-p2/tests -v
 python3 -m unittest discover -s recipes/qwen3.8/rtx3090-24gb-llamacpp-27b-q3-k-s-128k-p2/tests -v
 python3 -m unittest discover -s recipes/qwen3.8/rtx4090-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-256k/tests -v
+python3 -m unittest discover -s recipes/qwen3.8/rtx-a6000-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-192k/tests -v
 python3 -m unittest discover -s recipes/qwen3.8/rtx4090-48gb-vllm-27b-fp8-64k-p4/tests -v
 
 (

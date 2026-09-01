@@ -330,6 +330,7 @@ def _result_summary(root: Path, path: Path, result: dict[str, Any], recipe: dict
         "workload": result["workload"],
         "metrics": result["metrics"],
         "legacy_metrics": result.get("legacy_metrics", {}),
+        "legacy_metric_definitions": result.get("legacy_metric_definitions") is not False,
         "receipt": result["receipt"],
         "report": result.get("report"),
         "result_path": path.relative_to(root).as_posix(),
@@ -467,12 +468,18 @@ def best_verified_fragment(latest: dict[str, Any]) -> str:
 
 def reference_results_fragment(latest: dict[str, Any]) -> str:
     lines = [
-        "| Hardware | Model | Runtime / profile | Legacy workload | Recorded metrics | Evidence |",
+        "| Hardware | Model | Runtime / profile | Workload | Recorded metrics | Evidence |",
         "|---|---|---|---|---|---|",
     ]
     for item in latest["reference_results"]:
         metrics = item["metrics"]
         report = item.get("report") or item["result_path"]
+        suite = item.get("suite") or {}
+        default_definition = (
+            "legacy source definition"
+            if item.get("legacy_metric_definitions", True)
+            else f"{suite.get('id', 'canonical suite')}@{suite.get('version', 'unknown')} definition"
+        )
         recorded = []
         for field, label in (
             ("ttft_seconds", "TTFT"),
@@ -482,7 +489,7 @@ def reference_results_fragment(latest: dict[str, Any]) -> str:
         ):
             metric = metrics.get(field)
             if isinstance(metric, dict) and metric.get("mean") is not None:
-                definition = metric.get("definition", "legacy source definition")
+                definition = metric.get("definition", default_definition)
                 recorded.append(f"{label}: {metric['mean']} ({definition})")
         for label, metric in (item.get("legacy_metrics") or {}).items():
             if isinstance(metric, dict) and metric.get("value") is not None:
@@ -494,10 +501,10 @@ def reference_results_fragment(latest: dict[str, Any]) -> str:
             f"{_md(workload.get('id'))}; concurrency={_md(workload.get('concurrency'))}; "
             f"cache={_md(workload.get('cache_state'))} | "
             f"{_md('; '.join(recorded) if recorded else 'N/A')} | "
-            f"[result]({_md(item['result_path'])}) / [source]({_md(report)}) |"
+            f"[result]({_md(item['result_path'])}) / [evidence]({_md(report)}) |"
         )
     if len(lines) == 2:
-        lines.append("| - | - | - | - | No historical Reference result is cataloged. | - |")
+        lines.append("| - | - | - | - | No Reference result is cataloged. | - |")
     return "\n".join(lines)
 
 

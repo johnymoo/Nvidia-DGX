@@ -129,6 +129,17 @@ class CatalogTests(unittest.TestCase):
         self.assertIn("run-ref", fragment)
         self.assertNotIn("run-b", fragment)
 
+    def test_reference_fragment_distinguishes_canonical_metrics(self) -> None:
+        result = self.root / "results/gpu-a/reference/run-ref/result.json"
+        value = json.loads(result.read_text())
+        value["legacy_metric_definitions"] = False
+        value["suite"] = {"id": "performance-v1", "version": "1.0.0"}
+        value["metrics"] = {"ttft_seconds": {"mean": 0.25}}
+        result.write_text(json.dumps(value))
+        fragment = reference_results_fragment(latest_benchmarks(self.root))
+        self.assertIn("performance-v1@1.0.0 definition", fragment)
+        self.assertNotIn("Legacy workload", fragment)
+
     def test_generated_outputs_are_stable(self) -> None:
         (self.root / "README.md").write_text(
             "# Fixture\n\n"

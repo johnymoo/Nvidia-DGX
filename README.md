@@ -57,29 +57,31 @@ all ranking metrics. Missing evidence fails closed.
 | dgx-spark-gb10 | qwen3.5 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10 | qwen3.6 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10-pair | deepseek-v4 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
+| rtx-a6000-48gb | qwen3.8 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx3090-24gb | qwen3.8 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx4090-48gb | qwen3.6 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx4090-48gb | qwen3.8 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 <!-- END GENERATED:best-verified -->
 
-## Latest Historical Reference
+## Latest Reference Results
 
-These are the latest curated historical records already present in the
-repository for each hardware and model group. They keep their original workload
-and metric definitions and are not ranked as Best Verified. `N/A` means the
-source did not record a compatible field; it never means zero.
+These are the latest Reference records for each hardware and model group. A
+record may use an active canonical suite or preserve a historical workload and
+its original metric definitions; neither is ranked as Best Verified. `N/A`
+means the source did not record a compatible field; it never means zero.
 
 <!-- BEGIN GENERATED:reference-results -->
-| Hardware | Model | Runtime / profile | Legacy workload | Recorded metrics | Evidence |
+| Hardware | Model | Runtime / profile | Workload | Recorded metrics | Evidence |
 |---|---|---|---|---|---|
-| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance-concurrent-6; concurrency=6; cache=unknown | recorded aggregate TPS: 229.3 (recorded concurrent aggregate) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-concurrent/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
-| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance; concurrency=1; cache=unknown | recorded generation/decode TPS: 68.8 (recorded single-stream mean) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-single/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
-| dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | 362-frames-512x320-six-steps; concurrency=1; cache=cold | response: 130.5 (approximate recorded bounded wall time) | [result](results/dgx-spark-gb10/minimax-h3/reference-20260813/result.json) / [source](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md) |
-| dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | 1000-token-generation; concurrency=1; cache=unknown | response: 28.89 (legacy source definition); recorded generation/decode TPS: 34.6 (recorded llama.cpp speed) | [result](results/dgx-spark-gb10/qwen3.5/reference-legacy/result.json) / [source](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md) |
-| dgx-spark-gb10 | Qwen3.6-35B-A3B-NVFP4 | vllm / nvfp4-mtp3-256k | legacy-16-case-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 152.1 (recorded average generation throughput) | [result](results/dgx-spark-gb10/qwen3.6/reference-20260618/result.json) / [source](recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md) |
-| rtx4090-48gb | Qwen/Qwen3.6-35B-A3B-FP8 | vllm-0.19.0 / fp8-32k-p2 | legacy-fixed-generation; concurrency=1; cache=unknown | TTFT: 0.08743 (legacy source definition); response: 17.094655 (legacy source definition); recorded generation/decode TPS: 112.18763 (legacy corrected stream decode field) | [result](results/rtx4090-48gb/qwen3.6/reference-20260817/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/report/lakehouse-thinking.html) |
-| rtx3090-24gb | Qwen3.8-27B-Q3_K_S | llama.cpp / q3-k-s-128k-p2 | legacy-single-stream-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 30.1 (recorded single-stream mean); recorded_aggregate_tps: 50.8 (source summary did not record concurrency; not mapped to canonical aggregate TPS) | [result](results/rtx3090-24gb/qwen3.8/reference-20260815-single/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/README.md) |
-| rtx4090-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-256k-p1 | legacy-q4-mtp2-single-stream; concurrency=1; cache=unknown | recorded generation/decode TPS: 94.33 (recorded Q4 plus MTP2 generation throughput) | [result](results/rtx4090-48gb/qwen3.8/reference-20260817/result.json) / [source](benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.html) |
+| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance-concurrent-6; concurrency=6; cache=unknown | recorded aggregate TPS: 229.3 (recorded concurrent aggregate) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-concurrent/result.json) / [evidence](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance; concurrency=1; cache=unknown | recorded generation/decode TPS: 68.8 (recorded single-stream mean) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-single/result.json) / [evidence](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | 362-frames-512x320-six-steps; concurrency=1; cache=cold | response: 130.5 (approximate recorded bounded wall time) | [result](results/dgx-spark-gb10/minimax-h3/reference-20260813/result.json) / [evidence](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | 1000-token-generation; concurrency=1; cache=unknown | response: 28.89 (legacy source definition); recorded generation/decode TPS: 34.6 (recorded llama.cpp speed) | [result](results/dgx-spark-gb10/qwen3.5/reference-legacy/result.json) / [evidence](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md) |
+| dgx-spark-gb10 | Qwen3.6-35B-A3B-NVFP4 | vllm / nvfp4-mtp3-256k | legacy-16-case-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 152.1 (recorded average generation throughput) | [result](results/dgx-spark-gb10/qwen3.6/reference-20260618/result.json) / [evidence](recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md) |
+| rtx4090-48gb | Qwen/Qwen3.6-35B-A3B-FP8 | vllm-0.19.0 / fp8-32k-p2 | legacy-fixed-generation; concurrency=1; cache=unknown | TTFT: 0.08743 (legacy source definition); response: 17.094655 (legacy source definition); recorded generation/decode TPS: 112.18763 (legacy corrected stream decode field) | [result](results/rtx4090-48gb/qwen3.6/reference-20260817/result.json) / [evidence](benchmarks/legacy/qwen-deepseek-cross-model/report/lakehouse-thinking.html) |
+| rtx3090-24gb | Qwen3.8-27B-Q3_K_S | llama.cpp / q3-k-s-128k-p2 | legacy-single-stream-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 30.1 (recorded single-stream mean); recorded_aggregate_tps: 50.8 (source summary did not record concurrency; not mapped to canonical aggregate TPS) | [result](results/rtx3090-24gb/qwen3.8/reference-20260815-single/result.json) / [evidence](benchmarks/legacy/qwen-deepseek-cross-model/README.md) |
+| rtx4090-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-256k-p1 | legacy-q4-mtp2-single-stream; concurrency=1; cache=unknown | recorded generation/decode TPS: 94.33 (recorded Q4 plus MTP2 generation throughput) | [result](results/rtx4090-48gb/qwen3.8/reference-20260817/result.json) / [evidence](benchmarks/legacy/qwen-deepseek-cross-model/report/qwen38-quantization.html) |
+| rtx-a6000-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-192k-p1 | qwen38-low-streaming-2048-warm-p1; concurrency=1; cache=warm | TTFT: 0.2677883333 (performance-v1@1.0.0 definition); response: 21.5902 (performance-v1@1.0.0 definition); recorded generation/decode TPS: 62.429818 (performance-v1@1.0.0 definition); recorded aggregate TPS: 61.6958400976 (performance-v1@1.0.0 definition) | [result](results/rtx-a6000-48gb/qwen3.8/reference-20260901/result.json) / [evidence](results/rtx-a6000-48gb/qwen3.8/reference-20260901/report.md) |
 <!-- END GENERATED:reference-results -->
 
 ## Hardware
@@ -89,6 +91,7 @@ source did not record a compatible field; it never means zero.
 | [DGX Spark / GB10](hardware/dgx-spark-gb10/) | ARM64, unified memory; single and dual-host recipes are separate |
 | [RTX 3090 24 GB](hardware/rtx3090-24gb/) | Single-GPU profiles bounded to 24 GB VRAM |
 | [RTX 4090 48 GB](hardware/rtx4090-48gb/) | 48 GB reported configuration; not interchangeable with a standard 24 GB board |
+| [RTX A6000 48 GB](hardware/rtx-a6000-48gb/) | Single NVIDIA RTX A6000 class with 49,140 MiB reported VRAM |
 
 ## Recipes
 
@@ -108,6 +111,7 @@ source did not record a compatible field; it never means zero.
 | rtx4090-48gb | qwen3.6:27b | ollama-0.20.2 / q4-k-m-128k-p1 | Reference | [`qwen3.6.rtx4090-48gb.ollama-27b-q4-k-m-128k`](recipes/qwen3.6/rtx4090-48gb-ollama-27b-q4-k-m-128k/) |
 | rtx4090-48gb | qwen3.6:35b-a3b | ollama-0.20.2 / q4-k-m-128k-p1 | Archived | [`qwen3.6.rtx4090-48gb.ollama-35b-a3b-q4-k-m-128k`](recipes/qwen3.6/rtx4090-48gb-ollama-35b-a3b-q4-k-m-128k/) |
 | rtx4090-48gb | Qwen/Qwen3.6-35B-A3B-FP8 | vllm-0.19.0 / fp8-32k-p2 | Reference | [`qwen3.6.rtx4090-48gb.vllm-35b-a3b-fp8-32k-p2`](recipes/qwen3.6/rtx4090-48gb-vllm-35b-a3b-fp8-32k-p2/) |
+| rtx-a6000-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-192k-p1 | Reference | [`qwen3.8.rtx-a6000-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-192k`](recipes/qwen3.8/rtx-a6000-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-192k/) |
 | rtx3090-24gb | Qwen3.8-27B-Q3_K_S | llama.cpp / q3-k-s-128k-p2 | Verified | [`qwen3.8.rtx3090-24gb.llamacpp-27b-q3-k-s-128k-p2`](recipes/qwen3.8/rtx3090-24gb-llamacpp-27b-q3-k-s-128k-p2/) |
 | rtx4090-48gb | Qwen3.8-27B-UD-Q4_K_XL | llama.cpp / ud-q4-k-xl-mtp2-256k-p1 | Reference | [`qwen3.8.rtx4090-48gb.llamacpp-27b-ud-q4-k-xl-mtp2-256k`](recipes/qwen3.8/rtx4090-48gb-llamacpp-27b-ud-q4-k-xl-mtp2-256k/) |
 | rtx4090-48gb | Qwen/Qwen3.8-27B-FP8 | vllm-0.19.0 / fp8-64k-p4 | Reference | [`qwen3.8.rtx4090-48gb.vllm-27b-fp8-64k-p4`](recipes/qwen3.8/rtx4090-48gb-vllm-27b-fp8-64k-p4/) |
