@@ -83,9 +83,15 @@ assert swa_bytes == expect_blocks * swa.page_size_bytes, (
 # boot-5 path: connector config assembly on the worker side (CPU tier).
 # cache_config deliberately LACKS kv_cache_layout (fork shape) — the 2.0h
 # getattr shim must tolerate it; any other unshimmed read trips here.
+# boot-6 shape: fork KVCacheTensor.size is a PER-TENSOR share — 5
+# uniform-slot tensors (DSv4); 2.0i must derive the per-worker block size
+# as the SUM (tip reads tensors[0].size as the whole allocation).
+_FORK_PAGE = 16384  # mmap.PAGESIZE-aligned uniform-slot page
 kcc = SimpleNamespace(
     num_blocks=1000,
-    kv_cache_tensors=[SimpleNamespace(size=mla.page_size_bytes * 1000)],
+    kv_cache_tensors=[
+        SimpleNamespace(size=_FORK_PAGE * 1000) for _ in range(5)
+    ],
     kv_cache_groups=groups,
 )
 cfg2 = SimpleNamespace(
@@ -114,6 +120,25 @@ cfg2 = SimpleNamespace(
 oc = build_offloading_config(cfg2, kcc)
 assert oc.kv_cache_layout is None, oc.kv_cache_layout
 assert len(oc.groups) == len(groups)
+assert oc.worker_kv_bytes_per_block == 5 * _FORK_PAGE, (
+    oc.worker_kv_bytes_per_block, 5 * _FORK_PAGE)
+
+# boot-6 path: shared-region layout math (pure CPU: /dev/shm mmap + views).
+# Spec-level derivation mirrors cpu/spec.py __init__ with blocks_per_chunk=1.
+from vllm.v1.kv_offload.cpu.shared_offload_region import SharedOffloadRegion
+
+region = SharedOffloadRegion(
+    engine_id="d1a-repro-r7",
+    num_blocks=64,
+    rank=0,
+    kv_bytes_per_block=oc.worker_kv_bytes_per_block * cfg2.parallel_config.world_size,
+    cpu_page_size=oc.worker_kv_bytes_per_block,
+    barrier=None,
+)
+views = [region.create_next_worker_view(_FORK_PAGE) for _ in range(5)]
+assert all(v.shape == (64, _FORK_PAGE) for v in views)
+region.cleanup()
+del views
 
 # full connector import chain (the in-build smoke, re-checked here)
 from vllm.distributed.kv_transfer.kv_connector.v1 import offloading_connector  # noqa: E402, F401

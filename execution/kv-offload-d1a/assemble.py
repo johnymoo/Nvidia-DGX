@@ -684,7 +684,31 @@ def check_shm_free_space(required_bytes: int, shm_path: str = "/dev/shm") -> Non
         "        ),\n"
     )
     assert oc.count(oc_old) == 1, "offloading config kv_cache_layout site"
-    write(oc_rel, oc.replace(oc_old, oc_new, 1), "tip+fork-shims", rows)
+    oc = oc.replace(oc_old, oc_new, 1)
+
+    # 6b/2.0i worker_kv_bytes_per_block: boot-6 crash
+    #    (AssertionError: Worker offset 8640 exceeds worker area end 1728,
+    #    overflowed by 6912 = 4×1728 = (groups-1)×page). Tip KVCacheTensor
+    #    semantics: every tensor's .size = the WHOLE backing allocation
+    #    ("its size is the total, not a per-tensor share"); fork semantics:
+    #    .size = per-tensor share (DSv4: 5 uniform-slot tensors). The tip
+    #    scalar derivation therefore lands 5× too small. Fork-compatible
+    #    total = sum of per-tensor sizes.
+    wkb_old = (
+        "        # Every KVCacheTensor describes placement within the same backing allocation,\n"
+        "        # so its size is the total, not a per-tensor share.\n"
+        "        total_gpu_kv_bytes = kv_cache_config.kv_cache_tensors[0].size\n"
+    )
+    wkb_new = (
+        "        # D1a fork-compat (2.0i): tip tensors carry the whole backing\n"
+        "        # allocation in .size; fork tensors carry per-tensor shares\n"
+        "        # (DSv4: 5 uniform-slot tensors), so the total is the sum.\n"
+        "        total_gpu_kv_bytes = sum(\n"
+        "            t.size for t in kv_cache_config.kv_cache_tensors\n"
+        "        )\n"
+    )
+    assert oc.count(wkb_old) == 1, "worker_kv_bytes_per_block site"
+    write(oc_rel, oc.replace(wkb_old, wkb_new, 1), "tip+fork-shims", rows)
 
     # manifest (last write per path wins — shims overwrite pristine copies)
     dedup = {}

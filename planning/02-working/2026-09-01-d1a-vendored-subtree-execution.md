@@ -319,3 +319,28 @@ Round-6 image `bf11564d…` built (only offloading/config.py changed) and
 validated in-image (same repro, no mounts needed for the trio — run against
 built tag directly). Head edits rolled back and re-applied with the round-6
 fingerprint; shipping to gb10-2; boot 6 next.
+
+## Rev 6 (2026-09-02 ~02:50 local) — boot 6: KVCacheTensor.size semantics; shim 2.0i (Σ tensor sizes)
+
+Boot 5 fix (2.0h) held — boot 6 reached `register_kv_caches` →
+`create_next_worker_view` inside the CPU tier's shared mmap region, then:
+`AssertionError: Worker offset 8640 exceeds worker area end 1728
+(overflowed by 6912 = 4×1728)`. Root cause: **tip vs fork
+KVCacheTensor.size semantics**. Tip: every tensor's `.size` = the whole
+backing allocation ("its size is the total, not a per-tensor share" — tip's
+own comment). Fork: `.size` = per-tensor share (DSv4: 5 uniform-slot
+tensors of equal size). `build_offloading_config` derived
+`worker_kv_bytes_per_block = tensors[0].size // num_blocks` → 5× too small;
+the per-tensor view loop then needs Σ = 5×page per worker. The numbers
+reconcile exactly: 8640 required vs 1728 reserved, overflow 6912.
+
+**Shim 2.0i**: `total_gpu_kv_bytes = sum(t.size for t in
+kv_cache_tensors)` — fork-compatible total. Cross-checks: A1's cluster
+accounting (8 GiB / ~605K tokens ≈ 13.9 KiB/token, fork stack) matches Σ
+semantics; the `replicated_layout` gate short-circuits (multi-group), so
+the only consumer of the old value is the pool sizing.
+
+Repro extended (boots 1-6 now): SharedOffloadRegion layout math headless
+(/dev/shm mmap + 5 worker views with shape/stride asserts, ~30 s; cleanup
+BufferError warning is benign and self-logged). Round-7 image `8a741c7a…`
+built, repro PASS in-image, head edits re-applied; boot 7 after ship.
