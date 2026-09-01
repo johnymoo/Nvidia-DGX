@@ -1,0 +1,3 @@
+{"probe": "A", "n_words": 850, "seed": 41001, "max_tokens": 1, "ttft_s": 1.2, "latency_s": 2.0, "prompt_tokens": 3011, "cached_tokens": 0, "completion_tokens": 1, "answer_head": "x", "end_epoch": 1002.0, "start_epoch": 1000.0}
+{"probe": "A2", "n_words": 850, "seed": 41001, "max_tokens": 1, "ttft_s": 1.1, "latency_s": 2.0, "prompt_tokens": 3011, "cached_tokens": null, "completion_tokens": 1, "answer_head": "x", "end_epoch": 1006.0, "start_epoch": 1004.0}
+{"probe": "B", "n_words": 5650, "seed": 41002, "max_tokens": 200, "ttft_s": 8.0, "latency_s": 20.0, "prompt_tokens": 20020, "cached_tokens": 0, "completion_tokens": 200, "answer_head": "y", "end_epoch": 1030.0, "start_epoch": 1010.0}

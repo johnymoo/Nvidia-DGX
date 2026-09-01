@@ -1,0 +1,60 @@
+# syntax=docker/dockerfile:1
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+#
+# D1a KV-offload subtree replacement (2026-09-01), stacked DIRECTLY on the
+# production image. The original build chain (fusion base -> overlay ->
+# stage-a/b/c) is no longer present on the hosts; the production image
+# gb10-ds4-vllm:f277b3d-nvfp4 already contains the dspark overlay and nvfp4
+# stage patches, so this Dockerfile applies ONLY the D1a block on top.
+# Build context: recipe/overlay (same as Dockerfile.dspark-runtime-overlay).
+# The D1a COPY/RUN block is duplicated there for full-chain rebuilds; keep
+# the two in sync. Provenance: vllm-d1a-kv-offload.MANIFEST.tsv (pin
+# f5e441de10bd).
+
+ARG BASE_IMAGE=gb10-ds4-vllm:f277b3d-nvfp4
+FROM ${BASE_IMAGE}
+
+LABEL org.bjk110.dspark.d1a-kv-offload-pin="f5e441de10bd"
+
+# v1/kv_offload/worker/ no longer exists upstream; COPY of the dir would
+# leave the stale module importable. Remove it (and stale bytecode) first.
+RUN SP=/opt/env/lib/python3.12/site-packages/vllm && \
+    rm -rf "$SP/v1/kv_offload/worker" && \
+    find "$SP/v1/kv_offload" "$SP/distributed/kv_transfer/kv_connector/v1" \
+         "$SP/distributed/kv_events.py" "$SP/v1/kv_cache_interface.py" \
+         "$SP/v1/kv_cache_layout.py" "$SP/v1/kv_cache_spec_registry.py" \
+         "$SP/v1/core/kv_cache_utils.py" \
+         "$SP/distributed/device_communicators/shm_broadcast.py" \
+         -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null; true
+
+COPY vllm/v1/kv_cache_interface.py /opt/env/lib/python3.12/site-packages/vllm/v1/kv_cache_interface.py
+COPY vllm/v1/kv_cache_layout.py /opt/env/lib/python3.12/site-packages/vllm/v1/kv_cache_layout.py
+COPY vllm/v1/kv_cache_spec_registry.py /opt/env/lib/python3.12/site-packages/vllm/v1/kv_cache_spec_registry.py
+COPY vllm/v1/core/kv_cache_utils.py /opt/env/lib/python3.12/site-packages/vllm/v1/core/kv_cache_utils.py
+COPY vllm/v1/kv_offload /opt/env/lib/python3.12/site-packages/vllm/v1/kv_offload
+COPY vllm/config/kv_transfer.py /opt/env/lib/python3.12/site-packages/vllm/config/kv_transfer.py
+COPY vllm/distributed/kv_events.py /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_events.py
+COPY vllm/distributed/device_communicators/shm_broadcast.py /opt/env/lib/python3.12/site-packages/vllm/distributed/device_communicators/shm_broadcast.py
+COPY vllm/distributed/kv_transfer/kv_connector/factory.py /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/factory.py
+COPY vllm/distributed/kv_transfer/kv_connector/v1/base.py /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1/base.py
+COPY vllm/distributed/kv_transfer/kv_connector/v1/metrics.py /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1/metrics.py
+COPY vllm/distributed/kv_transfer/kv_connector/v1/offloading_connector.py /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1/offloading_connector.py
+COPY vllm/distributed/kv_transfer/kv_connector/v1/offloading /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1/offloading
+
+RUN /opt/env/bin/python -m compileall -q \
+    /opt/env/lib/python3.12/site-packages/vllm/v1/kv_offload \
+    /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1 \
+    /opt/env/lib/python3.12/site-packages/vllm/distributed/kv_events.py \
+    /opt/env/lib/python3.12/site-packages/vllm/v1/kv_cache_interface.py \
+    /opt/env/lib/python3.12/site-packages/vllm/v1/kv_cache_layout.py \
+    /opt/env/lib/python3.12/site-packages/vllm/v1/kv_cache_spec_registry.py \
+    /opt/env/lib/python3.12/site-packages/vllm/v1/core/kv_cache_utils.py \
+    /opt/env/lib/python3.12/site-packages/vllm/distributed/device_communicators/shm_broadcast.py \
+    /opt/env/lib/python3.12/site-packages/vllm/config/kv_transfer.py \
+    && /opt/env/bin/python -c "\
+import vllm; \
+from vllm.distributed.kv_transfer.kv_connector.v1 import offloading_connector; \
+from vllm.v1.kv_offload.cpu import spec; \
+import vllm.v1.kv_cache_interface as i; \
+print('D1a image import smoke ok', vllm.__version__)"
