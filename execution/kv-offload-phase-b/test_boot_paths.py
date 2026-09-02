@@ -68,8 +68,15 @@ def fake_configs():
         kv_events_config=None,
         model_config=SimpleNamespace(model="DeepSeek-V4-Flash-0731"),
     )
+    # tensors mirror the real fork geometry: per-slot span = sum of
+    # per-block bytes over ALL tensors (t.size // num_blocks)
+    kv_cache_tensors = [
+        SimpleNamespace(size=1000 * 37376),
+        SimpleNamespace(size=1000 * 1168),
+    ]
     kv_cache_config = SimpleNamespace(
-        num_blocks=1000, kv_cache_groups=groups, kv_cache_tensors=[],
+        num_blocks=1000, kv_cache_groups=groups,
+        kv_cache_tensors=kv_cache_tensors,
     )
     return vllm_config, kv_cache_config
 
@@ -106,8 +113,10 @@ def main():
         check("cluster budget split per rank", s.per_rank_bytes == per_rank)
         # group bytes: MLA 37,376 + SWA 4x1,168 = 42,048 -> max
         check("group block bytes", s._group_bytes == [37376, 4672])
-        expect_slots = 536870912 // 37376
-        check("ring slots from max group", s.num_slots == expect_slots)
+        # ring slots from TENSOR GEOMETRY (side-invariant): per-slot span
+        # = 37,376 + 1,168 across all tensors
+        expect_slots = 536870912 // (37376 + 1168)
+        check("ring slots from tensor geometry", s.num_slots == expect_slots)
 
         mgr = s.get_manager()
         check("manager budget", mgr._bytes_budget == per_rank)

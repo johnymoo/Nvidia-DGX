@@ -49,6 +49,9 @@ class OffloadingConnectorWorker:
         self._load_jobs: dict[int, ReqId] = {}
         self._unsubmitted_store_jobs: list[tuple[int, TransferSpec]] = []
         self._connector_worker_meta = OffloadingWorkerMetadata()
+        # KV-OFFLOAD-PB(failure-overlay): req_ids whose load never started;
+        # finished_recving is emitted for them on the next get_finished.
+        self._failed_start_recving: set[str] = set()
 
     def _register_handlers(self, kv_caches: CanonicalKVCaches):
         for src_cls, dst_cls, handler in self.spec.get_handlers(kv_caches):
@@ -232,7 +235,8 @@ class OffloadingConnectorWorker:
     def handle_preemptions(self, kv_connector_metadata: OffloadingConnectorMetadata):
         for job_id, transfer_spec in self._unsubmitted_store_jobs:
             success = self.worker.transfer_async(job_id, transfer_spec)
-            assert success
+            if not success:  # KV-OFFLOAD-PB(failure-overlay)
+                self._connector_worker_meta.mark_failed(job_id)
         self._unsubmitted_store_jobs.clear()
 
         if kv_connector_metadata.jobs_to_flush:
@@ -241,13 +245,34 @@ class OffloadingConnectorWorker:
     def start_kv_transfers(self, metadata: OffloadingConnectorMetadata):
         for job_id, transfer_spec in self._unsubmitted_store_jobs:
             success = self.worker.transfer_async(job_id, transfer_spec)
-            assert success
+            if not success:  # KV-OFFLOAD-PB(failure-overlay)
+                logger.warning(
+                    "Offloading store job %d failed to start; keys will be "
+                    "re-offered on a later store pass",
+                    job_id,
+                )
+                self._connector_worker_meta.mark_failed(job_id)
         self._unsubmitted_store_jobs.clear()
 
         for job_id, entry in metadata.load_jobs.items():
             self._load_jobs[job_id] = entry.req_id
             success = self.worker.transfer_async(job_id, entry.transfer_spec)
-            assert success
+            if not success:  # KV-OFFLOAD-PB(failure-overlay)
+                logger.warning(
+                    "Offloading load job %d failed to start for request %s; "
+                    "degrading to cold recompute",
+                    job_id,
+                    entry.req_id,
+                )
+                self._connector_worker_meta.mark_failed(job_id)
+                req_id = self._load_jobs.pop(job_id, None)
+                if req_id is not None:
+                    # the request is already parked in
+                    # WAITING_FOR_REMOTE_KV — emit finished_recving on the
+                    # next get_finished so the base scheduler promotes it
+                    # (the connector scheduler will have truncated
+                    # num_computed_tokens via failed_jobs by then).
+                    self._failed_start_recving.add(req_id)
 
     def prepare_store_kv(self, metadata: OffloadingConnectorMetadata):
         for job_id, entry in metadata.store_jobs.items():
@@ -311,6 +336,10 @@ class OffloadingConnectorWorker:
             req_id = self._load_jobs.pop(job_id, None)
             if req_id is not None:
                 finished_recving.add(req_id)
+
+        if self._failed_start_recving:
+            finished_recving |= self._failed_start_recving
+            self._failed_start_recving = set()
 
         return set(), finished_recving
 

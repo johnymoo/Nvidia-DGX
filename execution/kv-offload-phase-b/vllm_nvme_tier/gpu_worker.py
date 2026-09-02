@@ -207,6 +207,13 @@ class NVMeOffloadingHandler(OffloadingHandler):
             target=self._gc_loop, name="nvme_tier_gc", daemon=True
         )
         self._gc_thread.start()
+        # layout ground truth for the campaign log (warning: always printed)
+        logger.warning(
+            "NVME-TIER-LAYOUT gpu_tensors=%s ring_rows=%d segments=%s",
+            [(t.shape[1], t.shape[0]) for t in self._gpu_tensors],
+            num_slots,
+            self._group_segments,
+        )
         logger.info(
             "NVMe tier handler: %d tensors, ring %d slots (%.0f MiB), root %s_r%d",
             len(self._gpu_tensors), num_slots,
@@ -263,6 +270,51 @@ class NVMeOffloadingHandler(OffloadingHandler):
 
     # ---------------- transfer_async ----------------
 
+    def _validate_ops(
+        self,
+        src: np.ndarray,
+        dst: np.ndarray,
+        sizes: np.ndarray,
+        job_id: int,
+        gpu_is_src: bool,
+    ) -> None:
+        """Bounds-check every op against its tensor's storage so a bad
+        pointer surfaces as a readable exception instead of a CUDA
+        segfault (20260902 boot-2: first store job died in
+        cuMemcpyBatchAsync with no diagnostic)."""
+        gpu_spans = [
+            (t.data_ptr(), t.data_ptr() + t.untyped_storage().nbytes())
+            for t in self._gpu_tensors
+        ]
+        ring_spans = [
+            (t.data_ptr(), t.data_ptr() + t.numel())
+            for t in self._ring_tensors
+        ]
+
+        def check(ptr: int, n: int, spans, kind: str, i: int) -> None:
+            for b, e in spans:
+                if b <= ptr < e:
+                    if ptr + n > e:
+                        raise RuntimeError(
+                            f"NVMe tier job {job_id} op {i}: {kind} overrun "
+                            f"ptr=0x{ptr:x} n={n} extent=[0x{b:x},0x{e:x})"
+                        )
+                    return
+            raise RuntimeError(
+                f"NVMe tier job {job_id} op {i}: {kind} pointer outside "
+                f"any tensor: ptr=0x{ptr:x} spans="
+                f"{[hex(b) for b, _ in spans]}"
+            )
+
+        for i in range(len(sizes)):
+            sp, dp, n = int(src[i]), int(dst[i]), int(sizes[i])
+            if gpu_is_src:
+                check(sp, n, gpu_spans, "src(gpu)", i)
+                check(dp, n, ring_spans, "dst(ring)", i)
+            else:
+                check(sp, n, ring_spans, "src(ring)", i)
+                check(dp, n, gpu_spans, "dst(gpu)", i)
+
     def transfer_async(self, job_id: int, spec: TransferSpec) -> bool:
         src_spec, dst_spec = spec
         if isinstance(src_spec, GPULoadStoreSpec):
@@ -285,6 +337,7 @@ class NVMeOffloadingHandler(OffloadingHandler):
         keys = tier.keys
         self._claim_slots(slots)
         src, dst, sizes, total = self._copy_ops(gpu_spec, tier, gpu_is_src=True)
+        self._validate_ops(src, dst, sizes, job_id, gpu_is_src=True)
         start, end = torch.Event(enable_timing=True), torch.Event(enable_timing=True)
         with self._chain_lock:
             self._stream.wait_stream(torch.cuda.current_stream())
@@ -338,6 +391,7 @@ class NVMeOffloadingHandler(OffloadingHandler):
                 job.gpu_spec, NVMeLoadStoreSpec(job.slots, job.keys),
                 gpu_is_src=False,
             )
+            self._validate_ops(src, dst, sizes, job.job_id, gpu_is_src=False)
             start, end = torch.Event(enable_timing=True), torch.Event(enable_timing=True)
             with self._chain_lock:
                 if self._last_end_event is not None:

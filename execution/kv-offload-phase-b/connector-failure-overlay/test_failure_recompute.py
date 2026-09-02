@@ -98,6 +98,7 @@ def make_conn_worker(load_jobs, results):
     w._load_jobs = dict(load_jobs)
     w._unsubmitted_store_jobs = []
     w._connector_worker_meta = OffloadingWorkerMetadata()
+    w._failed_start_recving = set()
     return w
 
 
@@ -263,6 +264,54 @@ def test_stale_failed_job_ignored():
     check("stale failed job ignored", s.manager.lookup(key, CTX) is True)
 
 
+def test_load_failed_to_start():
+    """transfer_async returning False for a load must degrade: mark_failed
+    (scheduler truncates + drops manager keys) and emit finished_recving
+    on the NEXT get_finished so the parked request is promoted+rescheduled."""
+    key = k(b"nostart" * 2)
+    w = make_conn_worker({}, [])
+    w.worker = SimpleNamespace(
+        transfer_async=lambda job_id, spec: False,
+        get_finished=lambda: [],
+    )
+    meta = oc.OffloadingConnectorMetadata(
+        load_jobs={3: TransferJob(
+            req_id="req-nostart",
+            transfer_spec=(SimpleNamespace(), SimpleNamespace()),
+        )},
+        store_jobs={},
+    )
+    w.start_kv_transfers(meta)
+    check("failed start marked", w._connector_worker_meta.failed_jobs == {3: 1})
+    check("load job popped", 3 not in w._load_jobs)
+    check("pending recving recorded", w._failed_start_recving == {"req-nostart"})
+    _sending, recving = w.get_finished(set())
+    check("finished_recving emitted next step", recving == {"req-nostart"})
+    check("pending cleared", not w._failed_start_recving)
+
+    # store failing to start: mark_failed only, no recving
+    w2 = make_conn_worker({}, [])
+    w2.worker = SimpleNamespace(
+        transfer_async=lambda job_id, spec: False,
+        get_finished=lambda: [],
+    )
+    meta2 = oc.OffloadingConnectorMetadata(
+        load_jobs={},
+        store_jobs={4: TransferJob(
+            req_id="req-store",
+            transfer_spec=(SimpleNamespace(), SimpleNamespace()),
+        )},
+    )
+    w2.prepare_store_kv(meta2)
+    w2.start_kv_transfers(oc.OffloadingConnectorMetadata(
+        load_jobs={}, store_jobs={}))
+    # prepare_store_kv defers; flush via handle_preemptions
+    w2.handle_preemptions(oc.OffloadingConnectorMetadata(
+        load_jobs={}, store_jobs={}))
+    check("store failed start marked",
+          w2._connector_worker_meta.failed_jobs == {4: 1})
+
+
 # ---------------- manager + handler failure semantics ----------------
 
 def test_manager_complete_load_failure():
@@ -317,6 +366,7 @@ def main():
     test_success_regression()
     test_store_failure_drops_keys()
     test_stale_failed_job_ignored()
+    test_load_failed_to_start()
     test_manager_complete_load_failure()
     test_handler_unlinks_corrupt_file()
     print(f"FAILURE-OVERLAY TESTS: {PASS} passed, {FAIL} failed")

@@ -47,7 +47,14 @@ _DEFAULT_RING_BYTES = 512 * 1024 * 1024
 
 
 def _group_block_bytes(kv_cache_config: KVCacheConfig) -> list[int]:
-    """Unpadded per-block payload bytes per KV group (scheduler-side view)."""
+    """Unpadded per-block payload bytes per KV group (scheduler-side view).
+
+    NOTE: only used for the manager's byte-budget accounting; the ring
+    SLOT COUNT deliberately does NOT use this (20260902 boot-2/3: the
+    scheduler- and worker-side kv_cache_config carry different group-spec
+    representations on this fork — ~38.9 KB vs ~985.7 KB per max-group
+    block — while kv_cache_tensors, the physical layout both sides build
+    their views from, is identical)."""
     out: list[int] = []
     for group in kv_cache_config.kv_cache_groups:
         spec = group.kv_cache_spec
@@ -91,14 +98,21 @@ class NVMeTieredOffloadingSpec(OffloadingSpec):
         self.max_tracker_size = int(extra.get("max_tracker_size", 262_144))
 
         self._group_bytes = _group_block_bytes(kv_cache_config)
-        max_block = max(self._group_bytes, default=0)
-        if max_block <= 0:
+        if max(self._group_bytes, default=0) <= 0:
             raise Exception("NVMe tier: no KV groups with positive page bytes")
-        self.num_slots = self.staging_ring_bytes // max_block
+        # ring slots from TENSOR GEOMETRY ONLY (identical on scheduler and
+        # worker; group-spec representations differ between the two roles)
+        per_slot = sum(
+            t.size // kv_cache_config.num_blocks
+            for t in kv_cache_config.kv_cache_tensors
+        )
+        if per_slot <= 0:
+            raise Exception("NVMe tier: empty kv_cache_tensors")
+        self.num_slots = self.staging_ring_bytes // per_slot
         if self.num_slots < 8:
             raise Exception(
                 f"staging_ring_bytes={self.staging_ring_bytes} too small: "
-                f"max group block = {max_block} B, slots = {self.num_slots}"
+                f"per-slot span = {per_slot} B, slots = {self.num_slots}"
             )
 
         self._manager: OffloadingManager | None = None
