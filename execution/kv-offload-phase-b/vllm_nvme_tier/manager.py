@@ -14,6 +14,7 @@ pool can never serve a hit). Owns:
 
 All state lives in the scheduler process; no file IO ever happens here.
 """
+import time
 from collections import OrderedDict
 from collections.abc import Callable, Collection, Iterable
 from dataclasses import dataclass, field
@@ -37,6 +38,25 @@ logger = init_logger(__name__)
 # (production rings are thousands of slots; tiny rings in tests).
 _MAX_LOOKUP_SLOT_FLOOR = 16
 
+# prepare_store may never eat into the load reserve: load claims (which
+# arrive when an idle engine gets its first request) must always be
+# admissible. Without the reserve, a store-heavy pass pins the whole ring
+# and — because worker completions only reach the scheduler via
+# execute_model outputs — an idle engine never frees the slots again:
+# every lookup returns None, the request defers, nothing executes, and the
+# service deadlocks (observed boots 6/7: recheck "deferred" forever).
+_LOAD_RESERVE_FRACTION = 4  # reserve = num_slots // 4
+
+# lookup() degrades None to False (miss -> cold recompute) once the ring
+# has been starved this long with zero completions, so a wedged transfer
+# pipeline slows requests instead of hanging them.
+_STARVE_DEGRADE_S = 10.0
+
+# A store entry stuck "storing" this long is treated as lost (its job died
+# on the worker): drop the entry and let requests recompute. Stores take
+# milliseconds normally; completions flush on the next engine step.
+_STUCK_STORE_S = 30.0
+
 
 @dataclass
 class _KeyEntry:
@@ -46,6 +66,7 @@ class _KeyEntry:
     slot: int = -1  # store in-flight ring slot (valid while storing)
     load_slots: list[int] = field(default_factory=list)  # one per held load
     size_bytes: int = 0
+    t_stored: float = 0.0  # monotonic acceptance time (stuck-store guard)
 
 
 class NVMeTierManager(OffloadingManager):
@@ -74,6 +95,19 @@ class NVMeTierManager(OffloadingManager):
         # slot pool
         self._free_slots: list[int] = list(range(num_slots))
         self._lookup_floor = min(_MAX_LOOKUP_SLOT_FLOOR, max(1, num_slots // 4))
+        # structural load reserve: prepare_store keeps this many slots free
+        # so load claims are always admissible (see _LOAD_RESERVE_FRACTION)
+        self._load_reserve = max(
+            self._lookup_floor, num_slots // _LOAD_RESERVE_FRACTION
+        )
+        # claimed-this-pass bookkeeping: lookup() admits at most
+        # (free - floor) keys between manager commits so prepare_load can
+        # never exceed free capacity (the connector claims the maximal
+        # prefix of hits before allocating anything).
+        self._claim_keys: set[OffloadKey] = set()
+        # monotonic timestamp of the last complete_* callback; drives the
+        # starve-degrade path (None -> False) in lookup()
+        self._last_completion = time.monotonic()
 
     # --- slot pool ---
 
@@ -100,9 +134,48 @@ class NVMeTierManager(OffloadingManager):
         if entry is None:
             return False
         if entry.storing:
+            if time.monotonic() - entry.t_stored > _STUCK_STORE_S:
+                # The store job is presumed dead (worker-side failure that
+                # never reported back): forget the key so requests see a
+                # miss and recompute instead of deferring forever.
+                logger.warning(
+                    "NVMe tier store for key stuck %.0fs; dropping entry, "
+                    "requests will recompute",
+                    time.monotonic() - entry.t_stored,
+                )
+                if entry.slot != -1:
+                    # Free the slot: a leak-free ring matters more than the
+                    # rare race where a very late writer meets a new claim;
+                    # a torn file just fails its load later and is unlinked
+                    # (kv_load_failure_policy=recompute).
+                    self._free_slots.append(entry.slot)
+                    entry.slot = -1
+                self._entries.pop(key, None)  # never persisted: no disk bytes
+                return False
             return None  # persist in flight; retry
-        if self._get_num_free_slots() <= self._lookup_floor:
+        if key in self._claim_keys:
+            return True  # already claimed this pass (re-lookup is a no-op)
+        capacity = (self._get_num_free_slots() - self._lookup_floor
+                    - len(self._claim_keys))
+        if capacity <= 0:
+            if self._claim_keys:
+                # This pass already claimed everything that fits; truncate
+                # the prefix here so prepare_load can never over-allocate
+                # (a partial-prefix load is correct, an assert is not).
+                return False
+            if time.monotonic() - self._last_completion > _STARVE_DEGRADE_S:
+                # Ring starved with no completions for a long time (a live
+                # engine flushes completions every step): degrade to miss
+                # so requests recompute rather than hang.
+                logger.warning(
+                    "NVMe tier ring starved (%d free slots) for %.0fs; "
+                    "degrading lookups to misses",
+                    self._get_num_free_slots(),
+                    time.monotonic() - self._last_completion,
+                )
+                return False
             return None  # ring exhaustion backpressure (Rev 2)
+        self._claim_keys.add(key)
         return True
 
     def prepare_load(
@@ -110,9 +183,10 @@ class NVMeTierManager(OffloadingManager):
         keys: Collection[OffloadKey],
         req_context: ReqContext,
     ) -> LoadStoreSpec:
+        self._claim_keys.clear()
         keys = list(keys)
         slots = self._alloc_slots(keys)
-        assert slots is not None, "lookup() gate must reserve ring capacity"
+        assert slots is not None, "lookup() claim cap must reserve ring capacity"
         for key, slot in zip(keys, slots):
             entry = self._entries[key]
             assert entry is not None and entry.on_disk, key
@@ -133,6 +207,8 @@ class NVMeTierManager(OffloadingManager):
         req_context: ReqContext,
         success: bool = True,
     ) -> None:
+        self._claim_keys.clear()
+        self._last_completion = time.monotonic()
         for key in keys:
             entry = self._entries.get(key)
             if entry is None or entry.ref_cnt <= 0:
@@ -173,10 +249,14 @@ class NVMeTierManager(OffloadingManager):
         # if we returned None (the connector re-offers the same, only
         # growing set without advancing next_stored_block_idx — observed
         # 20260902 boot-4: "cannot store blocks" every step, zero stores).
-        # Accept a prefix that fits (loads keep the lookup-floor reserve);
+        # Accept a prefix that fits. The load reserve (a quarter of the
+        # ring) stays untouched by stores, so load claims stay admissible
+        # even when the engine sits idle with unreported completions
+        # (worker completions only flow back via execute_model outputs);
         # the unaccepted tail is skipped by the connector's index advance
         # — a coverage loss, never a correctness one.
-        capacity = self._get_num_free_slots() - self._lookup_floor
+        self._claim_keys.clear()
+        capacity = self._get_num_free_slots() - self._load_reserve
         if capacity <= 0:
             return None  # ring busy with in-flight jobs; retry next pass
         if len(keys_to_store) > capacity:
@@ -213,7 +293,8 @@ class NVMeTierManager(OffloadingManager):
 
         for key, slot in zip(keys_to_store, slots):
             self._entries[key] = _KeyEntry(
-                slot=slot, size_bytes=self._per_key_bytes(key)
+                slot=slot, size_bytes=self._per_key_bytes(key),
+                t_stored=time.monotonic(),
             )
 
         return PrepareStoreOutput(
@@ -228,6 +309,8 @@ class NVMeTierManager(OffloadingManager):
         req_context: ReqContext,
         success: bool = True,
     ) -> None:
+        self._claim_keys.clear()
+        self._last_completion = time.monotonic()
         stored_keys: list[OffloadKey] = []
         for key in keys:
             entry = self._entries.get(key)
@@ -253,6 +336,8 @@ class NVMeTierManager(OffloadingManager):
         self._entries.clear()
         self._disk_bytes = 0
         self._free_slots = list(range(self._num_slots))
+        self._claim_keys.clear()
+        self._last_completion = time.monotonic()
 
     def take_events(self) -> Iterable[OffloadingEvent]:
         if self.events is not None:

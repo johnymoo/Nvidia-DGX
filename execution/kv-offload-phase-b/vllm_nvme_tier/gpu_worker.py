@@ -200,6 +200,17 @@ class NVMeOffloadingHandler(OffloadingHandler):
         self._order: deque[int] = deque()  # job ids, FIFO completion barrier
         self._slot_busy: set[int] = set()
         self._slot_lock = threading.Lock()
+        # FIFO completion barrier needs DRAINING even when the engine is
+        # idle (no steps -> no get_finished -> slots never freed -> the
+        # next lookup defers forever: 20260902 flood-end zombie). A
+        # background drainer runs the same pop loop and buffers results.
+        self._drain_lock = threading.RLock()
+        self._results_backlog: list[TransferResult] = []
+        self._drain_stop = threading.Event()
+        self._drain_thread = threading.Thread(
+            target=self._drain_loop, name="nvme_tier_drain", daemon=True
+        )
+        self._drain_thread.start()
 
         self._physical_budget = physical_budget_bytes
         self._gc_interval = gc_interval_s
@@ -469,7 +480,22 @@ class NVMeOffloadingHandler(OffloadingHandler):
     # ---------------- completion (FIFO barrier) ----------------
 
     def get_finished(self) -> list[TransferResult]:
-        results: list[TransferResult] = []
+        with self._drain_lock:
+            self._drain_once()
+            results = self._results_backlog
+            self._results_backlog = []
+            return results
+
+    def _drain_loop(self) -> None:
+        while not self._drain_stop.wait(0.1):
+            try:
+                with self._drain_lock:
+                    self._drain_once()
+            except Exception as e:  # noqa: BLE001
+                logger.error("NVMe tier drainer error: %r", e)
+
+    def _drain_once(self) -> None:
+        results = self._results_backlog
         filed_now: dict[int, bool] = dict(self._pool.get_finished())
         while self._order:
             job_id = self._order[0]
@@ -486,7 +512,7 @@ class NVMeOffloadingHandler(OffloadingHandler):
                         [self._store_file_task(job, k, s, seg)
                          for k, s, seg in zip(job.keys, job.slots, job.segments)],
                     )
-                    break  # file stage runs async; re-check next call
+                    break  # file stage runs async; re-check later
                 if job_id not in filed_now:
                     break
                 success = filed_now.pop(job_id)
@@ -518,7 +544,7 @@ class NVMeOffloadingHandler(OffloadingHandler):
                     "NVME-TIER-LOAD job %d done: %.1f s wall",
                     job_id, time.perf_counter() - job.t_enqueued,
                 )
-        return results
+        self._results_backlog = results
 
     def _pop_head(self, job_id: int, slots: list[int]) -> None:
         assert self._order and self._order[0] == job_id
@@ -542,6 +568,7 @@ class NVMeOffloadingHandler(OffloadingHandler):
 
     def shutdown(self) -> None:
         self._gc_stop.set()
+        self._drain_stop.set()
         self._pool.shutdown(wait=True)
         self._gpu_tensors.clear()
         self._ring_tensors.clear()

@@ -9,6 +9,7 @@ Run inside a throwaway container of the production image:
 import os
 import sys
 import tempfile
+import time
 
 from vllm.v1.kv_offload.base import (
     OffloadingEvent,
@@ -116,6 +117,82 @@ def test_slot_backpressure():
     check("lookup None under slot pressure", m.lookup(first[0], CTX) is None)
 
 
+def test_idle_wedge_regression():
+    # Boots 6/7 wedge: flood stores hold the whole ring in storing
+    # entries whose completions cannot reach the scheduler while the
+    # engine is idle (worker get_finished only runs inside execute_model).
+    # The load reserve must keep load claims admissible so the recheck
+    # proceeds, executes, and flushes the backlog.
+    m = new_manager(num_slots=80)  # floor 16, load reserve 20
+    needle = [k(b"ndl" + bytes([i]) * 17) for i in range(4)]
+    out0 = m.prepare_store(needle, CTX)
+    m.complete_store(out0.keys_to_store, CTX)  # 4 on disk
+    flood = [k(b"fld" + bytes([i]) * 17) for i in range(80)]
+    out1 = m.prepare_store(flood, CTX)
+    check("flood accepts ring minus reserve",
+          len(out1.keys_to_store) == 60)
+    check("reserve survives flood", m._get_num_free_slots() == 20)
+    # completions unreported (idle engine): storing entries hold 60 slots
+    hits = [m.lookup(x, CTX) for x in needle]
+    check("idle recheck lookups hit", all(h is True for h in hits))
+    spec = m.prepare_load(needle, CTX)
+    check("idle recheck load admitted", len(spec.block_ids) == 4)
+
+
+def test_claim_cap():
+    # lookup() claims at most (free - floor) keys per pass so
+    # prepare_load can never over-allocate the ring (the connector
+    # claims the maximal hit prefix before allocating anything).
+    m = new_manager(num_slots=80)  # floor 16, reserve 20
+    needle = [k(b"ndl" + bytes([i]) * 17) for i in range(10)]
+    out = m.prepare_store(needle, CTX)   # capacity 60, accepts 10
+    m.complete_store(out.keys_to_store, CTX)  # 10 on disk, free 80
+    flood = [k(b"fld" + bytes([i]) * 17) for i in range(80)]
+    out2 = m.prepare_store(flood, CTX)   # accepts 60, free 20
+    check("flood holds ring minus reserve", len(out2.keys_to_store) == 60)
+    check("free equals reserve", m._get_num_free_slots() == 20)
+    res = [m.lookup(x, CTX) for x in needle]
+    check("claims capped at free minus floor",
+          sum(r is True for r in res) == 4)
+    check("excess claims truncate to False", res[4] is False)
+    spec = m.prepare_load(needle[:4], CTX)
+    check("capped load allocates", len(spec.block_ids) == 4)
+
+
+def test_starve_degrade():
+    # free <= floor with no completions for a long time: lookups degrade
+    # to misses (recompute) instead of deferring forever. Stores alone
+    # cannot reach the floor (the reserve stops them), so pin the rest
+    # with an in-flight load first.
+    m = new_manager(num_slots=80)  # floor 16, reserve 20
+    keys = [k(b"str" + bytes([i]) * 17) for i in range(10)]
+    out = m.prepare_store(keys, CTX)
+    m.complete_store(out.keys_to_store, CTX)  # 10 on disk, free 80
+    flood = [k(b"fld" + bytes([i]) * 17) for i in range(80)]
+    m.prepare_store(flood, CTX)               # 60 storing, free 20
+    m.prepare_load(keys[:4], CTX)             # free 16 == floor
+    check("ring at floor", m._get_num_free_slots() == 16)
+    on_disk = keys[9]
+    m._last_completion = time.monotonic()
+    check("fresh starve defers", m.lookup(on_disk, CTX) is None)
+    m._last_completion = time.monotonic() - 20.0
+    check("stale starve degrades to miss", m.lookup(on_disk, CTX) is False)
+
+
+def test_stuck_store_degrade():
+    # a storing entry older than the grace window is dropped and its
+    # slot freed; requests recompute instead of deferring forever.
+    m = new_manager(num_slots=8)
+    key = k(b"stk" + b"x" * 17)
+    out = m.prepare_store([key], CTX)
+    check("one slot held", m._get_num_free_slots() == 7)
+    entry = m._entries[key]
+    entry.t_stored = time.monotonic() - 60.0
+    check("stuck store degrades to miss", m.lookup(key, CTX) is False)
+    check("entry dropped", key not in m._entries)
+    check("slot recovered", m._get_num_free_slots() == 8)
+
+
 def test_budget_eviction():
     m = new_manager(num_slots=8, budget=250, events=True)
     batches = []
@@ -201,6 +278,10 @@ def main():
     test_state_machine()
     test_store_failure_and_reset()
     test_slot_backpressure()
+    test_idle_wedge_regression()
+    test_claim_cap()
+    test_starve_degrade()
+    test_stuck_store_degrade()
     test_budget_eviction()
     test_store_threshold()
     test_file_io()

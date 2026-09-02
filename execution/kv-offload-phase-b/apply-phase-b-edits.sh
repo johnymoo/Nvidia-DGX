@@ -46,8 +46,8 @@ kv_line = (
     '\'{"kv_connector":"OffloadingConnector","kv_role":"kv_both",'
     '"kv_load_failure_policy":"recompute","kv_connector_extra_config":'
     '{"spec_name":"NVMeTieredOffloadingSpec","spec_module_path":"vllm_nvme_tier.spec",'
-    '"nvme_bytes_to_use":${KV_OFFLOAD_NVME_BYTES:-137438953472},'
-    '"nvme_root_dir":"/kv-tier/offload","staging_ring_bytes":2147483648}}\''
+    '"nvme_bytes_to_use":${KV_OFFLOAD_NVME_BYTES:-343597383680},'
+    '"nvme_root_dir":"/kv-tier/offload","staging_ring_bytes":3221225472}}\''
 )
 pkg = os.environ["PKG_DIR"]
 tier = os.environ["TIER_DIR"]
@@ -93,7 +93,7 @@ with open(envp) as f:
 if "KV_OFFLOAD_NVME_BYTES=" not in src:
     if src and not src.endswith("\n"):
         src += "\n"
-    src += "KV_OFFLOAD_NVME_BYTES=137438953472\n"
+    src += "KV_OFFLOAD_NVME_BYTES=343597383680\n"
     with open(envp, "w") as f:
         f.write(src)
     print(f"appended KV_OFFLOAD_NVME_BYTES to {envp}")
