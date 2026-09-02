@@ -128,7 +128,10 @@ class NVMeTierManager(OffloadingManager):
                 self._entries.move_to_end(key)
 
     def complete_load(
-        self, keys: Collection[OffloadKey], req_context: ReqContext
+        self,
+        keys: Collection[OffloadKey],
+        req_context: ReqContext,
+        success: bool = True,
     ) -> None:
         for key in keys:
             entry = self._entries.get(key)
@@ -139,6 +142,14 @@ class NVMeTierManager(OffloadingManager):
                 self._free_slots.append(entry.load_slots.pop())
             if entry.ref_cnt == 0 and entry.storing is False and not entry.load_slots:
                 entry.load_slots = []
+            if not success:
+                # The file failed to load (corrupt/missing): forget the key
+                # so future lookups miss instead of re-offering a bad file.
+                # The worker unlinks the file; any concurrent load of the
+                # same key fails on its own and lands here too.
+                removed = self._entries.pop(key, None)
+                if removed is not None:
+                    self._disk_bytes -= removed.size_bytes
 
     def prepare_store(
         self,

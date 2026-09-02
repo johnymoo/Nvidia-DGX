@@ -362,6 +362,13 @@ class NVMeOffloadingHandler(OffloadingHandler):
             _group_idx, payload = read_key_file(path)
         except OSError as e:
             logger.warning("NVMe load failed (%s): %r", path[-40:], e)
+            # Best-effort unlink: the bytes are unverified/missing, the
+            # scheduler drops the key from the table, and the physical GC
+            # would otherwise keep the corpse until its LRU turn anyway.
+            try:
+                os.remove(path)
+            except OSError:
+                pass
             return False
         off = 0
         for tensor_idx, nbytes in segments:
