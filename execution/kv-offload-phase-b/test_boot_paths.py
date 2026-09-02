@@ -69,10 +69,12 @@ def fake_configs():
         model_config=SimpleNamespace(model="DeepSeek-V4-Flash-0731"),
     )
     # tensors mirror the real fork geometry: per-slot span = sum of
-    # per-block bytes over ALL tensors (t.size // num_blocks)
+    # per-block bytes over ALL tensors (t.size // num_blocks); group
+    # bytes come from shared_by ∩ group layer_names (side-invariant)
     kv_cache_tensors = [
-        SimpleNamespace(size=1000 * 37376),
-        SimpleNamespace(size=1000 * 1168),
+        SimpleNamespace(size=1000 * 37376, shared_by=["mla-l0"]),
+        SimpleNamespace(size=1000 * 1168,
+                        shared_by=["mla-l0"] + [f"swa-l{i}" for i in range(4)]),
     ]
     kv_cache_config = SimpleNamespace(
         num_blocks=1000, kv_cache_groups=groups,
@@ -111,8 +113,8 @@ def main():
         s = new_spec(root)
         per_rank = 137438953472 // 2
         check("cluster budget split per rank", s.per_rank_bytes == per_rank)
-        # group bytes: MLA 37,376 + SWA 4x1,168 = 42,048 -> max
-        check("group block bytes", s._group_bytes == [37376, 4672])
+        # group bytes via tensor geometry: g0 = 37,376+1,168; g1 = 1,168
+        check("group block bytes", s._group_bytes == [38544, 1168])
         # ring slots from TENSOR GEOMETRY (side-invariant): per-slot span
         # = 37,376 + 1,168 across all tensors
         expect_slots = 536870912 // (37376 + 1168)

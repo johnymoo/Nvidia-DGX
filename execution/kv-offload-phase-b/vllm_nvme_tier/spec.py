@@ -25,7 +25,6 @@ from vllm.config import VllmConfig
 from vllm.platforms import current_platform
 from vllm.v1.kv_cache_interface import (
     KVCacheConfig,
-    UniformTypeKVCacheSpecs,
 )
 from vllm.v1.kv_offload.base import (
     CanonicalKVCaches,
@@ -47,23 +46,23 @@ _DEFAULT_RING_BYTES = 2 * 1024 * 1024 * 1024
 
 
 def _group_block_bytes(kv_cache_config: KVCacheConfig) -> list[int]:
-    """Unpadded per-block payload bytes per KV group (scheduler-side view).
-
-    NOTE: only used for the manager's byte-budget accounting; the ring
-    SLOT COUNT deliberately does NOT use this (20260902 boot-2/3: the
-    scheduler- and worker-side kv_cache_config carry different group-spec
-    representations on this fork — ~38.9 KB vs ~985.7 KB per max-group
-    block — while kv_cache_tensors, the physical layout both sides build
-    their views from, is identical)."""
+    """Per-block bytes per KV group, derived from TENSOR GEOMETRY ONLY
+    (kv_cache_tensors + shared_by + group layer_names — the same data the
+    connector worker uses to build group_data_refs). Scheduler- and
+    worker-side kv_cache_config carry different group-SPEC representations
+    on this fork (20260902 boot-2/3: ~38.9 KB vs ~985.7 KB per max-group
+    block), so anything derived from kv_cache_spec is side-dependent."""
+    num_blocks = kv_cache_config.num_blocks
+    tensor_pages = [
+        (set(t.shared_by), t.size // num_blocks)
+        for t in kv_cache_config.kv_cache_tensors
+    ]
     out: list[int] = []
     for group in kv_cache_config.kv_cache_groups:
-        spec = group.kv_cache_spec
-        if isinstance(spec, UniformTypeKVCacheSpecs):
-            out.append(
-                sum(s.real_page_size_bytes for s in spec.kv_cache_specs.values())
-            )
-        else:
-            out.append(spec.real_page_size_bytes)
+        layers = set(group.layer_names)
+        out.append(
+            sum(page for shared_by, page in tensor_pages if shared_by & layers)
+        )
     return out
 
 

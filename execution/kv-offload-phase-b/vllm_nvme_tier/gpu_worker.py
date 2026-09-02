@@ -160,6 +160,7 @@ class _LoadJob:
     end: torch.Event | None = None
     cuda_ready: bool = False
     failed: bool = False
+    t_enqueued: float = 0.0
 
 
 class NVMeOffloadingHandler(OffloadingHandler):
@@ -373,6 +374,11 @@ class NVMeOffloadingHandler(OffloadingHandler):
             segments=[self._group_segments[get_offload_group_idx(k)] for k in keys],
             gpu_spec=gpu_spec, num_bytes=num_bytes,
         )
+        job.t_enqueued = time.perf_counter()
+        logger.warning(
+            "NVME-TIER-LOAD job %d start: %d keys, %.1f MiB",
+            job_id, len(keys), num_bytes / 2**20,
+        )
         self._jobs[job_id] = job  # register BEFORE enqueue (thread race)
         self._order.append(job_id)
         self._pool.enqueue_load(job_id, 1, [self._load_file_task(job)])
@@ -382,30 +388,39 @@ class NVMeOffloadingHandler(OffloadingHandler):
 
     def _load_file_task(self, job: _LoadJob):
         def task() -> None:
-            for key, slot, segments in zip(job.keys, job.slots, job.segments):
-                if not self._read_key_into_ring(key, slot, segments):
-                    job.failed = True
-                    return
-            # CUDA leg: ring -> GPU (thread-issued; chain under lock)
-            src, dst, sizes, _ = self._copy_ops(
-                job.gpu_spec, NVMeLoadStoreSpec(job.slots, job.keys),
-                gpu_is_src=False,
-            )
-            self._validate_ops(src, dst, sizes, job.job_id, gpu_is_src=False)
-            start, end = torch.Event(enable_timing=True), torch.Event(enable_timing=True)
-            with self._chain_lock:
-                if self._last_end_event is not None:
-                    self._stream.wait_event(self._last_end_event)
-                with torch.cuda.stream(self._stream):
-                    start.record(self._stream)
-                    if len(sizes) > 0:
-                        ops.swap_blocks_batch(
-                            torch.from_numpy(src), torch.from_numpy(dst),
-                            torch.from_numpy(sizes), is_src_access_order_any=True,
-                        )
-                    end.record(self._stream)
-                self._last_end_event = end
-            job.start, job.end, job.cuda_ready = start, end, True
+            try:
+                for key, slot, segments in zip(job.keys, job.slots, job.segments):
+                    if not self._read_key_into_ring(key, slot, segments):
+                        job.failed = True
+                        return
+                # CUDA leg: ring -> GPU (thread-issued; chain under lock)
+                src, dst, sizes, _ = self._copy_ops(
+                    job.gpu_spec, NVMeLoadStoreSpec(job.slots, job.keys),
+                    gpu_is_src=False,
+                )
+                self._validate_ops(src, dst, sizes, job.job_id, gpu_is_src=False)
+                start, end = torch.Event(enable_timing=True), torch.Event(enable_timing=True)
+                with self._chain_lock:
+                    if self._last_end_event is not None:
+                        self._stream.wait_event(self._last_end_event)
+                    with torch.cuda.stream(self._stream):
+                        start.record(self._stream)
+                        if len(sizes) > 0:
+                            ops.swap_blocks_batch(
+                                torch.from_numpy(src), torch.from_numpy(dst),
+                                torch.from_numpy(sizes), is_src_access_order_any=True,
+                            )
+                        end.record(self._stream)
+                    self._last_end_event = end
+                job.start, job.end, job.cuda_ready = start, end, True
+            except Exception as e:  # noqa: BLE001
+                # The pool swallows task exceptions into task_done(False);
+                # without this the job would sit at the FIFO head forever
+                # (20260902 flood stall: zero loads ever completed).
+                logger.error(
+                    "NVMe tier load job %d failed: %r", job.job_id, e
+                )
+                job.failed = True
 
         return task
 
@@ -499,6 +514,10 @@ class NVMeOffloadingHandler(OffloadingHandler):
                     transfer_time=job.start.elapsed_time(job.end) * 1e-3,
                     transfer_type=(NVMeLoadStoreSpec.medium(), "GPU"),
                 ))
+                logger.warning(
+                    "NVME-TIER-LOAD job %d done: %.1f s wall",
+                    job_id, time.perf_counter() - job.t_enqueued,
+                )
         return results
 
     def _pop_head(self, job_id: int, slots: list[int]) -> None:
