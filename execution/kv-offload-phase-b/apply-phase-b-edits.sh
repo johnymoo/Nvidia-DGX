@@ -47,7 +47,7 @@ kv_line = (
     '"kv_load_failure_policy":"recompute","kv_connector_extra_config":'
     '{"spec_name":"NVMeTieredOffloadingSpec","spec_module_path":"vllm_nvme_tier.spec",'
     '"nvme_bytes_to_use":${KV_OFFLOAD_NVME_BYTES:-137438953472},'
-    '"nvme_root_dir":"/kv-tier/offload","staging_ring_bytes":536870912}}\''
+    '"nvme_root_dir":"/kv-tier/offload","staging_ring_bytes":2147483648}}\''
 )
 pkg = os.environ["PKG_DIR"]
 tier = os.environ["TIER_DIR"]

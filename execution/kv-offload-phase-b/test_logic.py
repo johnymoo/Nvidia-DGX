@@ -94,13 +94,25 @@ def test_slot_backpressure():
     m = new_manager(num_slots=8)  # lookup floor = min(16, 8//4) = 2
     first = [k(bytes([i]) * 20) for i in range(5)]
     out = m.prepare_store(first, CTX)
-    check("store beyond slots returns None", m.prepare_store(
-        [k(b"z" * 20)] * 6 and [k(bytes([9, i]) * 20) for i in range(6)], CTX
-    ) is None)
-    check("no partial allocation", m._get_num_free_slots() == 3)
-    m.complete_store(out.keys_to_store, CTX)  # 8 free again
-    in_flight = [k(bytes([20 + i]) * 20) for i in range(6)]
-    m.prepare_store(in_flight, CTX)  # 2 free <= floor 2
+    # 3 free, floor 2 -> capacity 1: a 6-key offer is PARTIALLY accepted
+    out6 = m.prepare_store(
+        [k(bytes([9, i]) * 20) for i in range(6)], CTX
+    )
+    check("oversized offer partially accepted",
+          out6 is not None and len(out6.keys_to_store) == 1)
+    check("partial alloc bounded", m._get_num_free_slots() == 2)
+    m.complete_store(out.keys_to_store, CTX)
+    m.complete_store(out6.keys_to_store, CTX)  # 8 free again
+    full = m.prepare_store(
+        [k(bytes([20 + i]) * 20) for i in range(6)], CTX
+    )
+    check("fits when ring drains", full is not None
+          and len(full.keys_to_store) == 6)
+    m.complete_store(full.keys_to_store, CTX)
+    # 2 free <= floor 2 -> capacity 0 -> None (busy, not deadlock)
+    m.prepare_store([k(bytes([40 + i]) * 20) for i in range(6)], CTX)
+    check("busy ring returns None", m.prepare_store(
+        [k(b"y" * 20)], CTX) is None)
     check("lookup None under slot pressure", m.lookup(first[0], CTX) is None)
 
 

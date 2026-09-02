@@ -169,11 +169,20 @@ class NVMeTierManager(OffloadingManager):
                 evicted_keys=[],
             )
 
+        # Partial acceptance: an offer larger than the ring would deadlock
+        # if we returned None (the connector re-offers the same, only
+        # growing set without advancing next_stored_block_idx — observed
+        # 20260902 boot-4: "cannot store blocks" every step, zero stores).
+        # Accept a prefix that fits (loads keep the lookup-floor reserve);
+        # the unaccepted tail is skipped by the connector's index advance
+        # — a coverage loss, never a correctness one.
+        capacity = self._get_num_free_slots() - self._lookup_floor
+        if capacity <= 0:
+            return None  # ring busy with in-flight jobs; retry next pass
+        if len(keys_to_store) > capacity:
+            keys_to_store = keys_to_store[:capacity]
         slots = self._alloc_slots(keys_to_store)
-        if slots is None:
-            # returning None makes the connector skip WITHOUT advancing
-            # next_stored_block_idx — the blocks are re-offered next pass.
-            return None
+        assert slots is not None
 
         # logical disk-budget eviction (LRU, protected = current + pinned)
         protected = set(keys) | {k for k, e in self._entries.items()

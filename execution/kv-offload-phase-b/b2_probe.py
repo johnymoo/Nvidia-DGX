@@ -70,8 +70,9 @@ def do_needle():
     msgs = [{"role": "user", "content": needle_prompt() + "\n\nA unique "
              "identifier token is buried in the text above. Reply with "
              "ONLY that identifier token and nothing else."}]
-    out, dt = request(msgs, max_tokens=16)
-    ans = out["choices"][0]["message"]["content"]
+    out, dt = request(msgs, max_tokens=256)
+    msg = out["choices"][0]["message"]
+    ans = msg.get("content") or msg.get("reasoning") or msg.get("reasoning_content") or ""
     rec = {"answer": ans, "ttft_wall_s": round(dt, 2), **usage_bits(out)}
     with open(STATE, "w") as f:
         json.dump(rec, f, indent=1)
@@ -103,8 +104,9 @@ def do_recheck():
     msgs = [{"role": "user", "content": needle_prompt() + "\n\nA unique "
              "identifier token is buried in the text above. Reply with "
              "ONLY that identifier token and nothing else."}]
-    out, dt = request(msgs, max_tokens=16)
-    ans = out["choices"][0]["message"]["content"]
+    out, dt = request(msgs, max_tokens=256)
+    msg = out["choices"][0]["message"]
+    ans = msg.get("content") or msg.get("reasoning") or msg.get("reasoning_content") or ""
     rec = {"answer": ans, "ttft_wall_s": round(dt, 2), **usage_bits(out)}
     print(json.dumps(rec, indent=1))
     print("BASELINE:", json.dumps(base, indent=1))

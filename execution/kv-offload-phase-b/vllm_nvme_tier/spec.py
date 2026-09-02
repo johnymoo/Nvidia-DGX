@@ -7,7 +7,7 @@ kv_connector_extra_config:
   nvme_root_dir      (required) container path of the tier root
   nvme_bytes_to_use  (required) CLUSTER byte budget, split per rank like
                      the CPU tier's cpu_bytes_to_use
-  staging_ring_bytes (default 512 MiB) PER-RANK pinned transport ring
+  staging_ring_bytes (default 2 GiB) PER-RANK pinned transport ring
   io_threads         (default 4)
   gc_interval_s      (default 60)
   store_threshold / max_tracker_size / eviction_policy as in the CPU tier
@@ -43,7 +43,7 @@ from vllm_nvme_tier.gpu_worker import NVMeOffloadingHandler
 from vllm_nvme_tier.manager import NVMeTierManager
 from vllm_nvme_tier.specs import NVMeLoadStoreSpec
 
-_DEFAULT_RING_BYTES = 512 * 1024 * 1024
+_DEFAULT_RING_BYTES = 2 * 1024 * 1024 * 1024
 
 
 def _group_block_bytes(kv_cache_config: KVCacheConfig) -> list[int]:
