@@ -233,6 +233,40 @@ class NVMeOffloadingHandler(OffloadingHandler):
             file_mapper.base_path, file_mapper.rank,
         )
 
+    def _load_copy_views(
+        self,
+        gpu_spec: GPULoadStoreSpec,
+        tier: NVMeLoadStoreSpec,
+    ) -> list[tuple[torch.Tensor, torch.Tensor]]:
+        """(src, dst) view pairs for the load CUDA leg, mirroring
+        _copy_ops' op order. The load leg submits plain per-op
+        non_blocking copy_ calls instead of swap_blocks_batch: the
+        cuMemcpyBatchAsync batch path faulted the context on GB10
+        (20260902 boot-9, both ranks, first real NVMe load; store-side
+        batches are unaffected and keep the batch kernel)."""
+        views: list[tuple[torch.Tensor, torch.Tensor]] = []
+        gpu_off = other_off = 0
+        for gs, segments in zip(gpu_spec.group_sizes, self._group_segments):
+            if gs == 0:
+                continue
+            g_ids = gpu_spec.block_ids[gpu_off:gpu_off + gs]
+            r_ids = tier.block_ids[other_off:other_off + gs]
+            assert len(r_ids) == len(g_ids)
+            for tensor_idx, nbytes in segments:
+                g = self._gpu_tensors[tensor_idx]
+                r = self._ring_tensors[tensor_idx]
+                gp = g.shape[1]
+                rp = r.shape[1]
+                for bid, sid in zip(g_ids.tolist(), r_ids.tolist()):
+                    views.append((
+                        r.view(-1)[sid * rp: sid * rp + nbytes],
+                        g.view(-1)[bid * gp: bid * gp + nbytes],
+                    ))
+            gpu_off += gs
+            other_off += gs
+        assert gpu_off == len(gpu_spec.block_ids)
+        return views
+
     # ---------------- pointer construction ----------------
 
     def _copy_ops(
@@ -404,23 +438,27 @@ class NVMeOffloadingHandler(OffloadingHandler):
                     if not self._read_key_into_ring(key, slot, segments):
                         job.failed = True
                         return
-                # CUDA leg: ring -> GPU (thread-issued; chain under lock)
+                # CUDA leg: ring -> GPU (thread-issued; chain under lock).
+                # Pointer-validate via the op arrays, then submit per-op
+                # non_blocking copy_ views (NOT swap_blocks_batch — the
+                # batch kernel's cuMemcpyBatchAsync path poisoned the
+                # context on GB10, 20260902 boot-9).
                 src, dst, sizes, _ = self._copy_ops(
                     job.gpu_spec, NVMeLoadStoreSpec(job.slots, job.keys),
                     gpu_is_src=False,
                 )
                 self._validate_ops(src, dst, sizes, job.job_id, gpu_is_src=False)
+                views = self._load_copy_views(
+                    job.gpu_spec, NVMeLoadStoreSpec(job.slots, job.keys)
+                )
                 start, end = torch.Event(enable_timing=True), torch.Event(enable_timing=True)
                 with self._chain_lock:
                     if self._last_end_event is not None:
                         self._stream.wait_event(self._last_end_event)
                     with torch.cuda.stream(self._stream):
                         start.record(self._stream)
-                        if len(sizes) > 0:
-                            ops.swap_blocks_batch(
-                                torch.from_numpy(src), torch.from_numpy(dst),
-                                torch.from_numpy(sizes), is_src_access_order_any=True,
-                            )
+                        for s_view, d_view in views:
+                            d_view.copy_(s_view, non_blocking=True)
                         end.record(self._stream)
                     self._last_end_event = end
                 job.start, job.end, job.cuda_ready = start, end, True
