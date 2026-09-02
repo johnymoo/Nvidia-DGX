@@ -111,6 +111,8 @@ def main():
             kv_caches=caches, num_slots=8, file_mapper=FakeMapper(root),
             io_threads=4, physical_budget_bytes=1 << 30, gc_interval_s=3600,
         )
+        time.sleep(0.5)  # let the GC daemon take its first wait
+        check("gc thread alive", handler._gc_thread.is_alive())
 
         expect0a = t0[3].clone()
         expect0b = t0[4].clone()
@@ -167,7 +169,7 @@ def main():
             first = 32 + j * 8
             g = GPULoadStoreSpec(
                 list(range(first, first + 8)),
-                group_sizes=[8], block_indices=[first],
+                group_sizes=[4, 4], block_indices=[first, first + 4],
             )
             kk = [k(f"probe-{j}-{i}".encode(), 0) for i in range(8)]
             assert handler.transfer_async(

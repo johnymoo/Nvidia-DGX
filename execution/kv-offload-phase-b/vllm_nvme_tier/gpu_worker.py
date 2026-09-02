@@ -201,6 +201,7 @@ class NVMeOffloadingHandler(OffloadingHandler):
         self._slot_lock = threading.Lock()
 
         self._physical_budget = physical_budget_bytes
+        self._gc_interval = gc_interval_s
         self._gc_stop = threading.Event()
         self._gc_thread = threading.Thread(
             target=self._gc_loop, name="nvme_tier_gc", daemon=True
