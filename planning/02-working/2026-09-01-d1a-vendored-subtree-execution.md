@@ -242,3 +242,180 @@ in `tmp/` per Phase A convention):
   probe / monitor).
 - `execution/kv-offload-d0/`: full D0 fallback kit (subscriber + probes +
   analyzer + selftest).
+
+---
+
+## Rev 4 (2026-09-02 ~01:00 local) — night retry: boot 4 found `max_in_flight_tokens`; shim 2.0g; round-5 image
+
+User directive (~23:59 local): start after 30 min, wait for in-flight
+inference to drain first (last generation finished 00:56), then execute.
+Pre-stop evidence: `tmp/followup-tests/20260901T162905Z/d1b/`. Stop clean at
+~00:59; D1b edits re-applied tag `20260901T1659` (worker host + head host +
+head scripts; verify all-true, worker by grep).
+
+**Boot 4** (~01:04): got PAST group_and_unify and pool sizing — shims
+2.0b-2.0f all effective — then died in `_check_enough_kv_cache_memory`:
+`AttributeError: 'VllmConfig' object has no attribute 'max_in_flight_tokens'`
+(`kv_cache_interface.py:804`, tip `SlidingWindowSpec.max_memory_usage_bytes`).
+Root cause: tip added a VllmConfig property
+(`max_concurrent_batches * max_num_batched_tokens`, async-sched aware); fork
+VllmConfig lacks it and fork's original specs passed
+`scheduler_config.max_num_batched_tokens` directly. Both tip read sites
+(ChunkedLocalAttentionSpec + SlidingWindowSpec) share one line.
+
+**Fix — shim 2.0g** (assemble.py): both sites now pass
+`vllm_config.scheduler_config.max_num_batched_tokens` (fork baseline formula,
+kwarg name unchanged) — startup pool check keeps production semantics
+instead of importing tip's 2× async-sched inflation.
+
+Audit closure for the class (new tool
+`tmp/kv-offload-d1a/audit_config_reads.py`): every `<x>_config.<attr>` read
+across the overlay diffed against the fork config classes extracted from the
+production image (vllm/scheduler/parallel/cache/model/speculative) —
+**exactly one missing attr existed (`max_in_flight_tokens`, 2 sites); all 24
+distinct reads now present**. No other config seams anywhere in the 66 files.
+
+`headless_repro.py` promoted to a durable script (was ad-hoc): mounts the
+overlay trio over the production image, walks the boot call path
+group_and_unify → `_get_kv_cache_groups_uniform_groups` →
+`_max_memory_usage_bytes_from_groups` + get_page_sizes + fork-style
+KVCacheTensor — PASS in seconds, incl. SWA fork-formula cross-check
+(306,333,696 B exact). equiv_test re-run on the 2.0g interface: 109/109,
+production MLA pages 149,504/149,760 B unchanged.
+
+Round-5 image building from `/tmp/d1a-build` (only the interface file
+changed); then fingerprint → ship to gb10-2 → boot 5.
+
+## Rev 5 (2026-09-02 ~02:00 local) — boot 5: `kv_cache_layout`; shim 2.0h; repro upgraded to full-tree bind-mount
+
+Boot 4 fix (2.0g) held — boot 5 got through scheduler-side checks, KV pool
+**8.34 GiB / 1,262,892 tokens**, and INTO connector creation, then died at
+worker-side `build_offloading_config`:
+`AttributeError: 'CacheConfig' object has no attribute 'kv_cache_layout'`
+(offloading/config.py:219). Tip CacheConfig declares it as
+`str|None = field(default=None, init=False)` — a post-init resolved field;
+the only consumer is the file-tier mapper (asserts not-None). **Shim 2.0h**:
+tolerant `getattr(..., "kv_cache_layout", None)` = tip's None default for
+the CPU tier, byte-identical semantics. (Phase B file tier will need a real
+layout resolution — noted for that design.)
+
+Audit upgraded to depth-2 chains (`vllm_config.<sub>.<attr>` + local
+aliases) + dynamic `self.X =` assignments in config __post_init__ surfaces:
+after 2.0h the sweep is clean — zero missing reads across all 66 files
+(`original_max_model_len` was a false positive: both fork and tip set it
+dynamically in __post_init__).
+
+headless repro rebuilt to a **full-tree bind-mount harness** (repro_run.sh
+generates per-file `-v` binds of the build-context overlay over
+site-packages in the f277b3d image — real import machinery, no sys.modules
+gymnastics; caught the fork-stale `offloading/metrics.py →
+vllm.v1.kv_offload.worker` trap that only affects registration-based
+loading, not the built image). Now covers boots 1-5 paths +
+`resolve_kv_cache_block_sizes` + full `offloading_connector` import:
+PASS in ~30 s, pre-build. Mock VllmConfig attrs = audit-derived set
+(exact tripwire: any unshimmed config read crashes the repro).
+
+Round-6 image `bf11564d…` built (only offloading/config.py changed) and
+validated in-image (same repro, no mounts needed for the trio — run against
+built tag directly). Head edits rolled back and re-applied with the round-6
+fingerprint; shipping to gb10-2; boot 6 next.
+
+## Rev 6 (2026-09-02 ~02:50 local) — boot 6: KVCacheTensor.size semantics; shim 2.0i (Σ tensor sizes)
+
+Boot 5 fix (2.0h) held — boot 6 reached `register_kv_caches` →
+`create_next_worker_view` inside the CPU tier's shared mmap region, then:
+`AssertionError: Worker offset 8640 exceeds worker area end 1728
+(overflowed by 6912 = 4×1728)`. Root cause: **tip vs fork
+KVCacheTensor.size semantics**. Tip: every tensor's `.size` = the whole
+backing allocation ("its size is the total, not a per-tensor share" — tip's
+own comment). Fork: `.size` = per-tensor share (DSv4: 5 uniform-slot
+tensors of equal size). `build_offloading_config` derived
+`worker_kv_bytes_per_block = tensors[0].size // num_blocks` → 5× too small;
+the per-tensor view loop then needs Σ = 5×page per worker. The numbers
+reconcile exactly: 8640 required vs 1728 reserved, overflow 6912.
+
+**Shim 2.0i**: `total_gpu_kv_bytes = sum(t.size for t in
+kv_cache_tensors)` — fork-compatible total. Cross-checks: A1's cluster
+accounting (8 GiB / ~605K tokens ≈ 13.9 KiB/token, fork stack) matches Σ
+semantics; the `replicated_layout` gate short-circuits (multi-group), so
+the only consumer of the old value is the pool sizing.
+
+Repro extended (boots 1-6 now): SharedOffloadRegion layout math headless
+(/dev/shm mmap + 5 worker views with shape/stride asserts, ~30 s; cleanup
+BufferError warning is benign and self-logged). Round-7 image `8a741c7a…`
+built, repro PASS in-image, head edits re-applied; boot 7 after ship.
+
+## Rev 7 (2026-09-02 ~03:30 local) — boots 7-8: connector fully initializes; capacity wall then fork-core invariant; ROUTE VERDICT
+
+**Boot 7** (round-7, all shims): every interface/config/layout seam clean —
+connector fully constructed, mmap region created. Died at the CAPACITY
+wall: with the CPU tier pinned (8 GiB cluster = 4 GiB/rank on world_size 2),
+"Available KV cache memory" fell 8.34 → 5.63 GiB (pinned + alignment ≈
+0.68× exchange rate on unified LPDDR), below the 7.3 GiB floor for
+max_model_len 1,048,576. Not a bug — the plan's R2/R3 tradeoff
+materializing one level deeper than expected.
+
+**Boot 8** (gmu 0.78 → 0.796 via env+acceptance edits, no image change;
+estimated KV ≈ 7.5 GiB + 550K-token CPU tier): died at
+`v1/worker/utils.py:155 KVBlockZeroer.init_meta` —
+`Non-uniform page sizes: 2160 vs 9360`. Fork's dspark zero-on-free
+machinery (anti cross-request-KV-leak) asserts all groups share ONE
+uniform page layout; the tip connector's per-group canonical tensor model
+violates it. **Not shim-able**: a wrong fix here is silent KV leakage
+between requests — precisely the class the kill-gate discipline forbids
+improvising.
+
+**Route verdict — vendored subtree (Stage 1) BLOCKED at fork-core
+invariants.** Six seams in five boots (2.0b-2.0f interface; 2.0g VllmConfig;
+2.0h CacheConfig; 2.0i KVCacheTensor.size semantics; then fork-internal
+KVBlockZeroer), each deeper: the two stacks' KV-layout MODELS differ
+structurally (fork: uniform-slot shared tensor; tip: per-group canonical).
+Bridging at every internal invariant is unbounded and risks correctness.
+Evidence: `tmp/followup-tests/20260901T162905Z/d1b/` (pre-stop → boot 8);
+tools durable in execution/kv-offload-d1a/ (audits + repro cover boots 1-6
+classes pre-build).
+
+**What the campaign still proved**: A0-era seam map, the full connector
+config/layout pipeline works through register_kv_caches on the vendored
+stack, capacity exchange rate measured (pinned:KV ≈ 0.68×), and the A1
+zero-hit question remains untested empirically (never served a request).
+
+**Next (user-directed Phase B)**: custom per-rank NVMe OffloadingSpec on
+the FORK-NATIVE stack (factory `spec_module_path`, no image rebuild —
+A1 proved the fork stack boots and serves; its defect was the CPU spec's
+store-on-fill policy, which a custom spec replaces with store-on-eviction,
+directly dissolving the A1 structural law without any vendoring).
+
+Rolled back cleanly ~03:30 (both .bak-1659 sets + env/acceptance gmu
+edits covered by the same restores; worker env byte-identical to
+pristine). Production restart = see restore record below.
+
+## Rev 8 (2026-09-02 ~04:30 local) — D0-lite: PYTHONHASHSEED=0 FIXES the A1 zero-hit; store 9× is a separate, manager-side factor
+
+Zero-code decisive experiment on the FORK-native stack (production image
+f277b3d, A1 connector config, + `PYTHONHASHSEED=0` in both hosts' env;
+tag 20260901T1924; evidence `tmp/followup-tests/20260901T162905Z/d0lite/`):
+
+- **Boot**: clean, acceptance PASS, API up (fork stack allocates the pinned
+  tier AFTER KV sizing — no capacity wall, unlike the tip stack's boot 7/8).
+- **Canary (the A1 kill signal)**: identical 18,427-token prompt → 2nd
+  request **0.67 s, cached_tokens 18,176** — PASS. A1 with the same config
+  minus the hashseed: 0 hits in 1,084,361 queries. **Root cause of the
+  block-hash mismatch CONFIRMED CLOSED: Python hash randomization driving
+  the per-process NONE_HASH seed** (upstream made it deterministic in
+  #51875; PYTHONHASHSEED=0 achieves it on the fork with zero code).
+- **Store amplification (A1's second kill)**: clean single-request
+  measurement = **8.97×** (2.52 GiB stored for one 21,213-token cold
+  prefill; gate ≤1.3). Matches the root-cause doc's store arithmetic
+  (25 GB / 758 unique blocks ≈ 2.8 GB ≈ 8.9×) — i.e. the ~9× factor was
+  NEVER key instability; it is the fork CPU-spec manager accepting repeat
+  store offers. NOT a Phase B blocker: our custom manager's key table
+  dedupes offers by design (only new keys enter the store spec).
+- **Decision**: this arm NOT adopted (9× write cost + R2.2 law makes the
+  8 GiB DRAM tier dead weight). Rolled back; production restored.
+- **Phase B unblocked**: custom NVMe spec on the fork API (Rev 1 design +
+  Rev 2 staging-ring amendment), with `PYTHONHASHSEED=0` as a REQUIRED env
+  in the Phase B configuration. The vendored-route verdict (Rev 7) stands;
+  fork-native is the build target.
+
+Post-restore verification appended below after the restart completed.

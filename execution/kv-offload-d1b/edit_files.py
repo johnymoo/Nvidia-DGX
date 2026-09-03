@@ -17,7 +17,7 @@ import sys
 OLD_IMAGE = "gb10-ds4-vllm:f277b3d-nvfp4"
 NEW_IMAGE = "gb10-ds4-vllm:d1a-kvoffload"
 OLD_FP = "36adbf92fe8cdd5c57609b2c5ccfa8e2fc32a340c9ee3d727be538143dda74db"
-NEW_FP = "b845f104b33e1927473b9d3d7a7eb4e4f05a41c327efc26ee85a367e33a53326"
+NEW_FP = "8a741c7a370335c89d8c0492bbf3793f1c911b17a4180d61f0ab859be155dacc"
 
 ANCHOR = "        --enable-chunked-prefill\n"
 KV_LINE = (
