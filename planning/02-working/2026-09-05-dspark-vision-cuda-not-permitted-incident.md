@@ -47,8 +47,9 @@ Sanitized evidence (crash stack incl. the `vision.py:135 F.unfold` surfacing
 point, ~45 h uptime, recovery timeline, env flags) was posted to #216 on
 2026-09-05 as `johnymoo`:
 https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/issues/216#issuecomment-5552186005
-The failing image and per-request token stats were NOT recoverable (bodies
-not retained by the serving path); that limitation is stated in the comment.
+That first comment said the failing image and token stats were not
+recoverable; the token/shape stats later turned out to be in the EngineCore
+`dump_input` (see Root cause, item 2) and were added in the second comment.
 
 - **Issue #216 (OPEN, no fix)**: identical crash signature
   (`cudaErrorNotPermitted` in `merge_one_image`, EngineCore death, TP=2 down).
@@ -69,7 +70,7 @@ not retained by the serving path); that limitation is stated in the comment.
   delta when comparing against their results.
 - Open PR scan (09-05): nothing fixes #216 or adds vision CUDA error handling.
 
-## Root cause (diagnosed 2026-09-05 ~14:00 UTC, read-only; NOT yet fixed)
+## Root cause (diagnosed 2026-09-05 ~14:00 UTC, read-only; fix applied 14:05 UTC - see below)
 
 **Not a vLLM / vision-patch bug. It is the documented NVIDIA Container Toolkit
 "container loses GPU access after `systemctl daemon-reload`" problem, surfacing
