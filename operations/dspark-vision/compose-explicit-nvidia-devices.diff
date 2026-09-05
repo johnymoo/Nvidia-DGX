@@ -1,0 +1,19 @@
+diff --git a/docker-compose.dspark.yml b/docker-compose.dspark.yml
+index 147ea0c..bff8ba1 100644
+--- a/docker-compose.dspark.yml
++++ b/docker-compose.dspark.yml
+@@ -36,6 +36,14 @@ services:
+ 
+     devices:
+       - /dev/infiniband:/dev/infiniband
++      # GPU nodes must be listed explicitly: with Docker's systemd cgroup driver,
++      # devices injected only by the nvidia hook (gpus: all) are absent from the
++      # unit's DeviceAllow, so any host `systemctl daemon-reload` revokes them
++      # and the next fresh CUDA mapping fails with cudaErrorNotPermitted.
++      - /dev/nvidia0
++      - /dev/nvidiactl
++      - /dev/nvidia-uvm
++      - /dev/nvidia-uvm-tools
+ 
+     volumes:
+       - ${HF_CACHE:-${HOME}/.cache/huggingface}:/cache/huggingface

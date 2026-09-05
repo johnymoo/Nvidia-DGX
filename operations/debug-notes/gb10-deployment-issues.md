@@ -11,6 +11,7 @@ GB10 (DGX Spark) 部署过程中遇到的问题、解决方案和经验总结。
 | [2025-07-22](#2025-07-22---sensevoice-gpu-加速失败) | SenseVoice GPU 加速失败 | ⏳ 待 PyTorch 支持 |
 | [2026-02-08](#2026-02-08---cuda-环境配置踩坑) | CUDA 环境配置踩坑 | ✅ 已解决 |
 | [2026-03-04](#2026-03-04---cogvideox-5b-内存不足) | CogVideoX-5B 内存不足 | ❌ 硬件限制 |
+| [2026-09-05](#2026-09-05---dspark-vision-容器-cudaerrornotpermitted) | DSpark Vision 容器 cudaErrorNotPermitted（daemon-reload 撤销 GPU 设备访问） | 🟡 已缓解，待长时间验证 |
 
 ---
 
@@ -157,6 +158,100 @@ Memory ≈ 参数 + (帧数 × 宽 × 高)² × 系数
 
 ---
 
+## 2026-09-05 - DSpark Vision 容器 cudaErrorNotPermitted
+
+### 场景
+
+gb10 + gb10-2 双机 TP=2（RoCE 直连）运行 MiaAI-Lab DSpark recipe
+（`ghcr.io/anemll/dspark-vllm-gx10:0.1.1`，`deepseek-ai/DeepSeek-V4-Flash-Vision-Exp`，
+服务名 `deepseek-v4-flash-0731`）。容器健康运行约 45 小时后，一条多模态请求把
+rank 0 的 `Worker_TP0` 打死，两个 rank 随后都在 NCCL 10 分钟超时内退出，
+`unless-stopped` 自动拉起，端到端中断约 26 分钟。上游同型报告：
+[MiaAI-Lab/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark#216](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/issues/216)
+（对方 46 小时后同样崩溃，维护者 fresh boot 复现 5/5 通过）。
+
+### 遇到的问题
+
+```
+File "/opt/dspark-patches/vision_exp/vision.py", line 135, in forward
+    x = F.unfold(x.unsqueeze(0), r, stride=r).squeeze(0).transpose(0, 1)
+torch.AcceleratorError: CUDA error: operation not permitted   (cudaErrorNotPermitted)
+```
+
+- 崩溃点在 Aligner 的 `F.unfold`，整个 ViT 主干（几十个 kernel，均有 launch check）
+  和前一行 `F.pad` 都已成功——这段代码里唯一的 CUDA runtime 调用是 **unfold 输出
+  的显存分配**。上游报告的崩溃点（`clone()` / `.to()` / index_put）同样是分配点。
+- 崩溃时刻 `dmesg` / `journalctl -k` 一片空白：拒绝发生在驱动之上（VFS/cgroup 层）。
+- EngineCore 的 `dump_input` 保留了请求元数据：prompt 98,886 token（98,304 命中前缀
+  缓存），图片 63×45 patch（约 1008×720 px，357 个视觉 token），位于提示词末尾。
+  encoder 激活只有几 MB，不是容量 OOM。
+
+### 技术原因
+
+这是 NVIDIA Container Toolkit 文档记载的已知问题（[Troubleshooting →
+"Containers losing access to GPUs with error: Failed to initialize NVML: Unknown Error"](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/troubleshooting.html)）：
+
+1. 两台主机 Docker 都用 **systemd cgroup driver（cgroup v2）**；compose 用 `gpus: all`
+   请求 GPU，由 legacy `nvidia-container-runtime-hook` 直接注入 `/dev/nvidia0`、
+   `/dev/nvidiactl`、`/dev/nvidia-uvm`、`/dev/nvidia-uvm-tools` 及其 cgroup 规则，
+   **systemd 并不知情**。
+2. `systemctl show docker-<id>.scope -p DeviceAllow` 显示白名单里只有 InfiniBand
+   （`231:*`，因为 `/dev/infiniband` 是通过 `devices:` 显式传入的）和 tty/null 等，
+   **没有 nvidia 设备（195:*、499:*）**。
+3. 主机上任何 `systemctl daemon-reload` 都会让 systemd 用这份白名单重写 BPF 设备规则
+   → 容器内 `open("/dev/nvidia*")` 返回 EPERM → CUDA 报 `cudaErrorNotPermitted`。
+4. 已打开的 fd 继续可用，纯文本流量复用 caching allocator 缓存块可以跑几十小时；
+   直到某个请求迫使 allocator 向驱动申请**新内存段**（libcuda 每个新映射要重新
+   open 设备节点）才爆——第一张需要新激活内存的大图。
+5. gb10 容器启动后 snapd 自动刷新（升级 snapd、chromium）触发了 **7 次
+   daemon-reload**；gb10-2 一次都没有——正好对应"rank 0 报 CUDA 错、rank 1 只是
+   被 NCCL 超时拖死"。fresh boot 复现不出来，因为还没经历过 reload；"~45 小时"
+   只是"长到足够碰上一次主机侧 reload"。
+
+### 解决方案
+
+NVIDIA 文档给出三种修法：改 cgroupfs 驱动（需重启 dockerd，`live-restore=false`
+时所有容器都会弹）、**显式 `--device` 传入设备节点**、CDI。采用第二种，改动最小、
+与文件里 `/dev/infiniband` 的处理方式一致：
+
+```yaml
+    devices:
+      - /dev/infiniband:/dev/infiniband
+      - /dev/nvidia0
+      - /dev/nvidiactl
+      - /dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools
+```
+
+完整 diff 与验证脚本见 [`operations/dspark-vision/`](../dspark-vision/)。
+2026-09-05 14:05–14:13 UTC 用 recipe 自带的 stop/start 脚本重建两个 rank（中断约 8 分钟），
+两台主机新容器的 `DeviceAllow` 均已包含 `195:0 / 195:255 / 499:0 / 499:1`；
+文本冒烟与 1024×768、1600×1200 两张图的多模态冒烟均 HTTP 200。
+
+前置条件：主机上要有 `/dev/char/<major>:<minor>` 符号链接（`71-nvidia.rules` 提供），
+否则 runc + systemd 驱动下显式 `--device` 也会失效（见 NVIDIA 文档中的 runc 警告）。
+
+### 反思
+
+1. **"长时间运行后才出现的 CUDA 权限错误"先查容器运行时，再查模型代码**：上游三方
+   都在 vision 补丁里找 bug，真正的原因在 cgroup 层。
+2. **崩溃点是分配点 + 内核无日志** 是这类问题的指纹；`dump_input` 里有请求元数据，
+   别急着说"拿不到"。
+3. `gpus: all` 在 systemd 驱动的 Docker 上是**定时炸弹**，任何 GPU compose 都应显式
+   列出设备节点（或迁移到 CDI）。
+4. 两个 rank 同时挂掉反而让 `unless-stopped` 完成了"整体重启"，无 split-brain。
+
+### 后续
+
+- [ ] 生产上做一次受控 `systemctl daemon-reload` + 新图请求的实弹验证（尚未做，
+      当前只有 cgroup 白名单层面的证据）
+- [ ] 观察一个包含 snap 自动刷新的长时间运行窗口（≥ 48 h）
+- [ ] 其他 `gpus: all` / `runtime: nvidia` 容器（如 `lexdata-ai`，目前已停）重启前
+      加显式 `devices:`；评估全机迁移 CDI
+- [ ] 向上游 #216 提交根因与方案（注明尚未完全确认）
+
+---
+
 ## 经验总结
 
 ### 硬件认知
@@ -192,6 +287,7 @@ Memory ≈ 参数 + (帧数 × 宽 × 高)² × 系数
 - **2026-02-08**: CUDA 环境配置教训
 - **2026-03-04**: CogVideoX-5B 内存问题
 - **2026-03-06**: 整理汇总到本文档
+- **2026-09-05**: DSpark Vision 容器 cudaErrorNotPermitted（systemd daemon-reload 撤销 GPU 设备访问）
 
 ---
 
