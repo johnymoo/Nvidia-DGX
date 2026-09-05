@@ -12,6 +12,7 @@ GB10 (DGX Spark) 部署过程中遇到的问题、解决方案和经验总结。
 | [2026-02-08](#2026-02-08---cuda-环境配置踩坑) | CUDA 环境配置踩坑 | ✅ 已解决 |
 | [2026-03-04](#2026-03-04---cogvideox-5b-内存不足) | CogVideoX-5B 内存不足 | ❌ 硬件限制 |
 | [2026-09-05](#2026-09-05---dspark-vision-容器-cudaerrornotpermitted) | DSpark Vision 容器 cudaErrorNotPermitted（daemon-reload 撤销 GPU 设备访问） | 🟡 已缓解，待长时间验证 |
+| [2026-09-05](#2026-09-05---dspark-vision-多轮对话累计图片超限-400) | DSpark Vision 多轮对话累计图片超限 400（`At most 8 image(s)`） | ✅ 上限提到 16；网关侧裁剪待做 |
 
 ---
 
@@ -248,7 +249,81 @@ NVIDIA 文档给出三种修法：改 cgroupfs 驱动（需重启 dockerd，`liv
 - [ ] 观察一个包含 snap 自动刷新的长时间运行窗口（≥ 48 h）
 - [ ] 其他 `gpus: all` / `runtime: nvidia` 容器（如 `lexdata-ai`，目前已停）重启前
       加显式 `devices:`；评估全机迁移 CDI
-- [ ] 向上游 #216 提交根因与方案（注明尚未完全确认）
+- [x] 向上游 #216 提交根因与方案（注明尚未完全确认）
+
+---
+
+## 2026-09-05 - DSpark Vision 多轮对话累计图片超限 400
+
+### 场景
+
+同一套 DSpark Vision 部署（`deepseek-v4-flash-0731`，`:8890`）。当天下午网关（LiteLLM）
+侧的客户端连续报错，15:08–15:28 UTC 共 5 次，服务本身健康。
+
+### 遇到的问题
+
+```
+litellm.BadRequestError: OpenAIException - At most 8 image(s) may be provided in one prompt.
+Set --limit-mm-per-prompt to increase this limit. (parameter=image)
+```
+
+不是崩溃：vLLM 在 API 层就拒绝了请求，没进调度器，对其他流量无影响。
+
+### 技术原因
+
+1. recipe 的 compose 默认 `LIMIT_MM_PER_PROMPT=image=8`（`.env.dspark` 里只有注释示例，
+   未覆盖），启动参数 `limit_mm_per_prompt={'image': 8}`。
+2. vLLM `vllm/multimodal/processing/context.py: validate_num_items` 统计的是**整个
+   `messages` 数组里的图片总数**，不是最后一条消息。多轮 agent 会话每轮重发全部历史，
+   截图累计到第 9 张之后每一轮都 400——日志里同一来源间隔 2–7 分钟连续失败，正是这个模式。
+3. 报错末尾带 "Set `--limit-mm-per-prompt` to increase this limit" 说明图片数 ≤ 模型侧支持
+   上限；模型侧上限来自 recipe 的 `patches/vision_exp/processor.py`
+   `get_supported_mm_limits() → {"image": 16}`，vLLM 取两者的 `min`。所以不改 patch 最多提到 16。
+
+**提到 16 的显存代价为零（核对过 profiling 逻辑）**：每张图最多 384 token
+（`vision_max_n_token`），encoder 预算 = `max_num_batched_tokens` 8192，profiling 每批最多
+`8192 // 384 = 21` 张；decoder 侧预算 `6 seqs × 每 prompt 上限`，8 时 48、16 时 96，取 min
+都是 21。实际两次启动 KV 预算 12.81 → 12.56 GiB（-2%），但同一次启动两个 rank 之间本来就差
+0.3 GiB，且两 rank 的变化量不同（-0.43 / -0.25），是统一内存空闲量抖动而非 profile 变化。
+
+### 解决方案
+
+`.env.dspark`（head；start 脚本会原子推送到 worker）第 401 行：
+
+```diff
+-# LIMIT_MM_PER_PROMPT={"image":8}
++LIMIT_MM_PER_PROMPT=image=16
+```
+
+**踩坑**：先按 README 的说法写成 JSON `LIMIT_MM_PER_PROMPT={"image":16}`，结果 head 容器
+`Restarting (2)`：compose 的 env 文件解析把双引号剥掉，vLLM 收到 `{image:16}` →
+`vllm serve: error: argument --limit-mm-per-prompt: Value {image:16} cannot be converted`。
+在 `.env.dspark` 里**只能用 `image=N` 形式**（compose 命令自己会转成 JSON）；README/ENVS.md
+说"JSON 可用"对 env 文件路径不成立。
+
+15:42–15:53 UTC 用 recipe 的 stop/start 脚本成对重建（含一次因上述踩坑的二次重建，
+总中断约 11 分钟）。验证：
+
+- 启动参数 `limit_mm_per_prompt={'image': 16}`；两 rank healthy；`DeviceAllow` 仍含
+  `195:*/499:*`（上一条修复未回退）；47/47 warmup ok；`/health` 200；文本冒烟 `ok`。
+- `operations/dspark-vision/mm_smoke_multi.py`（多轮 agent 形态，每轮一张图）：
+  10 张 → HTTP 200，模型答 "10"（改前必 400）；`16 --single-turn` → 200，答 "16"；
+  17 张 → 400 `At most 16 image(s) may be provided in one prompt.`（patch 硬上限，预期）。
+
+### 反思
+
+1. 这类 400 的"病灶"在客户端历史管理，服务端提上限只是把墙往后挪：16 是硬顶，且每张图
+   固定占 384 prompt token、历史图片重发会持续冲掉前缀缓存。根治要在网关裁剪旧图为文字
+   占位符——已开 shiliai/LLM-Portal#98。
+2. 改 recipe 配置前先在 `.env` 里用脚本明确支持的形式，README 的示例不一定经过这条路径。
+3. 顺带一个 recipe 已知限制：图片只能在 `user` 消息里，`tool` 消息里的图会被静默丢弃
+   （上游 #178），`system`/`assistant` 带图直接 400。
+
+### 后续
+
+- [ ] LLM-Portal 网关侧累计图片裁剪（shiliai/LLM-Portal#98）
+- [ ] 若确有 >16 张的需求，再评估改 `processor.py` 支持上限（偏离上游 pin）
+- [ ] 给上游 README/ENVS.md 提 `.env` 中 JSON 形式不可用的勘误（低优先级）
 
 ---
 
@@ -288,6 +363,7 @@ NVIDIA 文档给出三种修法：改 cgroupfs 驱动（需重启 dockerd，`liv
 - **2026-03-04**: CogVideoX-5B 内存问题
 - **2026-03-06**: 整理汇总到本文档
 - **2026-09-05**: DSpark Vision 容器 cudaErrorNotPermitted（systemd daemon-reload 撤销 GPU 设备访问）
+- **2026-09-05**: DSpark Vision 多轮对话累计图片超限 400，`LIMIT_MM_PER_PROMPT` 8 → 16
 
 ---
 

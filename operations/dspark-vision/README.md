@@ -31,6 +31,24 @@ caching allocator has to map a fresh segment, then fail with
   and sends one `image_url` chat completion to `127.0.0.1:8890`.
   `python3 mm_smoke.py 1024 768`. Vary the size to force fresh encoder
   allocations.
+- `mm_smoke_multi.py` — N-image smoke for the `--limit-mm-per-prompt` cap:
+  `python3 mm_smoke_multi.py 10` sends 10 user turns with one image each
+  (agent-session shape; the cap counts images across the whole prompt),
+  `--single-turn` puts them all in one message. Exit 1 with the error body
+  on 400, so `mm_smoke_multi.py 17` doubles as a probe of the effective cap.
+
+## Image-count cap (same day, separate issue)
+
+`LIMIT_MM_PER_PROMPT` defaults to 8 images per prompt; multi-turn agent
+sessions that re-send screenshot history hit
+`At most 8 image(s) may be provided in one prompt` after the 9th image.
+Raised to 16 (the hard cap in `patches/vision_exp/processor.py`) via
+`.env.dspark` on the head — **use the `image=16` form**; the JSON form shown in
+the recipe README loses its quotes in the env file and fails `vllm serve`
+argparse. Profiling batch is unchanged (encoder budget 8192 // 384 = 21 items
+either way), so the KV budget is not affected. Gateway-side pruning of old
+images is the real fix (shiliai/LLM-Portal#98). Details: debug-notes entry
+"2026-09-05 - DSpark Vision 多轮对话累计图片超限 400".
 
 ## Apply
 
