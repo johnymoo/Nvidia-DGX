@@ -165,7 +165,13 @@ have happened". Same exposure applies to `lexdata-ai` on gb10-2
   it stays down across reboots; `docker start lexdata-ai` to resume; compose
   project at `/opt/lexdata-ai`).
 - NOT done: live `daemon-reload` proof on production (owner's call), snap hold
-  (not needed for the DeepSeek stack after A; see below), upstream #216 comment.
+  (not needed for the DeepSeek stack after A; see below).
+- Records: our repo issue johnymoo/Nvidia-DGX#49 (tracks the pending live
+  verification), PR johnymoo/Nvidia-DGX#50 (debug-notes entry, this doc,
+  `operations/dspark-vision/` diff + smoke script). Upstream #216 comment with
+  the hypothesis, the recovered request stats and the compose change - posted
+  2026-09-05 as `johnymoo`, explicitly marked as NOT yet confirmed:
+  https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/issues/216#issuecomment-5552475460
 
 Residual exposure: any OTHER container started with `gpus: all`/`runtime:
 nvidia` and no explicit `devices:` (e.g. `lexdata-ai` if restarted, ad-hoc
@@ -203,8 +209,8 @@ B. **Zero-downtime stopgap until A is scheduled:** `sudo snap refresh --hold`
    manual daemon-reload).
 C. Apply the same `devices:` treatment to `lexdata-ai` (gb10-2) when it is
    next recreated.
-D. Post the root cause + the recoverable request stats to upstream #216 (not
-   yet written or posted).
+D. Post the root cause + the recoverable request stats to upstream #216 -
+   done (hedged; see "Fix applied").
 
 ## Recommended follow-ups (original, kept for history)
 
