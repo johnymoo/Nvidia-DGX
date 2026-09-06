@@ -42,13 +42,19 @@ caching allocator has to map a fresh segment, then fail with
 `LIMIT_MM_PER_PROMPT` defaults to 8 images per prompt; multi-turn agent
 sessions that re-send screenshot history hit
 `At most 8 image(s) may be provided in one prompt` after the 9th image.
-Raised to 16 (the hard cap in `patches/vision_exp/processor.py`) via
-`.env.dspark` on the head — **use the `image=16` form**; the JSON form shown in
-the recipe README loses its quotes in the env file and fails `vllm serve`
-argparse. Profiling batch is unchanged (encoder budget 8192 // 384 = 21 items
-either way), so the KV budget is not affected. Gateway-side pruning of old
-images is the real fix (shiliai/LLM-Portal#98). Details: debug-notes entry
-"2026-09-05 - DSpark Vision 多轮对话累计图片超限 400".
+Raised to 16 on 2026-09-05 (then the hard cap in `patches/vision_exp/processor.py`)
+and to **32** on 2026-09-06 after syncing upstream main `957890a`, whose PR #231
+drops the hardcoded 16 and makes `--limit-mm-per-prompt` the only cap. Set it in
+`.env.dspark` on the head — **use the `image=N` form**; the JSON form loses its
+quotes in the env file and fails `vllm serve` argparse (upstream fixed its
+`.env.dspark.example` in the same PR). Profiling batch is unchanged (encoder
+budget 8192 // 384 = 21 items for any N >= 4), so the KV budget is not affected;
+32 is where we stopped because larger values only grow request size / TTFT and
+gateway-side pruning of old images is the real fix (shiliai/LLM-Portal#98).
+When syncing upstream, merge on **both** checkouts: the start script pushes
+compose / env / `patches/vision_exp/` to the worker but not the other hotfix
+files the compose bind-mounts. Details: debug-notes entries "2026-09-05 -
+DSpark Vision 多轮对话累计图片超限 400" and its 2026-09-06 follow-up.
 
 ## Apply
 

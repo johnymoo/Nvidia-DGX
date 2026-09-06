@@ -12,7 +12,7 @@ GB10 (DGX Spark) 部署过程中遇到的问题、解决方案和经验总结。
 | [2026-02-08](#2026-02-08---cuda-环境配置踩坑) | CUDA 环境配置踩坑 | ✅ 已解决 |
 | [2026-03-04](#2026-03-04---cogvideox-5b-内存不足) | CogVideoX-5B 内存不足 | ❌ 硬件限制 |
 | [2026-09-05](#2026-09-05---dspark-vision-容器-cudaerrornotpermitted) | DSpark Vision 容器 cudaErrorNotPermitted（daemon-reload 撤销 GPU 设备访问） | 🟡 已缓解，待长时间验证 |
-| [2026-09-05](#2026-09-05---dspark-vision-多轮对话累计图片超限-400) | DSpark Vision 多轮对话累计图片超限 400（`At most 8 image(s)`） | ✅ 上限提到 16；网关侧裁剪待做 |
+| [2026-09-05](#2026-09-05---dspark-vision-多轮对话累计图片超限-400) | DSpark Vision 多轮对话累计图片超限 400（`At most 8 image(s)`） | ✅ 上限 16 → 32（09-06 同步上游 #231）；网关侧裁剪待做 |
 
 ---
 
@@ -321,9 +321,43 @@ Set --limit-mm-per-prompt to increase this limit. (parameter=image)
 
 ### 后续
 
-- [ ] LLM-Portal 网关侧累计图片裁剪（shiliai/LLM-Portal#98）
-- [ ] 若确有 >16 张的需求，再评估改 `processor.py` 支持上限（偏离上游 pin）
-- [ ] 给上游 README/ENVS.md 提 `.env` 中 JSON 形式不可用的勘误（低优先级）
+- [ ] LLM-Portal 网关侧累计图片裁剪（shiliai/LLM-Portal#98）；建议配置改为
+      `max_images: 32, keep_last: 16`（服务端已是 32，见下）
+- [x] ~~若确有 >16 张的需求，再评估改 `processor.py` 支持上限~~ → 上游 PR #231 已去掉硬编码
+      16，`--limit-mm-per-prompt` 成为唯一上限；随 09-06 同步上游一起生效
+- [x] ~~给上游 README/ENVS.md 提 `.env` 中 JSON 形式不可用的勘误~~ → 同一 PR #231 已把
+      `.env.dspark.example` 改回 `image=N` 并加 CI gate（他们确认是一次 merge 带回的回归）
+
+### 2026-09-06 跟进：同步上游 main 并把上限提到 32
+
+上游 main（`957890a`，比我们的 pin `d828ddd` 多 77 个提交）合入了 PR #231（去掉 vision patch
+硬编码的 16 张上限）和 #204 系列（Vision-Exp MoE 路由类型每次 forward 只分类一次，去掉 43 次
+host sync；附带"不允许静默降级"加固）；其余 12 个新 hotfix 全部是默认关闭的 opt-in 开关。
+镜像 tag 不变（`dspark-vllm-gx10:0.1.1`）。唯一的默认值变化 `DSPARK_MAX_INFLIGHT_PREFILLS`
+2 → 1 对我们无影响（`.env.dspark` 显式为 2）。
+
+**上限选 32 的理由**：预分配批次 `min(8192 // 384 = 21, 6 × N)` 在 8/16/32 下都是 21，对显存零
+成本；上游在同样的 2×GB10 TP=2 环境实测 32 → 200、33 → 400；最坏 32 × 384 = 12,288 token 约占
+1M 上下文 1.2%。不再往上：任何上限最终都靠网关裁剪兜底，更大只是线性增加请求体积和首 token
+延迟，且无人验证过。
+
+**预检（零影响）**：在临时 worktree 里合并后确认 `devices:` 块保留、compose 渲染通过、上游
+`scripts/ci-validate.sh` 三次通过（第一次有一个约 3.5 s 的套件偶发失败，不在启动路径上）。
+两侧 checkout 都要 merge——start 脚本只向 worker 推送 compose / env / `patches/vision_exp/` 和
+vision hotfix，**不推送其他新增的 hotfix 文件**，而新 compose 对它们有 bind mount。
+
+**执行**（11:22–11:28 UTC，中断约 6 分钟）：确认 0 在途请求 → stop → head `git merge origin/main`
+（`71ee6bf` = `a0f724b` + `957890a`）、worker 同样（`a96f980` = `fb1d1dc` + `957890a`）→
+`.env.dspark` 改 `LIMIT_MM_PER_PROMPT=image=32`（旧文件备份在 `artifacts/`）→ start。
+验证：启动参数 `limit_mm_per_prompt={'image': 32}`、`async_scheduling=True`；两 rank healthy，
+`DeviceAllow` 仍含 `195:*/499:*`；47/47 warmup ok；`/health` 200；文本冒烟 `ok`；
+`mm_smoke_multi.py 32 --single-turn` → 200（4,609 image token，答 "32"）；33 张 → 400
+`At most 32 image(s)`；20 张多轮 → 200；1600×1200 单图 → 200。日志无新增告警。
+
+**观察项**：KV 预算三次启动依次 13.1 → 12.67 → 12.15 GiB（1,902,976 → 1,865,527 → 1,804,783
+token），权重 80.04 GiB、CUDA graph ~0.7 GiB 均不变，host 上也没有新的大内存进程；GB10 统一
+内存下 profile 时刻的空闲量受 page cache 等影响，暂记为观察项，若继续下降再查
+（1M 上下文并发仍有 1.72×）。
 
 ---
 
@@ -364,6 +398,7 @@ Set --limit-mm-per-prompt to increase this limit. (parameter=image)
 - **2026-03-06**: 整理汇总到本文档
 - **2026-09-05**: DSpark Vision 容器 cudaErrorNotPermitted（systemd daemon-reload 撤销 GPU 设备访问）
 - **2026-09-05**: DSpark Vision 多轮对话累计图片超限 400，`LIMIT_MM_PER_PROMPT` 8 → 16
+- **2026-09-06**: DSpark Vision 同步上游 main `957890a`（含 #231 去掉 16 张硬上限、#204 路由分类优化），`LIMIT_MM_PER_PROMPT` 16 → 32
 
 ---
 
