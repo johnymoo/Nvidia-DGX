@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760">
+  <rect width="1400" height="760" fill="#f7f8fa"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#20252b} .title{font-size:30px;font-weight:700}.h{font-size:20px;font-weight:700}.t{font-size:17px}.s{font-size:14px;fill:#5a6570}.box{fill:white;stroke:#52606d;stroke-width:2}.net{stroke:#1967a3;stroke-width:4;fill:none}.sig{stroke:#8b3a8b;stroke-width:3;fill:none}.gnd{stroke:#3c7a57;stroke-width:3;fill:none}.warn{fill:#fff5d6;stroke:#b37a00;stroke-width:2}
+  </style>
+  <text x="50" y="55" class="title">GB10 Fan Interface Board Rev A</text>
+  <text x="50" y="85" class="s">40 x 25 mm target | 12 V fan rail | ESP32 PWM + two tach inputs | JLCEDA transcription sheet</text>
+  <rect x="50" y="140" width="170" height="130" rx="6" class="box"/><text x="75" y="175" class="h">J1</text><text x="75" y="205" class="t">12 V input</text><text x="75" y="232" class="t">1: +12 V</text><text x="75" y="255" class="t">2: GND</text>
+  <rect x="275" y="165" width="115" height="80" rx="6" class="box"/><text x="302" y="198" class="h">F1</text><text x="302" y="224" class="t">1.1-1.5 A</text>
+  <rect x="440" y="165" width="115" height="80" rx="6" class="box"/><text x="467" y="198" class="h">D1</text><text x="467" y="224" class="t">SS34</text>
+  <path d="M220 195H275M390 205H440M555 205H1040" class="net"/><text x="590" y="190" class="t">FAN12 (protected)</text>
+  <path d="M135 270V325H1040" class="gnd"/><text x="165" y="318" class="t">GND</text>
+  <rect x="1040" y="140" width="150" height="130" rx="6" class="box"/><text x="1070" y="175" class="h">J2</text><text x="1070" y="202" class="t">Front fan</text><text x="1070" y="229" class="t">1 GND / 2 +12V</text><text x="1070" y="254" class="t">3 TACH / 4 PWM</text>
+  <rect x="1210" y="140" width="150" height="130" rx="6" class="box"/><text x="1240" y="175" class="h">J3</text><text x="1240" y="202" class="t">Rear fan</text><text x="1240" y="229" class="t">1 GND / 2 +12V</text><text x="1240" y="254" class="t">3 TACH / 4 PWM</text>
+  <path d="M1120 270V325M1290 270V325M1120 325H1290" class="gnd"/>
+  <rect x="450" y="390" width="180" height="120" rx="6" class="box"/><text x="485" y="425" class="h">Q1</text><text x="485" y="453" class="t">2N7002</text><text x="485" y="480" class="t">open-drain PWM</text>
+  <path d="M1040 254H920V450H630" class="sig"/><path d="M1190 254H920" class="sig"/><text x="810" y="435" class="t">PWM_BUS, shared</text>
+  <rect x="50" y="390" width="220" height="155" rx="6" class="box"/><text x="80" y="425" class="h">J4 ESP32</text><text x="80" y="452" class="t">1 3V3</text><text x="80" y="476" class="t">2 GND</text><text x="80" y="500" class="t">3 PWM</text><text x="80" y="524" class="t">4 TACH1 / 5 TACH2</text>
+  <path d="M270 500H390V450H450" class="sig"/><text x="290" y="485" class="s">R1 1k; R2 100k pulldown</text>
+  <rect x="720" y="390" width="235" height="120" rx="6" class="box"/><text x="750" y="425" class="h">TACH protection</text><text x="750" y="453" class="t">R3/R5 220R series</text><text x="750" y="478" class="t">R4/R6 4.7k to 3V3</text>
+  <path d="M270 524H700V450H720M700 450V535H720" class="sig"/><text x="500" y="565" class="t">TACH1 and TACH2 remain independent</text>
+  <rect x="50" y="625" width="1310" height="80" rx="6" class="warn"/><text x="75" y="657" class="h">Bench checks before PCB freeze</text><text x="75" y="684" class="t">Confirm fan pinouts, open-collector tach behavior, 1.47-M GPIO availability, 12 V startup current, and fan full-speed behavior with PWM released.</text>
+</svg>

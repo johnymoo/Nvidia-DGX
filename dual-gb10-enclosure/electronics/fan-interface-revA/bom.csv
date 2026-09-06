@@ -1,0 +1,16 @@
+Reference,Qty,Description,Value / search target,Package,Assembly note
+J1,1,2-pin pluggable terminal block,5.08 mm pitch 2P,TH,12V input from DC5521 adapter; center-positive verified before use
+J2,1,4-pin fan header,2.54 mm 1x4 keyed or shrouded,TH,Front 140 mm fan
+J3,1,4-pin fan header,2.54 mm 1x4 keyed or shrouded,TH,Rear Delta 60 mm fan
+J4,1,6-pin header,2.54 mm 1x6,TH,ESP32 signal harness
+F1,1,Resettable fuse,PTC 1.1-1.5 A 1206 or radial,1206/TH,Select voltage rating >=16 V; online schematic uses generic FUSE placeholder; replace with a real PTC before release
+D1,1,Schottky diode,SS34 (LCSC C8678),SMA,Series reverse-polarity protection; placed in online schematic
+Q1,1,N-channel MOSFET,2N7002 (LCSC C8545),SOT-23,Open-drain PWM sink; placed in online schematic
+R1,1,Gate resistor,1 kOhm 1%,0603,ESP_PWM to Q1 gate
+R2,1,Gate pulldown,100 kOhm 1%,0603,Q1 gate to GND
+R3,1,Tach series resistor,220 Ohm 1%,0603,Front tach input protection
+R4,1,Tach pull-up,4.7 kOhm 1%,0603,Front tach to ESP32 3V3
+R5,1,Tach series resistor,220 Ohm 1%,0603,Rear tach input protection
+R6,1,Tach pull-up,4.7 kOhm 1%,0603,Rear tach to ESP32 3V3
+C1,1,Bulk capacitor,100 uF 25 V SMD electrolytic (LCSC C970685),"SMD,D6.3xL7.7mm",Placed in online schematic; verify footprint propagation to PCB
+C2,1,Bypass capacitor,100 nF 50 V X7R,0603,Online schematic placeholder; select a stocked physical part before release
