@@ -20,6 +20,11 @@
       "path": "recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/benchmark/fixtures/terminal-archive-verify/input/bundle.tar",
       "sha256": "1ffa85a7b109087ba34780ceb583cd82cbeb1171eae38f6b6e3d53187166dc94",
       "reason": "Synthetic offline benchmark fixture."
+    },
+    {
+      "path": "recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/glm-vs-ds-comparison.png",
+      "sha256": "cf740066dcc66fb5fd0d44be71feb376759387b855ed035171fe8a2a61d4e5e5",
+      "reason": "Published comparison chart generated from the committed benchmark comparison HTML."
     }
   ],
   "prefixes": [

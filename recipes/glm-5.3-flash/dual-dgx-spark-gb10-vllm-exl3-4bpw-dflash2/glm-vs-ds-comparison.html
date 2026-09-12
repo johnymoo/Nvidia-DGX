@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #eef1f5;
+    padding: 28px;
+    width: 1280px;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 30px 34px 22px;
+    box-shadow: 0 4px 18px rgba(30,40,60,.10);
+  }
+  h1 { font-size: 25px; color: #17233d; letter-spacing: .5px; }
+  .sub { font-size: 13.5px; color: #7b8794; margin: 7px 0 20px; }
+  .legend { float: right; font-size: 13px; color: #5f6b7a; margin-top: 8px; }
+  .legend b.ok { color: #0a8f4c; } .legend b.warn { color: #c47f00; } .legend b.bad { color: #c0392b; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  th, td { border: 1px solid #e3e8ee; padding: 8px 11px; vertical-align: top; }
+  thead th {
+    background: #17233d; color: #fff; font-size: 15.5px; padding: 11px 12px;
+  }
+  thead th small { display:block; font-weight: 400; color:#aab6c5; font-size: 12px; margin-top: 3px; }
+  th.dim, td.dim { width: 150px; background: #f7f9fb; font-weight: 600; color: #33475e; font-size: 14px; }
+  td { font-size: 13.5px; color: #2c3a4b; line-height: 1.5; }
+  tr.section td {
+    background: #eef3f9; color: #1d4e89; font-weight: 700; font-size: 14px;
+    letter-spacing: 1px; padding: 6px 11px;
+  }
+  .ok { color: #0a8f4c; font-weight: 600; }
+  .warn { color: #c47f00; font-weight: 600; }
+  .bad { color: #c0392b; font-weight: 600; }
+  td.win { background: #f2faf5; }
+  td.lose { background: #fdf6f5; }
+  .foot {
+    margin-top: 16px; font-size: 12.5px; color: #8a95a3; line-height: 1.7;
+    border-top: 1px dashed #dfe5ec; padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="legend"><b class="ok">✅ 优</b>　<b class="warn">⚠️ 受限</b>　<b class="bad">❌ 劣</b>　（着色 = 该行相对赢家）</div>
+  <h1>GLM-5.3-Flash vs DeepSeek-V4-Flash 全维度对比</h1>
+  <div class="sub">GB10 × 2（DGX Spark）集群实测 · 2026-09-10/11 验证窗口 · 面板：GLM-EXL3 4bpw vs 现网 DeepSeek-Vision-Exp</div>
+  <table>
+    <thead><tr>
+      <th class="dim" style="background:#17233d;color:#fff;">维度</th>
+      <th style="width:38%;">GLM-5.3-Flash-EXL3<small>MiaAI-Lab 2×GB10 配方 · 4bpw EXL3 · DFlash2 k=7</small></th>
+      <th style="width:38%;">DeepSeek-V4-Flash-Vision-Exp<small>现网 DSpark 栈 · MoE MXFP4 · MTP k=6</small></th>
+    </tr></thead>
+    <tbody>
+      <tr class="section"><td colspan="3">模型与部署</td></tr>
+      <tr>
+        <td class="dim">体量 / 量化</td>
+        <td class="win">164 GiB（官方 FP8 328GB 的 54%）<br>KLD 0.0246 ≈ FP8 官方（量化无损级）</td>
+        <td>~80 GiB/rank（MoE MXFP4）<br>image-prefill 激活 ~14.27B</td>
+      </tr>
+      <tr>
+        <td class="dim">服务栈</td>
+        <td>vLLM fork + ExLlamaV3 EXL3 内核<br>E3 grouped fat-expert（sm_121a）</td>
+        <td>DSpark fork vLLM 0.25.2<br>flashinfer_b12x（原生路径）</td>
+      </tr>
+      <tr>
+        <td class="dim">上下文 / KV 池</td>
+        <td class="lose">300k（本机 UMA 包络上限）<br>池 309,523 tok = 1.03×</td>
+        <td class="win">1M<br>池 1,808,321 tok = 1.72×</td>
+      </tr>
+      <tr>
+        <td class="dim">prefix cache</td>
+        <td>3584 块对齐；实测命中 84.4%<br><span class="warn">⚠️ usage 不报 cached_tokens</span></td>
+        <td class="win">细粒度；生产 83% / hermes 88.9%</td>
+      </tr>
+      <tr class="section"><td colspan="3">速度（越快越好）</td></tr>
+      <tr>
+        <td class="dim">decode c1 结构化</td>
+        <td class="win">64.1 tok/s（accept 6.59/step）</td>
+        <td>43–55 tok/s（3.11 tok/step）</td>
+      </tr>
+      <tr>
+        <td class="dim">decode c1 散文</td>
+        <td class="lose">24.4 tok/s</td>
+        <td class="win">38–50 tok/s（全天均值 ~38）</td>
+      </tr>
+      <tr>
+        <td class="dim">并发聚合（结构化）</td>
+        <td class="win">c2 104 / c4 166 tok/s</td>
+        <td>c2 34.8–60.1（口径不同）· c4 未测</td>
+      </tr>
+      <tr>
+        <td class="dim">prefill</td>
+        <td>1.30–1.61K tok/s（8k–256k 冷）<br>hermes 实测 1,085</td>
+        <td class="win">旧栈 1.6–1.8K（硬顶 ~3.7K）<br>hermes 实测 1,320</td>
+      </tr>
+      <tr>
+        <td class="dim">TTFT</td>
+        <td>decode 0.34s · 视觉 1.37–1.48s<br>prefill 8k→256k：5.9s→205s</td>
+        <td>生产 64%≤0.5s · 视觉 1.41–1.54s</td>
+      </tr>
+      <tr class="section"><td colspan="3">质量与真实任务</td></tr>
+      <tr>
+        <td class="dim">菜单生产任务<br><span style="font-weight:400;color:#7b8794;">47 项判分</span></td>
+        <td class="win">off <b style="font-size:16px;">32/47</b> · low-thinking <b style="font-size:16px;">38/47</b><br>（15–16s，无循环）</td>
+        <td class="lose">off 9/47 · high 无输出<br>（262s 推理循环打满 16k tok）</td>
+      </tr>
+      <tr>
+        <td class="dim">hermes 真实任务<br><span style="font-weight:400;color:#7b8794;">3 个 agent 任务</span></td>
+        <td class="win">3/3 ✅ · 总 wall 423.9s<br>输出极简（3,744 tok，DS 的 30%）</td>
+        <td>3/3 ✅ · 总 wall 489.6s<br>decode TPS 更高（46.7 vs 28.2）</td>
+      </tr>
+      <tr>
+        <td class="dim">视觉</td>
+        <td>合成题 6/6 · ≤100 图/提示</td>
+        <td>合成题 6/6 · ≤8 图/提示</td>
+      </tr>
+      <tr class="section"><td colspan="3">许可与运维</td></tr>
+      <tr>
+        <td class="dim">许可</td>
+        <td class="lose">⚠️ DFlash2 = CC BY-NC-ND（非商业）<br>checkpoint ShapleyMCG 1.0 · repo AGPL-3.0</td>
+        <td class="win">MIT</td>
+      </tr>
+      <tr>
+        <td class="dim">启动 / 稳定性</td>
+        <td>~9 min；util ≤0.84 安全<br>（0.89 编译期 host OOM 教训）</td>
+        <td class="win">热启动 4–5 min；util 0.835 含共租验证<br>#216 已修，944 请求 0 错误</td>
+      </tr>
+      <tr>
+        <td class="dim">客户端适配</td>
+        <td class="lose">⚠️ 需改 reasoning 字段 / thinking 参数</td>
+        <td class="win">hermes / 现有客户端零改动</td>
+      </tr>
+      <tr>
+        <td class="dim">一句话定位</td>
+        <td><b>质量强</b>（菜单 3.5–4×）、结构化快、agent 打平；散文慢、上下文短、许可受限</td>
+        <td><b>均衡省心</b>：散文快、1M 上下文、许可干净；菜单任务不安全（❌）</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="foot">
+    结论：没有全胜方。切换/灰度的取舍 = 菜单视觉质量（GLM 强）vs 散文速度 + 1M 上下文 + MIT 许可 + 运维成本（DS 强）。可选项：按路由灰度（vision/菜单类 → GLM）。<br>
+    数据来源：GB10 集群实测（2026-09-10/11 验证窗口，DS 为现网生产数字）· 详情见 planning/02-working/2026-09-11-glm53-validation-results.md
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "result_id": "glm-5-3-flash-dual-gb10-reference-20260911",
+  "recipe_id": "glm-5.3-flash.dual-gb10.vllm-exl3-4bpw-dflash2",
+  "suite": {
+    "id": "glm53-flash-validation-20260911",
+    "version": "2026-09-11"
+  },
+  "workload": {
+    "id": "glm53-decode-structured-c1",
+    "concurrency": 1,
+    "cache_state": "warm"
+  },
+  "metrics": {
+    "ttft_seconds": 0.34,
+    "first_final_token_seconds": {
+      "not_applicable": true,
+      "reason": "not captured separately; TTFT is measured at the first content token"
+    },
+    "response_time_seconds": {
+      "not_applicable": true,
+      "reason": "streaming runs report TTFT and the decode window instead of total response time"
+    },
+    "decode_tokens_per_second": {
+      "min": 53.22,
+      "mean": 60.34,
+      "p50": 64.15,
+      "p95": 66.73,
+      "p99": 66.73,
+      "max": 66.73,
+      "concurrency": 1,
+      "definition": "stream decode over 5 runs, structured count task, thinking off"
+    },
+    "output_tokens_per_second_e2e": {
+      "not_applicable": true,
+      "reason": "per-run end-to-end output rates are tabulated in the receipt JSON instead"
+    },
+    "aggregate_tokens_per_second": {
+      "not_applicable": true,
+      "reason": "single-stream run; concurrent aggregate rates are in the receipt JSON"
+    },
+    "prompt_tokens": 27,
+    "completion_tokens": 400,
+    "reasoning_tokens": {
+      "not_applicable": true,
+      "reason": "thinking off for this workload"
+    },
+    "cached_tokens": {
+      "not_applicable": true,
+      "reason": "bench prompts are uniquely salted; server-side prefix-cache rates are in the receipt JSON"
+    },
+    "errors": {
+      "status": "none"
+    },
+    "hardware": {
+      "class": "two NVIDIA DGX Spark / GB10"
+    }
+  },
+  "receipt": "recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/benchmark-results-20260911.json",
+  "report": "recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/BENCHMARK-RESULTS.md",
+  "maturity": "Reference",
+  "status": {
+    "acceptance": "unknown",
+    "reliability": "unknown",
+    "safety": "unknown"
+  }
+}
