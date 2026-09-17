@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "deepseek-v4.1-flash.dual-gb10.vllm-exl3-2_9bpw-engram-mtp",
+  "model_family": "deepseek-v4.1-flash",
+  "model_id": "DeepSeek-v4.1-Flash-EXL3",
+  "hardware_id": "dgx-spark-gb10-pair",
+  "runtime_id": "vllm-exl3-overlay",
+  "profile_id": "engram-mtp-k3-tp2-300k",
+  "modality": "multimodal-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": [
+    "ds41.env.example",
+    "scripts/window-step.sh"
+  ],
+  "operations": {},
+  "benchmark_suites": [
+    "ds41-flash-validation-20260917"
+  ],
+  "evidence": {
+    "receipts": [],
+    "benchmarks": [
+      "BENCHMARK-RESULTS.md",
+      "benchmark-results-20260917.json"
+    ]
+  },
+  "limitations": [
+    "Context capped at 300k by this kit's 119.63 GiB UMA envelope at GPU_MEM_UTIL 0.84; 0.86 aborts on host memory during large-image vision workloads.",
+    "Long-prompt prefill is intentionally conservative (MAX_NUM_BATCHED_TOKENS=1536); the prefill ladder aborts at the 32k rung under the memory guard, so cold ingest beyond ~16k is not a strength of this profile.",
+    "Engram tables require the native checkpoint's shards 47/48 plus its config.json alongside the EXL3 tree; the upstream download recipe omits config.json and the boot fails without it.",
+    "Prose decode (31.3 tok/s) trails the DeepSeek-V4-Flash production reference (38-50 tok/s) on the same cluster.",
+    "47-field menu vision truth and agent task prompts are production data and are not published; only scores and method are.",
+    "No formal acceptance receipt; deployment was validated by executed run rather than the standing acceptance contract."
+  ],
+  "invalidation_conditions": [
+    "Upstream overlay, EXL3 checkpoint, Engram table source, or MTP revision changes.",
+    "GB10 firmware/driver changes the exposed unified memory (119.63 GiB baseline).",
+    "Any change to GPU_MEM_UTIL, MAX_MODEL_LEN, MAX_NUM_BATCHED_TOKENS, TP topology, or speculative method.",
+    "Upstream CX7 interface or GID-index conventions change."
+  ]
+}

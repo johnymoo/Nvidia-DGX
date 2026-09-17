@@ -50,6 +50,10 @@
     "dgx-spark-gb10-pair::glm-5.3-flash": {
       "quality_id": "core-text-v1",
       "minimum_context_tokens": 8192
+    },
+    "dgx-spark-gb10-pair::deepseek-v4.1-flash": {
+      "quality_id": "core-text-v1",
+      "minimum_context_tokens": 8192
     }
   },
   "required_status": {

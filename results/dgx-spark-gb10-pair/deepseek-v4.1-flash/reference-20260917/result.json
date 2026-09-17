@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "result_id": "deepseek-v4-1-flash-dual-gb10-reference-20260917",
+  "recipe_id": "deepseek-v4.1-flash.dual-gb10.vllm-exl3-2_9bpw-engram-mtp",
+  "suite": {
+    "id": "ds41-flash-validation-20260917",
+    "version": "2026-09-17"
+  },
+  "workload": {
+    "id": "ds41-decode-structured-c1",
+    "concurrency": 1,
+    "cache_state": "warm"
+  },
+  "metrics": {
+    "ttft_seconds": 0.258,
+    "first_final_token_seconds": {
+      "not_applicable": true,
+      "reason": "not captured separately; TTFT is measured at the first content token"
+    },
+    "response_time_seconds": {
+      "not_applicable": true,
+      "reason": "streaming runs report TTFT and the decode window instead of total response time"
+    },
+    "decode_tokens_per_second": {
+      "min": 41.8,
+      "mean": 42.1,
+      "p50": 41.94,
+      "p95": 42.55,
+      "p99": 42.55,
+      "max": 42.55,
+      "concurrency": 1,
+      "definition": "stream decode over 5 runs, structured count task, thinking off, in-checkpoint MTP k=3 active (accept/step 2.077)"
+    },
+    "output_tokens_per_second_e2e": {
+      "not_applicable": true,
+      "reason": "per-run end-to-end output rates are tabulated in the receipt JSON instead"
+    },
+    "aggregate_tokens_per_second": {
+      "not_applicable": true,
+      "reason": "single-stream run; concurrent aggregate rates (c2 67.6, c4 60.3 structured) are in the receipt JSON"
+    },
+    "prompt_tokens": 27,
+    "completion_tokens": 400,
+    "reasoning_tokens": {
+      "not_applicable": true,
+      "reason": "thinking off for this workload"
+    },
+    "cached_tokens": {
+      "not_applicable": true,
+      "reason": "bench prompts are uniquely salted; server-side prefix-cache rates are in the receipt JSON (agent suite hit 93.2%)"
+    },
+    "errors": {
+      "status": "none"
+    },
+    "hardware": {
+      "class": "two NVIDIA DGX Spark / GB10"
+    }
+  },
+  "receipt": "recipes/deepseek-v4.1-flash/dual-dgx-spark-gb10-vllm-exl3-2_9bpw-engram/benchmark-results-20260917.json",
+  "report": "recipes/deepseek-v4.1-flash/dual-dgx-spark-gb10-vllm-exl3-2_9bpw-engram/BENCHMARK-RESULTS.md",
+  "maturity": "Reference",
+  "status": {
+    "acceptance": "unknown",
+    "reliability": "unknown",
+    "safety": "unknown"
+  }
+}
