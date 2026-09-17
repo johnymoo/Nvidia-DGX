@@ -57,6 +57,7 @@ all ranking metrics. Missing evidence fails closed.
 | dgx-spark-gb10 | qwen3.5 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10 | qwen3.6 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10-pair | deepseek-v4 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
+| dgx-spark-gb10-pair | deepseek-v4.1-flash | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10-pair | glm-5.3-flash | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx3090-24gb | qwen3.8 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx4090-48gb | qwen3.6 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
@@ -73,6 +74,7 @@ source did not record a compatible field; it never means zero.
 <!-- BEGIN GENERATED:reference-results -->
 | Hardware | Model | Runtime / profile | Legacy workload | Recorded metrics | Evidence |
 |---|---|---|---|---|---|
+| dgx-spark-gb10-pair | DeepSeek-v4.1-Flash-EXL3 | vllm-exl3-overlay / engram-mtp-k3-tp2-300k | ds41-decode-structured-c1; concurrency=1; cache=warm | recorded generation/decode TPS: 42.1 (stream decode over 5 runs, structured count task, thinking off, in-checkpoint MTP k=3 active (accept/step 2.077)) | [result](results/dgx-spark-gb10-pair/deepseek-v4.1-flash/reference-20260917/result.json) / [source](recipes/deepseek-v4.1-flash/dual-dgx-spark-gb10-vllm-exl3-2_9bpw-engram/BENCHMARK-RESULTS.md) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance-concurrent-6; concurrency=6; cache=unknown | recorded aggregate TPS: 229.3 (recorded concurrent aggregate) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-concurrent/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance; concurrency=1; cache=unknown | recorded generation/decode TPS: 68.8 (recorded single-stream mean) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-single/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
 | dgx-spark-gb10-pair | GLM-5.3-Flash-EXL3 | vllm-exl3-overlay / dflash2-k7-tp2-300k | glm53-decode-structured-c1; concurrency=1; cache=warm | recorded generation/decode TPS: 60.34 (stream decode over 5 runs, structured count task, thinking off) | [result](results/dgx-spark-gb10-pair/glm-5.3-flash/reference-20260911/result.json) / [source](recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/BENCHMARK-RESULTS.md) |
@@ -97,6 +99,7 @@ source did not record a compatible field; it never means zero.
 <!-- BEGIN GENERATED:recipes -->
 | Hardware | Model | Runtime / profile | Maturity | Recipe |
 |---|---|---|---|---|
+| dgx-spark-gb10-pair | DeepSeek-v4.1-Flash-EXL3 | vllm-exl3-overlay / engram-mtp-k3-tp2-300k | Reference | [`deepseek-v4.1-flash.dual-gb10.vllm-exl3-2_9bpw-engram-mtp`](recipes/deepseek-v4.1-flash/dual-dgx-spark-gb10-vllm-exl3-2_9bpw-engram/) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-off-tp2-control | Archived | [`deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-off`](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-off/) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | Reference | [`deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on`](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/) |
 | dgx-spark-gb10-pair | GLM-5.3-Flash-EXL3 | vllm-exl3-overlay / dflash2-k7-tp2-300k | Reference | [`glm-5.3-flash.dual-gb10.vllm-exl3-4bpw-dflash2`](recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/) |
