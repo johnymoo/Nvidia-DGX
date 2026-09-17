@@ -104,7 +104,7 @@
             <li><b class="open">OPEN</b><span><strong>机箱适配承载</strong><small>本页只显示接口占位，未验证卡扣保持力和整机碰撞。</small></span></li>
           </ul>
           <div class="warning">当前页面是结构评审 draft。不要用截图、three.js 网格或 provisional 插头尺寸直接切片打印；确认结构后才建立参数化 CAD、fit coupon 和 STEP/STL。</div>
-          <p class="small-note">默认假设：显示板与 Rev B 平行叠层；Type-C 从显示板端部出线；DC5521 和 FAN1/FAN2 位于转接板背面/下方；屏幕默认机箱左侧。页面支持“机箱右”镜像。</p>
+          <p class="small-note">默认假设：显示板与 Rev B 平行叠层；Type-C 从显示板端部出线；DC5521 和 FAN1/FAN2 位于转接板背面/下方，风扇线与电源线从同一侧汇合出线；屏幕默认机箱左侧。页面支持“机箱右”镜像。</p>
         </section></div>
       </aside>
     </div>
@@ -177,13 +177,15 @@
       // fan plugs on the carrier rear edge
       box(9,6,8,1,materials.connector,[7,-18,-4],g); box(9,6,8,1,materials.connector,[20,-18,-4],g); label('FAN1 / FAN2',[8,-23,-10],'#293d40',.36,g); return g; }
     function keepouts(){const g=G('KEEPOUTS'); const transparent=(name,color)=>materials[name]||mat(name,color,.4,0,.20); const typeMat=transparent('keepoutType',DESIGN.colors.keepout),dcMat=transparent('keepoutDc',DESIGN.colors.keepout),fanMat=transparent('keepoutFan',DESIGN.colors.keepout);
-      box(18,16,12,3,typeMat,[-34,0,10],g); box(42,24,18,4,dcMat,[-48,-1,-6],g); box(30,13,16,2,fanMat,[14,-22,-4],g);
-      label('Type-C plug + 6×D',[ -46,10,18],'#b55825',.34,g); label('DC cable / 12 V plug',[ -55,-16,5],'#b55825',.34,g); label('FAN harness',[18,-29,-11],'#b55825',.34,g); return g; }
+      box(18,16,12,3,typeMat,[-34,0,10],g); box(42,24,18,4,dcMat,[-48,-1,-6],g); box(44,22,18,3,fanMat,[-32,-15,-5],g);
+      label('Type-C plug + 6×D',[ -46,10,18],'#b55825',.34,g); label('DC cable / 12 V plug',[ -55,-16,5],'#b55825',.34,g); label('FAN harness → power side',[-52,-29,-11],'#b55825',.34,g); return g; }
     function cables(){const g=G('CABLES'); const m=materials.cable;
       tube([[-33,0,10],[-43,0,10],[-52,4,14],[-63,10,18]],2.0,m,g); // USB-C
-      tube([[-53,-1,-6],[-63,-1,-6],[-70,-4,-3],[-78,-4,3]],3.0,m,g); // DC
-      tube([[7,-21,-4],[7,-28,-5],[2,-34,-2],[-6,-36,3]],1.6,m,g); tube([[20,-21,-4],[22,-28,-5],[28,-34,-2],[36,-36,3]],1.6,m,g);
-      arrow([-37,0,18],[-54,5,18],DESIGN.colors.keepout,g); arrow([-56,-1,-6],[-72,-4,0],DESIGN.colors.keepout,g); label('建议独立应力释放',[ -46, -8,22],'#8d5275',.34,g); return g; }
+      tube([[-53,-1,-6],[-62,-2,-6],[-70,-5,-3],[-80,-3,3]],3.0,m,g); // DC, power-side exit
+      tube([[7,-21,-4],[4,-26,-6],[-8,-28,-6],[-24,-22,-6],[-42,-12,-5],[-58,-4,0]],1.6,m,g); // FAN1 to shared side
+      tube([[20,-21,-4],[16,-26,-6],[2,-29,-6],[-18,-24,-6],[-42,-12,-5],[-58,-4,0]],1.6,m,g); // FAN2 to shared side
+      tube([[-42,-12,-5],[-54,-7,-2],[-66,-4,1]],2.7,m,g); // shared fan harness trunk
+      arrow([-37,0,18],[-54,5,18],DESIGN.colors.keepout,g); arrow([-56,-1,-6],[-72,-4,0],DESIGN.colors.keepout,g); arrow([8,-25,-7],[-45,-12,-5],DESIGN.colors.keepout,g); label('同侧汇合 / 独立应力释放',[ -48, -8,22],'#8d5275',.34,g); return g; }
     function dimensions(){const g=G('DIMENSIONS'); dim([-22.25,-20,17], [22.25,-20,17], '44.50 mm 显示 PCB', [0,-2,0],g); dim([-22.5,-24,5], [22.5,-24,5], '45 mm 转接板', [0,-2,0],g); dim([28,-12,13.5],[28,-12,-25], '≈38 mm 外深', [5,0,0],g); dim([30,15,11],[30,15,-10], '叠层 + 背面器件', [4,0,0],g); line([-26,0,11.8],[-26,0,14.5],DESIGN.colors.dim,g); label('有效区 32.93 × 17.75',[ -15,17,15],'#28727c',.34,g); return g; }
     function build(){displayBoard();carrierBoard();headers();shell();adapter();connectors();keepouts();cables();dimensions();}
     build();
@@ -202,7 +204,7 @@
       if(mirror==='right'){root.scale.x=-1;}
       document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view))); document.querySelectorAll('[data-mirror]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mirror===mirror)));
       document.getElementById('scene-title').textContent={assembled:'装配视图 · 平行叠层',transparent:'透明视图 · 背面净空',exploded:'爆炸视图 · 前框 / 托盘 / 后盖',service:'维护视图 · 后盖移开',front:'前视图 · 有效显示区',rear:'后视图 · DC / FAN 接头',left:'左视图 · Type-C 端',right:'右视图 · 线缆出口',top:'上视图 · 叠层间距',bottom:'下视图 · 转接板背面'}[view];
-      document.getElementById('scene-note').textContent={assembled:'屏幕在前，Rev B 转接板在后；橙色体积是尚未实测的插头/线缆净空。',transparent:'降低外壳不透明度，用于检查 DC5521、FAN1/FAN2 和转接板背面器件是否被壳体吞掉。',exploded:'分解方向沿模块厚度，保持显示板、排母、转接板和后盖身份不变。',service:'后盖后移，线缆保持独立实体；用于评审插拔和手指空间。',front:'前框只围绕有效显示区，屏幕四周保留触摸和玻璃边缘。',rear:'DC5521、两个风扇接头和底面器件集中在此侧，当前尺寸仍是 provisional。',left:'Type-C 插头从显示板端部出线，外侧显示 6×D 静态弯曲起点。',right:'右侧用于观察线缆出口和机箱适配底座，支持镜像。',top:'从顶部观察排母两排和 17 mm row spacing。',bottom:'底面观察 Rev B 元件、DC 插座和 FAN 接口。'}[view];
+      document.getElementById('scene-note').textContent={assembled:'屏幕在前，Rev B 转接板在后；风扇线和 DC 电源线从同一侧汇合出线。橙色体积是尚未实测的插头/线缆净空。',transparent:'降低外壳不透明度，用于检查 DC5521、FAN1/FAN2 和转接板背面器件是否被壳体吞掉。',exploded:'分解方向沿模块厚度，保持显示板、排母、转接板和后盖身份不变。',service:'后盖后移，线缆保持独立实体；用于评审同侧插拔和手指空间。',front:'前框只围绕有效显示区，屏幕四周保留触摸和玻璃边缘。',rear:'DC5521、两个风扇接头和底面器件集中在此侧，当前尺寸仍是 provisional。',left:'Type-C 插头从显示板端部出线，外侧显示 6×D 静态弯曲起点。',right:'右侧用于观察线缆出口和机箱适配底座，支持镜像。',top:'从顶部观察排母两排和 17 mm row spacing。',bottom:'底面观察 Rev B 元件、DC 插座和 FAN 接口。'}[view];
       window.__ESP32_MODULE_DRAFT_STATE__={view,mirror,explode,design:DESIGN,partIds:Object.keys(groups)};
     }
     function bounds(){root.updateMatrixWorld(true); const b=new THREE.Box3(); root.traverse(o=>{if(!o.isMesh||!o.visible)return; o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}); return b;}
