@@ -1,0 +1,29 @@
+{
+  "schema_version": "draft-0.1",
+  "revision": "ESP32-MODULE-THREEJS-DRAFT-20260918",
+  "units": "mm",
+  "status": "THREEJS_DRAFT",
+  "parameters": [
+    {"id":"display_pcb_w","value":44.5,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/display-pinout.md","tolerance":"±0.05","derived_from":[]},
+    {"id":"display_pcb_h","value":24.55,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/display-pinout.md","tolerance":"±0.05","derived_from":[]},
+    {"id":"display_active_w","value":32.93,"unit":"mm","status":"verified","category":"design","source":"Waveshare mechanical drawing","tolerance":"±0.05","derived_from":[]},
+    {"id":"display_active_h","value":17.75,"unit":"mm","status":"verified","category":"design","source":"Waveshare mechanical drawing","tolerance":"±0.05","derived_from":[]},
+    {"id":"display_stack_h","value":10.6,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/display-pinout.md","tolerance":"±0.20","derived_from":[]},
+    {"id":"carrier_pcb_w","value":45.0,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/README.md","tolerance":"±0.10","derived_from":[]},
+    {"id":"carrier_pcb_d","value":30.0,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/README.md","tolerance":"±0.10","derived_from":[]},
+    {"id":"carrier_pcb_t","value":1.6,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/design-inputs.md","tolerance":"±0.15","derived_from":[]},
+    {"id":"carrier_header_h","value":8.5,"unit":"mm","status":"verified","category":"design","source":"ESP32-LCD/hardware/fan-interface-revB/release-20260909-dfm5/README.md","tolerance":"±0.20","derived_from":[]},
+    {"id":"carrier_bottom_keepout_h","value":11.0,"unit":"mm","status":"derived","category":"review","source":"Rev B DC jack height and assembly photo","tolerance":"+1.0/-0.0","derived_from":["carrier_pcb_t"]},
+    {"id":"shell_wall","value":3.0,"unit":"mm","status":"provisional","category":"design","source":"FDM draft assumption","tolerance":"±0.20","derived_from":[]},
+    {"id":"typec_plug_w","value":12.0,"unit":"mm","status":"provisional","category":"review","source":"draft keep-out assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"typec_plug_h","value":8.0,"unit":"mm","status":"provisional","category":"review","source":"draft keep-out assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"typec_cable_d","value":4.0,"unit":"mm","status":"provisional","category":"review","source":"draft keep-out assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"dc_plug_w","value":18.0,"unit":"mm","status":"provisional","category":"review","source":"photo-scaled draft assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"dc_plug_h","value":12.0,"unit":"mm","status":"provisional","category":"review","source":"photo-scaled draft assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"dc_plug_l","value":32.0,"unit":"mm","status":"provisional","category":"review","source":"photo-scaled draft assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"fan_cable_d","value":3.0,"unit":"mm","status":"provisional","category":"review","source":"draft cable envelope assumption","tolerance":"unknown","derived_from":[]},
+    {"id":"cable_static_radius_factor","value":6.0,"unit":"xD","status":"provisional","category":"review","source":"conservative H13 draft starting point","tolerance":"unknown","derived_from":[]},
+    {"id":"fit_clearance","value":0.6,"unit":"mm","status":"provisional","category":"design","source":"existing display-pod draft starting point","tolerance":"±0.10","derived_from":[]},
+    {"id":"chassis_interface_projection","value":18.0,"unit":"mm","status":"provisional","category":"review","source":"R2.3 A.1 existing pod placeholder","tolerance":"not sufficient for Rev B stack","derived_from":[]}
+  ]
+}

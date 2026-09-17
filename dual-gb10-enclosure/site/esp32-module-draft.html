@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' blob: data:; img-src 'self' blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>ESP32-LCD 模块外壳 · Three.js Draft</title>
+  <style>
+    :root { color-scheme: light; --bg:#e9eeee; --surface:#f9fbfa; --ink:#182124; --muted:#677477; --line:#cbd5d6; --accent:#d65b32; --teal:#208994; --gold:#b68225; --green:#559b61; --red:#cf4b3d; --blue:#4b92b4; --radius:7px; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    * { box-sizing:border-box; } html,body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); } body { overflow:hidden; }
+    button,input { font:inherit; } button:focus-visible,input:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+    .app { display:grid; grid-template-rows:auto minmax(0,1fr); height:100vh; }
+    .topbar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:58px; padding:9px 14px; border-bottom:1px solid var(--line); background:#f9fbfaf2; z-index:5; }
+    .identity { white-space:nowrap; } .identity strong { display:block; font-size:15px; } .identity span { color:var(--muted); font-size:11px; }
+    .nav { color:var(--muted); text-decoration:none; font-size:12px; } .nav:hover { color:var(--ink); }
+    .controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; margin-left:auto; }
+    .seg { display:flex; gap:2px; padding:2px; border:1px solid var(--line); border-radius:var(--radius); background:#e5ebeb; white-space:nowrap; overflow:auto; scrollbar-width:none; }
+    .seg::-webkit-scrollbar { display:none; } .seg button { min-height:30px; padding:5px 9px; border:0; border-radius:4px; color:var(--muted); background:transparent; cursor:pointer; font-size:11px; }
+    .seg button[aria-pressed=true] { color:var(--ink); background:#fff; box-shadow:0 1px 4px #1a27281c; }
+    .workspace { display:grid; grid-template-columns:minmax(0,1fr) 350px; min-height:0; }
+    .stage { position:relative; min-width:0; min-height:0; overflow:hidden; background:#e9eeee; } canvas { display:block; width:100%; height:100%; touch-action:none; }
+    .legend { position:absolute; top:14px; left:16px; display:flex; flex-wrap:wrap; gap:7px 12px; max-width:calc(100% - 32px); color:#526064; font-size:11px; pointer-events:none; }
+    .legend span { display:inline-flex; align-items:center; gap:5px; } .legend i { width:13px; height:5px; border-radius:2px; }
+    .view-note { position:absolute; left:17px; bottom:16px; max-width:min(650px,calc(100% - 34px)); padding:10px 12px; border-left:3px solid var(--accent); background:#f9fbfae8; box-shadow:0 12px 28px #1c2a2b18; pointer-events:none; }
+    .view-note strong { display:block; font-size:13px; } .view-note span { display:block; margin-top:3px; color:var(--muted); font-size:11px; line-height:1.4; }
+    .panel { display:grid; grid-template-rows:auto minmax(0,1fr); min-height:0; border-left:1px solid var(--line); background:var(--surface); }
+    .panel-head { padding:15px 16px 11px; border-bottom:1px solid var(--line); } .eyebrow { color:#ad4223; font-size:10px; font-weight:750; text-transform:uppercase; letter-spacing:.02em; }
+    h1 { margin:5px 0 4px; font-size:19px; } .panel-head p { margin:0; color:var(--muted); font-size:12px; line-height:1.45; }
+    .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:12px 0 16px; } .metric { padding:9px; background:#edf2f1; border-left:3px solid var(--teal); } .metric strong { display:block; font-size:15px; font-variant-numeric:tabular-nums; } .metric span { color:var(--muted); font-size:10px; }
+    .body { min-height:0; overflow:auto; scrollbar-width:thin; } .pane { padding:13px 16px 22px; }
+    .section-title { margin:0 0 9px; font-size:13px; } .section-title:not(:first-child) { margin-top:20px; }
+    .fact-list,.check-list,.parts { display:grid; gap:7px; margin:0; padding:0; list-style:none; } .fact-list li,.parts li { display:flex; justify-content:space-between; gap:12px; padding:8px 9px; border:1px solid var(--line); background:#fff; font-size:11px; } .fact-list small,.parts small { color:var(--muted); text-align:right; }
+    .check-list li { display:grid; grid-template-columns:72px 1fr; gap:8px; padding:8px 0; border-bottom:1px solid #dce2e2; } .check-list b { font-size:10px; } .check-list b.ok { color:var(--green); } .check-list b.open { color:var(--accent); } .check-list b.todo { color:#9b711f; } .check-list strong { display:block; font-size:11px; } .check-list small { display:block; margin-top:3px; color:var(--muted); line-height:1.4; }
+    .switches { display:grid; gap:6px; margin-top:8px; } .switches label { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 8px; border:1px solid var(--line); background:#fff; font-size:11px; } .switches input { accent-color:var(--teal); }
+    .slider-row { display:grid; grid-template-columns:1fr 80px; align-items:center; gap:10px; padding:8px 0 2px; font-size:11px; } input[type=range] { width:100%; accent-color:var(--teal); }
+    .status { display:flex; align-items:center; gap:7px; margin-top:12px; color:var(--muted); font-size:10px; } .status i { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+    .warning { margin-top:12px; padding:9px 10px; border-left:3px solid var(--gold); color:#71551b; background:#fff8e5; font-size:11px; line-height:1.45; }
+    .small-note { color:var(--muted); font-size:10px; line-height:1.45; }
+    @media (max-width:900px) { body { overflow:auto; } .app { height:auto; min-height:100svh; } .topbar { align-items:flex-start; } .controls { flex:0 0 100%; margin-left:0; } .workspace { grid-template-columns:1fr; grid-template-rows:minmax(500px,64svh) auto; } .panel { border-top:1px solid var(--line); border-left:0; } .stage { min-height:500px; } }
+    @media (max-width:520px) { .topbar { gap:8px; padding:8px 10px; } .identity span,.nav { display:none; } .stage { min-height:450px; } .workspace { grid-template-rows:minmax(450px,61svh) auto; } .legend { top:9px; left:10px; } .view-note { left:10px; bottom:10px; max-width:calc(100% - 20px); } .view-note span { display:none; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="identity"><strong>ESP32-LCD 模块外壳</strong><span>Three.js draft · 2026-09-18 · mm</span></div>
+      <a class="nav" href="./r2-3-a-review.html">返回 R2.3 A.1</a>
+      <div class="controls">
+        <div class="seg" role="group" aria-label="查看模式">
+          <button type="button" data-view="assembled" aria-pressed="true">装配</button>
+          <button type="button" data-view="transparent" aria-pressed="false">透明</button>
+          <button type="button" data-view="exploded" aria-pressed="false">爆炸</button>
+          <button type="button" data-view="service" aria-pressed="false">维护</button>
+          <button type="button" data-view="front" aria-pressed="false">前</button>
+          <button type="button" data-view="rear" aria-pressed="false">后</button>
+          <button type="button" data-view="left" aria-pressed="false">左</button>
+          <button type="button" data-view="right" aria-pressed="false">右</button>
+          <button type="button" data-view="top" aria-pressed="false">上</button>
+          <button type="button" data-view="bottom" aria-pressed="false">下</button>
+        </div>
+        <div class="seg" role="group" aria-label="屏幕位置">
+          <button type="button" data-mirror="left" aria-pressed="true">机箱左</button>
+          <button type="button" data-mirror="right" aria-pressed="false">机箱右</button>
+        </div>
+      </div>
+    </header>
+    <div class="workspace">
+      <section class="stage" aria-label="ESP32-LCD 模块和外壳三维评审模型">
+        <canvas tabindex="0"></canvas>
+        <div class="legend" aria-hidden="true">
+          <span><i style="background:#263f37"></i>显示板</span><span><i style="background:#1e704c"></i>Rev B 转接板</span><span><i style="background:#d2a54e"></i>隔柱/适配</span><span><i style="background:#343b3d"></i>打印件</span><span><i style="background:#9d6a8e"></i>线缆</span><span><i style="background:#d57b3c"></i>keep-out</span>
+        </div>
+        <div class="view-note"><strong id="scene-title">装配视图 · 平行叠层</strong><span id="scene-note">屏幕在前，Rev B 转接板在后；拖动旋转，滚轮缩放。橙色体积是尚未实测的插头/线缆净空。</span></div>
+      </section>
+      <aside class="panel">
+        <div class="panel-head"><div class="eyebrow">Module review · prototype</div><h1>实际装配模块草模</h1><p>以照片中的排母叠层、DC5521、电源线和风扇线束为结构依据。页面不输出可打印几何。</p><div class="status"><i></i><span>THREEJS_DRAFT · 尺寸/插头包络仍需实物复核</span></div></div>
+        <div class="body"><section class="pane">
+          <div class="metric-grid"><div class="metric"><strong>44.5 × 24.55</strong><span>显示 PCB / verified</span></div><div class="metric"><strong>45 × 30</strong><span>Rev B PCB / verified</span></div><div class="metric"><strong>≈25.5 mm</strong><span>叠层高度 / derived</span></div><div class="metric"><strong>≈52 × 38</strong><span>外壳平面包络 / provisional</span></div></div>
+          <h2 class="section-title">模型控制</h2>
+          <div class="slider-row"><label for="explode">爆炸距离</label><input id="explode" type="range" min="0" max="1" step="0.01" value="0"></div>
+          <div class="switches">
+            <label><span>打印件外壳</span><input type="checkbox" data-part="shell" checked></label>
+            <label><span>显示板 / 有效显示区</span><input type="checkbox" data-part="display" checked></label>
+            <label><span>Rev B 转接板 / 底面器件</span><input type="checkbox" data-part="carrier" checked></label>
+            <label><span>Type-C / DC / FAN 接头</span><input type="checkbox" data-part="connectors" checked></label>
+            <label><span>线缆实体和弯曲包络</span><input type="checkbox" data-part="cables" checked></label>
+            <label><span>外接适配底座</span><input type="checkbox" data-part="adapter" checked></label>
+            <label><span>尺寸和净空标注</span><input type="checkbox" data-part="dimensions" checked></label>
+          </div>
+          <h2 class="section-title">草模结构</h2>
+          <ul class="fact-list">
+            <li><strong>前框</strong><small>围绕有效区<br>触摸面不被压住</small></li>
+            <li><strong>电子托盘</strong><small>承托 4×M2<br>隔离转接板背面</small></li>
+            <li><strong>后盖</strong><small>可拆维护<br>避开 DC / FAN 线束</small></li>
+            <li><strong>机箱适配</strong><small>复用 R2.3 T 键<br>左右镜像</small></li>
+          </ul>
+          <h2 class="section-title">关键待测项</h2>
+          <ul class="check-list">
+            <li><b class="ok">VERIFIED</b><span><strong>显示板 / 转接板外形</strong><small>来自机械图和 Rev B 制造版资料。</small></span></li>
+            <li><b class="todo">DERIVED</b><span><strong>底面器件高度</strong><small>以 DC 座约 11 mm 和照片确定方向，需实物复核。</small></span></li>
+            <li><b class="open">OPEN</b><span><strong>Type-C 插头和线缆</strong><small>当前按 12×8×5 mm 插头和静态 6×D 弯曲半径显示。</small></span></li>
+            <li><b class="open">OPEN</b><span><strong>12 V 插头和风扇线束</strong><small>照片未给比例尺；需测外廓、插拔方向和最小弯曲半径。</small></span></li>
+            <li><b class="open">OPEN</b><span><strong>机箱适配承载</strong><small>本页只显示接口占位，未验证卡扣保持力和整机碰撞。</small></span></li>
+          </ul>
+          <div class="warning">当前页面是结构评审 draft。不要用截图、three.js 网格或 provisional 插头尺寸直接切片打印；确认结构后才建立参数化 CAD、fit coupon 和 STEP/STL。</div>
+          <p class="small-note">默认假设：显示板与 Rev B 平行叠层；Type-C 从显示板端部出线；DC5521 和 FAN1/FAN2 位于转接板背面/下方；屏幕默认机箱左侧。页面支持“机箱右”镜像。</p>
+        </section></div>
+      </aside>
+    </div>
+  </main>
+  <script type="importmap">{"imports":{"three":"../visuals/node_modules/three/build/three.module.js"}}</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from '../visuals/node_modules/three/examples/jsm/controls/OrbitControls.js';
+    import { RoundedBoxGeometry } from '../visuals/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js';
+
+    const DESIGN = Object.freeze({
+      units: 'mm',
+      display: { w:44.5, h:24.55, t:1.6, activeW:32.93, activeH:17.75, stackH:10.6 },
+      carrier: { w:45, d:30, t:1.6, headerH:8.5, bottomKeepout:11 },
+      shell: { wall:3, bezelW:52, bezelH:34, trayW:52, trayD:38, trayH:34, backT:3 },
+      connector: { typecW:12, typecH:8, typecD:5, typecCableD:4, dcW:18, dcH:12, dcL:32, fanCableD:3 },
+      cable: { staticRadiusFactor:6 },
+      adapter: { w:60, h:48, t:3, keyW:7, keyH:5 },
+      colors: { display:0x263f37, screen:0x66c6d0, carrier:0x1e704c, copper:0xd2a54e, shell:0x343b3d, shellEdge:0x596568, connector:0x242b2d, cable:0x9d6a8e, keepout:0xd57b3c, metal:0xa8b1ae, white:0xe4ece9, teal:0x268b92, dim:0x28727c }
+    });
+    const canvas = document.querySelector('canvas'); const stage = document.querySelector('.stage');
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0xe9eeee);
+    let perspective = new THREE.PerspectiveCamera(35,1,.1,1500); perspective.up.set(0,1,0);
+    let ortho = new THREE.OrthographicCamera(-60,60,45,-45,.1,1500); ortho.up.set(0,1,0);
+    let camera = perspective; let cameraMode = 'perspective';
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, preserveDrawingBuffer:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const controls = new OrbitControls(camera,canvas); controls.enableDamping=true; controls.dampingFactor=.08; controls.minDistance=45; controls.maxDistance=520; controls.target.set(0,0,0);
+    scene.add(new THREE.HemisphereLight(0xffffff,0x788485,2.2)); const key=new THREE.DirectionalLight(0xffffff,4); key.position.set(-100,-130,180); scene.add(key); const fill=new THREE.DirectionalLight(0xc8eef0,2); fill.position.set(120,80,90); scene.add(fill); const rim=new THREE.DirectionalLight(0xffc0a0,1.2); rim.position.set(0,170,-100); scene.add(rim);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshStandardMaterial({color:0xdce2e1,roughness:1})); floor.rotation.x=-Math.PI/2; floor.position.y=-34; scene.add(floor);
+    const materials = {}; function mat(name,color,rough=.58,metal=0,opacity=1,wire=false){const m=wire?new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity,depthWrite:false}):new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal,transparent:true,opacity,side:THREE.DoubleSide}); m.userData.base=opacity; materials[name]=m; return m;}
+    for (const [k,v] of Object.entries(DESIGN.colors)) mat(k,v,k==='metal'?.3:.58,k==='metal'?.55:0);
+    const root = new THREE.Group(); scene.add(root); const groups={}; const labels=[]; let view='assembled'; let mirror='left';
+    function G(id){const g=new THREE.Group(); g.name=id; g.userData.partId=id; groups[id]=g; root.add(g); return g;}
+    function box(w,h,d,r,material,pos=[0,0,0],parent=root){const geo=r?new RoundedBoxGeometry(w,h,d,3,Math.max(0,Math.min(r,Math.min(w,h,d)/2-.1))):new THREE.BoxGeometry(w,h,d); const m=new THREE.Mesh(geo,material); m.position.set(...pos); parent.add(m); return m;}
+    function cyl(radius,depth,material,pos=[0,0,0],rot=[0,0,0],parent=root,segments=32){const m=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,depth,segments),material); m.position.set(...pos); m.rotation.set(...rot); parent.add(m); return m;}
+    function tube(points,radius,material,parent=root){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))); const m=new THREE.Mesh(new THREE.TubeGeometry(curve,32, radius, 10, false),material); parent.add(m); return m;}
+    function textSprite(text,color='#263034',scale=1){const c=document.createElement('canvas'); c.width=640; c.height=80; const x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height); x.font='600 28px -apple-system,system-ui,sans-serif'; x.fillStyle=color; x.fillText(text,8,47); const t=new THREE.CanvasTexture(c); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false})); s.scale.set(80*scale,10*scale,1); return s;}
+    function label(text,pos,color='#263034',scale=.5,parent=root){const s=textSprite(text,color,scale); s.position.set(...pos); parent.add(s); labels.push(s); return s;}
+    function line(a,b,color=DESIGN.colors.dim,parent=root){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]); parent.add(new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:.85})));}
+    function dim(a,b,text,offset=[0,0,0],parent=root){line(a,b,DESIGN.colors.dim,parent); const mid=[(a[0]+b[0])/2+offset[0],(a[1]+b[1])/2+offset[1],(a[2]+b[2])/2+offset[2]]; label(text,mid,'#28727c',.43,parent);}
+    function arrow(a,b,color=DESIGN.colors.keepout,parent=root){const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),d=end.clone().sub(start),len=d.length(),g=new THREE.Group(); const shaft=new THREE.Mesh(new THREE.CylinderGeometry(1,1,Math.max(1,len-7),10),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75})); shaft.position.copy(start).add(end).multiplyScalar(.5); shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize()); g.add(shaft); const head=new THREE.Mesh(new THREE.ConeGeometry(3.2,7,12),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9})); head.position.copy(end); head.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize()); g.add(head); parent.add(g); }
+
+    function displayBoard(){const g=G('DISPLAY-1P47'); const z=10.1; box(DESIGN.display.w,DESIGN.display.h,DESIGN.display.t,4,materials.display,[0,0,z],g); box(DESIGN.display.activeW,DESIGN.display.activeH,1.0,2,materials.screen,[0,0,z+1.25],g); // board corner holes
+      for(const x of [-19.5,19.5]) for(const y of [-8.89,8.89]) cyl(1.25,1.9,materials.metal,[x,y,z],[0,0,0],g,20);
+      box(3.4,9,4.8,1,materials.connector,[-24.3,0,z],g);
+      label('ESP32-S3 / LCD',[-22,0,z+4],'#1d5749',.42,g); return g; }
+    function carrierBoard(){const g=G('FAN-INTERFACE-REVB'); const z=0; box(DESIGN.carrier.w,DESIGN.carrier.d,DESIGN.carrier.t,1.5,materials.carrier,[0,0,z],g);
+      // Four M2 holes / board mounting evidence
+      for(const x of [-19.25,19.25]) for(const y of [-8.89,8.89]) cyl(1.15,2.1,materials.metal,[x,y,z],[0,0,0],g,20);
+      // Bottom side components and headers; deliberately separate groups by visible role.
+      box(12,18,11,3,materials.connector,[-14,-1,-6.5],g); // DC5521 body
+      box(7,18,7,1,materials.white,[7,-10,-4.3],g); box(7,18,7,1,materials.white,[20,-10,-4.3],g);
+      box(8,13,5,1,materials.metal,[4,9,-3.8],g); box(8,13,5,1,materials.metal,[16,9,-3.8],g);
+      box(10,8,7,1,materials.white,[-10,10,5.8],g); box(10,8,7,1,materials.white,[11,10,5.8],g);
+      label('Rev B · 45 × 30',[-21,0,5.2],'#1d6a4a',.42,g); label('底面器件 ≥ 11 mm',[-18,-16,-12],'#8a5424',.4,g); return g; }
+    function headers(){const g=G('STACK-HEADERS'); const z=5.05; box(28,2.3,DESIGN.carrier.headerH,0,materials.white,[0,-8.5,z],g); box(28,2.3,DESIGN.carrier.headerH,0,materials.white,[0,8.5,z],g); for(const x of [-12.7,-10.16,-7.62,-5.08,-2.54,0,2.54,5.08,7.62,10.16,12.7]) { cyl(.45,DESIGN.carrier.headerH+.8,materials.metal,[x,-8.5,z],[Math.PI/2,0,0],g,12); cyl(.45,DESIGN.carrier.headerH+.8,materials.metal,[x,8.5,z],[Math.PI/2,0,0],g,12); } label('2×1×11 · 17 mm row spacing',[-19,16,8],'#776021',.36,g); return g; }
+    function shell(){const front=G('POD-FRONT-BEZEL'); const tray=G('POD-ELECTRONICS-TRAY'); const rear=G('POD-REAR-COVER'); const zFront=13.5, zRear=-13.8, w=DESIGN.shell.bezelW,h=DESIGN.shell.bezelH,t=3;
+      // front bezel bars around the active window
+      box(w,t,t,1,materials.shell,[0,-(h-t)/2,zFront],front); box(w,t,t,1,materials.shell,[0,(h-t)/2,zFront],front); box(t,h-2*t,t,1,materials.shell,[-(w-t)/2,0,zFront],front); box(t,h-2*t,t,1,materials.shell,[(w-t)/2,0,zFront],front);
+      // rear tray walls surround the PCB stack and leave end openings
+      const tw=DESIGN.shell.trayW,td=DESIGN.shell.trayD,th=DESIGN.shell.trayH;
+      box(t,td,th,1,materials.shellEdge,[-(tw-t)/2,0,zRear],tray); box(t,td,th,1,materials.shellEdge,[(tw-t)/2,0,zRear],tray); box(tw,t,th,1,materials.shellEdge,[0,(td-t)/2,zRear],tray); box(tw,t,th,1,materials.shellEdge,[0,-(td-t)/2,zRear],tray);
+      box(tw,td,t,2,materials.shell,[0,0,zRear-th/2+t/2],rear);
+      label('POD-FRONT-BEZEL',[0,-23,zFront+3],'#344245',.43,front); label('POD-ELECTRONICS-TRAY',[0,-24,zRear-12],'#344245',.38,tray); label('POD-REAR-COVER',[0,22,zRear-16],'#344245',.38,rear); return front; }
+    function adapter(){const g=G('POD-CHASSIS-ADAPTER'); const z=-31; box(DESIGN.adapter.w,DESIGN.adapter.h,DESIGN.adapter.t,2,materials.shell,[0,0,z],g); for(const x of [-21,21]) { box(DESIGN.adapter.keyW,8,DESIGN.adapter.keyH,1,materials.copper,[x,16,z+4],g); box(DESIGN.adapter.keyW,8,DESIGN.adapter.keyH,1,materials.copper,[x,-16,z+4],g); } label('R2.3 reversible T-key / latch adapter',[ -26,-31,z-2],'#765a22',.36,g); return g; }
+    function connectors(){const g=G('CONNECTORS'); const z=10.1;
+      box(DESIGN.connector.typecW,DESIGN.connector.typecD,DESIGN.connector.typecH,2,materials.connector,[-27,0,z],g); box(6,4.5,3.5,1,materials.metal,[-33,0,z],g); label('USB-C',[-34,6,z+4],'#293d40',.38,g);
+      // DC barrel plug enters from the carrier left/rear side
+      box(DESIGN.connector.dcL,DESIGN.connector.dcW,DESIGN.connector.dcH,3,materials.connector,[-36,-1,-6.0],g); cyl(5,18,materials.metal,[-53,-1,-6],[0,Math.PI/2,0],g,24); label('12 V DC5521',[-58,-12,-2],'#293d40',.37,g);
+      // fan plugs on the carrier rear edge
+      box(9,6,8,1,materials.connector,[7,-18,-4],g); box(9,6,8,1,materials.connector,[20,-18,-4],g); label('FAN1 / FAN2',[8,-23,-10],'#293d40',.36,g); return g; }
+    function keepouts(){const g=G('KEEPOUTS'); const transparent=(name,color)=>materials[name]||mat(name,color,.4,0,.20); const typeMat=transparent('keepoutType',DESIGN.colors.keepout),dcMat=transparent('keepoutDc',DESIGN.colors.keepout),fanMat=transparent('keepoutFan',DESIGN.colors.keepout);
+      box(18,16,12,3,typeMat,[-34,0,10],g); box(42,24,18,4,dcMat,[-48,-1,-6],g); box(30,13,16,2,fanMat,[14,-22,-4],g);
+      label('Type-C plug + 6×D',[ -46,10,18],'#b55825',.34,g); label('DC cable / 12 V plug',[ -55,-16,5],'#b55825',.34,g); label('FAN harness',[18,-29,-11],'#b55825',.34,g); return g; }
+    function cables(){const g=G('CABLES'); const m=materials.cable;
+      tube([[-33,0,10],[-43,0,10],[-52,4,14],[-63,10,18]],2.0,m,g); // USB-C
+      tube([[-53,-1,-6],[-63,-1,-6],[-70,-4,-3],[-78,-4,3]],3.0,m,g); // DC
+      tube([[7,-21,-4],[7,-28,-5],[2,-34,-2],[-6,-36,3]],1.6,m,g); tube([[20,-21,-4],[22,-28,-5],[28,-34,-2],[36,-36,3]],1.6,m,g);
+      arrow([-37,0,18],[-54,5,18],DESIGN.colors.keepout,g); arrow([-56,-1,-6],[-72,-4,0],DESIGN.colors.keepout,g); label('建议独立应力释放',[ -46, -8,22],'#8d5275',.34,g); return g; }
+    function dimensions(){const g=G('DIMENSIONS'); dim([-22.25,-20,17], [22.25,-20,17], '44.50 mm 显示 PCB', [0,-2,0],g); dim([-22.5,-24,5], [22.5,-24,5], '45 mm 转接板', [0,-2,0],g); dim([28,-12,13.5],[28,-12,-25], '≈38 mm 外深', [5,0,0],g); dim([30,15,11],[30,15,-10], '叠层 + 背面器件', [4,0,0],g); line([-26,0,11.8],[-26,0,14.5],DESIGN.colors.dim,g); label('有效区 32.93 × 17.75',[ -15,17,15],'#28727c',.34,g); return g; }
+    function build(){displayBoard();carrierBoard();headers();shell();adapter();connectors();keepouts();cables();dimensions();}
+    build();
+    function setOpacity(name,value){if(!materials[name])return; materials[name].opacity=value; materials[name].depthWrite=value>.75;}
+    function resetTransforms(){for(const g of Object.values(groups)) g.position.set(0,0,0);}
+    function apply(){resetTransforms(); for(const m of Object.values(materials)){m.opacity=m.userData.base; m.depthWrite=m.opacity>.75;} for(const g of Object.values(groups)) g.visible=true; labels.forEach(s=>s.visible=true); floor.visible=true;
+      const exploded=parseFloat(document.getElementById('explode').value); const frontZ=exploded*24, boardZ=exploded*12, rearZ=-exploded*10;
+      if(view==='exploded'||exploded>0){groups['POD-FRONT-BEZEL'].position.z=frontZ; groups['DISPLAY-1P47'].position.z=boardZ; groups['STACK-HEADERS'].position.z=boardZ*.55; groups['FAN-INTERFACE-REVB'].position.z=rearZ; groups['CONNECTORS'].position.z=rearZ; groups['KEEPOUTS'].position.z=rearZ; groups['CABLES'].position.z=rearZ; groups['POD-ELECTRONICS-TRAY'].position.z=rearZ; groups['POD-REAR-COVER'].position.z=rearZ-10; groups['POD-CHASSIS-ADAPTER'].position.z=rearZ-18; }
+      if(view==='service'){groups['POD-REAR-COVER'].position.z=-27; groups['CABLES'].position.x=10; groups['CONNECTORS'].position.x=6; setOpacity('shell',.20); setOpacity('shellEdge',.25); }
+      if(view==='transparent'||view==='service'){setOpacity('shell',.20); setOpacity('shellEdge',.25);}
+      if(view==='exploded'){setOpacity('shell',.45); setOpacity('shellEdge',.45);}
+      const hidden = []; const partBox=document.querySelectorAll('[data-part]'); for(const input of partBox){const cat=input.dataset.part; const visible=input.checked; const ids={shell:['POD-FRONT-BEZEL','POD-ELECTRONICS-TRAY','POD-REAR-COVER'],display:['DISPLAY-1P47','STACK-HEADERS'],carrier:['FAN-INTERFACE-REVB'],connectors:['CONNECTORS'],cables:['CABLES','KEEPOUTS'],adapter:['POD-CHASSIS-ADAPTER'],dimensions:['DIMENSIONS']}[cat]||[]; ids.forEach(id=>{if(groups[id])groups[id].visible=visible;});}
+      if(view==='rear'){groups['POD-FRONT-BEZEL'].visible=false; groups['DISPLAY-1P47'].visible=false; groups['STACK-HEADERS'].visible=false;}
+      if(view==='front'){groups['POD-REAR-COVER'].visible=false; groups['POD-ELECTRONICS-TRAY'].visible=false; groups['POD-CHASSIS-ADAPTER'].visible=false; groups['CABLES'].visible=false; groups['CONNECTORS'].visible=false; groups['KEEPOUTS'].visible=false;}
+      if(view==='left'||view==='right'||view==='top'||view==='bottom'){setOpacity('shell',.12); setOpacity('shellEdge',.18);}
+      if(mirror==='right'){root.scale.x=-1;}
+      document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view))); document.querySelectorAll('[data-mirror]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mirror===mirror)));
+      document.getElementById('scene-title').textContent={assembled:'装配视图 · 平行叠层',transparent:'透明视图 · 背面净空',exploded:'爆炸视图 · 前框 / 托盘 / 后盖',service:'维护视图 · 后盖移开',front:'前视图 · 有效显示区',rear:'后视图 · DC / FAN 接头',left:'左视图 · Type-C 端',right:'右视图 · 线缆出口',top:'上视图 · 叠层间距',bottom:'下视图 · 转接板背面'}[view];
+      document.getElementById('scene-note').textContent={assembled:'屏幕在前，Rev B 转接板在后；橙色体积是尚未实测的插头/线缆净空。',transparent:'降低外壳不透明度，用于检查 DC5521、FAN1/FAN2 和转接板背面器件是否被壳体吞掉。',exploded:'分解方向沿模块厚度，保持显示板、排母、转接板和后盖身份不变。',service:'后盖后移，线缆保持独立实体；用于评审插拔和手指空间。',front:'前框只围绕有效显示区，屏幕四周保留触摸和玻璃边缘。',rear:'DC5521、两个风扇接头和底面器件集中在此侧，当前尺寸仍是 provisional。',left:'Type-C 插头从显示板端部出线，外侧显示 6×D 静态弯曲起点。',right:'右侧用于观察线缆出口和机箱适配底座，支持镜像。',top:'从顶部观察排母两排和 17 mm row spacing。',bottom:'底面观察 Rev B 元件、DC 插座和 FAN 接口。'}[view];
+      window.__ESP32_MODULE_DRAFT_STATE__={view,mirror,explode,design:DESIGN,partIds:Object.keys(groups)};
+    }
+    function bounds(){root.updateMatrixWorld(true); const b=new THREE.Box3(); root.traverse(o=>{if(!o.isMesh||!o.visible)return; o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}); return b;}
+    function pose(kind=view){const b=bounds(),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3()); let dir=new THREE.Vector3(1.15,-1.4,.95); if(kind==='rear')dir.set(-1.1,1.4,.8); if(kind==='left')dir.set(-1.5,-.1,.4); if(kind==='right')dir.set(1.5,.1,.4); if(kind==='top')dir.set(.2,-.3,2.1); if(kind==='bottom')dir.set(.2,.3,-2.1); if(kind==='front')dir.set(0,-2.2,.1); const radius=size.length()/2; controls.target.copy(center); if(camera.isOrthographicCamera){const span=Math.max(size.x,size.y,size.z)*1.32; camera.left=-span; camera.right=span; camera.top=span; camera.bottom=-span; camera.position.copy(center).addScaledVector(dir.normalize(),span*2.2); camera.lookAt(center); camera.updateProjectionMatrix();} else {const distance=Math.max(90,radius/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.18); camera.position.copy(center).addScaledVector(dir.normalize(),distance); camera.near=.1; camera.far=Math.max(1200,distance*5); camera.updateProjectionMatrix(); camera.lookAt(center);} controls.update();}
+    function setView(next){view=next; const orthoViews=['front','rear','left','right','top','bottom']; const want=orthoViews.includes(view); if(want!== (cameraMode==='orthographic')){cameraMode=want?'orthographic':'perspective'; const old=camera; camera=want?ortho:perspective; camera.position.copy(old.position); camera.quaternion.copy(old.quaternion); controls.object=camera; controls.update();} apply(); pose(view);}
+    document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+    document.querySelectorAll('[data-mirror]').forEach(b=>b.addEventListener('click',()=>{mirror=b.dataset.mirror;apply();pose(view);}));
+    document.querySelectorAll('[data-part]').forEach(i=>i.addEventListener('change',()=>{apply();pose(view);})); document.getElementById('explode').addEventListener('input',()=>{apply();pose(view);});
+    function resize(){const r=stage.getBoundingClientRect(); renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false); perspective.aspect=r.width/Math.max(1,r.height); perspective.updateProjectionMatrix(); pose(view);} new ResizeObserver(resize).observe(stage); window.addEventListener('resize',resize);
+    apply(); resize(); window.__ESP32_MODULE_DRAFT_READY__=true;
+    function animate(){controls.update(); renderer.render(scene,camera); requestAnimationFrame(animate);} animate();
+  </script>
+</body>
+</html>
