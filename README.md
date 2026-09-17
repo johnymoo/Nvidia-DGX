@@ -57,6 +57,7 @@ all ranking metrics. Missing evidence fails closed.
 | dgx-spark-gb10 | qwen3.5 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10 | qwen3.6 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | dgx-spark-gb10-pair | deepseek-v4 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
+| dgx-spark-gb10-pair | glm-5.3-flash | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx3090-24gb | qwen3.8 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx4090-48gb | qwen3.6 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
 | rtx4090-48gb | qwen3.8 | - | - | - | - | No eligible Verified result is available for this hardware and model group. |
@@ -74,6 +75,7 @@ source did not record a compatible field; it never means zero.
 |---|---|---|---|---|---|
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance-concurrent-6; concurrency=6; cache=unknown | recorded aggregate TPS: 229.3 (recorded concurrent aggregate) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-concurrent/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | legacy-cross-model-performance; concurrency=1; cache=unknown | recorded generation/decode TPS: 68.8 (recorded single-stream mean) | [result](results/dgx-spark-gb10-pair/deepseek-v4/reference-20260812-single/result.json) / [source](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/BENCHMARK-RESULTS.md) |
+| dgx-spark-gb10-pair | GLM-5.3-Flash-EXL3 | vllm-exl3-overlay / dflash2-k7-tp2-300k | glm53-decode-structured-c1; concurrency=1; cache=warm | recorded generation/decode TPS: 60.34 (stream decode over 5 runs, structured count task, thinking off) | [result](results/dgx-spark-gb10-pair/glm-5.3-flash/reference-20260911/result.json) / [source](recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/BENCHMARK-RESULTS.md) |
 | dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | 362-frames-512x320-six-steps; concurrency=1; cache=cold | response: 130.5 (approximate recorded bounded wall time) | [result](results/dgx-spark-gb10/minimax-h3/reference-20260813/result.json) / [source](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/BENCHMARK-RESULTS.md) |
 | dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | 1000-token-generation; concurrency=1; cache=unknown | response: 28.89 (legacy source definition); recorded generation/decode TPS: 34.6 (recorded llama.cpp speed) | [result](results/dgx-spark-gb10/qwen3.5/reference-legacy/result.json) / [source](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/README.md) |
 | dgx-spark-gb10 | Qwen3.6-35B-A3B-NVFP4 | vllm / nvfp4-mtp3-256k | legacy-16-case-generation; concurrency=1; cache=unknown | recorded generation/decode TPS: 152.1 (recorded average generation throughput) | [result](results/dgx-spark-gb10/qwen3.6/reference-20260618/result.json) / [source](recipes/qwen3.6/dgx-spark-gb10-vllm-27b-nvfp4-native-mtp2-128k/NVFP4-BENCHMARK-RESULTS.md) |
@@ -97,6 +99,7 @@ source did not record a compatible field; it never means zero.
 |---|---|---|---|---|
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-off-tp2-control | Archived | [`deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-off`](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-off/) |
 | dgx-spark-gb10-pair | DeepSeek-V4-Flash-0731 | vllm-patch4 / thinking-on-tp2 | Reference | [`deepseek-v4.dual-gb10.vllm-flash-0731-patch4-thinking-on`](recipes/deepseek-v4/dual-dgx-spark-gb10-vllm-flash-0731-patch4-thinking-on/) |
+| dgx-spark-gb10-pair | GLM-5.3-Flash-EXL3 | vllm-exl3-overlay / dflash2-k7-tp2-300k | Reference | [`glm-5.3-flash.dual-gb10.vllm-exl3-4bpw-dflash2`](recipes/glm-5.3-flash/dual-dgx-spark-gb10-vllm-exl3-4bpw-dflash2/) |
 | dgx-spark-gb10 | MiniMax-H3 | comfyui / trained-max-362-frames-512x320 | Verified | [`minimax-h3.gb10.comfyui-trained-max-15s`](recipes/minimax-h3/dgx-spark-gb10-comfyui-trained-max-15s/) |
 | dgx-spark-gb10 | Qwen3.5-9B | llama.cpp / q4-k-m-8k | Reference | [`qwen3.5.gb10.llamacpp-9b-q4-k-m-8k`](recipes/qwen3.5/dgx-spark-gb10-llamacpp-9b-q4-k-m-8k/) |
 | dgx-spark-gb10 | Qwen3.5-9B | vllm / bf16-nightly | Reference | [`qwen3.5.gb10.vllm-9b-bf16`](recipes/qwen3.5/dgx-spark-gb10-vllm-9b-bf16/) |

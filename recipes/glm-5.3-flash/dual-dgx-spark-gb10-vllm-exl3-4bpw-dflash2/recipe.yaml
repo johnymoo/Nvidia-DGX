@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "glm-5.3-flash.dual-gb10.vllm-exl3-4bpw-dflash2",
+  "model_family": "glm-5.3-flash",
+  "model_id": "GLM-5.3-Flash-EXL3",
+  "hardware_id": "dgx-spark-gb10-pair",
+  "runtime_id": "vllm-exl3-overlay",
+  "profile_id": "dflash2-k7-tp2-300k",
+  "modality": "multimodal-generation",
+  "maturity": "Reference",
+  "default": false,
+  "source_paths": [
+    "glm53.env.example",
+    "scripts/window-step.sh"
+  ],
+  "operations": {},
+  "benchmark_suites": [
+    "glm53-flash-validation-20260911"
+  ],
+  "evidence": {
+    "receipts": [],
+    "benchmarks": [
+      "BENCHMARK-RESULTS.md",
+      "benchmark-results-20260911.json"
+    ]
+  },
+  "limitations": [
+    "Context capped at 300k by this kit's 119.63 GiB UMA envelope at GPU_MEM_UTIL 0.84; 0.89 OOMs the host during torch.compile.",
+    "DFlash2 drafter is CC BY-NC-ND (non-commercial); MTP k=2 fallback decodes near 25 tok/s.",
+    "Prose decode (24.4 tok/s) is slower than the DeepSeek-V4-Flash reference on the same cluster.",
+    "47-field menu vision truth is production data and is not published; only scores and method are.",
+    "No formal acceptance receipt; deployment was validated by executed run rather than the standing acceptance contract."
+  ],
+  "invalidation_conditions": [
+    "Upstream overlay, EXL3 checkpoint, or DFlash2 revision changes.",
+    "GB10 firmware/driver changes the exposed unified memory (119.63 GiB baseline).",
+    "Any change to GPU_MEM_UTIL, MAX_MODEL_LEN, MNBT, TP topology, or speculative method.",
+    "Upstream CX7 interface or GID-index conventions change."
+  ]
+}
