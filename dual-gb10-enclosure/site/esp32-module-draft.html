@@ -119,7 +119,7 @@
       units: 'mm',
       display: { w:44.5, h:24.55, t:1.6, activeW:32.93, activeH:17.75, stackH:10.6 },
       carrier: { w:45, d:30, t:1.6, headerH:8.5, bottomKeepout:11 },
-      shell: { wall:3, bezelW:52, bezelH:34, trayW:52, trayD:38, trayH:34, backT:3, outlet:{ y:-4, width:24, z:-7, height:18 } },
+      shell: { wall:3, bezelW:52, bezelH:34, trayW:52, trayD:38, trayH:34, backT:3, typecSlotW:20, outlet:{ y:-4, width:24, z:-7, height:18 } },
       connector: { typecW:12, typecH:8, typecD:5, typecCableD:4, dcW:18, dcH:12, dcL:32, dcCableD:6, fanCableD:3 },
       cable: { staticRadiusFactor:6, bundleClearance:1.2 },
       adapter: { w:60, h:48, t:3, keyW:7, keyH:5 },
@@ -189,7 +189,7 @@
     function shell(){const front=G('POD-FRONT-BEZEL'); const tray=G('POD-ELECTRONICS-TRAY'); const rear=G('POD-REAR-COVER'); const zFront=13.5, zRear=-13.8, w=DESIGN.shell.bezelW,h=DESIGN.shell.bezelH,t=DESIGN.shell.wall;
       // front bezel bars around the active window
       box(w,t,t,1,materials.shell,[0,-(h-t)/2,zFront],front); box(w,t,t,1,materials.shell,[0,(h-t)/2,zFront],front);
-      const typecSlotY=20, bezelY= (h-2*t-typecSlotY)/2;
+      const typecSlotY=DESIGN.shell.typecSlotW, bezelY= (h-2*t-typecSlotY)/2;
       box(t,bezelY,t,1,materials.shell,[-(w-t)/2,-(typecSlotY+bezelY)/2,zFront],front); box(t,bezelY,t,1,materials.shell,[-(w-t)/2,(typecSlotY+bezelY)/2,zFront],front);
       box(t,h-2*t,t,1,materials.shell,[(w-t)/2,0,zFront],front);
       // Rear tray walls surround the PCB stack. The left wall has a defined power-side outlet slot.

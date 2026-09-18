@@ -27,6 +27,7 @@
     {"id":"cable_bundle_clearance","value":1.2,"unit":"mm","status":"provisional","category":"review","source":"draft parallel harness gap","tolerance":"unknown","derived_from":[]},
     {"id":"power_side_outlet_w","value":24.0,"unit":"mm","status":"provisional","category":"design","source":"draft common side outlet","tolerance":"unknown","derived_from":[]},
     {"id":"power_side_outlet_h","value":18.0,"unit":"mm","status":"provisional","category":"design","source":"draft common side outlet","tolerance":"unknown","derived_from":[]},
+    {"id":"typec_front_slot_w","value":20.0,"unit":"mm","status":"provisional","category":"design","source":"draft Type-C side slot","tolerance":"unknown","derived_from":[]},
     {"id":"fit_clearance","value":0.6,"unit":"mm","status":"provisional","category":"design","source":"existing display-pod draft starting point","tolerance":"±0.10","derived_from":[]},
     {"id":"chassis_interface_projection","value":18.0,"unit":"mm","status":"provisional","category":"review","source":"R2.3 A.1 existing pod placeholder","tolerance":"not sufficient for Rev B stack","derived_from":[]}
   ]
