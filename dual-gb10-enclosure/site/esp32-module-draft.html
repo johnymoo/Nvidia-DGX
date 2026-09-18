@@ -119,9 +119,9 @@
       units: 'mm',
       display: { w:44.5, h:24.55, t:1.6, activeW:32.93, activeH:17.75, stackH:10.6 },
       carrier: { w:45, d:30, t:1.6, headerH:8.5, bottomKeepout:11 },
-      shell: { wall:3, bezelW:52, bezelH:34, trayW:52, trayD:38, trayH:34, backT:3 },
-      connector: { typecW:12, typecH:8, typecD:5, typecCableD:4, dcW:18, dcH:12, dcL:32, fanCableD:3 },
-      cable: { staticRadiusFactor:6 },
+      shell: { wall:3, bezelW:52, bezelH:34, trayW:52, trayD:38, trayH:34, backT:3, outlet:{ y:-4, width:24, z:-7, height:18 } },
+      connector: { typecW:12, typecH:8, typecD:5, typecCableD:4, dcW:18, dcH:12, dcL:32, dcCableD:6, fanCableD:3 },
+      cable: { staticRadiusFactor:6, bundleClearance:1.2 },
       adapter: { w:60, h:48, t:3, keyW:7, keyH:5 },
       colors: { display:0x263f37, screen:0x66c6d0, carrier:0x1e704c, copper:0xd2a54e, shell:0x343b3d, shellEdge:0x596568, connector:0x242b2d, cable:0x9d6a8e, keepout:0xd57b3c, metal:0xa8b1ae, white:0xe4ece9, teal:0x268b92, dim:0x28727c }
     });
@@ -140,7 +140,32 @@
     function G(id){const g=new THREE.Group(); g.name=id; g.userData.partId=id; groups[id]=g; root.add(g); return g;}
     function box(w,h,d,r,material,pos=[0,0,0],parent=root){const geo=r?new RoundedBoxGeometry(w,h,d,3,Math.max(0,Math.min(r,Math.min(w,h,d)/2-.1))):new THREE.BoxGeometry(w,h,d); const m=new THREE.Mesh(geo,material); m.position.set(...pos); parent.add(m); return m;}
     function cyl(radius,depth,material,pos=[0,0,0],rot=[0,0,0],parent=root,segments=32){const m=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,depth,segments),material); m.position.set(...pos); m.rotation.set(...rot); parent.add(m); return m;}
-    function tube(points,radius,material,parent=root){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))); const m=new THREE.Mesh(new THREE.TubeGeometry(curve,32, radius, 10, false),material); parent.add(m); return m;}
+    function spatialArc(center,start,axis,angle){const curve=new THREE.Curve(); curve.getPoint=(t,target=new THREE.Vector3())=>target.copy(start).sub(center).applyAxisAngle(axis,angle*t).add(center); return curve;}
+    function roundedCurve(points,radius){
+      const p=points.map(v=>new THREE.Vector3(...v)); const path=new THREE.CurvePath(); let current=p[0];
+      for(let i=1;i<p.length-1;i++){
+        const incoming=p[i].clone().sub(p[i-1]), outgoing=p[i+1].clone().sub(p[i]); const inLen=incoming.length(), outLen=outgoing.length();
+        if(inLen<.01||outLen<.01) continue; incoming.normalize(); outgoing.normalize();
+        const turn=Math.acos(THREE.MathUtils.clamp(incoming.dot(outgoing),-1,1));
+        if(turn<.01){path.add(new THREE.LineCurve3(current,p[i])); current=p[i]; continue;}
+        const tangent=Math.min(radius*Math.tan(turn/2),inLen*.95,outLen*.95); const effectiveRadius=tangent/Math.tan(turn/2);
+        const entry=p[i].clone().sub(incoming.multiplyScalar(tangent)); const exit=p[i].clone().add(outgoing.multiplyScalar(tangent));
+        if(current.distanceTo(entry)>.01) path.add(new THREE.LineCurve3(current,entry));
+        const normal=incoming.clone().cross(outgoing).normalize(); const bisector=incoming.clone().negate().add(outgoing).normalize(); const center=p[i].clone().add(bisector.multiplyScalar(effectiveRadius/Math.sin(turn/2)));
+        path.add(spatialArc(center,entry,normal,turn)); current=exit;
+      }
+      if(current.distanceTo(p[p.length-1])>.01) path.add(new THREE.LineCurve3(current,p[p.length-1]));
+      return path;
+    }
+    function bendRadius(diameter){return DESIGN.cable.staticRadiusFactor*diameter;}
+    function tubeRoute(points,diameter,material,parent=root,clearance=0){const curve=roundedCurve(points,bendRadius(diameter)); const m=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(32,points.length*18),diameter/2+clearance,10,false),material); parent.add(m); return m;}
+    const CABLE_ROUTES=Object.freeze({
+      typec:{diameter:DESIGN.connector.typecCableD,points:[[-33,0,10],[-70,0,10],[-70,25,15],[-95,25,18]]},
+      dc:{diameter:DESIGN.connector.dcCableD,points:[[-53,-1,-6],[-90,-1,-6],[-108,-7,-2],[-135,-7,2]]},
+      fan1:{diameter:DESIGN.connector.fanCableD,points:[[7,-12,-4],[-12,-12,-4],[-25,-9,-3],[-40,-9,0]]},
+      fan2:{diameter:DESIGN.connector.fanCableD,points:[[20,-12,-4],[2,-12,-4],[-25,-7,-1],[-40,-9,0]]},
+      fanBundle:{diameter:DESIGN.connector.fanCableD,points:[[-40,-9,0],[-70,-9,0],[-88,-4,3]]}
+    });
     function textSprite(text,color='#263034',scale=1){const c=document.createElement('canvas'); c.width=640; c.height=80; const x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height); x.font='600 28px -apple-system,system-ui,sans-serif'; x.fillStyle=color; x.fillText(text,8,47); const t=new THREE.CanvasTexture(c); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false})); s.scale.set(80*scale,10*scale,1); return s;}
     function label(text,pos,color='#263034',scale=.5,parent=root){const s=textSprite(text,color,scale); s.position.set(...pos); parent.add(s); labels.push(s); return s;}
     function line(a,b,color=DESIGN.colors.dim,parent=root){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]); parent.add(new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:.85})));}
@@ -161,31 +186,44 @@
       box(10,8,7,1,materials.white,[-10,10,5.8],g); box(10,8,7,1,materials.white,[11,10,5.8],g);
       label('Rev B · 45 × 30',[-21,0,5.2],'#1d6a4a',.42,g); label('底面器件 ≥ 11 mm',[-18,-16,-12],'#8a5424',.4,g); return g; }
     function headers(){const g=G('STACK-HEADERS'); const z=5.05; box(28,2.3,DESIGN.carrier.headerH,0,materials.white,[0,-8.5,z],g); box(28,2.3,DESIGN.carrier.headerH,0,materials.white,[0,8.5,z],g); for(const x of [-12.7,-10.16,-7.62,-5.08,-2.54,0,2.54,5.08,7.62,10.16,12.7]) { cyl(.45,DESIGN.carrier.headerH+.8,materials.metal,[x,-8.5,z],[Math.PI/2,0,0],g,12); cyl(.45,DESIGN.carrier.headerH+.8,materials.metal,[x,8.5,z],[Math.PI/2,0,0],g,12); } label('2×1×11 · 17 mm row spacing',[-19,16,8],'#776021',.36,g); return g; }
-    function shell(){const front=G('POD-FRONT-BEZEL'); const tray=G('POD-ELECTRONICS-TRAY'); const rear=G('POD-REAR-COVER'); const zFront=13.5, zRear=-13.8, w=DESIGN.shell.bezelW,h=DESIGN.shell.bezelH,t=3;
+    function shell(){const front=G('POD-FRONT-BEZEL'); const tray=G('POD-ELECTRONICS-TRAY'); const rear=G('POD-REAR-COVER'); const zFront=13.5, zRear=-13.8, w=DESIGN.shell.bezelW,h=DESIGN.shell.bezelH,t=DESIGN.shell.wall;
       // front bezel bars around the active window
-      box(w,t,t,1,materials.shell,[0,-(h-t)/2,zFront],front); box(w,t,t,1,materials.shell,[0,(h-t)/2,zFront],front); box(t,h-2*t,t,1,materials.shell,[-(w-t)/2,0,zFront],front); box(t,h-2*t,t,1,materials.shell,[(w-t)/2,0,zFront],front);
-      // rear tray walls surround the PCB stack and leave end openings
+      box(w,t,t,1,materials.shell,[0,-(h-t)/2,zFront],front); box(w,t,t,1,materials.shell,[0,(h-t)/2,zFront],front);
+      const typecSlotY=20, bezelY= (h-2*t-typecSlotY)/2;
+      box(t,bezelY,t,1,materials.shell,[-(w-t)/2,-(typecSlotY+bezelY)/2,zFront],front); box(t,bezelY,t,1,materials.shell,[-(w-t)/2,(typecSlotY+bezelY)/2,zFront],front);
+      box(t,h-2*t,t,1,materials.shell,[(w-t)/2,0,zFront],front);
+      // Rear tray walls surround the PCB stack. The left wall has a defined power-side outlet slot.
       const tw=DESIGN.shell.trayW,td=DESIGN.shell.trayD,th=DESIGN.shell.trayH;
-      box(t,td,th,1,materials.shellEdge,[-(tw-t)/2,0,zRear],tray); box(t,td,th,1,materials.shellEdge,[(tw-t)/2,0,zRear],tray); box(tw,t,th,1,materials.shellEdge,[0,(td-t)/2,zRear],tray); box(tw,t,th,1,materials.shellEdge,[0,-(td-t)/2,zRear],tray);
-      box(tw,td,t,2,materials.shell,[0,0,zRear-th/2+t/2],rear);
-      label('POD-FRONT-BEZEL',[0,-23,zFront+3],'#344245',.43,front); label('POD-ELECTRONICS-TRAY',[0,-24,zRear-12],'#344245',.38,tray); label('POD-REAR-COVER',[0,22,zRear-16],'#344245',.38,rear); return front; }
+      const sideX=-(tw-t)/2, wallY0=-td/2, wallY1=td/2, wallZ0=zRear-th/2, wallZ1=zRear+th/2;
+      const outlet=DESIGN.shell.outlet, oy0=outlet.y-outlet.width/2, oy1=outlet.y+outlet.width/2, oz0=outlet.z-outlet.height/2, oz1=outlet.z+outlet.height/2;
+      box(t,Math.max(.2,oy0-wallY0),th,1,materials.shellEdge,[sideX,(wallY0+oy0)/2,zRear],tray);
+      box(t,Math.max(.2,wallY1-oy1),th,1,materials.shellEdge,[sideX,(oy1+wallY1)/2,zRear],tray);
+      box(t,outlet.width,Math.max(.2,oz0-wallZ0),1,materials.shellEdge,[sideX,outlet.y,(wallZ0+oz0)/2],tray);
+      box(t,outlet.width,Math.max(.2,wallZ1-oz1),1,materials.shellEdge,[sideX,outlet.y,(oz1+wallZ1)/2],tray);
+      box(t,td,th,1,materials.shellEdge,[(tw-t)/2,0,zRear],tray); box(tw,t,th,1,materials.shellEdge,[0,(td-t)/2,zRear],tray); box(tw,t,th,1,materials.shellEdge,[0,-(td-t)/2,zRear],tray);
+      box(tw,td,DESIGN.shell.backT,2,materials.shell,[0,0,zRear-th/2+DESIGN.shell.backT/2],rear);
+      label('POD-FRONT-BEZEL',[0,-23,zFront+3],'#344245',.43,front); label('TYPE-C SIDE SLOT',[ -29,9,zFront+4],'#8d5275',.31,front); label('POD-ELECTRONICS-TRAY',[0,-24,zRear-12],'#344245',.38,tray); label('POWER-SIDE OUTLET 24 × 18',[sideX-3,outlet.y-12,outlet.z+12],'#8d5275',.32,tray); label('POD-REAR-COVER',[0,22,zRear-16],'#344245',.38,rear); return front; }
     function adapter(){const g=G('POD-CHASSIS-ADAPTER'); const z=-31; box(DESIGN.adapter.w,DESIGN.adapter.h,DESIGN.adapter.t,2,materials.shell,[0,0,z],g); for(const x of [-21,21]) { box(DESIGN.adapter.keyW,8,DESIGN.adapter.keyH,1,materials.copper,[x,16,z+4],g); box(DESIGN.adapter.keyW,8,DESIGN.adapter.keyH,1,materials.copper,[x,-16,z+4],g); } label('R2.3 reversible T-key / latch adapter',[ -26,-31,z-2],'#765a22',.36,g); return g; }
     function connectors(){const g=G('CONNECTORS'); const z=10.1;
       box(DESIGN.connector.typecW,DESIGN.connector.typecD,DESIGN.connector.typecH,2,materials.connector,[-27,0,z],g); box(6,4.5,3.5,1,materials.metal,[-33,0,z],g); label('USB-C',[-34,6,z+4],'#293d40',.38,g);
       // DC barrel plug enters from the carrier left/rear side
       box(DESIGN.connector.dcL,DESIGN.connector.dcW,DESIGN.connector.dcH,3,materials.connector,[-36,-1,-6.0],g); cyl(5,18,materials.metal,[-53,-1,-6],[0,Math.PI/2,0],g,24); label('12 V DC5521',[-58,-12,-2],'#293d40',.37,g);
-      // fan plugs on the carrier rear edge
-      box(9,6,8,1,materials.connector,[7,-18,-4],g); box(9,6,8,1,materials.connector,[20,-18,-4],g); label('FAN1 / FAN2',[8,-23,-10],'#293d40',.36,g); return g; }
+      // fan plugs sit just inside the tray and route toward the power-side outlet
+      box(9,6,8,1,materials.connector,[7,-12,-4],g); box(9,6,8,1,materials.connector,[20,-12,-4],g); label('FAN1 / FAN2',[8,-18,-10],'#293d40',.36,g); return g; }
     function keepouts(){const g=G('KEEPOUTS'); const transparent=(name,color)=>materials[name]||mat(name,color,.4,0,.20); const typeMat=transparent('keepoutType',DESIGN.colors.keepout),dcMat=transparent('keepoutDc',DESIGN.colors.keepout),fanMat=transparent('keepoutFan',DESIGN.colors.keepout);
-      box(18,16,12,3,typeMat,[-34,0,10],g); box(42,24,18,4,dcMat,[-48,-1,-6],g); box(44,22,18,3,fanMat,[-32,-15,-5],g);
-      label('Type-C plug + 6×D',[ -46,10,18],'#b55825',.34,g); label('DC cable / 12 V plug',[ -55,-16,5],'#b55825',.34,g); label('FAN harness → power side',[-52,-29,-11],'#b55825',.34,g); return g; }
+      const sharedMat=transparent('keepoutShared',DESIGN.colors.keepout);
+      box(18,16,12,3,typeMat,[-34,0,10],g); box(4,DESIGN.shell.outlet.width,DESIGN.shell.outlet.height,1,sharedMat,[-25,DESIGN.shell.outlet.y,DESIGN.shell.outlet.z],g);
+      tubeRoute(CABLE_ROUTES.typec.points,CABLE_ROUTES.typec.diameter,typeMat,g,2.0);
+      tubeRoute(CABLE_ROUTES.dc.points,CABLE_ROUTES.dc.diameter,dcMat,g,DESIGN.cable.bundleClearance);
+      tubeRoute(CABLE_ROUTES.fan1.points,CABLE_ROUTES.fan1.diameter,fanMat,g,DESIGN.cable.bundleClearance/2); tubeRoute(CABLE_ROUTES.fan2.points,CABLE_ROUTES.fan2.diameter,fanMat,g,DESIGN.cable.bundleClearance/2);
+      tubeRoute(CABLE_ROUTES.fanBundle.points,CABLE_ROUTES.fanBundle.diameter,sharedMat,g,DESIGN.cable.bundleClearance);
+      label(`Type-C plug + R${bendRadius(CABLE_ROUTES.typec.diameter).toFixed(0)} mm`,[ -50,10,18],'#b55825',.34,g); label(`DC cable + R${bendRadius(CABLE_ROUTES.dc.diameter).toFixed(0)} mm`,[-62,-16,5],'#b55825',.34,g); label('FAN1/FAN2 → shared power-side bundle',[-62,-29,-11],'#b55825',.34,g); label('共用出线槽 / 并行保留间隙',[-45,-8,9],'#8d5275',.34,g); return g; }
     function cables(){const g=G('CABLES'); const m=materials.cable;
-      tube([[-33,0,10],[-43,0,10],[-52,4,14],[-63,10,18]],2.0,m,g); // USB-C
-      tube([[-53,-1,-6],[-62,-2,-6],[-70,-5,-3],[-80,-3,3]],3.0,m,g); // DC, power-side exit
-      tube([[7,-21,-4],[4,-26,-6],[-8,-28,-6],[-24,-22,-6],[-42,-12,-5],[-58,-4,0]],1.6,m,g); // FAN1 to shared side
-      tube([[20,-21,-4],[16,-26,-6],[2,-29,-6],[-18,-24,-6],[-42,-12,-5],[-58,-4,0]],1.6,m,g); // FAN2 to shared side
-      tube([[-42,-12,-5],[-54,-7,-2],[-66,-4,1]],2.7,m,g); // shared fan harness trunk
-      arrow([-37,0,18],[-54,5,18],DESIGN.colors.keepout,g); arrow([-56,-1,-6],[-72,-4,0],DESIGN.colors.keepout,g); arrow([8,-25,-7],[-45,-12,-5],DESIGN.colors.keepout,g); label('同侧汇合 / 独立应力释放',[ -48, -8,22],'#8d5275',.34,g); return g; }
+      tubeRoute(CABLE_ROUTES.typec.points,CABLE_ROUTES.typec.diameter,m,g); // USB-C
+      tubeRoute(CABLE_ROUTES.dc.points,CABLE_ROUTES.dc.diameter,m,g); // DC, power-side exit
+      tubeRoute(CABLE_ROUTES.fan1.points,CABLE_ROUTES.fan1.diameter,m,g); tubeRoute(CABLE_ROUTES.fan2.points,CABLE_ROUTES.fan2.diameter,m,g);
+      tubeRoute(CABLE_ROUTES.fanBundle.points,CABLE_ROUTES.fanBundle.diameter,m,g,DESIGN.cable.bundleClearance/2); // shared fan harness trunk
+      arrow([-37,0,18],[-54,5,18],DESIGN.colors.keepout,g); arrow([-56,-1,-6],[-82,-4,-4],DESIGN.colors.keepout,g); arrow([8,-12,-7],[-30,-10,-3],DESIGN.colors.keepout,g); label('同侧汇合 / R = 6×D / 独立间隙',[ -52, -8,22],'#8d5275',.34,g); return g; }
     function dimensions(){const g=G('DIMENSIONS'); dim([-22.25,-20,17], [22.25,-20,17], '44.50 mm 显示 PCB', [0,-2,0],g); dim([-22.5,-24,5], [22.5,-24,5], '45 mm 转接板', [0,-2,0],g); dim([28,-12,13.5],[28,-12,-25], '≈38 mm 外深', [5,0,0],g); dim([30,15,11],[30,15,-10], '叠层 + 背面器件', [4,0,0],g); line([-26,0,11.8],[-26,0,14.5],DESIGN.colors.dim,g); label('有效区 32.93 × 17.75',[ -15,17,15],'#28727c',.34,g); return g; }
     function build(){displayBoard();carrierBoard();headers();shell();adapter();connectors();keepouts();cables();dimensions();}
     build();
@@ -201,14 +239,14 @@
       if(view==='rear'){groups['POD-FRONT-BEZEL'].visible=false; groups['DISPLAY-1P47'].visible=false; groups['STACK-HEADERS'].visible=false;}
       if(view==='front'){groups['POD-REAR-COVER'].visible=false; groups['POD-ELECTRONICS-TRAY'].visible=false; groups['POD-CHASSIS-ADAPTER'].visible=false; groups['CABLES'].visible=false; groups['CONNECTORS'].visible=false; groups['KEEPOUTS'].visible=false;}
       if(view==='left'||view==='right'||view==='top'||view==='bottom'){setOpacity('shell',.12); setOpacity('shellEdge',.18);}
-      if(mirror==='right'){root.scale.x=-1;}
+      root.scale.x=mirror==='right'?-1:1;
       document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view))); document.querySelectorAll('[data-mirror]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mirror===mirror)));
       document.getElementById('scene-title').textContent={assembled:'装配视图 · 平行叠层',transparent:'透明视图 · 背面净空',exploded:'爆炸视图 · 前框 / 托盘 / 后盖',service:'维护视图 · 后盖移开',front:'前视图 · 有效显示区',rear:'后视图 · DC / FAN 接头',left:'左视图 · Type-C 端',right:'右视图 · 线缆出口',top:'上视图 · 叠层间距',bottom:'下视图 · 转接板背面'}[view];
       document.getElementById('scene-note').textContent={assembled:'屏幕在前，Rev B 转接板在后；风扇线和 DC 电源线从同一侧汇合出线。橙色体积是尚未实测的插头/线缆净空。',transparent:'降低外壳不透明度，用于检查 DC5521、FAN1/FAN2 和转接板背面器件是否被壳体吞掉。',exploded:'分解方向沿模块厚度，保持显示板、排母、转接板和后盖身份不变。',service:'后盖后移，线缆保持独立实体；用于评审同侧插拔和手指空间。',front:'前框只围绕有效显示区，屏幕四周保留触摸和玻璃边缘。',rear:'DC5521、两个风扇接头和底面器件集中在此侧，当前尺寸仍是 provisional。',left:'Type-C 插头从显示板端部出线，外侧显示 6×D 静态弯曲起点。',right:'右侧用于观察线缆出口和机箱适配底座，支持镜像。',top:'从顶部观察排母两排和 17 mm row spacing。',bottom:'底面观察 Rev B 元件、DC 插座和 FAN 接口。'}[view];
-      window.__ESP32_MODULE_DRAFT_STATE__={view,mirror,explode,design:DESIGN,partIds:Object.keys(groups)};
+      window.__ESP32_MODULE_DRAFT_STATE__={view,mirror,explode:parseFloat(document.getElementById('explode').value),design:DESIGN,partIds:Object.keys(groups)};
     }
-    function bounds(){root.updateMatrixWorld(true); const b=new THREE.Box3(); root.traverse(o=>{if(!o.isMesh||!o.visible)return; o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}); return b;}
-    function pose(kind=view){const b=bounds(),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3()); let dir=new THREE.Vector3(1.15,-1.4,.95); if(kind==='rear')dir.set(-1.1,1.4,.8); if(kind==='left')dir.set(-1.5,-.1,.4); if(kind==='right')dir.set(1.5,.1,.4); if(kind==='top')dir.set(.2,-.3,2.1); if(kind==='bottom')dir.set(.2,.3,-2.1); if(kind==='front')dir.set(0,-2.2,.1); const radius=size.length()/2; controls.target.copy(center); if(camera.isOrthographicCamera){const span=Math.max(size.x,size.y,size.z)*1.32; camera.left=-span; camera.right=span; camera.top=span; camera.bottom=-span; camera.position.copy(center).addScaledVector(dir.normalize(),span*2.2); camera.lookAt(center); camera.updateProjectionMatrix();} else {const distance=Math.max(90,radius/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.18); camera.position.copy(center).addScaledVector(dir.normalize(),distance); camera.near=.1; camera.far=Math.max(1200,distance*5); camera.updateProjectionMatrix(); camera.lookAt(center);} controls.update();}
+    function bounds(){root.updateMatrixWorld(true); const b=new THREE.Box3(); let count=0; root.traverseVisible(o=>{if(!o.isMesh)return; o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); count++;}); return count?b:new THREE.Box3(new THREE.Vector3(-30,-30,-30),new THREE.Vector3(30,30,30));}
+    function pose(kind=view){const b=bounds(),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3()); let dir=new THREE.Vector3(1.15,-1.4,.95); if(kind==='rear')dir.set(-1.1,1.4,.8); if(kind==='left')dir.set(-1.5,-.1,.4); if(kind==='right')dir.set(1.5,.1,.4); if(kind==='top')dir.set(.2,-.3,2.1); if(kind==='bottom')dir.set(.2,.3,-2.1); if(kind==='front')dir.set(0,0,2.2); const radius=size.length()/2; controls.target.copy(center); if(camera.isOrthographicCamera){const span=Math.max(size.x,size.y,size.z)*1.32; camera.left=-span; camera.right=span; camera.top=span; camera.bottom=-span; camera.position.copy(center).addScaledVector(dir.normalize(),span*2.2); camera.lookAt(center); camera.updateProjectionMatrix();} else {const distance=Math.max(90,radius/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.18); camera.position.copy(center).addScaledVector(dir.normalize(),distance); camera.near=.1; camera.far=Math.max(1200,distance*5); camera.updateProjectionMatrix(); camera.lookAt(center);} controls.update();}
     function setView(next){view=next; const orthoViews=['front','rear','left','right','top','bottom']; const want=orthoViews.includes(view); if(want!== (cameraMode==='orthographic')){cameraMode=want?'orthographic':'perspective'; const old=camera; camera=want?ortho:perspective; camera.position.copy(old.position); camera.quaternion.copy(old.quaternion); controls.object=camera; controls.update();} apply(); pose(view);}
     document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
     document.querySelectorAll('[data-mirror]').forEach(b=>b.addEventListener('click',()=>{mirror=b.dataset.mirror;apply();pose(view);}));

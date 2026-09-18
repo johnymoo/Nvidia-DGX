@@ -11,9 +11,9 @@
 | H07 圆角/过渡 | PRE_CAD | OPEN | Type-C/电源出口根部需防应力集中 |
 | H08 翘曲 | PRE_CAD | OPEN | 托盘大平面需方向、筋和 brim 设计 |
 | H10 热 | PRE_CAD | LOW_RISK_OPEN | ESP32/接口板低热，但电源保护件区域需留通风 |
-| H13 线缆服务 | PRE_CAD | PARTIAL | Draft 建立连接器和线缆实体包络；实物 OD/弯曲半径待测 |
+| H13 线缆服务 | PRE_CAD | PARTIAL | Draft 建立 Type-C、DC、FAN 独立线缆实体、6×D 圆角路线和同侧共用出线槽；实物 OD/弯曲半径待测 |
 | H17 机箱安装 | PRE_CAD | PARTIAL | 先复用 R2.3 T 键/弹片；最终承载和拔出方向需整机验证 |
-| H18 参数追踪 | PRE_CAD | PASS_FOR_DRAFT | 所有 draft 尺寸集中在 `visuals/esp32-module-draft.html` 的 DESIGN 对象 |
+| H18 参数追踪 | PRE_CAD | PASS_FOR_DRAFT | 所有 draft 尺寸集中在 `site/esp32-module-draft.html` 的 DESIGN 对象；线缆路线由 `staticRadiusFactor` 生成 |
 | H19 接口合同 | PRE_CAD | OPEN | Gate D 前需建立本模块与机箱适配器的 assembly-interface-contract |
 
 Draft 不满足 `HARD_CAD_EXPORT` 或 `HARD_RELEASE`，不得把该页面或其网格当作可打印交付物。
