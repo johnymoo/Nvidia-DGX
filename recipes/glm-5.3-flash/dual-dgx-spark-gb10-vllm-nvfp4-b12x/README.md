@@ -51,3 +51,17 @@ revision into it.
 
 See [BENCHMARK-RESULTS.md](BENCHMARK-RESULTS.md) and the rendered comparisons
 (`three-model-comparison.png`, `glm-nvfp4-window-comparison.png`).
+
+## Restart-race crash (root-caused 2026-09-24)
+
+Launching back-to-back after `docker stop` can fail with
+`RoCE proxy failed: RDMA write to rank 1 failed: transport retry counter
+exceeded (vendor_err 0x81)`. Journal evidence: vLLM never exits on SIGTERM —
+every stop escalates to SIGKILL after 10 s — and the kernel then needs seconds
+to reap the ~89 GiB-mmapped rank process and tear down its RoCE QPs. If the new
+ranks come up during that window, rank0's prep-stage RDMA writes hit a
+not-yet-ready rank1 QP and the fixed retry budget expires, killing the engine.
+
+`scripts/start.sh` therefore waits until no `VLLM::` process remains on either
+host (≤90 s poll) plus a 3 s buffer before relaunching. With healthy links the
+race cannot recur; if it ever does, re-running `start.sh` is safe.
