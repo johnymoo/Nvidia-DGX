@@ -1,0 +1,66 @@
+{
+  "label": "dual400-upstream-fw",
+  "endpoint": "http://192.168.88.181:8890",
+  "agents": 2,
+  "params": {
+    "init_tokens": 0,
+    "gap_s": 0.0,
+    "churn_every_s": 0.0,
+    "target_tokens": 400000,
+    "step_tokens": 2000,
+    "salt": "1789974726"
+  },
+  "churn_errors": 0,
+  "agent_summaries": [
+    {
+      "label": "dual400-upstream-fw-a0",
+      "agent_id": 0,
+      "endpoint": "http://192.168.88.181:8890",
+      "steps": 206,
+      "params": {
+        "init_tokens": 0,
+        "gap_s": 0.0,
+        "target_tokens": 400000
+      },
+      "max_prompt_tokens": 401754,
+      "wall_min": 10.5,
+      "total_ttft_s": 625.1,
+      "ttft_p50_s": 3.06,
+      "ttft_max_s": 6.823,
+      "first_cliff_step": null,
+      "first_cliff_prompt_tokens": null,
+      "steps_over_30s": 0,
+      "total_prompt_tokens": 41392155,
+      "total_cached_tokens": 40991057
+    },
+    {
+      "label": "dual400-upstream-fw-a1",
+      "agent_id": 1,
+      "endpoint": "http://192.168.88.181:8890",
+      "steps": 206,
+      "params": {
+        "init_tokens": 0,
+        "gap_s": 0.0,
+        "target_tokens": 400000
+      },
+      "max_prompt_tokens": 401635,
+      "wall_min": 10.6,
+      "total_ttft_s": 630.9,
+      "ttft_p50_s": 3.056,
+      "ttft_max_s": 8.509,
+      "first_cliff_step": null,
+      "first_cliff_prompt_tokens": null,
+      "steps_over_30s": 0,
+      "total_prompt_tokens": 41375699,
+      "total_cached_tokens": 40974661
+    }
+  ],
+  "steps_total": 412,
+  "wall_min": 10.6,
+  "ttft_p50_all_s": 3.059,
+  "ttft_max_all_s": 8.509,
+  "first_cliff_step": null,
+  "steps_over_30s": 0,
+  "total_prompt_tokens": 82767854,
+  "total_cached_tokens": 81965718
+}

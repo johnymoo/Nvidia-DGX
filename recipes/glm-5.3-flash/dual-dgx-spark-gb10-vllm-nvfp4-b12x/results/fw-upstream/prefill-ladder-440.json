@@ -1,0 +1,29 @@
+{
+  "base": "http://127.0.0.1:8890",
+  "model": "GLM-5.3-Flash-EXL3",
+  "rungs": [
+    {
+      "rung_k": 440,
+      "repeat": 1,
+      "salt": "838960e5",
+      "ttft_s": 269.631,
+      "wall_s": 269.635,
+      "prompt_tokens": 492514,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to reply with exactly",
+      "prefill_tok_s": 1826.6,
+      "mem_min_mb": 1399,
+      "elapsed_s": 269.64,
+      "ok": true
+    }
+  ],
+  "aborted": false,
+  "summary": {
+    "440": {
+      "prefill_tok_s_best": 1826.6,
+      "ttft_s_best": 269.631
+    }
+  },
+  "mem_min_overall_mb": 1399
+}

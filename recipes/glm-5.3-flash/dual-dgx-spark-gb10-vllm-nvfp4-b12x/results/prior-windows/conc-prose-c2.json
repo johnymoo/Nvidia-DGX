@@ -1,0 +1,97 @@
+{
+  "prompt": "prose",
+  "concurrency": 2,
+  "runs": [
+    {
+      "run": 1,
+      "wall_s": 19.341,
+      "success": 2,
+      "errors": 0,
+      "aggregate_tok_s": 41.36,
+      "median_ttft_s": 0.151,
+      "median_tok_s": 21.41,
+      "streams": [
+        {
+          "ttft_s": 0.04,
+          "wall_s": 18.256,
+          "completion_tokens": 400,
+          "tok_s": 21.9,
+          "finish_reason": "length",
+          "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handl",
+          "error": null
+        },
+        {
+          "ttft_s": 0.263,
+          "wall_s": 19.34,
+          "completion_tokens": 400,
+          "tok_s": 20.92,
+          "finish_reason": "length",
+          "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handl",
+          "error": null
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "wall_s": 18.961,
+      "success": 2,
+      "errors": 0,
+      "aggregate_tok_s": 42.19,
+      "median_ttft_s": 0.143,
+      "median_tok_s": 21.55,
+      "streams": [
+        {
+          "ttft_s": 0.031,
+          "wall_s": 18.358,
+          "completion_tokens": 400,
+          "tok_s": 21.77,
+          "finish_reason": "length",
+          "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handl",
+          "error": null
+        },
+        {
+          "ttft_s": 0.255,
+          "wall_s": 18.96,
+          "completion_tokens": 400,
+          "tok_s": 21.33,
+          "finish_reason": "length",
+          "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Basic concept a",
+          "error": null
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "wall_s": 18.857,
+      "success": 2,
+      "errors": 0,
+      "aggregate_tok_s": 42.43,
+      "median_ttft_s": 0.095,
+      "median_tok_s": 22.62,
+      "streams": [
+        {
+          "ttft_s": 0.157,
+          "wall_s": 18.856,
+          "completion_tokens": 400,
+          "tok_s": 21.34,
+          "finish_reason": "length",
+          "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handl",
+          "error": null
+        },
+        {
+          "ttft_s": 0.033,
+          "wall_s": 16.717,
+          "completion_tokens": 400,
+          "tok_s": 23.91,
+          "finish_reason": "length",
+          "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handl",
+          "error": null
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "median_aggregate_tok_s": 42.19,
+    "median_stream_tok_s": 21.55
+  }
+}

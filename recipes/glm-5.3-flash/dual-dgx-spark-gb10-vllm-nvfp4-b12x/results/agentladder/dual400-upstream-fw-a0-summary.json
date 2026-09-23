@@ -1,0 +1,21 @@
+{
+  "label": "dual400-upstream-fw-a0",
+  "agent_id": 0,
+  "endpoint": "http://192.168.88.181:8890",
+  "steps": 206,
+  "params": {
+    "init_tokens": 0,
+    "gap_s": 0.0,
+    "target_tokens": 400000
+  },
+  "max_prompt_tokens": 401754,
+  "wall_min": 10.5,
+  "total_ttft_s": 625.1,
+  "ttft_p50_s": 3.06,
+  "ttft_max_s": 6.823,
+  "first_cliff_step": null,
+  "first_cliff_prompt_tokens": null,
+  "steps_over_30s": 0,
+  "total_prompt_tokens": 41392155,
+  "total_cached_tokens": 40991057
+}

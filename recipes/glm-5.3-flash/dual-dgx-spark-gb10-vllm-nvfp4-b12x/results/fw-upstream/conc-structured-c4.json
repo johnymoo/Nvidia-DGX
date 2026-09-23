@@ -1,0 +1,151 @@
+{
+  "prompt": "structured",
+  "concurrency": 4,
+  "runs": [
+    {
+      "run": 1,
+      "wall_s": 11.997,
+      "success": 4,
+      "errors": 0,
+      "aggregate_tok_s": 133.37,
+      "median_ttft_s": 0.345,
+      "median_tok_s": 34.41,
+      "streams": [
+        {
+          "ttft_s": 0.127,
+          "wall_s": 11.764,
+          "completion_tokens": 400,
+          "tok_s": 34.29,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.649,
+          "wall_s": 11.995,
+          "completion_tokens": 400,
+          "tok_s": 35.17,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.248,
+          "wall_s": 11.995,
+          "completion_tokens": 400,
+          "tok_s": 33.97,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.441,
+          "wall_s": 11.994,
+          "completion_tokens": 400,
+          "tok_s": 34.54,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "wall_s": 12.753,
+      "success": 4,
+      "errors": 0,
+      "aggregate_tok_s": 125.46,
+      "median_ttft_s": 0.335,
+      "median_tok_s": 32.88,
+      "streams": [
+        {
+          "ttft_s": 0.032,
+          "wall_s": 12.135,
+          "completion_tokens": 400,
+          "tok_s": 32.96,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.253,
+          "wall_s": 12.42,
+          "completion_tokens": 400,
+          "tok_s": 32.79,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.417,
+          "wall_s": 12.751,
+          "completion_tokens": 400,
+          "tok_s": 32.35,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.622,
+          "wall_s": 12.649,
+          "completion_tokens": 400,
+          "tok_s": 33.17,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "wall_s": 11.903,
+      "success": 4,
+      "errors": 0,
+      "aggregate_tok_s": 134.42,
+      "median_ttft_s": 0.335,
+      "median_tok_s": 34.7,
+      "streams": [
+        {
+          "ttft_s": 0.031,
+          "wall_s": 11.541,
+          "completion_tokens": 400,
+          "tok_s": 34.66,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.252,
+          "wall_s": 11.9,
+          "completion_tokens": 400,
+          "tok_s": 34.25,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.617,
+          "wall_s": 11.901,
+          "completion_tokens": 400,
+          "tok_s": 35.36,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        },
+        {
+          "ttft_s": 0.417,
+          "wall_s": 11.9,
+          "completion_tokens": 400,
+          "tok_s": 34.75,
+          "finish_reason": "length",
+          "text_head": "The user wants me to count from 1 to 200, outputting only the numbers separated by spaces, with no o",
+          "error": null
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "median_aggregate_tok_s": 133.37,
+    "median_stream_tok_s": 34.41
+  }
+}

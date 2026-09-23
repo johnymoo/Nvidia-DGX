@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg:#f7f8fa; --card:#ffffff; --ink:#1a2233; --mut:#5b6472; --line:#e3e7ee;
+          --new:#0a7d4f; --newbg:#e9f7f0; --old:#8a5b00; --oldbg:#fdf6e7; --warn:#b3391f; --warnbg:#fdeeea; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--ink);
+         font:14px/1.45 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+         padding:28px 30px; width:1460px; }
+  h1 { font-size:21px; margin-bottom:4px; }
+  .sub { color:var(--mut); font-size:12.5px; margin-bottom:16px; }
+  .badge { display:inline-block; padding:1px 8px; border-radius:9px; font-size:11.5px; font-weight:600; margin-left:6px; vertical-align:1px;}
+  .b-run { background:#e5efff; color:#1c56c4; }
+  table { border-collapse:separate; border-spacing:0; width:100%; background:var(--card);
+          border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th, td { padding:7px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  thead th { background:#eef1f6; font-size:13px; }
+  thead th small { display:block; color:var(--mut); font-weight:500; font-size:11px; margin-top:2px; }
+  tbody th { font-weight:600; width:190px; background:#fbfcfe; color:#303a4d; font-size:13px; }
+  td { font-size:12.8px; }
+  .num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tr:last-child td, tr:last-child th { border-bottom:none; }
+  .c-old { background:var(--oldbg); } .c-new { background:var(--newbg); } .c-prop { background:#f2f4f8; }
+  .good { color:var(--new); font-weight:700; }
+  .bad  { color:var(--warn); font-weight:700; }
+  .dim  { color:var(--mut); }
+  .foot { margin-top:12px; color:var(--mut); font-size:11.5px; line-height:1.6; }
+  .verdict { margin-top:14px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-size:12.8px; }
+  .verdict b { color:var(--ink); }
+</style>
+</head>
+<body>
+<h1>GLM-5.3-Flash NVFP4 双 GB10 窗口对比</h1>
+<div class="sub">同一 runner / 同一权重 revision（a608241）· 2026-09-21 · spark-vllm-docker B12X 栈</div>
+<table>
+<thead>
+<tr>
+  <th style="width:190px"></th>
+  <th class="c-old">昨天窗口（9-20/21）<small>KV 6G · 350k · MNBT 2048 · 119.6G</small></th>
+  <th class="c-new">今天窗口（上游原参数）<span class="badge b-run">当前运行</span><small>KV 8G · 500k · MNBT 4096 · 121.6G（固件 +2G）</small></th>
+  <th class="c-prop">拟调整（挂起）<small>KV 7G · 500k · MNBT 4096</small></th>
+</tr>
+</thead>
+<tbody>
+<tr><th>KV 池</th>
+  <td class="c-old num">746,907 tok · 2.13x @350k</td>
+  <td class="c-new num"><b>1,061,538 tok · 2.12x @500k</b></td>
+  <td class="c-prop num">~928,800 tok · 1.86x @500k</td></tr>
+<tr><th>上下文上限</th>
+  <td class="c-old num">350k</td><td class="c-new num"><b>500k</b></td><td class="c-prop num">500k（保持）</td></tr>
+<tr><th>双 agent 400k 增长阶梯</th>
+  <td class="c-old dim">未跑（旧方案 solo 176k）</td>
+  <td class="c-new">412 请求 / 10.6min<br>TTFT p50 <span class="num">3.06s</span> · <b>零悬崖</b></td>
+  <td class="c-prop dim">数字不变（KV 容量只定并发上限）</td></tr>
+<tr><th>最坏 TTFT（悬崖尾）</th>
+  <td class="c-old num bad">66.4s</td>
+  <td class="c-new num good">8.5s（~8x 改善）</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>前缀缓存保留</th>
+  <td class="c-old num">94%</td>
+  <td class="c-new num good">99.03%</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>decode · prose</th>
+  <td class="c-old num">29.8 tok/s（acc 0.40）</td>
+  <td class="c-new num">31.7（acc 0.44）持平略好</td>
+  <td class="c-prop">不变</td></tr>
+<tr><th>decode · structured</th>
+  <td class="c-old num good">55.0 tok/s（acc 0.91）</td>
+  <td class="c-new num bad">33.1（acc 0.46）<b style="color:var(--warn)">⚠ -40% 待隔离</b></td>
+  <td class="c-prop">不变（独立窗口做 MNBT A/B）</td></tr>
+<tr><th>并发 struct c2 / c4</th>
+  <td class="c-old num">88.1 / 133.7</td>
+  <td class="c-new num">85.4 / 133.4 持平</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>冷 prefill 16k / 64k / 128k / 256k</th>
+  <td class="c-old num">1720 / 1760 / 1749 / 1716</td>
+  <td class="c-new num good">2017 / 2016 / 1979 / 1924（+8~18%）</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>冷 prefill 350k</th>
+  <td class="c-old dim">不可跑</td>
+  <td class="c-new num good">1888 tok/s · 零 NVRM</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>vision 质量（on）</th>
+  <td class="c-old num">6/6</td><td class="c-new num">6/6</td><td class="c-prop">—</td></tr>
+<tr><th>menu47 off / on</th>
+  <td class="c-old num">37 / 36</td>
+  <td class="c-new num good">47 / 39</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>pi 真实压缩（新测试）</th>
+  <td class="c-old dim">未测</td>
+  <td class="c-new">稳态 2.0–2.4s/轮；284k 触发压缩；压缩轮 165s 后正常恢复</td>
+  <td class="c-prop">—</td></tr>
+<tr><th>MemAvailable 稳态</th>
+  <td class="c-old num">~2.7–3.4G</td>
+  <td class="c-new num bad">~250–320MB ⚠（head 紧）</td>
+  <td class="c-prop num good">~1.25G（+1G）</td></tr>
+</tbody>
+</table>
+<div class="verdict">
+<b>结论：</b>上游原参数全面采纳中——500k 上下文、双 agent 400k 零悬崖、前缀保留 99%、prefill +8~18%、menu47 大幅提升；
+代价 = structured 微基准 decode -40%（prose 持平）+ head 内存贴边。
+<b>拟调整</b>（KV 8G→7G）只动一个旋钮：MemAvailable 回 ~1.25G，全部真实场景（pi 568k / 双 agent 800k）仍在 929k 池内，
+仅 "2×500k 压力档" 出局；所有基准数字不受影响。<b>当前先保持 8G 观察性能，7G 方案挂起随时可切。</b>
+</div>
+<div class="foot">
+注 1：decode structured 为固定 prompt（count 1–200，temp 0），回归疑因 boot 期 draft 路径 autotune 差异或 MNBT 4096 调度，下次窗口单变量 A/B 隔离。
+注 2：400k 单独调低 max_model_len 不省内存——KV 按 pin 字节计，max_model_len 只是准入上限。
+注 3：pi 压缩轮 165s 为客户端摘要生成成本，非引擎瓶颈；MemAvailable 实测 head 319MB vs worker 2.80G（差值 = head 独扛 APIServer+EngineCore ~3.5G）。
+</div>
+</body>
+</html>

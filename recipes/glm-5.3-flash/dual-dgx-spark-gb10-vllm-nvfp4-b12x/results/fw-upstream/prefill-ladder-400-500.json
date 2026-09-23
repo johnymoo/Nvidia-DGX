@@ -1,0 +1,38 @@
+{
+  "base": "http://127.0.0.1:8890",
+  "model": "GLM-5.3-Flash-EXL3",
+  "rungs": [
+    {
+      "rung_k": 400,
+      "repeat": 1,
+      "salt": "612f4663",
+      "ttft_s": 242.002,
+      "wall_s": 242.141,
+      "prompt_tokens": 447414,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to reply with exactly",
+      "prefill_tok_s": 1848.8,
+      "mem_min_mb": 1395,
+      "elapsed_s": 242.14,
+      "ok": true
+    },
+    {
+      "rung_k": 500,
+      "repeat": 1,
+      "salt": "bd896c4b",
+      "ok": false,
+      "error": "HTTPError: HTTP Error 400: Bad Request",
+      "mem_min_mb": 1427
+    }
+  ],
+  "aborted": true,
+  "abort_reason": "request failed: HTTPError: HTTP Error 400: Bad Request",
+  "summary": {
+    "400": {
+      "prefill_tok_s_best": 1848.8,
+      "ttft_s_best": 242.002
+    }
+  },
+  "mem_min_overall_mb": 1395
+}

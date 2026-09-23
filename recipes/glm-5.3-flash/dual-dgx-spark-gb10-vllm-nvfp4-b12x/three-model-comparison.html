@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #eef1f5;
+    padding: 28px;
+    width: 1580px;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 30px 34px 22px;
+    box-shadow: 0 4px 18px rgba(30,40,60,.10);
+  }
+  h1 { font-size: 25px; color: #17233d; letter-spacing: .5px; }
+  .sub { font-size: 13.5px; color: #7b8794; margin: 7px 0 20px; }
+  .legend { float: right; font-size: 13px; color: #5f6b7a; margin-top: 8px; }
+  .legend b.ok { color: #0a8f4c; } .legend b.warn { color: #c47f00; } .legend b.bad { color: #c0392b; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  th, td { border: 1px solid #e3e8ee; padding: 8px 11px; vertical-align: top; }
+  thead th {
+    background: #17233d; color: #fff; font-size: 15px; padding: 11px 12px;
+  }
+  thead th small { display:block; font-weight: 400; color:#aab6c5; font-size: 11.5px; margin-top: 3px; }
+  th.dim, td.dim { width: 128px; background: #f7f9fb; font-weight: 600; color: #33475e; font-size: 13.5px; }
+  td { font-size: 12.5px; color: #2c3a4b; line-height: 1.5; }
+  tr.section td {
+    background: #eef3f9; color: #1d4e89; font-weight: 700; font-size: 14px;
+    letter-spacing: 1px; padding: 6px 11px;
+  }
+  .ok { color: #0a8f4c; font-weight: 600; }
+  .warn { color: #c47f00; font-weight: 600; }
+  .bad { color: #c0392b; font-weight: 600; }
+  td.win { background: #f2faf5; }
+  td.lose { background: #fdf6f5; }
+  .foot {
+    margin-top: 16px; font-size: 12px; color: #8a95a3; line-height: 1.7;
+    border-top: 1px dashed #dfe5ec; padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="legend"><b class="ok">✅ 优</b>　<b class="warn">⚠️ 受限</b>　<b class="bad">❌ 劣</b>　（着色 = 该行相对赢家）</div>
+  <h1>GB10 集群三模型对比：ds41 vs GLM-5.3 vs DeepSeek</h1>
+  <div class="sub">2×DGX Spark 实测 · ds41=09-17 · GLM EXL3=09-19 · GLM NVFP4=09-21（固件 121.6G，上游原参数）· DS=现网 · 同口径（47 项菜单 / hermes 3 agent 任务）</div>
+  <table>
+    <thead><tr>
+      <th class="dim" style="background:#17233d;color:#fff;">维度</th>
+      <th>DeepSeek-V4.1-Flash ds41<small>EXL3 2.9bpw · MTP · MIT · 09-17 实测</small></th>
+      <th>GLM-5.3-Flash-EXL3 #219+MOE_FAST<small>+thin-decode · DFlash2 k=7 · 09-19</small></th>
+      <th style="background:#1d3a5f;">GLM-5.3-Flash-NVFP4 B12X<small>上游原参数 · KV 8G · 500k · MNBT 4096 · MTP k=5 · 09-21</small></th>
+      <th>DeepSeek-V4-Flash-Vision-Exp<small>现网生产 · MoE MXFP4 · MTP k=6</small></th>
+    </tr></thead>
+    <tbody>
+      <tr class="section"><td colspan="5">速度（越快越好）</td></tr>
+      <tr>
+        <td class="dim">decode c1 结构化</td>
+        <td>41.9 tok/s（accept 2.08/step）</td>
+        <td class="win"><b>77.5</b> tok/s（+21% vs stock）</td>
+        <td class="lose"><b>33.1</b> tok/s（2.32/step）⚠ acceptance 回归待隔离</td>
+        <td>43–55 tok/s（3.11/step）</td>
+      </tr>
+      <tr>
+        <td class="dim">decode c1 散文</td>
+        <td>31.3 tok/s（1.36/step）</td>
+        <td><b>34.2</b> tok/s（2.24/step）</td>
+        <td>31.7 tok/s（2.21/step）持平</td>
+        <td class="win">38–50 tok/s（全天均值 ~38）</td>
+      </tr>
+      <tr>
+        <td class="dim">TTFT（c1 生成）</td>
+        <td class="win">struct <b>0.258s</b> / prose 0.270s</td>
+        <td>0.331 / 0.231s</td>
+        <td>0.044 / 0.028s（新版脚本口径，不可直接比）</td>
+        <td>生产 64%≤0.5s</td>
+      </tr>
+      <tr>
+        <td class="dim">并发聚合</td>
+        <td>struct c2 67.6 / c4 60.3<br>prose c2 42.9</td>
+        <td class="win">struct c2 <b>126.2</b> · prose c2 46.8</td>
+        <td>struct c2 85.4 / <b>c4 133.4</b> · prose c2 41.6</td>
+        <td>c2 34.8–60.1（口径不同）</td>
+      </tr>
+      <tr>
+        <td class="dim">prefill</td>
+        <td class="lose">8k/16k 915/631<br>32k+ UMA 中止</td>
+        <td>8k–256k 1,243–1,366</td>
+        <td class="win">16k–256k <b>1,924–2,018</b>（+18%）<br>350k 1,888 · <b>492k 1,827 零 NVRM</b></td>
+        <td>1.6–1.8K（硬顶 ~3.7K）</td>
+      </tr>
+      <tr class="section"><td colspan="5">质量与真实任务</td></tr>
+      <tr>
+        <td class="dim">菜单生产任务（47 项）</td>
+        <td>off <b>38/47</b> · thinking 37/47</td>
+        <td>off 37/47 · on 38/47（13–15s）</td>
+        <td class="win">off <b>47/47</b> ⚠ · on <b>39/47</b>（off 满分存疑，见注 3）</td>
+        <td class="lose">off 9/47 · high 无输出（262s 推理循环）</td>
+      </tr>
+      <tr>
+        <td class="dim">hermes 真实任务<br>（3 个 agent 任务）</td>
+        <td class="lose">3/3 ✅ · 861.3s · decode 34.5<br>cache 93.2%</td>
+        <td>3/3 ✅ · 423.8s · decode ~28</td>
+        <td class="win">3/3 ✅ · <b>230s</b>（DS 的 47%）· decode ~28<br>跨任务前缀缓存最高 319k tok</td>
+      </tr>
+      <tr>
+        <td class="dim">视觉</td>
+        <td class="win">合成题 6/6（off 口径）· 流式 off 32.9/38.7</td>
+        <td class="warn">合成题 5/6 · 流式 off 29.0/34.6</td>
+        <td class="win">合成题 6/6（<b>on 口径</b>，off 不出图为预期）</td>
+        <td class="win">合成题 6/6 · 流式 off 28.4/34.8</td>
+      </tr>
+      <tr class="section"><td colspan="5">许可与运维</td></tr>
+      <tr>
+        <td class="dim">许可</td>
+        <td class="win">MIT</td>
+        <td class="lose">⚠️ DFlash2 = CC BY-NC-ND（非商业）<br>repo AGPL-3.0</td>
+        <td>原生 MTP k=5（无 DFlash2 NC 限制）<br>repo 许可待核</td>
+        <td class="win">MIT</td>
+      </tr>
+      <tr>
+        <td class="dim">上下文 / KV 池</td>
+        <td>300k / <b>597,614 tok（1.99×）</b></td>
+        <td class="lose">300k / 309,523（1.03×）</td>
+        <td class="win"><b>500k / 1,061,538 tok（2.12×）</b><br>双 agent 400k 零悬崖 · 前缀保留 99%</td>
+        <td>1M / 1,808,321（1.72×）</td>
+      </tr>
+      <tr>
+        <td class="dim">boot</td>
+        <td class="win">368s</td>
+        <td class="warn">~10min（LOAD_FORMAT= 空）</td>
+        <td>≈5 min（权重本地 NVMe + revision pin）</td>
+        <td>4–5 min（热启动）</td>
+      </tr>
+      <tr>
+        <td class="dim">MemAvailable 稳态</td>
+        <td class="win">~2G+</td>
+        <td class="warn">~1G（memguard boot-only）</td>
+        <td class="bad">~250–320MB ⚠（KV 7G 方案挂起可回 ~1.25G）</td>
+        <td class="win">充裕</td>
+      </tr>
+      <tr>
+        <td class="dim">一句话定位</td>
+        <td><b>均衡干净</b>：菜单/vision 强候选（MIT），agent 最慢、prefill 弱</td>
+        <td><b>结构化最快 + thin-decode</b>：agent 424s；上下文短、许可受限</td>
+        <td><b>长上下文主力</b>：500k/1.06M 池、双 agent 400k 零悬崖、prefill 最快、hermes 230s、menu off 满分；structured decode 待调优、head 内存贴边</td>
+        <td><b>现网主力</b>：散文快、1M 上下文；菜单任务不安全 ❌</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="foot">
+    GLM NVFP4 09-21 配置：eugr/spark-vllm-docker B12X 栈（sm121 CUTE DSL），上游原参数 KV 8G（pinned 1,061,538 tok）/ max_model_len 500k / MNBT 4096 / util 0.87 / MTP k=5（原生，非 DFlash2）；固件 xFusion BIOS 01.53.05.01（121.6G，+2G carveout）。<br>
+    注 1：NVFP4 structured decode 33.1 vs EXL3 77.5 为当前最大 open gap——同 prompt 同权重昨日 NVFP4(6G/350k) 配置曾达 55.0（accept 0.91），回归疑 MNBT 4096 spec 调度或 boot 期 autotune，下窗口 MNBT 单变量 A/B 隔离。<br>
+    注 2：TTFT 一行为不同版本脚本口径（新版 0.03–0.04s），不与旧值直接比较。注 3：menu off 47/47 与 on 39/47 出自同一 runner（vision_compare），off 满分显著高于历史带（32–38），保留存疑标注。注 4：vision 一行 NVFP4 为 on 口径（off 不出图为该栈预期），与旧 off 口径不可直接比。<br>
+    数据来源：ds41=09-17 窗口 · GLM EXL3=09-19 窗口 · GLM NVFP4=09-21 窗口（KV 8G/500k/MNBT 4096）· DS=现网生产 ·
+    详见 planning/02-working/2026-09-20-spark-vllm-docker-b12x-nvfp4.md
+  </div>
+</div>
+</body>
+</html>
