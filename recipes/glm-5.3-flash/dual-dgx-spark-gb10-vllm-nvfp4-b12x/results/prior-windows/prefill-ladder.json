@@ -1,0 +1,214 @@
+{
+  "base": "http://127.0.0.1:8890",
+  "model": "local-inference-lab/GLM-5.3-Flash-NVFP4-Spark",
+  "rungs": [
+    {
+      "rung_k": 8,
+      "repeat": 1,
+      "salt": "11608630",
+      "ttft_s": 5.2,
+      "wall_s": 5.401,
+      "prompt_tokens": 8396,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to ignore the filler",
+      "prefill_tok_s": 1614.6,
+      "mem_min_mb": 3322,
+      "elapsed_s": 5.4,
+      "ok": true
+    },
+    {
+      "rung_k": 8,
+      "repeat": 2,
+      "salt": "cc802f7a",
+      "ttft_s": 5.173,
+      "wall_s": 5.372,
+      "prompt_tokens": 8398,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a message with a",
+      "prefill_tok_s": 1623.4,
+      "mem_min_mb": 3316,
+      "elapsed_s": 5.37,
+      "ok": true
+    },
+    {
+      "rung_k": 16,
+      "repeat": 1,
+      "salt": "80fa00ee",
+      "ttft_s": 9.858,
+      "wall_s": 10.057,
+      "prompt_tokens": 16833,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to ignore the filler",
+      "prefill_tok_s": 1707.5,
+      "mem_min_mb": 3311,
+      "elapsed_s": 10.06,
+      "ok": true
+    },
+    {
+      "rung_k": 16,
+      "repeat": 2,
+      "salt": "9c5cf46e",
+      "ttft_s": 11.145,
+      "wall_s": 11.34,
+      "prompt_tokens": 19170,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a message with a",
+      "prefill_tok_s": 1720.1,
+      "mem_min_mb": 3322,
+      "elapsed_s": 11.34,
+      "ok": true
+    },
+    {
+      "rung_k": 32,
+      "repeat": 1,
+      "salt": "4cf08e81",
+      "ttft_s": 20.797,
+      "wall_s": 20.996,
+      "prompt_tokens": 36448,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to ignore the filler",
+      "prefill_tok_s": 1752.6,
+      "mem_min_mb": 3306,
+      "elapsed_s": 21.0,
+      "ok": true
+    },
+    {
+      "rung_k": 32,
+      "repeat": 2,
+      "salt": "afd3f7f0",
+      "ttft_s": 20.826,
+      "wall_s": 21.011,
+      "prompt_tokens": 36447,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to ignore the filler",
+      "prefill_tok_s": 1750.1,
+      "mem_min_mb": 3323,
+      "elapsed_s": 21.01,
+      "ok": true
+    },
+    {
+      "rung_k": 64,
+      "repeat": 1,
+      "salt": "0fa55c86",
+      "ttft_s": 41.669,
+      "wall_s": 41.825,
+      "prompt_tokens": 73335,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to ignore the filler",
+      "prefill_tok_s": 1759.9,
+      "mem_min_mb": 3299,
+      "elapsed_s": 41.83,
+      "ok": true
+    },
+    {
+      "rung_k": 64,
+      "repeat": 2,
+      "salt": "d9b93c40",
+      "ttft_s": 41.814,
+      "wall_s": 41.967,
+      "prompt_tokens": 73335,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a long stream of",
+      "prefill_tok_s": 1753.8,
+      "mem_min_mb": 3310,
+      "elapsed_s": 41.97,
+      "ok": true
+    },
+    {
+      "rung_k": 128,
+      "repeat": 1,
+      "salt": "71537fe4",
+      "ttft_s": 84.517,
+      "wall_s": 84.644,
+      "prompt_tokens": 147107,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a long stream of",
+      "prefill_tok_s": 1740.6,
+      "mem_min_mb": 3265,
+      "elapsed_s": 84.65,
+      "ok": true
+    },
+    {
+      "rung_k": 128,
+      "repeat": 2,
+      "salt": "800ddbec",
+      "ttft_s": 73.42,
+      "wall_s": 73.668,
+      "prompt_tokens": 128425,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a large block of",
+      "prefill_tok_s": 1749.2,
+      "mem_min_mb": 3273,
+      "elapsed_s": 73.67,
+      "ok": true
+    },
+    {
+      "rung_k": 256,
+      "repeat": 1,
+      "salt": "674206e2",
+      "ttft_s": 155.868,
+      "wall_s": 155.952,
+      "prompt_tokens": 267278,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a long message with",
+      "prefill_tok_s": 1714.8,
+      "mem_min_mb": 3158,
+      "elapsed_s": 155.95,
+      "ok": true
+    },
+    {
+      "rung_k": 256,
+      "repeat": 2,
+      "salt": "ce161cc0",
+      "ttft_s": 144.884,
+      "wall_s": 144.967,
+      "prompt_tokens": 248601,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user has sent a long message with",
+      "prefill_tok_s": 1715.9,
+      "mem_min_mb": 3180,
+      "elapsed_s": 144.97,
+      "ok": true
+    }
+  ],
+  "aborted": false,
+  "summary": {
+    "8": {
+      "prefill_tok_s_best": 1623.4,
+      "ttft_s_best": 5.173
+    },
+    "16": {
+      "prefill_tok_s_best": 1720.1,
+      "ttft_s_best": 9.858
+    },
+    "32": {
+      "prefill_tok_s_best": 1752.6,
+      "ttft_s_best": 20.797
+    },
+    "64": {
+      "prefill_tok_s_best": 1759.9,
+      "ttft_s_best": 41.669
+    },
+    "128": {
+      "prefill_tok_s_best": 1749.2,
+      "ttft_s_best": 73.42
+    },
+    "256": {
+      "prefill_tok_s_best": 1715.9,
+      "ttft_s_best": 144.884
+    }
+  },
+  "mem_min_overall_mb": 3158
+}

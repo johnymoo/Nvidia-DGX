@@ -1,0 +1,195 @@
+{
+  "phase": "prose",
+  "health_code": 200,
+  "health_body": "",
+  "runs": [
+    {
+      "http": 200,
+      "ttft_s": 0.028172378000817844,
+      "wall_s": 6.298184523999225,
+      "decode_s": 6.2700121459984075,
+      "tok_s": 31.738375519257016,
+      "delivered_tok_s": 31.755182662225952,
+      "completion_tokens": 200,
+      "prompt_tokens": 39,
+      "finish_reason": "length",
+      "nan": false,
+      "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a truly comprehensive explanation of hash maps should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental abstraction: key-value",
+      "text": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a truly comprehensive explanation of hash maps should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental abstraction: key-value storage with O(1) average access\n2. **The hash function** - How keys map to indices\n   - What makes a good hash function\n   - Determinism, uniform distribution, avalanche effect\n   - Hash codes vs. bucket indices (compression functions)\n3. **The underlying array / buckets** - The data structure foundation\n4. **Collision handling** - Two main families:\n   - **Chaining (separate chaining)**: linked lists or trees at each bucket\n     - Java's HashMap converts to red-black trees when chains get long (",
+      "text_len": 903,
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 239,
+        "completion_tokens": 200,
+        "prompt_tokens_details": {
+          "cached_tokens": 39,
+          "created_cache_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "spec": {
+        "drafts": 62,
+        "draft_tokens": 310,
+        "accepted": 137,
+        "accept_ratio": 0.4419,
+        "accepted_per_step": 2.21,
+        "pos": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "http": 200,
+      "ttft_s": 0.027758279000408947,
+      "wall_s": 6.962284641000224,
+      "decode_s": 6.934526361999815,
+      "tok_s": 28.696985145300008,
+      "delivered_tok_s": 28.726202721190003,
+      "completion_tokens": 200,
+      "prompt_tokens": 39,
+      "finish_reason": "length",
+      "nan": false,
+      "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Basic concept and structure\n2. Collision handling\n3. Resizing\n4. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness, so I should write a comprehensive explanation. Let me think through everything I know about hash maps and organize it well.\n\n**What is a hash map?**\nA ",
+      "text": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Basic concept and structure\n2. Collision handling\n3. Resizing\n4. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness, so I should write a comprehensive explanation. Let me think through everything I know about hash maps and organize it well.\n\n**What is a hash map?**\nA hash map (also called hash table, dictionary, associative array) is a data structure that stores key-value pairs and provides efficient lookup, insertion, and deletion. The core idea: instead of searching through data, we compute where data should be stored using a function.\n\n**Core components:**\n1. **Keys and values**: Each entry is a (key, value) pair\n2. **Hash function**: Converts a key into an integer (hash code), which is then mapped to a bucket index\n3. **Buckets/array**: The underlying storage, typically an array",
+      "text_len": 925,
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 239,
+        "completion_tokens": 200,
+        "prompt_tokens_details": {
+          "cached_tokens": 39,
+          "created_cache_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "spec": {
+        "drafts": 69,
+        "draft_tokens": 345,
+        "accepted": 130,
+        "accept_ratio": 0.3768,
+        "accepted_per_step": 1.884,
+        "pos": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "http": 200,
+      "ttft_s": 0.028022536000207765,
+      "wall_s": 6.168384290000176,
+      "decode_s": 6.140361753999969,
+      "tok_s": 32.408514021241004,
+      "delivered_tok_s": 32.42340142851156,
+      "completion_tokens": 200,
+      "prompt_tokens": 39,
+      "finish_reason": "length",
+      "nan": false,
+      "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a comprehensive explanation should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental purpose: key-value storage with fast look",
+      "text": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a comprehensive explanation should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental purpose: key-value storage with fast lookup\n2. **The hash function** - How keys are converted to array indices\n3. **Basic structure** - Array of buckets\n4. **Collision handling** - This is critical:\n   - Chaining (separate chaining with linked lists, or trees in modern implementations)\n   - Open addressing (linear probing, quadratic probing, double hashing)\n5. **Resizing/Rehashing** - Load factor, when to resize, how rehashing works, why it's amortized O(1)\n6. **Time complexity analysis**:\n   - Average",
+      "text_len": 866,
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 239,
+        "completion_tokens": 200,
+        "prompt_tokens_details": {
+          "cached_tokens": 39,
+          "created_cache_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "spec": {
+        "drafts": 61,
+        "draft_tokens": 305,
+        "accepted": 138,
+        "accept_ratio": 0.4525,
+        "accepted_per_step": 2.262,
+        "pos": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  ],
+  "ts": 1789976411.0077286,
+  "prompt": "hashmap-prose",
+  "thinking": false,
+  "temperature": 0,
+  "tok_s_median": 31.738375519257016,
+  "tok_s_min": 28.696985145300008,
+  "tok_s_max": 32.408514021241004,
+  "ttft_median_s": 0.028022536000207765,
+  "completion_tokens_median": 200.0,
+  "accept_ratio_median": 0.4419,
+  "accepted_per_step_median": 2.21,
+  "any_nan": false,
+  "coherence": {
+    "paris": {
+      "ok": true,
+      "text": "The user is asking a simple factual question: What is the capital of France? They want a one-word answer.\n\nThe answer is Paris. Simple, direct, one word as requested.Paris",
+      "http": 200
+    },
+    "cmp": {
+      "ok": false,
+      "text": "The question is asking whether 9.9 is greater than 9.11.\n\nThis is a common point of confusion. Let me think carefully:\n- 9.9 = 9.90\n- 9.11 = ",
+      "http": 200
+    },
+    "sky": {
+      "ok": true,
+      "text": "The user wants one sentence about a sky-blue color. This is a simple creative writing request. I should write a single, well-crafted sentence about the color sky-blue. Let me think of something evocative and descriptive.\n\nOptions:\n",
+      "http": 200
+    },
+    "nan": false
+  },
+  "coherent": false,
+  "health_code_after": 200,
+  "short_after": {
+    "http": 200,
+    "ttft_s": 0.02806765599962091,
+    "wall_s": 0.4199300899999798,
+    "decode_s": 0.3918624340003589,
+    "tok_s": 17.863411729825547,
+    "delivered_tok_s": 19.05079009699063,
+    "completion_tokens": 8,
+    "prompt_tokens": 39,
+    "finish_reason": "length",
+    "nan": false,
+    "text_head": "The user wants a detailed, thorough explanation",
+    "text": "The user wants a detailed, thorough explanation",
+    "text_len": 47,
+    "usage": {
+      "prompt_tokens": 39,
+      "total_tokens": 47,
+      "completion_tokens": 8,
+      "prompt_tokens_details": {
+        "cached_tokens": 39,
+        "created_cache_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    }
+  }
+}

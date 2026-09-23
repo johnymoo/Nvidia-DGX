@@ -1,0 +1,22 @@
+{
+  "label": "nvfp4-solo",
+  "endpoint": "http://192.168.88.181:8890",
+  "steps": 91,
+  "params": {
+    "init_tokens": 0,
+    "gap_s": 0.0,
+    "churn_every_s": 0.0,
+    "target_tokens": 190000
+  },
+  "churn_errors": 0,
+  "max_prompt_tokens": 176440,
+  "wall_min": 2.8,
+  "total_ttft_s": 149.2,
+  "ttft_p50_s": 1.51,
+  "ttft_max_s": 6.783,
+  "first_cliff_step": null,
+  "first_cliff_prompt_tokens": null,
+  "steps_over_30s": 0,
+  "total_prompt_tokens": 8037525,
+  "total_cached_tokens": 0
+}

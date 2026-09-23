@@ -1,0 +1,16 @@
+{
+  "label": "dual-pi-fw-a0",
+  "agent_id": 0,
+  "session_id": "18d8c55c-d492-4622-9001-280fde4be2c3",
+  "session_path": "execution/glm53-eval/results/pi-dual-compact-fw/scratch/agent0/sessions/2026-09-21T07-30-14-826Z_18d8c55c-d492-4622-9001-280fde4be2c3.jsonl",
+  "pi_notes": [],
+  "turns": 3,
+  "compaction_turn": 2,
+  "compaction_input_tokens": 2094,
+  "post_compaction_turn_recorded": true,
+  "max_input_tokens": 5618,
+  "wall_min": 0.2,
+  "wall_p50_s": 3.35,
+  "wall_max_s": 5.82,
+  "total_output_tokens": 39
+}

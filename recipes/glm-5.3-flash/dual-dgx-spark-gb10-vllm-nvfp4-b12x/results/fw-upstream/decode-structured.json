@@ -1,0 +1,195 @@
+{
+  "phase": "structured",
+  "health_code": 200,
+  "health_body": "",
+  "runs": [
+    {
+      "http": 200,
+      "ttft_s": 0.42460336499971163,
+      "wall_s": 6.434803412999827,
+      "decode_s": 6.010200048000115,
+      "tok_s": 33.11037875789458,
+      "delivered_tok_s": 31.08098059312156,
+      "completion_tokens": 200,
+      "prompt_tokens": 39,
+      "finish_reason": "length",
+      "nan": false,
+      "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a comprehensive explanation should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental purpose: key-value storage with fast look",
+      "text": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a comprehensive explanation should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental purpose: key-value storage with fast lookup\n2. **The hash function** - How keys get converted to array indices\n3. **The underlying array/buckets** - The data structure foundation\n4. **Collision handling** - Two main approaches:\n   - Chaining (linked lists / trees)\n   - Open addressing (linear probing, quadratic probing, double hashing)\n5. **Load factor** - Why it matters\n6. **Resizing/Rehashing** - When and how\n7. **Time complexity analysis** - Average vs worst case for operations\n8. **Maybe: real-world",
+      "text_len": 867,
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 239,
+        "completion_tokens": 200,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "spec": {
+        "drafts": 61,
+        "draft_tokens": 305,
+        "accepted": 138,
+        "accept_ratio": 0.4525,
+        "accepted_per_step": 2.262,
+        "pos": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "http": 200,
+      "ttft_s": 0.04361056400011876,
+      "wall_s": 5.6616718620007305,
+      "decode_s": 5.618061298000612,
+      "tok_s": 35.421471828871155,
+      "delivered_tok_s": 35.325254602325835,
+      "completion_tokens": 200,
+      "prompt_tokens": 39,
+      "finish_reason": "length",
+      "nan": false,
+      "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a comprehensive explanation should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental abstraction: key-value storage with O(1) ",
+      "text": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness. Let me think about what a comprehensive explanation should cover:\n\n**Core concepts to cover:**\n\n1. **What is a hash map?** - The fundamental abstraction: key-value storage with O(1) average access\n2. **The hash function** - How keys get converted to array indices\n3. **Basic structure** - Array of buckets\n4. **Insertion operation** - Step by step\n5. **Lookup operation** - Step by step\n6. **Deletion operation** - Step by step\n7. **Collision handling** - Two main strategies:\n   - Chaining (linked lists / trees)\n   - Open addressing (linear probing, quadratic probing, double hashing)\n8. **Load factor** - Why it matters\n9.",
+      "text_len": 843,
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 239,
+        "completion_tokens": 200,
+        "prompt_tokens_details": {
+          "cached_tokens": 39,
+          "created_cache_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "spec": {
+        "drafts": 56,
+        "draft_tokens": 280,
+        "accepted": 143,
+        "accept_ratio": 0.5107,
+        "accepted_per_step": 2.554,
+        "pos": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "http": 200,
+      "ttft_s": 0.02781904800031043,
+      "wall_s": 6.078709630000958,
+      "decode_s": 6.0508905820006476,
+      "tok_s": 32.88772079137535,
+      "delivered_tok_s": 32.90171963683162,
+      "completion_tokens": 200,
+      "prompt_tokens": 39,
+      "finish_reason": "length",
+      "nan": false,
+      "text_head": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness \u2014 they explicitly said \"Be thorough\" and \"detailed step-by-step explanation.\" So a long, comprehensive response is appropriate here. This is one of those cases where length is justifi",
+      "text": "The user wants a detailed, thorough explanation of how hash maps work, including:\n1. Collision handling\n2. Resizing\n3. Time complexity\n\nThis is a technical educational request. The person wants depth and thoroughness \u2014 they explicitly said \"Be thorough\" and \"detailed step-by-step explanation.\" So a long, comprehensive response is appropriate here. This is one of those cases where length is justified by the request itself.\n\nLet me plan out the structure of this explanation:\n\n1. **What is a hash map?** \u2014 High-level concept, the problem it solves\n2. **Core components** \u2014 The array (buckets), the hash function, key-value pairs\n3. **Step-by-step operation: insertion** \u2014 Walk through what happens when you insert\n4. **The hash function** \u2014 What makes a good one, properties\n5. **Collision handling** \u2014 This is a major requested topic\n   - Chaining (separate chaining)\n   - Open addressing (",
+      "text_len": 893,
+      "usage": {
+        "prompt_tokens": 39,
+        "total_tokens": 239,
+        "completion_tokens": 200,
+        "prompt_tokens_details": {
+          "cached_tokens": 39,
+          "created_cache_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "spec": {
+        "drafts": 60,
+        "draft_tokens": 300,
+        "accepted": 139,
+        "accept_ratio": 0.4633,
+        "accepted_per_step": 2.317,
+        "pos": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  ],
+  "ts": 1789976387.8256288,
+  "prompt": "hashmap-prose",
+  "thinking": false,
+  "temperature": 0,
+  "tok_s_median": 33.11037875789458,
+  "tok_s_min": 32.88772079137535,
+  "tok_s_max": 35.421471828871155,
+  "ttft_median_s": 0.04361056400011876,
+  "completion_tokens_median": 200.0,
+  "accept_ratio_median": 0.4633,
+  "accepted_per_step_median": 2.317,
+  "any_nan": false,
+  "coherence": {
+    "paris": {
+      "ok": true,
+      "text": "The user is asking a simple factual question: What is the capital of France? They want a one-word answer.\n\nThe answer is Paris. Simple, direct, one word as requested.Paris",
+      "http": 200
+    },
+    "cmp": {
+      "ok": false,
+      "text": "The question is asking whether 9.9 is greater than 9.11.\n\nThis is a common point of confusion. Let me think carefully:\n- 9.9 = 9.90\n- 9.11 = ",
+      "http": 200
+    },
+    "sky": {
+      "ok": true,
+      "text": "The user wants one sentence about a sky-blue color. This is a simple creative writing request. I should write exactly one sentence about the color sky-blue. Let me make it evocative and descriptive.\n\nSomething like: \"The sky-blue",
+      "http": 200
+    },
+    "nan": false
+  },
+  "coherent": false,
+  "health_code_after": 200,
+  "short_after": {
+    "http": 200,
+    "ttft_s": 0.026298672000848455,
+    "wall_s": 0.43197547899944766,
+    "decode_s": 0.4056768069985992,
+    "tok_s": 17.25511510453239,
+    "delivered_tok_s": 18.519569718470592,
+    "completion_tokens": 8,
+    "prompt_tokens": 39,
+    "finish_reason": "length",
+    "nan": false,
+    "text_head": "The user wants a detailed, thorough explanation",
+    "text": "The user wants a detailed, thorough explanation",
+    "text_len": 47,
+    "usage": {
+      "prompt_tokens": 39,
+      "total_tokens": 47,
+      "completion_tokens": 8,
+      "prompt_tokens_details": {
+        "cached_tokens": 39,
+        "created_cache_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    }
+  }
+}

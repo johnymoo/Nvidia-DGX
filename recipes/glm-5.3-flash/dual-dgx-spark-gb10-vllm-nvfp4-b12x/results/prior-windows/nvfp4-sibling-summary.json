@@ -1,0 +1,22 @@
+{
+  "label": "nvfp4-sibling",
+  "endpoint": "http://192.168.88.181:8890",
+  "steps": 78,
+  "params": {
+    "init_tokens": 0,
+    "gap_s": 0.0,
+    "churn_every_s": 0.0,
+    "target_tokens": 150000
+  },
+  "churn_errors": 0,
+  "max_prompt_tokens": 150939,
+  "wall_min": 7.9,
+  "total_ttft_s": 475.2,
+  "ttft_p50_s": 1.844,
+  "ttft_max_s": 66.38,
+  "first_cliff_step": 1,
+  "first_cliff_prompt_tokens": 79,
+  "steps_over_30s": 5,
+  "total_prompt_tokens": 5889532,
+  "total_cached_tokens": 0
+}

@@ -1,0 +1,53 @@
+{
+  "base": "http://127.0.0.1:8890",
+  "model": "GLM-5.3-Flash-EXL3",
+  "rungs": [
+    {
+      "rung_k": 8,
+      "repeat": 1,
+      "salt": "72528ddd",
+      "ttft_s": 4.767,
+      "wall_s": 4.865,
+      "prompt_tokens": 8980,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to reply with exactly",
+      "prefill_tok_s": 1883.8,
+      "mem_min_mb": 239,
+      "elapsed_s": 4.87,
+      "ok": true
+    },
+    {
+      "rung_k": 8,
+      "repeat": 2,
+      "salt": "8b1e237e",
+      "ttft_s": 4.949,
+      "wall_s": 5.155,
+      "prompt_tokens": 9565,
+      "completion_tokens": 8,
+      "finish_reason": "length",
+      "text": "The user wants me to ignore the filler",
+      "prefill_tok_s": 1932.7,
+      "mem_min_mb": 253,
+      "elapsed_s": 5.15,
+      "ok": true
+    },
+    {
+      "rung_k": 16,
+      "repeat": 1,
+      "salt": "453e552d",
+      "ok": false,
+      "error": "RuntimeError: MemAvailable below 1200MB before request",
+      "mem_min_mb": 254
+    }
+  ],
+  "aborted": true,
+  "abort_reason": "MemAvailable below 1200MB before request",
+  "summary": {
+    "8": {
+      "prefill_tok_s_best": 1932.7,
+      "ttft_s_best": 4.767
+    }
+  },
+  "mem_min_overall_mb": 239
+}

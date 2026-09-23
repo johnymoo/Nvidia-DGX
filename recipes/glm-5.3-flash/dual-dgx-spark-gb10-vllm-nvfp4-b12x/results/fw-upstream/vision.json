@@ -1,0 +1,1510 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-09-21T08:02:04.942774Z",
+  "services": {
+    "deepseek": {
+      "base_url": "http://192.168.88.181:8890/v1",
+      "model": "deepseek-v4-flash-0731",
+      "thinking": {
+        "off": {
+          "thinking": false
+        },
+        "on": {
+          "thinking": true,
+          "reasoning_effort": "high"
+        }
+      }
+    },
+    "qwen": {
+      "base_url": "http://192.168.88.181:8004/v1",
+      "model": "qwen3.8-27b-mtp2",
+      "thinking": {
+        "off": {
+          "enable_thinking": false
+        },
+        "on": {
+          "enable_thinking": true,
+          "reasoning_effort": "low"
+        }
+      }
+    },
+    "glm": {
+      "base_url": "http://127.0.0.1:8890/v1",
+      "model": "GLM-5.3-Flash-EXL3",
+      "thinking": {
+        "off": {
+          "enable_thinking": false
+        },
+        "on": {
+          "enable_thinking": true,
+          "reasoning_effort": "low"
+        }
+      }
+    }
+  },
+  "treatments": {
+    "off": {
+      "glm": {
+        "quality": {
+          "passed": 0,
+          "total": 6,
+          "cases": [
+            {
+              "id": "dominant_blue",
+              "expected": "blue",
+              "actual": "theimageshowsasolidbluerectangle.thedominantcolorisblue.blue",
+              "passed": false,
+              "elapsed_s": 0.9304,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 56,
+                "total_tokens": 73,
+                "completion_tokens": 17,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 0
+                }
+              },
+              "content": "The image shows a solid blue rectangle. The dominant color is blue.blue",
+              "reasoning": "",
+              "error": null
+            },
+            {
+              "id": "three_red_blocks",
+              "expected": "3",
+              "actual": "theuserwantstoknowhowmanyredrectanglesarevisibleintheimage.lookingattheimagetherearethreeredverticalrectanglesside-by-side.letscountthem1.leftredrectangle2.middleredrectangle3.rightredrectangletotalcount3.theuserrequestedanswerwithoneinteger.sotheanswershouldbe3.3",
+              "passed": false,
+              "elapsed_s": 2.1907,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 56,
+                "total_tokens": 135,
+                "completion_tokens": 79,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 0
+                }
+              },
+              "content": "The user wants to know how many red rectangles are visible in the image.\nLooking at the image, there are three red vertical rectangles side-by-side.\nLet's count them:\n1. Left red rectangle\n2. Middle red rectangle\n3. Right red rectangle\n\nTotal count = 3.\nThe user requested \"Answer with one integer.\"\nSo the answer should be \"3\".3",
+              "reasoning": "",
+              "error": null
+            },
+            {
+              "id": "red_left_blue",
+              "expected": "left",
+              "actual": "theuserwantstoknowiftheredblockistotheleftorrightoftheblueblock.lookingattheimage-thereisaredblockontheleft.-thereisablueblockontheright.-thequestionisistheredblockleftorrightoftheblueblock-sincetheredblockisontheleftsideoftheblueblocktheanswerisleft.-theuseraskstoanswerexactlyleftorright.sotheanswershouldbeleft.left",
+              "passed": false,
+              "elapsed_s": 2.7488,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 62,
+                "total_tokens": 169,
+                "completion_tokens": 107,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 0
+                }
+              },
+              "content": "The user wants to know if the red block is to the left or right of the blue block.\nLooking at the image:\n- There is a red block on the left.\n- There is a blue block on the right.\n- The question is: \"Is the red block left or right of the blue block?\"\n- Since the red block is on the left side of the blue block, the answer is \"left\".\n- The user asks to \"Answer exactly left or right.\"\n\nSo the answer should be \"left\".left",
+              "reasoning": "",
+              "error": null
+            },
+            {
+              "id": "green_top_left",
+              "expected": "green",
+              "actual": "theuserwantstoknowthecolorofthetop-leftquadrantoftheprovidedimage.lookingattheimage-top-leftquadrantgreen-top-rightquadrantyellow-bottom-leftquadrantred-bottom-rightquadrantbluethequestionaskswhatcoloristhetop-leftquadrantanswerexactlyonelowercaseword.thecolorisgreen.theanswershouldbeexactlyonelowercasewordgreen.green",
+              "passed": false,
+              "elapsed_s": 2.3777,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 58,
+                "total_tokens": 147,
+                "completion_tokens": 89,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 0
+                }
+              },
+              "content": "The user wants to know the color of the top-left quadrant of the provided image.\nLooking at the image:\n- Top-left quadrant: green\n- Top-right quadrant: yellow\n- Bottom-left quadrant: red\n- Bottom-right quadrant: blue\n\nThe question asks: \"What color is the top-left quadrant? Answer exactly one lowercase word.\"\nThe color is green.\nThe answer should be exactly one lowercase word: \"green\".green",
+              "reasoning": "",
+              "error": null
+            },
+            {
+              "id": "middle_tallest",
+              "expected": "middle",
+              "actual": "theuserisshowingmeabarchartwiththreebars.ineedtoidentifywhichbaristallest.lookingattheimagetherearethreebluebars-leftbarappearstobetheshortest-middlebarappearstobethetallest-rightbarappearstobemediumheightthemiddlebarisclearlythetallestone.middle",
+              "passed": false,
+              "elapsed_s": 2.2243,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 61,
+                "total_tokens": 135,
+                "completion_tokens": 74,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 0
+                }
+              },
+              "content": "The user is showing me a bar chart with three bars. I need to identify which bar is tallest.\n\nLooking at the image, there are three blue bars:\n- Left bar: appears to be the shortest\n- Middle bar: appears to be the tallest\n- Right bar: appears to be medium height\n\nThe middle bar is clearly the tallest one.Middle",
+              "reasoning": "",
+              "error": null
+            },
+            {
+              "id": "two_blue_one_red",
+              "expected": "2",
+              "actual": "theuserwantstoknowhowmanyblueblocksarevisibleintheimage.lookingattheimagetherearethreeblocks1.leftblockblue2.middleblockblue3.rightblockredsothereare2blueblocksvisible.theuseraskstoanswerwithoneinteger.sotheanswershouldbe2.2",
+              "passed": false,
+              "elapsed_s": 2.3957,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 56,
+                "total_tokens": 132,
+                "completion_tokens": 76,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 0
+                }
+              },
+              "content": "The user wants to know how many blue blocks are visible in the image.\nLooking at the image, there are three blocks:\n1. Left block: Blue\n2. Middle block: Blue\n3. Right block: Red\n\nSo there are 2 blue blocks visible.\nThe user asks to \"Answer with one integer.\"\nSo the answer should be \"2\".2",
+              "reasoning": "",
+              "error": null
+            }
+          ]
+        },
+        "menu": {
+          "elapsed_s": 14.4393,
+          "finish_reason": "stop",
+          "usage": {
+            "prompt_tokens": 1717,
+            "total_tokens": 2342,
+            "completion_tokens": 625,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "created_cache_tokens": 0,
+              "multimodal_tokens": {
+                "image": 1364
+              }
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "content": "{\n  \"week_start\": \"2026-09-01\",\n  \"week_end\": \"2026-09-04\",\n  \"daily_menus\": [\n    {\n      \"date\": \"2026-09-01\",\n      \"day_of_week\": \"周一\",\n      \"breakfast\": null,\n      \"lunch_rice\": null,\n      \"lunch_main_meat\": null,\n      \"lunch_side1\": null,\n      \"lunch_side2\": null,\n      \"lunch_soup\": null,\n      \"fruit\": null,\n      \"afternoon_snack\": null\n    },\n    {\n      \"date\": \"2026-09-02\",\n      \"day_of_week\": \"周二\",\n      \"breakfast\": \"烧卖、全脂牛奶\",\n      \"lunch_rice\": null,\n      \"lunch_main_meat\": \"意大利肉酱面\",\n      \"lunch_side1\": \"彩椒鱼片\",\n      \"lunch_side2\": \"爆炒双花\",\n      \"lunch_soup\": \"菌菇鸽子汤\",\n      \"fruit\": \"柚子/梨\",\n      \"afternoon_snack\": \"绿豆薏仁汤\"\n    },\n    {\n      \"date\": \"2026-09-03\",\n      \"day_of_week\": \"周三\",\n      \"breakfast\": \"葱油花卷、全脂牛奶\",\n      \"lunch_rice\": \"香米米饭\",\n      \"lunch_main_meat\": \"什锦鲜菇蒸肉丸\",\n      \"lunch_side1\": \"番茄炒蛋\",\n      \"lunch_side2\": \"清炒时蔬\",\n      \"lunch_soup\": \"海带豆腐羹\",\n      \"fruit\": \"西瓜/苹果\",\n      \"afternoon_snack\": \"蒸饺\"\n    },\n    {\n      \"date\": \"2026-09-04\",\n      \"day_of_week\": \"周四\",\n      \"breakfast\": \"鲜肉包、全脂牛奶\",\n      \"lunch_rice\": null,\n      \"lunch_main_meat\": \"芝士火腿三明治\",\n      \"lunch_side1\": \"西芹虾仁\",\n      \"lunch_side2\": \"彩虹色拉\",\n      \"lunch_soup\": \"意式牛肉蔬菜汤\",\n      \"fruit\": \"香蕉/玉菇甜瓜\",\n      \"afternoon_snack\": \"杭白菜肉糜粥\"\n    },\n    {\n      \"date\": \"2026-09-05\",\n      \"day_of_week\": \"周五\",\n      \"breakfast\": \"红糖燕麦开花馒头、全脂牛奶\",\n      \"lunch_rice\": \"扬州炒饭\",\n      \"lunch_main_meat\": \"宫爆鸡丁\",\n      \"lunch_side1\": \"蒜泥空心菜\",\n      \"lunch_side2\": null,\n      \"lunch_soup\": \"冬瓜小排汤\",\n      \"fruit\": \"梨/西州蜜瓜\",\n      \"afternoon_snack\": \"手抓饼\"\n    }\n  ]\n}",
+          "reasoning": "",
+          "error": null,
+          "grade": {
+            "passed": 47,
+            "total": 47,
+            "checks": [
+              {
+                "field": "week_start",
+                "expected": "2026-09-01",
+                "actual": "2026-09-01",
+                "passed": true
+              },
+              {
+                "field": "week_end",
+                "expected": "2026-09-04",
+                "actual": "2026-09-04",
+                "passed": true
+              },
+              {
+                "field": "周一.day_of_week",
+                "expected": "周一",
+                "actual": "周一",
+                "passed": true
+              },
+              {
+                "field": "周一.breakfast",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_rice",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_main_meat",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_side1",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_side2",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_soup",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.fruit",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.afternoon_snack",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周二.day_of_week",
+                "expected": "周二",
+                "actual": "周二",
+                "passed": true
+              },
+              {
+                "field": "周二.breakfast",
+                "expected": "烧卖、全脂牛奶",
+                "actual": "烧卖、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周二.lunch_rice",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周二.lunch_main_meat",
+                "expected": "意大利肉酱面",
+                "actual": "意大利肉酱面",
+                "passed": true
+              },
+              {
+                "field": "周二.lunch_side1",
+                "expected": "彩椒鱼片",
+                "actual": "彩椒鱼片",
+                "passed": true
+              },
+              {
+                "field": "周二.lunch_side2",
+                "expected": "爆炒双花",
+                "actual": "爆炒双花",
+                "passed": true
+              },
+              {
+                "field": "周二.lunch_soup",
+                "expected": "菌菇鸽子汤",
+                "actual": "菌菇鸽子汤",
+                "passed": true
+              },
+              {
+                "field": "周二.fruit",
+                "expected": "柚子/梨",
+                "actual": "柚子/梨",
+                "passed": true
+              },
+              {
+                "field": "周二.afternoon_snack",
+                "expected": "绿豆薏仁汤",
+                "actual": "绿豆薏仁汤",
+                "passed": true
+              },
+              {
+                "field": "周三.day_of_week",
+                "expected": "周三",
+                "actual": "周三",
+                "passed": true
+              },
+              {
+                "field": "周三.breakfast",
+                "expected": "葱油花卷、全脂牛奶",
+                "actual": "葱油花卷、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_rice",
+                "expected": "香米米饭",
+                "actual": "香米米饭",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_main_meat",
+                "expected": "什锦鲜菇蒸肉丸",
+                "actual": "什锦鲜菇蒸肉丸",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_side1",
+                "expected": "番茄炒蛋",
+                "actual": "番茄炒蛋",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_side2",
+                "expected": "清炒时蔬",
+                "actual": "清炒时蔬",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_soup",
+                "expected": "海带豆腐羹",
+                "actual": "海带豆腐羹",
+                "passed": true
+              },
+              {
+                "field": "周三.fruit",
+                "expected": "西瓜/苹果",
+                "actual": "西瓜/苹果",
+                "passed": true
+              },
+              {
+                "field": "周三.afternoon_snack",
+                "expected": "蒸饺",
+                "actual": "蒸饺",
+                "passed": true
+              },
+              {
+                "field": "周四.day_of_week",
+                "expected": "周四",
+                "actual": "周四",
+                "passed": true
+              },
+              {
+                "field": "周四.breakfast",
+                "expected": "鲜肉包、全脂牛奶",
+                "actual": "鲜肉包、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周四.lunch_rice",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周四.lunch_main_meat",
+                "expected": "芝士火腿三明治",
+                "actual": "芝士火腿三明治",
+                "passed": true
+              },
+              {
+                "field": "周四.lunch_side1",
+                "expected": "西芹虾仁",
+                "actual": "西芹虾仁",
+                "passed": true
+              },
+              {
+                "field": "周四.lunch_side2",
+                "expected": "彩虹色拉",
+                "actual": "彩虹色拉",
+                "passed": true
+              },
+              {
+                "field": "周四.lunch_soup",
+                "expected": "意式牛肉蔬菜汤",
+                "actual": "意式牛肉蔬菜汤",
+                "passed": true
+              },
+              {
+                "field": "周四.fruit",
+                "expected": "香蕉/玉菇甜瓜",
+                "actual": "香蕉/玉菇甜瓜",
+                "passed": true
+              },
+              {
+                "field": "周四.afternoon_snack",
+                "expected": "杭白菜肉糜粥",
+                "actual": "杭白菜肉糜粥",
+                "passed": true
+              },
+              {
+                "field": "周五.day_of_week",
+                "expected": "周五",
+                "actual": "周五",
+                "passed": true
+              },
+              {
+                "field": "周五.breakfast",
+                "expected": "红糖燕麦开花馒头、全脂牛奶",
+                "actual": "红糖燕麦开花馒头、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_rice",
+                "expected": "扬州炒饭",
+                "actual": "扬州炒饭",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_main_meat",
+                "expected": "宫爆鸡丁",
+                "actual": "宫爆鸡丁",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_side1",
+                "expected": "蒜泥空心菜",
+                "actual": "蒜泥空心菜",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_side2",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_soup",
+                "expected": "冬瓜小排汤",
+                "actual": "冬瓜小排汤",
+                "passed": true
+              },
+              {
+                "field": "周五.fruit",
+                "expected": "梨/西州蜜瓜",
+                "actual": "梨/西州蜜瓜",
+                "passed": true
+              },
+              {
+                "field": "周五.afternoon_snack",
+                "expected": "手抓饼",
+                "actual": "手抓饼",
+                "passed": true
+              }
+            ],
+            "unscored_dates": [
+              "2026-09-01",
+              "2026-09-02",
+              "2026-09-03",
+              "2026-09-04",
+              "2026-09-05"
+            ]
+          },
+          "parsed": {
+            "week_start": "2026-09-01",
+            "week_end": "2026-09-04",
+            "daily_menus": [
+              {
+                "date": "2026-09-01",
+                "day_of_week": "周一",
+                "breakfast": null,
+                "lunch_rice": null,
+                "lunch_main_meat": null,
+                "lunch_side1": null,
+                "lunch_side2": null,
+                "lunch_soup": null,
+                "fruit": null,
+                "afternoon_snack": null
+              },
+              {
+                "date": "2026-09-02",
+                "day_of_week": "周二",
+                "breakfast": "烧卖、全脂牛奶",
+                "lunch_rice": null,
+                "lunch_main_meat": "意大利肉酱面",
+                "lunch_side1": "彩椒鱼片",
+                "lunch_side2": "爆炒双花",
+                "lunch_soup": "菌菇鸽子汤",
+                "fruit": "柚子/梨",
+                "afternoon_snack": "绿豆薏仁汤"
+              },
+              {
+                "date": "2026-09-03",
+                "day_of_week": "周三",
+                "breakfast": "葱油花卷、全脂牛奶",
+                "lunch_rice": "香米米饭",
+                "lunch_main_meat": "什锦鲜菇蒸肉丸",
+                "lunch_side1": "番茄炒蛋",
+                "lunch_side2": "清炒时蔬",
+                "lunch_soup": "海带豆腐羹",
+                "fruit": "西瓜/苹果",
+                "afternoon_snack": "蒸饺"
+              },
+              {
+                "date": "2026-09-04",
+                "day_of_week": "周四",
+                "breakfast": "鲜肉包、全脂牛奶",
+                "lunch_rice": null,
+                "lunch_main_meat": "芝士火腿三明治",
+                "lunch_side1": "西芹虾仁",
+                "lunch_side2": "彩虹色拉",
+                "lunch_soup": "意式牛肉蔬菜汤",
+                "fruit": "香蕉/玉菇甜瓜",
+                "afternoon_snack": "杭白菜肉糜粥"
+              },
+              {
+                "date": "2026-09-05",
+                "day_of_week": "周五",
+                "breakfast": "红糖燕麦开花馒头、全脂牛奶",
+                "lunch_rice": "扬州炒饭",
+                "lunch_main_meat": "宫爆鸡丁",
+                "lunch_side1": "蒜泥空心菜",
+                "lunch_side2": null,
+                "lunch_soup": "冬瓜小排汤",
+                "fruit": "梨/西州蜜瓜",
+                "afternoon_snack": "手抓饼"
+              }
+            ]
+          }
+        },
+        "performance": {
+          "c1": {
+            "summary": {
+              "trials": 3,
+              "fully_successful_trials": 3,
+              "median_wall_s": 6.9728,
+              "median_ttft_s": 0.9267,
+              "median_output_tok_s": 42.456,
+              "median_aggregate_tok_s": 36.7141,
+              "grounded_requests": 0,
+              "total_requests": 3
+            },
+            "trials": [
+              {
+                "concurrency": 1,
+                "wall_s": 6.8393,
+                "success": 1,
+                "errors": 0,
+                "aggregate_tok_s": 37.4308,
+                "median_ttft_s": 0.9269,
+                "median_output_tok_s": 43.4441,
+                "grounded": 0,
+                "requests": [
+                  {
+                    "elapsed_s": 6.8195,
+                    "ttft_s": 0.9269,
+                    "decode_s": 5.8926,
+                    "completion_tokens": 256,
+                    "output_tok_s": 43.4441,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image.\nFirst, I need to check if the blue bar is the tallest.\nLooking at the image:\n- There is a blue bar on the left.\n- There is a red bar in the middle.\n- There is a green bar on the right.\n\nLet's compare their heights:\n- Blue bar: starts near the top (around y = 100) and goes down to the bottom (around y = 650). Height is very large.\n- Red bar: starts around y = 250 and goes down to y = 650. Height is medium.\n- Green bar: starts around y = 390 and goes down to y = 650. Height is small.\n\nSo the blue bar is indeed the tallest.\nThe prompt says: \"Begin with exactly 'blue tallest' if the blue bar is tallest.\"\nSo I must start my response with exactly \"blue tallest\".\n\nThen, \"provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\"\n\nLet's write down the details:\n1. Blue bar:\n   - Color: Blue (specifically a bright, medium blue, hex code approximately #1E6FE0 or similar).\n   - Position: Leftmost of the three bars.\n  ",
+                    "reasoning": "",
+                    "error": null
+                  }
+                ]
+              },
+              {
+                "concurrency": 1,
+                "wall_s": 6.9728,
+                "success": 1,
+                "errors": 0,
+                "aggregate_tok_s": 36.7141,
+                "median_ttft_s": 0.9215,
+                "median_output_tok_s": 42.456,
+                "grounded": 0,
+                "requests": [
+                  {
+                    "elapsed_s": 6.9512,
+                    "ttft_s": 0.9215,
+                    "decode_s": 6.0298,
+                    "completion_tokens": 256,
+                    "output_tok_s": 42.456,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image.\nFirst, I need to check if the blue bar is the tallest.\nLooking at the image:\n- There is a blue bar on the left.\n- There is a red bar in the middle.\n- There is a green bar on the right.\n\nLet's compare their heights:\n- Blue bar: starts near the top (around y=80) and goes down to the bottom (around y=620). Height is very large.\n- Red bar: starts around y=250 and goes down to the bottom (around y=620). Height is medium.\n- Green bar: starts around y=390 and goes down to the bottom (around y=620). Height is short.\n\nSo the blue bar is indeed the tallest.\nThe prompt says: \"Begin with exactly 'blue tallest' if the blue bar is tallest. Then provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\"\n\nLet's write down the response:\nStart with: \"blue tallest\"\nThen provide a detailed numbered description of colors, relative positions, and bar heights.\n\nLet's list the details:\n1. Color and Position of the first bar (left):\n   - Color: Blue (specifically a bright,",
+                    "reasoning": "",
+                    "error": null
+                  }
+                ]
+              },
+              {
+                "concurrency": 1,
+                "wall_s": 7.6338,
+                "success": 1,
+                "errors": 0,
+                "aggregate_tok_s": 33.5351,
+                "median_ttft_s": 0.9267,
+                "median_output_tok_s": 38.2534,
+                "grounded": 0,
+                "requests": [
+                  {
+                    "elapsed_s": 7.6189,
+                    "ttft_s": 0.9267,
+                    "decode_s": 6.6922,
+                    "completion_tokens": 256,
+                    "output_tok_s": 38.2534,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image.\nFirst, I need to check if the blue bar is the tallest.\nLooking at the image:\n- There is a blue bar on the left.\n- There is a red bar in the middle.\n- There is a green bar on the right.\n- The blue bar is clearly the tallest (it goes from the bottom baseline up to the highest point).\n- The red bar is medium height.\n- The green bar is the shortest.\n\nThe prompt says: \"Begin with exactly 'blue tallest' if the blue bar is tallest. Then provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\"\n\nSo I must start with exactly \"blue tallest\".\nThen, I need to provide a detailed numbered description of:\n1. Colors\n2. Relative positions\n3. Bar heights\n\nLet's write down the details:\n1. **Blue Bar**:\n   - Color: Blue (specifically a bright, medium blue, similar to RGB 30, 100, 220 or similar).\n   - Position: Leftmost bar in the sequence.\n   - Height: Tallest of the three bars, extending from the bottom baseline to the highest vertical point in the image.\n2. **Red Bar**:\n  ",
+                    "reasoning": "",
+                    "error": null
+                  }
+                ]
+              }
+            ]
+          },
+          "c2": {
+            "summary": {
+              "trials": 2,
+              "fully_successful_trials": 2,
+              "median_wall_s": 10.7277,
+              "median_ttft_s": 1.3752,
+              "median_output_tok_s": 27.8711,
+              "median_aggregate_tok_s": 47.7594,
+              "grounded_requests": 0,
+              "total_requests": 4
+            },
+            "trials": [
+              {
+                "concurrency": 2,
+                "wall_s": 11.0079,
+                "success": 2,
+                "errors": 0,
+                "aggregate_tok_s": 46.512,
+                "median_ttft_s": 1.3488,
+                "median_output_tok_s": 27.1018,
+                "grounded": 0,
+                "requests": [
+                  {
+                    "elapsed_s": 10.9897,
+                    "ttft_s": 0.8688,
+                    "decode_s": 10.1209,
+                    "completion_tokens": 256,
+                    "output_tok_s": 25.2941,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image and start with exactly 'blue tallest' if the blue bar is tallest.\nLooking at the image:\n- There are three bars: blue, red, and green.\n- The blue bar is on the left, red is in the middle, green is on the right.\n- The blue bar is the tallest.\n- The red bar is medium height.\n- The green bar is the shortest.\n\nSo I must begin with exactly \"blue tallest\".\nThen provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\n\nLet's write down the details:\n1. Blue bar:\n   - Color: Blue (RGB approx: 33, 110, 226)\n   - Position: Leftmost bar.\n   - Height: Tallest of the three bars, extending from the bottom baseline to the highest point in the image.\n2. Red bar:\n   - Color: Red (RGB approx: 224, 32, 32)\n   - Position: Middle bar, located between the blue and green bars.\n   - Height: Medium height, shorter than the blue bar but taller than the green bar.\n3. Green bar:\n   - Color: Green (RGB approx: 0, 176",
+                    "reasoning": "",
+                    "error": null
+                  },
+                  {
+                    "elapsed_s": 10.684,
+                    "ttft_s": 1.8288,
+                    "decode_s": 8.8552,
+                    "completion_tokens": 256,
+                    "output_tok_s": 28.9095,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image.\nFirst, I need to check if the blue bar is the tallest.\nLooking at the image:\n- There is a blue bar on the left.\n- There is a red bar in the middle.\n- There is a green bar on the right.\n\nLet's compare their heights:\n- Blue bar: starts near the top (around y = 100) and goes down to the bottom (around y = 650). Height is about 550 pixels.\n- Red bar: starts around y = 250 and goes down to y = 650. Height is about 400 pixels.\n- Green bar: starts around y = 390 and goes down to y = 650. Height is about 260 pixels.\n\nSo the blue bar is indeed the tallest.\nThe prompt says: \"Begin with exactly 'blue tallest' if the blue bar is tallest.\"\nSo I must start my response with exactly \"blue tallest\".\n\nThen, \"provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\"\n\nLet's write a detailed numbered description:\n1. **Blue Bar**:\n   - **Color**: Bright blue (RGB approximately (26, 115, 232)).\n   - **Relative Position**: Located on",
+                    "reasoning": "",
+                    "error": null
+                  }
+                ]
+              },
+              {
+                "concurrency": 2,
+                "wall_s": 10.4475,
+                "success": 2,
+                "errors": 0,
+                "aggregate_tok_s": 49.0068,
+                "median_ttft_s": 1.4016,
+                "median_output_tok_s": 28.6403,
+                "grounded": 0,
+                "requests": [
+                  {
+                    "elapsed_s": 10.4305,
+                    "ttft_s": 1.8835,
+                    "decode_s": 8.547,
+                    "completion_tokens": 256,
+                    "output_tok_s": 29.9519,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image and start with exactly 'blue tallest' if the blue bar is tallest.\nLooking at the image:\n- There are three bars: blue, red, green.\n- The blue bar is on the left, red in the middle, green on the right.\n- The blue bar is the tallest.\n- The red bar is medium height.\n- The green bar is the shortest.\n\nThe prompt says: \"Begin with exactly 'blue tallest' if the blue bar is tallest. Then provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\"\n\nLet's check the heights:\n- Blue bar: starts around y=100, ends around y=650 (height ~550)\n- Red bar: starts around y=250, ends around y=650 (height ~400)\n- Green bar: starts around y=390, ends around y=650 (height ~260)\n\nSo the blue bar is indeed the tallest.\n\nLet's write the response starting with exactly \"blue tallest\".\nThen provide a detailed numbered description of colors, relative positions, and bar heights.\n\n1. **Blue Bar**:\n   - **Color**: Bright blue (RGB approximately 33, 113, 231).\n   - **",
+                    "reasoning": "",
+                    "error": null
+                  },
+                  {
+                    "elapsed_s": 10.2871,
+                    "ttft_s": 0.9197,
+                    "decode_s": 9.3674,
+                    "completion_tokens": 256,
+                    "output_tok_s": 27.3288,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "length",
+                    "grounded_prefix": false,
+                    "content": "The user wants me to inspect the image.\nFirst, I need to check if the blue bar is the tallest.\nLooking at the image:\n- There is a blue bar on the left.\n- There is a red bar in the middle.\n- There is a green bar on the right.\n\nLet's compare their heights:\n- Blue bar: starts near the top (around y = 100) and goes down to the bottom (around y = 650). Height is very large.\n- Red bar: starts around y = 250 and goes down to y = 650. Height is medium.\n- Green bar: starts around y = 390 and goes down to y = 650. Height is small.\n\nSo the blue bar is indeed the tallest.\nThe prompt says: \"Begin with exactly 'blue tallest' if the blue bar is tallest. Then provide a detailed numbered description of colors, relative positions, and bar heights until the response limit.\"\n\nLet's write down the response:\nStart with exactly: \"blue tallest\"\n\nThen, a detailed numbered description:\n1. **Blue Bar**:\n   - **Color**: Bright blue (RGB approximately 30, 110, 220).\n   - **Relative Position**: Located on the far left of the image.\n  ",
+                    "reasoning": "",
+                    "error": null
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "on": {
+      "glm": {
+        "quality": {
+          "passed": 6,
+          "total": 6,
+          "cases": [
+            {
+              "id": "dominant_blue",
+              "expected": "blue",
+              "actual": "blue",
+              "passed": true,
+              "elapsed_s": 0.564,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 56,
+                "total_tokens": 60,
+                "completion_tokens": 4,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1
+                }
+              },
+              "content": "blue",
+              "reasoning": "blue",
+              "error": null
+            },
+            {
+              "id": "three_red_blocks",
+              "expected": "3",
+              "actual": "3",
+              "passed": true,
+              "elapsed_s": 0.654,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 56,
+                "total_tokens": 60,
+                "completion_tokens": 4,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1
+                }
+              },
+              "content": "3",
+              "reasoning": "3",
+              "error": null
+            },
+            {
+              "id": "red_left_blue",
+              "expected": "left",
+              "actual": "left",
+              "passed": true,
+              "elapsed_s": 0.4947,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 62,
+                "total_tokens": 69,
+                "completion_tokens": 7,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 4
+                }
+              },
+              "content": "left",
+              "reasoning": "Red is left.",
+              "error": null
+            },
+            {
+              "id": "green_top_left",
+              "expected": "green",
+              "actual": "green",
+              "passed": true,
+              "elapsed_s": 0.5666,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 58,
+                "total_tokens": 62,
+                "completion_tokens": 4,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1
+                }
+              },
+              "content": "green",
+              "reasoning": "green",
+              "error": null
+            },
+            {
+              "id": "middle_tallest",
+              "expected": "middle",
+              "actual": "middle",
+              "passed": true,
+              "elapsed_s": 0.5855,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 61,
+                "total_tokens": 65,
+                "completion_tokens": 4,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1
+                }
+              },
+              "content": "Middle",
+              "reasoning": "Middle",
+              "error": null
+            },
+            {
+              "id": "two_blue_one_red",
+              "expected": "2",
+              "actual": "2",
+              "passed": true,
+              "elapsed_s": 0.5622,
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 56,
+                "total_tokens": 60,
+                "completion_tokens": 4,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 0,
+                  "multimodal_tokens": {
+                    "image": 30
+                  }
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1
+                }
+              },
+              "content": "2",
+              "reasoning": "2",
+              "error": null
+            }
+          ]
+        },
+        "menu": {
+          "elapsed_s": 15.1047,
+          "finish_reason": "stop",
+          "usage": {
+            "prompt_tokens": 1717,
+            "total_tokens": 2377,
+            "completion_tokens": 660,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "created_cache_tokens": 0,
+              "multimodal_tokens": {
+                "image": 1364
+              }
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 34
+            }
+          },
+          "content": "{\n  \"week_start\": \"2026-09-01\",\n  \"week_end\": \"2026-09-04\",\n  \"daily_menus\": [\n    {\n      \"date\": \"2026-08-31\",\n      \"day_of_week\": \"周一\",\n      \"breakfast\": null,\n      \"lunch_rice\": null,\n      \"lunch_main_meat\": null,\n      \"lunch_side1\": null,\n      \"lunch_side2\": null,\n      \"lunch_soup\": null,\n      \"fruit\": null,\n      \"afternoon_snack\": null\n    },\n    {\n      \"date\": \"2026-09-01\",\n      \"day_of_week\": \"周二\",\n      \"breakfast\": \"烧卖、全脂牛奶\",\n      \"lunch_rice\": \"意大利肉酱面\",\n      \"lunch_main_meat\": \"彩椒鱼片\",\n      \"lunch_side1\": \"爆炒双花\",\n      \"lunch_side2\": null,\n      \"lunch_soup\": \"菌菇鸽子汤\",\n      \"fruit\": \"柚子/梨\",\n      \"afternoon_snack\": \"绿豆薏仁汤\"\n    },\n    {\n      \"date\": \"2026-09-02\",\n      \"day_of_week\": \"周三\",\n      \"breakfast\": \"葱油花卷、全脂牛奶\",\n      \"lunch_rice\": \"香米米饭\",\n      \"lunch_main_meat\": \"什锦鲜菇蒸肉丸\",\n      \"lunch_side1\": \"番茄炒蛋\",\n      \"lunch_side2\": \"清炒时蔬\",\n      \"lunch_soup\": \"海带豆腐羹\",\n      \"fruit\": \"西瓜/苹果\",\n      \"afternoon_snack\": \"蒸饺\"\n    },\n    {\n      \"date\": \"2026-09-03\",\n      \"day_of_week\": \"周四\",\n      \"breakfast\": \"鲜肉包、全脂牛奶\",\n      \"lunch_rice\": \"芝士火腿三明治\",\n      \"lunch_main_meat\": \"西芹虾仁\",\n      \"lunch_side1\": \"彩虹色拉\",\n      \"lunch_side2\": null,\n      \"lunch_soup\": \"意式牛肉蔬菜汤\",\n      \"fruit\": \"香蕉/玉菇甜瓜\",\n      \"afternoon_snack\": \"杭白菜肉糜粥\"\n    },\n    {\n      \"date\": \"2026-09-04\",\n      \"day_of_week\": \"周五\",\n      \"breakfast\": \"红糖燕麦开花馒头、全脂牛奶\",\n      \"lunch_rice\": \"扬州炒饭\",\n      \"lunch_main_meat\": \"宫爆鸡丁\",\n      \"lunch_side1\": \"蒜泥空心菜\",\n      \"lunch_side2\": null,\n      \"lunch_soup\": \"冬瓜小排汤\",\n      \"fruit\": \"梨/西州蜜瓜\",\n      \"afternoon_snack\": \"手抓饼\"\n    }\n  ]\n}",
+          "reasoning": "Monday appears empty (no menu). Dates 2026-09-01 to 09-04 are Tue-Fri. Monday 2026-08-31.",
+          "error": null,
+          "grade": {
+            "passed": 39,
+            "total": 47,
+            "checks": [
+              {
+                "field": "week_start",
+                "expected": "2026-09-01",
+                "actual": "2026-09-01",
+                "passed": true
+              },
+              {
+                "field": "week_end",
+                "expected": "2026-09-04",
+                "actual": "2026-09-04",
+                "passed": true
+              },
+              {
+                "field": "周一.day_of_week",
+                "expected": "周一",
+                "actual": "周一",
+                "passed": true
+              },
+              {
+                "field": "周一.breakfast",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_rice",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_main_meat",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_side1",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_side2",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.lunch_soup",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.fruit",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周一.afternoon_snack",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周二.day_of_week",
+                "expected": "周二",
+                "actual": "周二",
+                "passed": true
+              },
+              {
+                "field": "周二.breakfast",
+                "expected": "烧卖、全脂牛奶",
+                "actual": "烧卖、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周二.lunch_rice",
+                "expected": null,
+                "actual": "意大利肉酱面",
+                "passed": false
+              },
+              {
+                "field": "周二.lunch_main_meat",
+                "expected": "意大利肉酱面",
+                "actual": "彩椒鱼片",
+                "passed": false
+              },
+              {
+                "field": "周二.lunch_side1",
+                "expected": "彩椒鱼片",
+                "actual": "爆炒双花",
+                "passed": false
+              },
+              {
+                "field": "周二.lunch_side2",
+                "expected": "爆炒双花",
+                "actual": null,
+                "passed": false
+              },
+              {
+                "field": "周二.lunch_soup",
+                "expected": "菌菇鸽子汤",
+                "actual": "菌菇鸽子汤",
+                "passed": true
+              },
+              {
+                "field": "周二.fruit",
+                "expected": "柚子/梨",
+                "actual": "柚子/梨",
+                "passed": true
+              },
+              {
+                "field": "周二.afternoon_snack",
+                "expected": "绿豆薏仁汤",
+                "actual": "绿豆薏仁汤",
+                "passed": true
+              },
+              {
+                "field": "周三.day_of_week",
+                "expected": "周三",
+                "actual": "周三",
+                "passed": true
+              },
+              {
+                "field": "周三.breakfast",
+                "expected": "葱油花卷、全脂牛奶",
+                "actual": "葱油花卷、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_rice",
+                "expected": "香米米饭",
+                "actual": "香米米饭",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_main_meat",
+                "expected": "什锦鲜菇蒸肉丸",
+                "actual": "什锦鲜菇蒸肉丸",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_side1",
+                "expected": "番茄炒蛋",
+                "actual": "番茄炒蛋",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_side2",
+                "expected": "清炒时蔬",
+                "actual": "清炒时蔬",
+                "passed": true
+              },
+              {
+                "field": "周三.lunch_soup",
+                "expected": "海带豆腐羹",
+                "actual": "海带豆腐羹",
+                "passed": true
+              },
+              {
+                "field": "周三.fruit",
+                "expected": "西瓜/苹果",
+                "actual": "西瓜/苹果",
+                "passed": true
+              },
+              {
+                "field": "周三.afternoon_snack",
+                "expected": "蒸饺",
+                "actual": "蒸饺",
+                "passed": true
+              },
+              {
+                "field": "周四.day_of_week",
+                "expected": "周四",
+                "actual": "周四",
+                "passed": true
+              },
+              {
+                "field": "周四.breakfast",
+                "expected": "鲜肉包、全脂牛奶",
+                "actual": "鲜肉包、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周四.lunch_rice",
+                "expected": null,
+                "actual": "芝士火腿三明治",
+                "passed": false
+              },
+              {
+                "field": "周四.lunch_main_meat",
+                "expected": "芝士火腿三明治",
+                "actual": "西芹虾仁",
+                "passed": false
+              },
+              {
+                "field": "周四.lunch_side1",
+                "expected": "西芹虾仁",
+                "actual": "彩虹色拉",
+                "passed": false
+              },
+              {
+                "field": "周四.lunch_side2",
+                "expected": "彩虹色拉",
+                "actual": null,
+                "passed": false
+              },
+              {
+                "field": "周四.lunch_soup",
+                "expected": "意式牛肉蔬菜汤",
+                "actual": "意式牛肉蔬菜汤",
+                "passed": true
+              },
+              {
+                "field": "周四.fruit",
+                "expected": "香蕉/玉菇甜瓜",
+                "actual": "香蕉/玉菇甜瓜",
+                "passed": true
+              },
+              {
+                "field": "周四.afternoon_snack",
+                "expected": "杭白菜肉糜粥",
+                "actual": "杭白菜肉糜粥",
+                "passed": true
+              },
+              {
+                "field": "周五.day_of_week",
+                "expected": "周五",
+                "actual": "周五",
+                "passed": true
+              },
+              {
+                "field": "周五.breakfast",
+                "expected": "红糖燕麦开花馒头、全脂牛奶",
+                "actual": "红糖燕麦开花馒头、全脂牛奶",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_rice",
+                "expected": "扬州炒饭",
+                "actual": "扬州炒饭",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_main_meat",
+                "expected": "宫爆鸡丁",
+                "actual": "宫爆鸡丁",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_side1",
+                "expected": "蒜泥空心菜",
+                "actual": "蒜泥空心菜",
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_side2",
+                "expected": null,
+                "actual": null,
+                "passed": true
+              },
+              {
+                "field": "周五.lunch_soup",
+                "expected": "冬瓜小排汤",
+                "actual": "冬瓜小排汤",
+                "passed": true
+              },
+              {
+                "field": "周五.fruit",
+                "expected": "梨/西州蜜瓜",
+                "actual": "梨/西州蜜瓜",
+                "passed": true
+              },
+              {
+                "field": "周五.afternoon_snack",
+                "expected": "手抓饼",
+                "actual": "手抓饼",
+                "passed": true
+              }
+            ],
+            "unscored_dates": [
+              "2026-08-31",
+              "2026-09-01",
+              "2026-09-02",
+              "2026-09-03",
+              "2026-09-04"
+            ]
+          },
+          "parsed": {
+            "week_start": "2026-09-01",
+            "week_end": "2026-09-04",
+            "daily_menus": [
+              {
+                "date": "2026-08-31",
+                "day_of_week": "周一",
+                "breakfast": null,
+                "lunch_rice": null,
+                "lunch_main_meat": null,
+                "lunch_side1": null,
+                "lunch_side2": null,
+                "lunch_soup": null,
+                "fruit": null,
+                "afternoon_snack": null
+              },
+              {
+                "date": "2026-09-01",
+                "day_of_week": "周二",
+                "breakfast": "烧卖、全脂牛奶",
+                "lunch_rice": "意大利肉酱面",
+                "lunch_main_meat": "彩椒鱼片",
+                "lunch_side1": "爆炒双花",
+                "lunch_side2": null,
+                "lunch_soup": "菌菇鸽子汤",
+                "fruit": "柚子/梨",
+                "afternoon_snack": "绿豆薏仁汤"
+              },
+              {
+                "date": "2026-09-02",
+                "day_of_week": "周三",
+                "breakfast": "葱油花卷、全脂牛奶",
+                "lunch_rice": "香米米饭",
+                "lunch_main_meat": "什锦鲜菇蒸肉丸",
+                "lunch_side1": "番茄炒蛋",
+                "lunch_side2": "清炒时蔬",
+                "lunch_soup": "海带豆腐羹",
+                "fruit": "西瓜/苹果",
+                "afternoon_snack": "蒸饺"
+              },
+              {
+                "date": "2026-09-03",
+                "day_of_week": "周四",
+                "breakfast": "鲜肉包、全脂牛奶",
+                "lunch_rice": "芝士火腿三明治",
+                "lunch_main_meat": "西芹虾仁",
+                "lunch_side1": "彩虹色拉",
+                "lunch_side2": null,
+                "lunch_soup": "意式牛肉蔬菜汤",
+                "fruit": "香蕉/玉菇甜瓜",
+                "afternoon_snack": "杭白菜肉糜粥"
+              },
+              {
+                "date": "2026-09-04",
+                "day_of_week": "周五",
+                "breakfast": "红糖燕麦开花馒头、全脂牛奶",
+                "lunch_rice": "扬州炒饭",
+                "lunch_main_meat": "宫爆鸡丁",
+                "lunch_side1": "蒜泥空心菜",
+                "lunch_side2": null,
+                "lunch_soup": "冬瓜小排汤",
+                "fruit": "梨/西州蜜瓜",
+                "afternoon_snack": "手抓饼"
+              }
+            ]
+          }
+        },
+        "performance": {
+          "c1": {
+            "summary": {
+              "trials": 3,
+              "fully_successful_trials": 3,
+              "median_wall_s": 5.5516,
+              "median_ttft_s": 0.9159,
+              "median_output_tok_s": 34.0504,
+              "median_aggregate_tok_s": 28.3815,
+              "grounded_requests": 3,
+              "total_requests": 3
+            },
+            "trials": [
+              {
+                "concurrency": 1,
+                "wall_s": 5.2597,
+                "success": 1,
+                "errors": 0,
+                "aggregate_tok_s": 31.1803,
+                "median_ttft_s": 0.9015,
+                "median_output_tok_s": 37.7776,
+                "grounded": 1,
+                "requests": [
+                  {
+                    "elapsed_s": 5.2427,
+                    "ttft_s": 0.9015,
+                    "decode_s": 4.3412,
+                    "completion_tokens": 164,
+                    "output_tok_s": 37.7776,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is the tallest of the three, positioned on the far left of the image, extending from near the top of the canvas down to the common baseline.\n2. The red bar is in the middle position, noticeably shorter than the blue bar, with its top edge roughly two-thirds of the way up the blue bar's height.\n3. The green bar is on the far right and is the shortest, with its top edge sitting at roughly half the height of the red bar.\n4. All three bars share the same bottom baseline and are of equal width, arranged left to right in descending order of height: blue, red, green.\n5. The background is a plain light gray, making the saturated blue, red, and green colors stand out clearly.",
+                    "reasoning": "Blue tallest.",
+                    "error": null
+                  }
+                ]
+              },
+              {
+                "concurrency": 1,
+                "wall_s": 5.5516,
+                "success": 1,
+                "errors": 0,
+                "aggregate_tok_s": 28.28,
+                "median_ttft_s": 0.9266,
+                "median_output_tok_s": 34.0504,
+                "grounded": 1,
+                "requests": [
+                  {
+                    "elapsed_s": 5.5374,
+                    "ttft_s": 0.9266,
+                    "decode_s": 4.6108,
+                    "completion_tokens": 157,
+                    "output_tok_s": 34.0504,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is located on the far left of the image and is the tallest of the three bars, extending nearly to the top of the frame.\n2. The red bar is in the middle position, with a height roughly two-thirds that of the blue bar.\n3. The green bar is on the far right and is the shortest, reaching only about half the height of the blue bar.\n4. All three bars share the same baseline at the bottom and have equal widths.\n5. The bars descend in height from left to right: blue (tallest), red (medium), green (shortest).\n6. The background is a plain light gray, making the saturated blue, red, and green colors stand out clearly.",
+                    "reasoning": "Blue is tallest.",
+                    "error": null
+                  }
+                ]
+              },
+              {
+                "concurrency": 1,
+                "wall_s": 5.7432,
+                "success": 1,
+                "errors": 0,
+                "aggregate_tok_s": 28.3815,
+                "median_ttft_s": 0.9159,
+                "median_output_tok_s": 33.8796,
+                "grounded": 1,
+                "requests": [
+                  {
+                    "elapsed_s": 5.727,
+                    "ttft_s": 0.9159,
+                    "decode_s": 4.8111,
+                    "completion_tokens": 163,
+                    "output_tok_s": 33.8796,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is the tallest, positioned on the far left of the image, extending from near the top of the canvas down to the common baseline.\n2. The red bar is in the middle position, noticeably shorter than the blue bar, with its top roughly at the vertical midpoint of the blue bar.\n3. The green bar is on the far right and is the shortest of the three, with its top well below the red bar's top.\n4. All three bars share the same bottom baseline and have equal widths, arranged left to right in descending height order: blue (tallest), red (medium), green (shortest).\n5. The background is a plain light gray, making the saturated blue, red, and green colors stand out clearly.",
+                    "reasoning": "Blue is tallest.",
+                    "error": null
+                  }
+                ]
+              }
+            ]
+          },
+          "c2": {
+            "summary": {
+              "trials": 2,
+              "fully_successful_trials": 2,
+              "median_wall_s": 7.5671,
+              "median_ttft_s": 1.3891,
+              "median_output_tok_s": 25.2865,
+              "median_aggregate_tok_s": 40.36,
+              "grounded_requests": 4,
+              "total_requests": 4
+            },
+            "trials": [
+              {
+                "concurrency": 2,
+                "wall_s": 7.4423,
+                "success": 2,
+                "errors": 0,
+                "aggregate_tok_s": 39.6384,
+                "median_ttft_s": 1.3862,
+                "median_output_tok_s": 24.7986,
+                "grounded": 2,
+                "requests": [
+                  {
+                    "elapsed_s": 7.4238,
+                    "ttft_s": 0.9122,
+                    "decode_s": 6.5117,
+                    "completion_tokens": 157,
+                    "output_tok_s": 24.1106,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is the tallest of the three, positioned on the far left of the image, extending from near the top of the frame down to the common baseline.\n2. The red bar is in the middle position, noticeably shorter than the blue bar, with its top roughly two-thirds of the way up the image.\n3. The green bar is on the far right and is the shortest, with its top at roughly half the height of the blue bar.\n4. All three bars share the same bottom baseline and similar widths, arranged left to right in descending order of height: blue, red, green.\n5. The background is a plain light gray, making the saturated blue, red, and green colors stand out clearly.",
+                    "reasoning": "Blue is tallest.",
+                    "error": null
+                  },
+                  {
+                    "elapsed_s": 7.2748,
+                    "ttft_s": 1.8602,
+                    "decode_s": 5.4146,
+                    "completion_tokens": 138,
+                    "output_tok_s": 25.4866,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is located on the far left of the image and is the tallest of the three bars, extending nearly to the top of the frame.\n2. The red bar is in the middle position, with a height roughly two-thirds that of the blue bar.\n3. The green bar is on the far right and is the shortest, reaching only about half the height of the blue bar.\n4. All three bars share the same baseline at the bottom of the image and have equal widths.\n5. The bars are evenly spaced with white gaps between them, arranged in descending height order from left to right: blue, red, green.",
+                    "reasoning": "Blue tallest.",
+                    "error": null
+                  }
+                ]
+              },
+              {
+                "concurrency": 2,
+                "wall_s": 7.692,
+                "success": 2,
+                "errors": 0,
+                "aggregate_tok_s": 41.0816,
+                "median_ttft_s": 1.3921,
+                "median_output_tok_s": 25.7745,
+                "grounded": 2,
+                "requests": [
+                  {
+                    "elapsed_s": 7.4274,
+                    "ttft_s": 1.8658,
+                    "decode_s": 5.5616,
+                    "completion_tokens": 150,
+                    "output_tok_s": 26.9705,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is located on the far left of the image and is the tallest of the three bars, extending nearly to the top of the image.\n2. The red bar is in the middle position, with a height roughly two-thirds that of the blue bar.\n3. The green bar is on the far right and is the shortest, reaching only about half the height of the blue bar.\n4. All three bars share the same baseline at the bottom of the image and have equal widths.\n5. The bars are evenly spaced horizontally against a plain light gray background.\n6. The heights decrease progressively from left to right: blue (tallest), red (medium), green (shortest).",
+                    "reasoning": "Blue is tallest.",
+                    "error": null
+                  },
+                  {
+                    "elapsed_s": 7.6723,
+                    "ttft_s": 0.9184,
+                    "decode_s": 6.7539,
+                    "completion_tokens": 166,
+                    "output_tok_s": 24.5785,
+                    "prompt_tokens": 1088,
+                    "finish_reason": "stop",
+                    "grounded_prefix": true,
+                    "content": "blue tallest\n\n1. The blue bar is the tallest, positioned on the far left, extending from the top of the chart area down to the baseline.\n2. The red bar is in the middle position, noticeably shorter than the blue bar, with its top roughly two-thirds of the blue bar's height.\n3. The green bar is on the far right, the shortest of the three, with its top at roughly half the height of the blue bar.\n4. All three bars share the same baseline at the bottom and have equal widths.\n5. The heights follow a descending order from left to right: blue (tallest), red (medium), green (shortest).\n6. The background is a plain light gray, making the saturated blue, red, and green colors stand out clearly.",
+                    "reasoning": "Blue is tallest.",
+                    "error": null
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "status": "passed",
+  "finished_at": "2026-09-21T08:04:05.421662Z",
+  "quality_errors": []
+}

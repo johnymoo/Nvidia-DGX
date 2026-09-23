@@ -1,0 +1,45 @@
+{
+  "label": "dual-pi-fw",
+  "agents": 2,
+  "context_window": 300000,
+  "step_tokens": 2000,
+  "wall_min": 8.0,
+  "agent_summaries": [
+    {
+      "label": "dual-pi-fw-a0",
+      "agent_id": 0,
+      "session_id": "18d8c55c-d492-4622-9001-280fde4be2c3",
+      "session_path": "execution/glm53-eval/results/pi-dual-compact-fw/scratch/agent0/sessions/2026-09-21T07-30-14-826Z_18d8c55c-d492-4622-9001-280fde4be2c3.jsonl",
+      "pi_notes": [],
+      "turns": 3,
+      "compaction_turn": 2,
+      "compaction_input_tokens": 2094,
+      "post_compaction_turn_recorded": true,
+      "max_input_tokens": 5618,
+      "wall_min": 0.2,
+      "wall_p50_s": 3.35,
+      "wall_max_s": 5.82,
+      "total_output_tokens": 39
+    },
+    {
+      "label": "dual-pi-fw-a1",
+      "agent_id": 1,
+      "session_id": "d58f0525-08e1-4868-993b-212bfc415f52",
+      "session_path": "execution/glm53-eval/results/pi-dual-compact-fw/scratch/agent1/sessions/2026-09-21T07-30-14-799Z_d58f0525-08e1-4868-993b-212bfc415f52.jsonl",
+      "pi_notes": [],
+      "turns": 135,
+      "compaction_turn": 134,
+      "compaction_input_tokens": 2099,
+      "post_compaction_turn_recorded": true,
+      "max_input_tokens": 37714,
+      "wall_min": 8.0,
+      "wall_p50_s": 2.22,
+      "wall_max_s": 165.13,
+      "total_output_tokens": 1030
+    }
+  ],
+  "compaction_input_tokens": [
+    2094,
+    2099
+  ]
+}
