@@ -1,0 +1,108 @@
+{
+  "captured_at": "phase-a live snapshot",
+  "kind": "observed-live-overlap",
+  "service": {
+    "host": "gb10",
+    "profile": "20261002-tf-miaai-tf060",
+    "model": "GLM-5.3-Flash-EXL3-TR3-4bpw",
+    "tensor_parallel": 2,
+    "drafter": "DFlash2",
+    "api": "127.0.0.1:8890",
+    "context_length": 1048576,
+    "parallel_limit": 4
+  },
+  "snapshot": {
+    "health": {
+      "requests_total": 238,
+      "prompt_tokens_total": 10727469,
+      "completion_tokens_total": 259229,
+      "cached_tokens_total": 9969216,
+      "rounds_total": 35083,
+      "prefill_seconds_total": 540.3367,
+      "decode_seconds_total": 2277.4428,
+      "drafted_total": 214906,
+      "accepted_total": 181345,
+      "requests_running": 1,
+      "pool_tokens": 2347008,
+      "pool_free_tokens": 2160640,
+      "kv_cache_usage_ratio": 0.177478,
+      "streams": {
+        "decoding": 1,
+        "prefilling": 0,
+        "paused": 0,
+        "max": 4
+      }
+    },
+    "metrics": {
+      "request_latency_seconds_sum": 2911.73382,
+      "request_latency_seconds_count": 238,
+      "time_to_first_token_seconds_sum": 634.146777,
+      "time_to_first_token_seconds_count": 238,
+      "request_latency_seconds_buckets": {
+        "0.5": 2,
+        "1": 9,
+        "2.5": 85,
+        "5": 146,
+        "10": 186,
+        "30": 223,
+        "60": 228,
+        "120": 232,
+        "300": 236,
+        "+Inf": 238
+      },
+      "time_to_first_token_seconds_buckets": {
+        "0.1": 2,
+        "0.25": 6,
+        "0.5": 16,
+        "1": 167,
+        "2.5": 207,
+        "5": 217,
+        "10": 224,
+        "30": 235,
+        "60": 236,
+        "120": 238,
+        "300": 238,
+        "+Inf": 238
+      }
+    },
+    "gpu_sample": {
+      "utilization_percent": 95,
+      "temperature_c": 72,
+      "sm_clock_mhz": 2437,
+      "memory_used_gib": null,
+      "memory_total_gib": null,
+      "source": "nvidia-smi on gb10; memory fields unavailable on this platform"
+    }
+  },
+  "request": {
+    "client_elapsed_s": 2.47278,
+    "prompt_tokens": 41,
+    "completion_tokens": 32,
+    "total_tokens": 73,
+    "cached_tokens": 0,
+    "finish_reason": "length",
+    "rounds_delta": 15,
+    "drafted_delta": 34,
+    "accepted_delta": 16,
+    "overlap": true,
+    "attribution": "request usage and client latency are attributable; health counter deltas overlap another production request and are directional only"
+  },
+  "derived": {
+    "draft_acceptance": 0.84383405,
+    "prompt_cache_hit": 0.92931669,
+    "mean_request_latency": 12.23417571,
+    "mean_ttft": 2.66448226,
+    "accepted_per_draft_delta": 0.47058824,
+    "free_pool_ratio": 0.92066666
+  },
+  "source_note": "现场 /health + /metrics；请求日志 /tmp/tf-observe-20261003-overlap.jsonl；本快照服务仍 busy，未重启、未改变生产配置。",
+  "next_profile": {
+    "status": "pending-maintenance-window",
+    "env": [
+      "TF_GLM_MULTI_PROFILE=1",
+      "TF_FAMILY_PROFILE=1",
+      "TF_FAMILY_ROUND_LOG=<path>"
+    ],
+    "reason": "需要无生产流量窗口才能把逐 round kernel phase 归因给单请求"
+  }
+}
